@@ -1,0 +1,126 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-6);
+}
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-4);
+}
+
+.gradePrincipal {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: var(--esp-4);
+  align-items: start;
+}
+
+.gradeListas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-4);
+  align-items: start;
+}
+
+.suave {
+  color: var(--cor-texto-suave);
+}
+
+.atencao {
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(var(--esp-3) * -1) calc(var(--esp-2) * -1);
+}
+
+.atencao li + li {
+  border-top: 1px solid var(--cor-linha);
+}
+
+.linhaAtencao {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-3);
+  border-radius: var(--raio-pequeno);
+}
+
+.linhaAtencao:hover {
+  background: var(--cor-superficie-2);
+}
+
+.iconeAtencao {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.critico {
+  color: var(--cor-critico);
+  background: var(--cor-critico-fundo);
+}
+
+.alerta {
+  color: var(--cor-alerta);
+  background: var(--cor-alerta-fundo);
+}
+
+.ok {
+  color: var(--cor-ok);
+  background: var(--cor-ok-fundo);
+}
+
+.neutro {
+  color: var(--cor-neutro);
+  background: var(--cor-neutro-fundo);
+}
+
+.textoAtencao {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rotuloAtencao {
+  font-weight: 600;
+}
+
+.descricaoAtencao {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.quantidade {
+  font-size: var(--tam-destaque);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.seta {
+  color: var(--cor-texto-suave);
+}
+
+@media (max-width: 1100px) {
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gradePrincipal,
+  .gradeListas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pagina {
+    gap: var(--esp-4);
+  }
+
+  .indicadores {
+    gap: var(--esp-3);
+  }
+}

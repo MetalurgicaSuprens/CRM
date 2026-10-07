@@ -1,0 +1,152 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cor-texto-2);
+  font-weight: 500;
+}
+
+.voltar:hover {
+  color: var(--cor-texto);
+}
+
+.identificacao {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--tam-pequeno);
+}
+
+.identificacao span + span {
+  color: var(--cor-texto-suave);
+}
+
+.botaoPrincipal {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+  padding: 9px 16px;
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-texto);
+  color: var(--cor-superficie);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.botaoPrincipal:hover {
+  background: #2b2b2b;
+}
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-4);
+}
+
+.gradeDupla {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--esp-4);
+  align-items: start;
+}
+
+.oportunidades {
+  display: flex;
+  flex-direction: column;
+}
+
+.oportunidades li {
+  display: flex;
+  flex-direction: column;
+  padding: var(--esp-3) 0;
+}
+
+.oportunidades li + li {
+  border-top: 1px solid var(--cor-linha);
+}
+
+.oportunidades li:first-child {
+  padding-top: 0;
+}
+
+.familia {
+  font-weight: 600;
+}
+
+.penetracao {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.rolagem {
+  overflow-x: auto;
+  margin: 0 calc(var(--esp-2) * -1);
+}
+
+.tabela {
+  font-size: var(--tam-pequeno);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabela th,
+.tabela td {
+  padding: 9px var(--esp-2);
+  border-bottom: 1px solid var(--cor-linha);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tabela tbody tr:last-child th,
+.tabela tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabela thead th {
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-2);
+}
+
+.tabela tbody th {
+  font-weight: 600;
+}
+
+.tabela .numero {
+  text-align: right;
+}
+
+.vazio {
+  color: var(--cor-texto-suave);
+  font-size: var(--tam-pequeno);
+}
+
+@media (max-width: 1100px) {
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gradeDupla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .pagina {
+    gap: var(--esp-4);
+  }
+
+  .indicadores {
+    gap: var(--esp-3);
+  }
+
+  .opcional {
+    display: none;
+  }
+}

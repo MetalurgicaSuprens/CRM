@@ -1,0 +1,18 @@
+.sparkline {
+  display: block;
+  overflow: visible;
+}
+
+.linha {
+  fill: none;
+  stroke: var(--cor-tendencia);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.ponto {
+  fill: var(--cor-dado);
+  stroke: var(--cor-superficie);
+  stroke-width: 2;
+}

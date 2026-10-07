@@ -1,0 +1,38 @@
+.variacao {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--esp-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.alta,
+.queda,
+.estavel {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.alta {
+  color: var(--cor-alta);
+}
+
+.queda {
+  color: var(--cor-queda);
+}
+
+.estavel {
+  color: var(--cor-texto-2);
+}
+
+.referencia {
+  color: var(--cor-texto-suave);
+  font-weight: 400;
+}
+
+.semDados {
+  color: var(--cor-texto-suave);
+}

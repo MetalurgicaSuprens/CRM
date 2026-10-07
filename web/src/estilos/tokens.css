@@ -1,0 +1,66 @@
+/*
+ * Identidade da Suprens (site) aplicada ao CRM.
+ * As cores de dados e de texto foram conferidas com o validador de paleta e de
+ * contraste (WCAG) contra --cor-superficie, que é o fundo dos cartões.
+ */
+:root {
+  --cor-fundo: #ecebe8;
+  --cor-superficie: #fbfbfa;
+  --cor-superficie-2: #f3f2ef;
+  --cor-linha: #dddcd7;
+  --cor-linha-forte: #c5c6c2;
+
+  --cor-texto: #161616;
+  --cor-texto-2: #5c5f63;
+  /* 4,8:1 só sobre --cor-superficie; não usar texto pequeno suave sobre --cor-fundo */
+  --cor-texto-suave: #6e7074;
+
+  /* Óxido: logotipo e item ativo. Nunca é cor de dado. */
+  --cor-marca: #d22c12;
+
+  --cor-dado: #2f6fae;
+  --cor-dado-claro: #c3d6eb;
+  --cor-comparacao: #a7a8a3;
+  --cor-tendencia: #8c8d88;
+  --cor-grade: #e8e7e2;
+  --cor-eixo: #c5c6c2;
+
+  --cor-alta: #2e6b45;
+  --cor-queda: #a3361f;
+
+  /* Situação do cliente: sempre acompanhada de ícone e texto */
+  --cor-ok: #2e6b45;
+  --cor-ok-fundo: #e6efe9;
+  --cor-alerta: #7f5600;
+  --cor-alerta-fundo: #f5ecd8;
+  --cor-critico: #a3361f;
+  --cor-critico-fundo: #f6e5e0;
+  --cor-neutro: #5c5f63;
+  --cor-neutro-fundo: #ebeae6;
+
+  --fonte-texto: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fonte-titulo: "Oswald", "IBM Plex Sans", system-ui, sans-serif;
+
+  --tam-legenda: 0.75rem;
+  --tam-pequeno: 0.8125rem;
+  --tam-texto: 0.9375rem;
+  --tam-destaque: 1.125rem;
+  --tam-numero: 1.75rem;
+  --tam-titulo: 1.875rem;
+
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 20px;
+  --esp-6: 24px;
+  --esp-8: 32px;
+  --esp-10: 40px;
+
+  --raio: 8px;
+  --raio-pequeno: 6px;
+  --largura-menu: 236px;
+  --largura-conteudo: 1240px;
+  --altura-barra-inferior: 64px;
+  --foco: 0 0 0 2px var(--cor-superficie), 0 0 0 4px var(--cor-dado);
+}

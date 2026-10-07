@@ -1,0 +1,5 @@
+.carregando {
+  padding: var(--esp-10) 0;
+  color: var(--cor-texto-2);
+  text-align: center;
+}

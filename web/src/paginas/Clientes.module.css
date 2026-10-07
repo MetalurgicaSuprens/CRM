@@ -1,0 +1,262 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+/* ------------------------------------------------ ferramentas */
+
+.ferramentas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.busca {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  flex: 1 1 260px;
+  max-width: 380px;
+  padding: 0 var(--esp-3);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.busca:focus-within {
+  box-shadow: var(--foco);
+}
+
+.busca input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  outline: none;
+  color: var(--cor-texto);
+}
+
+.filtros {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--cor-superficie-2);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filtros::-webkit-scrollbar {
+  display: none;
+}
+
+.filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  font-size: var(--tam-pequeno);
+  font-weight: 500;
+  color: var(--cor-texto-2);
+  white-space: nowrap;
+}
+
+.filtro:hover {
+  color: var(--cor-texto);
+}
+
+.filtro[aria-pressed="true"] {
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  box-shadow: 0 0 0 1px var(--cor-linha);
+}
+
+.contagem {
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto-suave);
+}
+
+.ordem {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  margin-left: auto;
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+}
+
+.ordem select {
+  padding: 7px 10px;
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+}
+
+/* ------------------------------------------------ tabela (desktop) */
+
+.tabela {
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  overflow: hidden;
+}
+
+.cabecalhoTabela,
+.linha {
+  display: grid;
+  grid-template-columns: minmax(0, 2.6fr) 7.5rem 8rem 10.5rem 6rem 6.5rem;
+  align-items: center;
+  gap: var(--esp-4);
+  padding: 0 var(--esp-5);
+}
+
+.cabecalhoTabela {
+  min-height: 40px;
+  background: var(--cor-superficie-2);
+  border-bottom: 1px solid var(--cor-linha);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--cor-texto-2);
+}
+
+.linha {
+  min-height: 60px;
+  padding-top: var(--esp-2);
+  padding-bottom: var(--esp-2);
+  border-bottom: 1px solid var(--cor-linha);
+  font-variant-numeric: tabular-nums;
+}
+
+li:last-child .linha {
+  border-bottom: 0;
+}
+
+.linha:hover {
+  background: var(--cor-superficie-2);
+}
+
+.identificacao {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nome {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ultimaCompra {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+}
+
+.direita {
+  display: flex;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.rotuloCelular {
+  display: none;
+}
+
+.vazio {
+  padding: var(--esp-8) var(--esp-5);
+  color: var(--cor-texto-suave);
+  text-align: center;
+}
+
+/* ------------------------------------------------ cartões (celular) */
+
+@media (max-width: 860px) {
+  .ordem {
+    margin-left: 0;
+  }
+
+  .cabecalhoTabela {
+    display: none;
+  }
+
+  .linha {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "identificacao situacao"
+      "faturamento tendencia"
+      "variacao ultima";
+    gap: 6px var(--esp-3);
+    padding: var(--esp-4);
+  }
+
+  .identificacao {
+    grid-area: identificacao;
+  }
+
+  .situacao {
+    grid-area: situacao;
+    justify-self: end;
+    align-self: start;
+  }
+
+  .faturamento {
+    grid-area: faturamento;
+    justify-content: flex-start;
+    gap: 4px;
+    font-weight: 600;
+  }
+
+  .tendencia {
+    grid-area: tendencia;
+  }
+
+  .variacao {
+    grid-area: variacao;
+    justify-content: flex-start;
+    font-size: var(--tam-pequeno);
+  }
+
+  .ultimaCompra {
+    grid-area: ultima;
+    justify-self: end;
+    font-size: var(--tam-legenda);
+  }
+
+  .rotuloCelular {
+    display: inline;
+    font-weight: 400;
+    color: var(--cor-texto-suave);
+  }
+}
+
+@media (max-width: 640px) {
+  .busca {
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .filtros {
+    flex-basis: 100%;
+  }
+}

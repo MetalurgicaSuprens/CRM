@@ -1,0 +1,40 @@
+.indicador {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+  min-width: 0;
+  padding: var(--esp-5) var(--esp-6);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+}
+
+.rotulo {
+  font-size: var(--tam-pequeno);
+  font-weight: 500;
+  color: var(--cor-texto-2);
+}
+
+.valor {
+  font-size: var(--tam-numero);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.detalhe {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+  min-height: 1.5em;
+}
+
+@media (max-width: 640px) {
+  .indicador {
+    padding: var(--esp-4);
+  }
+
+  .valor {
+    font-size: 1.375rem;
+  }
+}
