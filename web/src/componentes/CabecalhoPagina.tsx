@@ -8,10 +8,12 @@ type Props = {
   descricao?: ReactNode;
   /** Logo depois do título e da descrição, com um pequeno espaço (ex.: o cadastro do cliente). */
   aoLado?: ReactNode;
+  /** Na ponta direita da linha do título (ex.: Novo pedido). */
+  acoes?: ReactNode;
   antes?: ReactNode;
 };
 
-export function CabecalhoPagina({ titulo, selo, descricao, aoLado, antes }: Props) {
+export function CabecalhoPagina({ titulo, selo, descricao, aoLado, acoes, antes }: Props) {
   return (
     <header className={estilos.cabecalho}>
       {antes ? <div className={estilos.antes}>{antes}</div> : null}
@@ -23,7 +25,8 @@ export function CabecalhoPagina({ titulo, selo, descricao, aoLado, antes }: Prop
           </div>
           {descricao ? <div className={estilos.descricao}>{descricao}</div> : null}
         </div>
-        {aoLado}
+        {aoLado ? <div className={estilos.aoLado}>{aoLado}</div> : null}
+        {acoes ? <div className={estilos.acoes}>{acoes}</div> : null}
       </div>
     </header>
   );

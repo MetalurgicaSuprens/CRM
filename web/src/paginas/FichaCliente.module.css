@@ -1,4 +1,6 @@
 .pagina {
+  /* O botão Novo pedido e os cartões do cadastro ficam lado a lado, com a mesma altura */
+  --altura-cartao-cadastro: 4rem;
   display: flex;
   flex-direction: column;
   gap: var(--esp-5);
@@ -16,42 +18,48 @@
   color: var(--cor-texto);
 }
 
-.barraDaFicha {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-3);
-}
-
 .botaoPrincipal {
   display: inline-flex;
   align-items: center;
-  gap: var(--esp-2);
-  padding: 9px 16px;
-  border-radius: var(--raio-pequeno);
+  justify-content: center;
+  gap: 10px;
+  height: var(--altura-cartao-cadastro);
+  padding: 0 var(--esp-6);
+  border-radius: var(--raio);
   background: var(--cor-texto);
   color: var(--cor-superficie);
-  font-size: var(--tam-texto);
+  font-size: var(--tam-titulo-cartao);
   font-weight: 600;
   white-space: nowrap;
 }
 
-/* Cadastro em cartões, logo depois do nome e da situação; no celular, dois por linha */
+/*
+ * Cadastro em cartões, logo depois do nome e da situação. Os quatro ficam lado a lado e só
+ * encolhem (a cidade quebra linha) quando falta espaço; com menos ainda, dois por linha.
+ */
 .dados {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-3);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(min-content, max-content));
+  gap: var(--esp-2);
   margin: 0;
+}
+
+@container (max-width: 480px) {
+  .dados {
+    grid-template-columns: repeat(2, minmax(min-content, max-content));
+  }
 }
 
 .dado {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  min-width: 7.5rem;
+  min-width: 6.5rem;
+  min-height: var(--altura-cartao-cadastro);
+  padding: var(--esp-2) var(--esp-3);
   text-align: center;
-  padding: 10px 14px;
   background: var(--cor-superficie);
   border: 1px solid var(--cor-linha);
   border-radius: var(--raio);
@@ -70,7 +78,6 @@
   margin: 0;
   font-size: var(--tam-texto);
   font-weight: 600;
-  white-space: nowrap;
 }
 
 .botaoPrincipal:hover {
@@ -196,13 +203,12 @@
     display: none;
   }
 
+  /* No celular, os cartões ocupam a largura toda, dois por linha */
   .dados {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
   }
 
-  .valorDado {
-    white-space: normal;
+  .botaoPrincipal {
+    height: 3.25rem;
   }
 }

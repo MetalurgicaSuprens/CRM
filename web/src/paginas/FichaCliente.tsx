@@ -43,11 +43,12 @@ export function FichaCliente() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
-        antes={<BarraDaFicha codigo={ficha.codigo} />}
+        antes={<Voltar />}
         titulo={ficha.nome}
         selo={<SituacaoCliente situacao={ficha.situacao} tamanho="grande" />}
         descricao={ficha.razaoSocial}
         aoLado={<DadosDoCliente ficha={ficha} />}
+        acoes={<NovoPedido codigo={ficha.codigo} />}
       />
       <Indicadores ficha={ficha} hoje={situacao.hoje} />
       <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo="Últimos 24 meses e o mês atual">
@@ -79,15 +80,12 @@ export function FichaCliente() {
   );
 }
 
-function BarraDaFicha({ codigo }: { codigo: string }) {
+function NovoPedido({ codigo }: { codigo: string }) {
   return (
-    <div className={estilos.barraDaFicha}>
-      <Voltar />
-      <Link to={`/pedidos?cliente=${codigo}`} className={estilos.botaoPrincipal}>
-        <FilePlus2 size={16} aria-hidden="true" />
-        Novo pedido
-      </Link>
-    </div>
+    <Link to={`/pedidos?cliente=${codigo}`} className={estilos.botaoPrincipal}>
+      <FilePlus2 size={19} aria-hidden="true" />
+      Novo pedido
+    </Link>
   );
 }
 

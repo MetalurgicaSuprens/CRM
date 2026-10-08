@@ -8,18 +8,36 @@
   font-size: var(--tam-pequeno);
 }
 
+/*
+ * Título, o "ao lado" logo depois dele e as ações na ponta direita, na mesma linha. Em larguras
+ * médias o "ao lado" desce para a linha de baixo (as ações continuam com o título); no celular,
+ * tudo vira uma coluna, com as ações por último.
+ */
 .linha {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "textos aoLado acoes";
   align-items: center;
-  gap: var(--esp-3) var(--esp-6);
+  column-gap: var(--esp-5);
 }
 
 .textos {
+  grid-area: textos;
   display: flex;
   flex-direction: column;
   gap: var(--esp-1);
   min-width: 0;
+}
+
+/* Contêiner próprio: quem estiver dentro escolhe o arranjo pela largura que sobrou */
+.aoLado {
+  grid-area: aoLado;
+  container-type: inline-size;
+}
+
+.acoes {
+  grid-area: acoes;
+  display: flex;
 }
 
 .tituloComSelo {
@@ -41,7 +59,36 @@
   color: var(--cor-texto-2);
 }
 
+@container (max-width: 999px) {
+  .linha {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "textos acoes"
+      "aoLado aoLado";
+  }
+
+  .aoLado {
+    margin-top: var(--esp-3);
+  }
+}
+
 @media (max-width: 640px) {
+  .linha {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "textos"
+      "aoLado"
+      "acoes";
+  }
+
+  .acoes {
+    margin-top: var(--esp-3);
+  }
+
+  .acoes > * {
+    flex: 1;
+  }
+
   .titulo {
     font-size: 1.5rem;
   }
