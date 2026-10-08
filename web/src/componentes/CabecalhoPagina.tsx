@@ -6,7 +6,7 @@ type Props = {
   /** Fica na mesma linha do título, logo depois dele (ex.: a situação do cliente). */
   selo?: ReactNode;
   descricao?: ReactNode;
-  /** Logo depois do título e da descrição, com um pequeno espaço (ex.: o cadastro do cliente). */
+  /** Ocupa o espaço livre entre o título e as ações (ex.: o cadastro do cliente). */
   aoLado?: ReactNode;
   /** Na ponta direita da linha do título (ex.: Novo pedido). */
   acoes?: ReactNode;

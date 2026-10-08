@@ -34,12 +34,14 @@
 }
 
 /*
- * Cadastro em cartões, logo depois do nome e da situação. Os quatro ficam lado a lado e só
- * encolhem (a cidade quebra linha) quando falta espaço; com menos ainda, dois por linha.
+ * Cadastro em cartões, centralizados no espaço livre entre o nome e o botão. Os quatro ficam
+ * lado a lado e só encolhem (a cidade quebra linha) quando falta espaço; com menos ainda, dois
+ * por linha.
  */
 .dados {
   display: grid;
   grid-template-columns: repeat(4, minmax(min-content, max-content));
+  justify-content: center;
   gap: var(--esp-2);
   margin: 0;
 }

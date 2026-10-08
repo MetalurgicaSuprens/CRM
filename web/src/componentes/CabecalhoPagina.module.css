@@ -9,9 +9,9 @@
 }
 
 /*
- * Título, o "ao lado" logo depois dele e as ações na ponta direita, na mesma linha. Em larguras
- * médias o "ao lado" desce para a linha de baixo (as ações continuam com o título); no celular,
- * tudo vira uma coluna, com as ações por último.
+ * Título, o "ao lado" no espaço livre do meio e as ações na ponta direita, na mesma linha. Em
+ * larguras médias o "ao lado" desce para a linha de baixo (as ações continuam com o título); no
+ * celular, tudo vira uma coluna, com as ações por último.
  */
 .linha {
   display: grid;
