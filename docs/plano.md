@@ -222,7 +222,13 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
   - mostra a variação em peças ao lado da variação em R$ (reajuste de preço infla o R$).
 - **Alerta rápido de queda** (regra que o Lucas usou no protótipo): para clientes com compra em pelo menos 8 dos últimos 12 meses, o mês fechado abaixo de 70% da média dos 3 meses anteriores, por dia útil.
 - **Novo:** primeira compra da história nos últimos 12 meses. Quem volta depois de um longo intervalo é "reativado".
-- **Mix:** família comprada por pelo menos 50% dos clientes do mesmo segmento (mercado + faixa de porte, com no mínimo 20 clientes) que o cliente não compra há 24 meses.
+- **Mix** (critério confirmado com o Lucas em 2026-10-08):
+  - parecidos = clientes ativos (com compra em 12 meses) de toda a Suprens, do mesmo mercado e da mesma faixa de porte. A faixa é o tercil do faturado em 12 meses dentro do mercado: pequeno, médio ou grande;
+  - com menos de 20 clientes na faixa, compara com o mercado inteiro; com menos de 20 no mercado, a ficha avisa que não há com quem comparar;
+  - sugere a família comprada em 12 meses por pelo menos 50% dos parecidos e que o cliente não compra há 24 meses, da mais comum para a menos comum;
+  - a ficha diz com quem o cliente foi comparado (mercado e faixa);
+  - a conta é feita pelo extrator na LAN. Para a foto vão só a família, o percentual e a faixa usada, nada dos clientes dos outros representantes;
+  - quando Vendas entregar a classificação por ramo de atividade (ver Pendências), "parecidos" passa a ser do mesmo ramo.
 - **Baixo volume:** mostra "dados insuficientes" em vez de percentuais exagerados.
 - **Grupos:** filiais do mesmo CNPJ raiz são analisadas juntas, para a compra que muda de filial não parecer cliente perdido.
 
@@ -309,6 +315,9 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - quem importa os arquivos do CRM e com que frequência;
   - como os pedidos dos representantes chegam hoje;
   - levantamento dos celulares dos representantes (Android 9+ / iOS 16+).
+- **Vendas (em elaboração desde 2026-10-08):** classificação dos clientes por ramo de atividade, para o critério de clientes parecidos do mix.
+  - O ERP não tem essa informação hoje: `GRUPO_1`, `SUB_GRUPO_1` e `SEGMENTO` do cadastro de clientes vêm vazios.
+  - Sugestão: registrar o ramo no próprio SGI, no campo `SEGMENTO`, se a tela de cadastro permitir. Assim o extrator lê direto do ERP e cliente novo já nasce classificado.
 - **A conferir nos dados (F2):**
   - origem do status do cliente (`CLI3_STA` ou `SUSPENSO`);
   - cadastro de representantes (`SGI5_TAB_FIN_VEN`: tipo e situação);
