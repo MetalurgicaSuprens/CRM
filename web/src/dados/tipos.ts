@@ -8,6 +8,9 @@ export type Situacao = "ativo" | "em_risco" | "parado" | "novo";
 
 export type Mercado = "PRACA" | "MONTADORA" | "EXPORTACAO";
 
+/** Tercil do faturado em 12 meses dentro do mercado. */
+export type Porte = "pequeno" | "medio" | "grande";
+
 export type SituacaoDosDados = {
   atualizadoEm: string;
   hoje: string;
@@ -79,6 +82,11 @@ export type FichaCliente = ClienteResumo & {
   familias: FamiliaComprada[];
   produtos: ProdutoComprado[];
   oportunidades: OportunidadeMix[];
+  /**
+   * Com quem o mix foi comparado: clientes ativos de toda a Suprens, do mercado do cliente, na
+   * mesma faixa de porte (porte null = o mercado inteiro). null quando nem o mercado tem 20.
+   */
+  grupoDoMix: { porte: Porte | null } | null;
   pedidosEmAberto: PedidoEmAberto[];
 };
 

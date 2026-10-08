@@ -1,6 +1,7 @@
 import { diasEntre } from "../formato";
 import { diasUteisAte, diasUteisDoMes, hojeIso, mesDe, somarDias, somarMeses, ultimoDiaDoMes } from "../calendario";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
+import { sugerirMix, type ClienteNoMix } from "./mix";
 import type {
   ClienteResumo,
   DestaqueCliente,
@@ -8,7 +9,6 @@ import type {
   FichaCliente,
   GrupoDestaque,
   Mercado,
-  OportunidadeMix,
   PainelInicio,
   PedidoEmAberto,
   ProdutoComprado,
@@ -23,6 +23,8 @@ import type {
 
 const SEMENTE = 1401;
 const QUANTIDADE_DE_CLIENTES = 86;
+/** Clientes dos outros representantes: só entram na comparação do mix, nunca aparecem na tela. */
+const OUTROS_CLIENTES_DA_SUPRENS = 600;
 /** Índices de `mensal`: 0..35 são os meses fechados (35 = mês passado); 36 é o mês corrente. */
 const MESES_FECHADOS = 36;
 const ULTIMO_FECHADO = MESES_FECHADOS - 1;
@@ -96,7 +98,11 @@ type Indicadores = {
   situacao: Situacao;
 };
 
-type Carteira = Contexto & { clientes: ClienteFicticio[] };
+type Carteira = Contexto & {
+  clientes: ClienteFicticio[];
+  /** Todos os clientes da Suprens (os da carteira e os dos outros), para comparar o mix. */
+  suprens: ClienteNoMix[];
+};
 
 let carteiraEmCache: Carteira | null = null;
 
@@ -134,15 +140,16 @@ function gerarCarteira(hoje: string): Carteira {
   const mesAtual = mesDe(hoje);
   const contexto: Contexto = { hoje, mesAtual, diaUtil: diasUteisAte(hoje), diasUteis: diasUteisDoMes(mesAtual) };
   const clientes = Array.from({ length: QUANTIDADE_DE_CLIENTES }, () => gerarCliente(aleatorio, contexto));
-  return { ...contexto, clientes };
+  const outros = gerarOutrosClientesDaSuprens(criarAleatorio(SEMENTE + 1));
+  return { ...contexto, clientes, suprens: [...clientes.map(paraMix), ...outros] };
 }
 
 function gerarCliente(aleatorio: Aleatorio, contexto: Contexto): ClienteFicticio {
   const perfil = sortearComPeso(aleatorio, PERFIS);
-  const mercado = sortearComPeso<Mercado>(aleatorio, [["PRACA", 0.8], ["MONTADORA", 0.12], ["EXPORTACAO", 0.08]]);
+  const mercado = sortearMercado(aleatorio);
   const [cidade, uf] = aleatorio.escolher(CIDADES);
   const nome = `${aleatorio.escolher(RAMOS)} ${aleatorio.escolher(NOMES)}`;
-  const porteMensal = Math.exp(aleatorio.entre(Math.log(700), Math.log(16_000))) * (mercado === "MONTADORA" ? 2.5 : 1);
+  const porteMensal = sortearPorteMensal(aleatorio, mercado);
   const precoMedioPeca = aleatorio.entre(1.6, 5.2);
   const { mensal, datasCompra } = gerarHistorico(aleatorio, perfil, porteMensal, precoMedioPeca, contexto);
   const primeiraCompra = perfil === "novo" ? (datasCompra[0] ?? contexto.hoje) : dataAntiga(aleatorio);
@@ -162,6 +169,29 @@ function gerarCliente(aleatorio: Aleatorio, contexto: Contexto): ClienteFicticio
     pedidos: perfil === "parou" ? [] : gerarPedidos(aleatorio, porteMensal, contexto),
   };
   return { ...base, indicadores: calcularIndicadores(base, contexto) };
+}
+
+function gerarOutrosClientesDaSuprens(aleatorio: Aleatorio): ClienteNoMix[] {
+  return Array.from({ length: OUTROS_CLIENTES_DA_SUPRENS }, (_, indice) => {
+    const mercado = sortearMercado(aleatorio);
+    const faturamento12m = aleatorio.chance(0.88) ? Math.round(sortearPorteMensal(aleatorio, mercado) * 12) : 0;
+    const familias = new Set(sortearFamilias(aleatorio).keys());
+    return {
+      codigo: `outro-${indice}`,
+      mercado,
+      faturamento12m,
+      familias12m: faturamento12m > 0 ? familias : new Set<string>(),
+      familias24m: familias,
+    };
+  });
+}
+
+function sortearMercado(aleatorio: Aleatorio): Mercado {
+  return sortearComPeso<Mercado>(aleatorio, [["PRACA", 0.8], ["MONTADORA", 0.12], ["EXPORTACAO", 0.08]]);
+}
+
+function sortearPorteMensal(aleatorio: Aleatorio, mercado: Mercado): number {
+  return Math.exp(aleatorio.entre(Math.log(700), Math.log(16_000))) * (mercado === "MONTADORA" ? 2.5 : 1);
 }
 
 function gerarHistorico(
@@ -322,6 +352,7 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
 function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
   const baseFamilias = cliente.indicadores.faturamento12m || somarValores(cliente.mensal, 0, ULTIMO_FECHADO) / 3;
   const familias = distribuirPorFamilia(cliente, baseFamilias);
+  const mix = sugerirMix(paraMix(cliente), dados.suprens);
   return {
     ...resumirCliente(cliente),
     razaoSocial: cliente.razaoSocial,
@@ -330,7 +361,8 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     mensal: cliente.mensal.slice(ULTIMO_FECHADO - 23),
     familias,
     produtos: produtosDoCliente(cliente, familias),
-    oportunidades: oportunidadesDeMix(cliente, dados.clientes),
+    oportunidades: mix?.oportunidades ?? [],
+    grupoDoMix: mix ? { porte: mix.porte } : null,
     pedidosEmAberto: cliente.pedidos,
   };
 }
@@ -361,17 +393,17 @@ function produtosDoCliente(cliente: ClienteFicticio, familias: FichaCliente["fam
   return produtos.sort((a, b) => b.valor - a.valor).slice(0, 8);
 }
 
-/** Famílias que pelo menos metade dos clientes do mesmo mercado compra e este cliente não. */
-function oportunidadesDeMix(cliente: ClienteFicticio, todos: ClienteFicticio[]): OportunidadeMix[] {
-  const mesmoMercado = todos.filter((c) => c.mercado === cliente.mercado && c.indicadores.faturamento12m > 0);
-  const segmento = mesmoMercado.length >= 20 ? mesmoMercado : todos;
-  return FAMILIAS.filter((familia) => !cliente.pesosFamilias.has(familia.nome))
-    .map((familia) => ({
-      familia: familia.nome,
-      penetracao: segmento.filter((c) => c.pesosFamilias.has(familia.nome)).length / segmento.length,
-    }))
-    .filter((oportunidade) => oportunidade.penetracao >= 0.5)
-    .sort((a, b) => b.penetracao - a.penetracao);
+/** No fictício, as famílias de cada cliente não mudam: quem comprou algo no período comprou todas. */
+function paraMix(cliente: ClienteFicticio): ClienteNoMix {
+  const familias = new Set(cliente.pesosFamilias.keys());
+  const comprouEm24Meses = somarValores(cliente.mensal, ULTIMO_FECHADO - 23, ULTIMO_FECHADO) > 0;
+  return {
+    codigo: cliente.codigo,
+    mercado: cliente.mercado,
+    faturamento12m: cliente.indicadores.faturamento12m,
+    familias12m: cliente.indicadores.faturamento12m > 0 ? familias : new Set<string>(),
+    familias24m: comprouEm24Meses ? familias : new Set<string>(),
+  };
 }
 
 function montarPainel(dados: Carteira): PainelInicio {

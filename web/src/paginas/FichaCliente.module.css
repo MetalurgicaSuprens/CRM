@@ -83,6 +83,15 @@
   color: var(--cor-texto-suave);
 }
 
+/* Fica no pé do cartão, que estica até a altura do cartão de famílias */
+.notaMix {
+  margin-top: auto;
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--cor-linha);
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
 .rolagem {
   overflow-x: auto;
   margin: 0 calc(var(--esp-2) * -1);

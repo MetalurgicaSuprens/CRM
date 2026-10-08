@@ -18,7 +18,7 @@ import { SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
-import type { FichaCliente as Ficha, Mercado } from "../dados/tipos";
+import type { FichaCliente as Ficha, Mercado, Porte } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
@@ -27,6 +27,7 @@ import { Carregando } from "./Carregando";
 import estilos from "./FichaCliente.module.css";
 
 const MERCADOS: Record<Mercado, string> = { PRACA: "Praça", MONTADORA: "Montadora", EXPORTACAO: "Exportação" };
+const PORTES: Record<Porte, string> = { pequeno: "pequeno", medio: "médio", grande: "grande" };
 
 export function FichaCliente() {
   const { codigo = "" } = useParams();
@@ -74,20 +75,7 @@ export function FichaCliente() {
           />
         </Cartao>
         <Cartao titulo="Oportunidades de mix" icone={Lightbulb} subtitulo="Famílias que clientes parecidos compram e este não">
-          {ficha.oportunidades.length === 0 ? (
-            <p className={estilos.vazio}>Este cliente já compra as famílias mais comuns do segmento.</p>
-          ) : (
-            <ul className={estilos.oportunidades}>
-              {ficha.oportunidades.map((oportunidade) => (
-                <li key={oportunidade.familia}>
-                  <span className={estilos.familia}>{oportunidade.familia}</span>
-                  <span className={estilos.penetracao}>
-                    {formatarParticipacao(oportunidade.penetracao)} dos clientes parecidos compram
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <OportunidadesDeMix ficha={ficha} />
         </Cartao>
       </div>
       <Cartao titulo="Produtos mais comprados" icone={Package} subtitulo="Últimos 12 meses">
@@ -130,6 +118,34 @@ function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
       />
     </div>
   );
+}
+
+function OportunidadesDeMix({ ficha }: { ficha: Ficha }) {
+  if (!ficha.grupoDoMix) return <p className={estilos.vazio}>Poucos clientes parecidos para comparar.</p>;
+  return (
+    <>
+      {ficha.oportunidades.length === 0 ? (
+        <p className={estilos.vazio}>Este cliente já compra as famílias mais comuns entre os parecidos.</p>
+      ) : (
+        <ul className={estilos.oportunidades}>
+          {ficha.oportunidades.map((oportunidade) => (
+            <li key={oportunidade.familia}>
+              <span className={estilos.familia}>{oportunidade.familia}</span>
+              <span className={estilos.penetracao}>
+                {formatarParticipacao(oportunidade.penetracao)} dos clientes parecidos compram
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className={estilos.notaMix}>{descreverParecidos(ficha.mercado, ficha.grupoDoMix.porte)}</p>
+    </>
+  );
+}
+
+function descreverParecidos(mercado: Mercado, porte: Porte | null): string {
+  const faixa = porte ? `, porte ${PORTES[porte]}` : "";
+  return `Parecidos: clientes ativos do mercado ${MERCADOS[mercado]}${faixa}, em toda a Suprens.`;
 }
 
 function TabelaProdutos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
