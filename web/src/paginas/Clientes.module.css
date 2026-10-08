@@ -110,10 +110,11 @@
   overflow: hidden;
 }
 
+/* Em telas largas, a sobra se divide entre todas as colunas, e os números não ficam longe do nome */
 .cabecalhoTabela,
 .linha {
   display: grid;
-  grid-template-columns: minmax(0, 2.6fr) 7.5rem 8rem 10.5rem 6rem 6.5rem;
+  grid-template-columns: minmax(13rem, 3fr) minmax(7.5rem, 1fr) minmax(8rem, 1fr) minmax(10.5rem, 1fr) minmax(6rem, 0.8fr) minmax(6.5rem, 0.8fr);
   align-items: center;
   gap: var(--esp-4);
   padding: 0 var(--esp-5);
@@ -189,9 +190,10 @@ li:last-child .linha {
   text-align: center;
 }
 
-/* ------------------------------------------------ cartões (celular) */
+/* ------------------------------------------------ cartões (celular e tablet) */
 
-@media (max-width: 860px) {
+/* Abaixo disso as seis colunas não cabem: cada cliente vira um cartão */
+@container (max-width: 959px) {
   .ordem {
     margin-left: 0;
   }
@@ -200,12 +202,17 @@ li:last-child .linha {
     display: none;
   }
 
+  /*
+   * A última linha ocupa as duas colunas (variação à esquerda, última compra à direita):
+   * assim a coluna da direita fica só com a largura do selo e do sparkline, e o
+   * faturamento não quebra linha nos cartões estreitos.
+   */
   .linha {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "identificacao situacao"
       "faturamento tendencia"
-      "variacao ultima";
+      "rodape rodape";
     gap: 6px var(--esp-3);
     padding: var(--esp-4);
   }
@@ -232,13 +239,13 @@ li:last-child .linha {
   }
 
   .variacao {
-    grid-area: variacao;
-    justify-content: flex-start;
+    grid-area: rodape;
+    justify-self: start;
     font-size: var(--tam-pequeno);
   }
 
   .ultimaCompra {
-    grid-area: ultima;
+    grid-area: rodape;
     justify-self: end;
     font-size: var(--tam-legenda);
   }
@@ -247,6 +254,34 @@ li:last-child .linha {
     display: inline;
     font-weight: 400;
     color: var(--cor-texto-suave);
+  }
+}
+
+/* No tablet, os cartões vão em duas colunas, cada um com a própria borda */
+@container (min-width: 640px) and (max-width: 959px) {
+  .tabela {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .tabela ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--esp-3);
+  }
+
+  .linha {
+    height: 100%;
+    background: var(--cor-superficie);
+    border: 1px solid var(--cor-linha);
+    border-radius: var(--raio);
+  }
+
+  /* Repõe a borda que o último item da lista perde */
+  li:last-child .linha {
+    border-bottom: 1px solid var(--cor-linha);
   }
 }
 

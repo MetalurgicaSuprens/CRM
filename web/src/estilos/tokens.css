@@ -60,7 +60,8 @@
   --raio: 8px;
   --raio-pequeno: 6px;
   --largura-menu: 236px;
-  --largura-conteudo: 1240px;
+  /* Preenche telas de até 2560 px ao lado do menu; só nas ultralargas o conteúdo fica centralizado */
+  --largura-conteudo: 2400px;
   --altura-barra-inferior: 64px;
   --foco: 0 0 0 2px var(--cor-superficie), 0 0 0 4px var(--cor-dado);
 }

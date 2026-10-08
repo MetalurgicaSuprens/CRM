@@ -176,7 +176,12 @@
   background: var(--cor-superficie-2);
 }
 
+/*
+ * As páginas escolhem o número de colunas pela largura útil daqui (@container), e não
+ * pela largura da tela: o menu lateral come 236 px só a partir de 961 px.
+ */
 .conteudo {
+  container-type: inline-size;
   width: 100%;
   max-width: var(--largura-conteudo);
   margin: 0 auto;

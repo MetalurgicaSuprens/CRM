@@ -77,7 +77,7 @@ export function Clientes() {
           <input
             type="search"
             value={busca}
-            placeholder="Buscar por nome, código ou cidade"
+            placeholder="Nome, código ou cidade"
             onChange={(evento) => alterar("busca", evento.target.value, "")}
           />
         </label>

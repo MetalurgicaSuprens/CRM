@@ -126,9 +126,9 @@ function TabelaProdutos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
           <tr>
             <th scope="col">Produto</th>
             <th scope="col" className={estilos.opcional}>Família</th>
+            <th scope="col" className={estilos.opcional}>Última compra</th>
             <th scope="col" className={estilos.numero}>Peças</th>
             <th scope="col" className={estilos.numero}>Valor</th>
-            <th scope="col" className={estilos.opcional}>Última compra</th>
           </tr>
         </thead>
         <tbody>
@@ -136,11 +136,11 @@ function TabelaProdutos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
             <tr key={produto.codigo}>
               <th scope="row">{produto.codigo}</th>
               <td className={estilos.opcional}>{produto.familia}</td>
+              <td className={estilos.opcional}>{formatarTempoDesde(produto.ultimaCompra, hoje)}</td>
               <td className={estilos.numero}>{formatarNumero(produto.pecas)}</td>
               <td className={estilos.numero}>
                 <Valor valor={produto.valor} />
               </td>
-              <td className={estilos.opcional}>{formatarTempoDesde(produto.ultimaCompra, hoje)}</td>
             </tr>
           ))}
         </tbody>
