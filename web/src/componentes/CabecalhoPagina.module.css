@@ -10,10 +10,9 @@
 
 .linha {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--esp-4);
   flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3) var(--esp-6);
 }
 
 .textos {
@@ -42,18 +41,8 @@
   color: var(--cor-texto-2);
 }
 
-.acoes {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-2);
-}
-
 @media (max-width: 640px) {
   .titulo {
     font-size: 1.5rem;
-  }
-
-  .acoes {
-    width: 100%;
   }
 }

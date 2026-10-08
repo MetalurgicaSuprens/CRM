@@ -36,7 +36,7 @@
   white-space: nowrap;
 }
 
-/* Cadastro em cartões, à direita do nome; no celular, dois por linha */
+/* Cadastro em cartões, logo depois do nome e da situação; no celular, dois por linha */
 .dados {
   display: flex;
   flex-wrap: wrap;
@@ -47,8 +47,10 @@
 .dado {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 2px;
   min-width: 7.5rem;
+  text-align: center;
   padding: 10px 14px;
   background: var(--cor-superficie);
   border: 1px solid var(--cor-linha);

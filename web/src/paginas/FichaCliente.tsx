@@ -47,7 +47,7 @@ export function FichaCliente() {
         titulo={ficha.nome}
         selo={<SituacaoCliente situacao={ficha.situacao} tamanho="grande" />}
         descricao={ficha.razaoSocial}
-        acoes={<DadosDoCliente ficha={ficha} />}
+        aoLado={<DadosDoCliente ficha={ficha} />}
       />
       <Indicadores ficha={ficha} hoje={situacao.hoje} />
       <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo="Últimos 24 meses e o mês atual">
