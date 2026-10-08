@@ -2,28 +2,13 @@
   color: var(--cor-texto-2);
 }
 
-.botao {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+/* Junto com o primário de Botao.module.css: a ação da tela ocupa a largura do cartão */
+.largo {
   gap: 10px;
   width: 100%;
   height: 3.25rem;
-  border: 0;
   border-radius: var(--raio);
-  background: var(--cor-texto);
-  color: var(--cor-superficie);
   font-size: var(--tam-titulo-cartao);
-  font-weight: 600;
-}
-
-.botao:hover {
-  background: #2b2b2b;
-}
-
-.botao:disabled {
-  cursor: progress;
-  opacity: 0.85;
 }
 
 .aviso {
@@ -104,13 +89,6 @@
 
 .copiar {
   align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--cor-linha-forte);
-  border-radius: var(--raio-pequeno);
-  background: var(--cor-superficie);
+  min-height: 2rem;
   font-size: var(--tam-pequeno);
-  font-weight: 500;
 }

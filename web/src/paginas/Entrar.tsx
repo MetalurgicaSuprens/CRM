@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { Info, KeyRound } from "lucide-react";
+import botoes from "../componentes/Botao.module.css";
 import { TelaDeAcesso } from "../componentes/TelaDeAcesso";
 import estilos from "./Acesso.module.css";
 
@@ -38,7 +39,12 @@ export function Entrar() {
         Use a chave de acesso guardada neste aparelho. Ela é liberada com a digital, o rosto ou o PIN que você já usa para
         desbloquear o celular ou o computador.
       </p>
-      <button type="button" className={estilos.botao} onClick={() => setAguardando(true)} disabled={aguardando}>
+      <button
+        type="button"
+        className={`${botoes.primario} ${botoes.aguardando} ${estilos.largo}`}
+        onClick={() => setAguardando(true)}
+        disabled={aguardando}
+      >
         <KeyRound size={20} aria-hidden="true" />
         {aguardando ? "Confirme no seu aparelho…" : "Entrar com chave de acesso"}
       </button>

@@ -9,7 +9,7 @@ import { Variacao } from "../componentes/Variacao";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
 import type { ClienteResumo, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarData, formatarTempoDesde } from "../formato";
+import { formatarData, formatarTempoDesde, normalizarParaBusca } from "../formato";
 import { AmostraReferencia, Sparkline } from "../graficos/Sparkline";
 import { Carregando } from "./Carregando";
 import estilos from "./Clientes.module.css";
@@ -175,11 +175,7 @@ function contar(clientes: ClienteResumo[], filtro: FiltroSituacao): number {
 }
 
 function correspondeABusca(cliente: ClienteResumo, busca: string): boolean {
-  const termo = normalizar(busca.trim());
+  const termo = normalizarParaBusca(busca.trim());
   if (!termo) return true;
-  return [cliente.nome, cliente.codigo, cliente.cidade].some((campo) => normalizar(campo).includes(termo));
-}
-
-function normalizar(texto: string): string {
-  return texto.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  return [cliente.nome, cliente.codigo, cliente.cidade].some((campo) => normalizarParaBusca(campo).includes(termo));
 }

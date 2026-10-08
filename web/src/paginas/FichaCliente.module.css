@@ -6,31 +6,12 @@
   gap: var(--esp-5);
 }
 
-.voltar {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--cor-texto-2);
-  font-weight: 500;
-}
-
-.voltar:hover {
-  color: var(--cor-texto);
-}
-
-.botaoPrincipal {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.novoPedido {
   gap: 10px;
   height: var(--altura-cartao-cadastro);
   padding: 0 var(--esp-6);
   border-radius: var(--raio);
-  background: var(--cor-texto);
-  color: var(--cor-superficie);
   font-size: var(--tam-titulo-cartao);
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 /*
@@ -80,10 +61,6 @@
   margin: 0;
   font-size: var(--tam-texto);
   font-weight: 600;
-}
-
-.botaoPrincipal:hover {
-  background: #2b2b2b;
 }
 
 .indicadores {
@@ -210,7 +187,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .botaoPrincipal {
+  .novoPedido {
     height: 3.25rem;
   }
 }

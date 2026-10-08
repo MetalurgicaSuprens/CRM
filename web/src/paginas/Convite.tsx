@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { CircleCheck, Copy, Fingerprint, KeyRound, ShieldCheck, Smartphone, TriangleAlert } from "lucide-react";
 import { abertoEmNavegadorDeAplicativo } from "../acesso/navegador";
+import botoes from "../componentes/Botao.module.css";
 import { TelaDeAcesso } from "../componentes/TelaDeAcesso";
 import { carregarSituacaoDosDados } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
@@ -58,7 +59,12 @@ function CriarChave() {
           Ninguém usa a sua chave sem o seu aparelho desbloqueado.
         </li>
       </ul>
-      <button type="button" className={estilos.botao} onClick={() => setEtapa("criando")} disabled={etapa === "criando"}>
+      <button
+        type="button"
+        className={`${botoes.primario} ${botoes.aguardando} ${estilos.largo}`}
+        onClick={() => setEtapa("criando")}
+        disabled={etapa === "criando"}
+      >
         <KeyRound size={20} aria-hidden="true" />
         {etapa === "criando" ? "Confirme no seu aparelho…" : "Criar chave de acesso"}
       </button>
@@ -84,7 +90,7 @@ function AvisoDeAplicativo() {
           Toque nos três pontinhos e escolha <strong>Abrir no Chrome</strong> ou <strong>Abrir no Safari</strong>, ou copie o
           link e cole no navegador.
         </p>
-        <button type="button" className={estilos.copiar} onClick={copiar}>
+        <button type="button" className={`${botoes.secundario} ${estilos.copiar}`} onClick={copiar}>
           <Copy size={14} aria-hidden="true" />
           {copiado ? "Link copiado" : "Copiar link"}
         </button>
@@ -107,7 +113,7 @@ function ChaveCriada() {
         Vai usar o CRM também no computador? Na tela de entrada dele, escolha "usar outro aparelho" e leia o QR code com este
         celular.
       </p>
-      <Link to="/" className={estilos.botao}>
+      <Link to="/" className={`${botoes.primario} ${estilos.largo}`}>
         Ir para o CRM
       </Link>
     </TelaDeAcesso>
@@ -138,7 +144,7 @@ function ConviteIndisponivel({ estado }: { estado: Exclude<EstadoDoConvite, "val
         <TriangleAlert size={16} aria-hidden="true" />
         {texto}
       </p>
-      <Link to="/entrar" className={estilos.botao}>
+      <Link to="/entrar" className={`${botoes.primario} ${estilos.largo}`}>
         Ir para a entrada
       </Link>
     </TelaDeAcesso>

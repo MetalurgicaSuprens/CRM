@@ -1,0 +1,11 @@
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cor-texto-2);
+  font-weight: 500;
+}
+
+.voltar:hover {
+  color: var(--cor-texto);
+}

@@ -1,0 +1,28 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+/* Do tamanho do conteúdo; sem espaço, as abas quebram linha em vez de sumir na rolagem */
+.abas {
+  align-self: flex-start;
+  flex-wrap: wrap;
+}
+
+.suave {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-1);
+}
+
+.compacto {
+  min-height: 2rem;
+  padding: 0 var(--esp-3);
+  font-size: var(--tam-pequeno);
+}

@@ -1,14 +1,17 @@
-/* --colunas vem do componente: quantas colunas há além da do cliente */
+/* --grade vem do componente: cada coluna com a sua largura mínima */
 .cabecalho,
 .linha {
   display: grid;
-  grid-template-columns: minmax(12rem, 2.2fr) repeat(var(--colunas), minmax(6.5rem, 1fr));
+  grid-template-columns: var(--grade);
   align-items: center;
   gap: var(--esp-4);
   padding: 0 var(--esp-3);
 }
 
-/* Fica grudado abaixo da barra superior ao rolar listas longas */
+/*
+ * Fica grudado abaixo da barra superior ao rolar listas longas. Um título mais largo que a
+ * coluna quebra a linha em vez de invadir a coluna ao lado.
+ */
 .cabecalho {
   position: sticky;
   top: var(--altura-barra-superior);
@@ -18,9 +21,9 @@
   border-bottom: 1px solid var(--cor-linha);
   font-size: var(--tam-legenda);
   font-weight: 600;
+  line-height: 1.3;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  white-space: nowrap;
   color: var(--cor-texto-2);
 }
 
@@ -42,7 +45,7 @@ li:last-child .linha {
   border-bottom: 0;
 }
 
-.linha:hover {
+.link:hover {
   background: var(--cor-superficie-2);
 }
 
@@ -52,7 +55,7 @@ li:last-child .linha {
   min-width: 0;
 }
 
-.nome {
+.titulo {
   font-size: var(--tam-texto);
   font-weight: 600;
   overflow: hidden;
@@ -60,8 +63,11 @@ li:last-child .linha {
   white-space: nowrap;
 }
 
-.local {
+.detalhe {
   color: var(--cor-texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .celula {
@@ -75,7 +81,7 @@ li:last-child .linha {
   text-align: right;
 }
 
-.rotuloCelular {
+.rotuloDoCartao {
   display: none;
 }
 
@@ -84,30 +90,29 @@ li:last-child .linha {
   font-size: var(--tam-pequeno);
 }
 
-/* Sem espaço para as colunas: cada cliente vira um cartão, com os valores dois a dois */
-@container (max-width: 900px) {
-  .cabecalho {
-    display: none;
-  }
+/* ------------------------------------------------ cartões: o componente liga quando as colunas não cabem */
 
-  .linha {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--esp-2) var(--esp-4);
-    padding: var(--esp-3);
-  }
+.cartoes .cabecalho {
+  display: none;
+}
 
-  .identificacao {
-    grid-column: 1 / -1;
-  }
+.cartoes .linha {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-2) var(--esp-4);
+  padding: var(--esp-3);
+}
 
-  .numerica {
-    align-items: flex-start;
-    text-align: left;
-  }
+.cartoes .identificacao {
+  grid-column: 1 / -1;
+}
 
-  .rotuloCelular {
-    display: block;
-    font-size: var(--tam-legenda);
-    color: var(--cor-texto-suave);
-  }
+.cartoes .numerica {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.cartoes .rotuloDoCartao {
+  display: block;
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
 }

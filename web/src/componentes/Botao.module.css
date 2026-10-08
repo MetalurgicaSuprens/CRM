@@ -1,0 +1,61 @@
+/* O primário (escuro) é a ação principal da tela; o secundário, as demais. */
+.primario,
+.secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  min-height: 2.5rem;
+  padding: 0 var(--esp-4);
+  border-radius: var(--raio-pequeno);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.primario {
+  border: 0;
+  background: var(--cor-texto);
+  color: var(--cor-superficie);
+}
+
+.primario:hover {
+  background: #2b2b2b;
+}
+
+.primario:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Esperando o aparelho ou o servidor: não parece erro, só ocupado */
+.primario.aguardando:disabled {
+  cursor: progress;
+  opacity: 0.85;
+}
+
+.secundario {
+  border: 1px solid var(--cor-linha-forte);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+}
+
+.secundario:hover {
+  background: var(--cor-superficie-2);
+}
+
+/* Só o ícone: o botão leva aria-label */
+.icone {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  color: var(--cor-texto-2);
+}
+
+.icone:hover {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+}

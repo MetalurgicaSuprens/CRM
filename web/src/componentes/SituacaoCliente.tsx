@@ -1,13 +1,13 @@
 import { CircleCheck, CircleOff, CirclePause, CirclePlus, TriangleAlert } from "lucide-react";
 import type { Situacao } from "../dados/tipos";
-import estilos from "./SituacaoCliente.module.css";
+import { Selo } from "./Selo";
 
-export const SITUACOES = {
-  ativo: { rotulo: "Ativo", Icone: CircleCheck, tom: "ok" },
-  em_risco: { rotulo: "Em risco", Icone: TriangleAlert, tom: "alerta" },
-  parado: { rotulo: "Parado", Icone: CirclePause, tom: "critico" },
-  novo: { rotulo: "Novo", Icone: CirclePlus, tom: "neutro" },
-  inativo: { rotulo: "Inativo", Icone: CircleOff, tom: "neutro" },
+const SITUACOES = {
+  ativo: { rotulo: "Ativo", icone: CircleCheck, tom: "ok" },
+  em_risco: { rotulo: "Em risco", icone: TriangleAlert, tom: "alerta" },
+  parado: { rotulo: "Parado", icone: CirclePause, tom: "critico" },
+  novo: { rotulo: "Novo", icone: CirclePlus, tom: "neutro" },
+  inativo: { rotulo: "Inativo", icone: CircleOff, tom: "neutro" },
 } as const;
 
 type Props = {
@@ -16,14 +16,6 @@ type Props = {
   tamanho?: "normal" | "grande";
 };
 
-/** Situação sempre com ícone e texto: nunca só pela cor. */
-export function SituacaoCliente({ situacao, tamanho = "normal" }: Props) {
-  const { rotulo, Icone, tom } = SITUACOES[situacao];
-  const grande = tamanho === "grande";
-  return (
-    <span className={`${estilos.selo} ${estilos[tom]} ${grande ? estilos.grande : ""}`}>
-      <Icone size={grande ? 17 : 14} strokeWidth={2.25} aria-hidden="true" />
-      {rotulo}
-    </span>
-  );
+export function SituacaoCliente({ situacao, tamanho }: Props) {
+  return <Selo {...SITUACOES[situacao]} tamanho={tamanho} />;
 }

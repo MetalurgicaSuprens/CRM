@@ -3,21 +3,24 @@ import { CirclePause, CirclePlus, Lightbulb, RotateCcw, TrendingDown, TrendingUp
 import { somarMeses } from "../calendario";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
+import { DataRelativa } from "../componentes/Quando";
 import { Segmentos } from "../componentes/Segmentos";
-import { TabelaDeClientes, type ColunaDaTabela } from "../componentes/TabelaDeClientes";
+import { Selo } from "../componentes/Selo";
+import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { carregarAnalises, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import type {
   Analises as ListasDeAnalise,
+  ClienteResumo,
   ClienteComMix,
   ClienteComVariacao,
   ClienteNovoOuReativado,
   ClienteParado,
 } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarData, formatarParticipacao, formatarPeriodo, formatarTempoDesde } from "../formato";
+import { formatarContagem, formatarParticipacao, formatarPeriodo } from "../formato";
 import { Carregando } from "./Carregando";
 import estilos from "./Analises.module.css";
 
@@ -89,12 +92,11 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
       subtitulo="Sem comprar há mais que o dobro do ciclo típico (no mínimo 60 dias; 180 para quem compra sem ritmo) e sem pedido em aberto. Com 24 meses sem comprar, o cliente vira inativo e sai da lista."
     >
       <p className={estilos.resumo}>
-        {contar(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map((item) => item.perdaMensal))} compacto /> por mês deixaram de entrar
+        {formatarContagem(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map((item) => item.perdaMensal))} compacto /> por mês deixaram de entrar
       </p>
       <TabelaDeClientes
         descricao="Clientes que pararam de comprar"
         itens={itens}
-        clienteDe={(item) => item.cliente}
         colunas={colunas}
         vazio="Nenhum cliente parou de comprar."
       />
@@ -132,12 +134,11 @@ function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
       subtitulo={`${atual} contra ${anterior}: ${ritmo.mudanca} de 20% ou mais e de pelo menos R$ 2 mil, com 3 compras ou mais nos dois períodos.`}
     >
       <p className={estilos.resumo}>
-        {contar(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map(diferenca))} compacto comSinal /> em {atual}
+        {formatarContagem(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map(diferenca))} compacto comSinal /> em {atual}
       </p>
       <TabelaDeClientes
         descricao={`Clientes ${ritmo.titulo.toLowerCase()}`}
         itens={itens}
-        clienteDe={(item) => item.cliente}
         colunas={colunas}
         vazio={ritmo.vazio}
       />
@@ -160,13 +161,12 @@ function NovosEReativados({ itens, hoje }: { itens: ClienteNovoOuReativado[]; ho
       subtitulo="Novo: primeira compra nos últimos 12 meses. Reativado: voltou a comprar nos últimos 12 meses depois de um ano ou mais sem comprar."
     >
       <p className={estilos.resumo}>
-        {contar(itens.length - reativados, "novo", "novos")} e {contar(reativados, "reativado", "reativados")} ·{" "}
+        {formatarContagem(itens.length - reativados, "novo", "novos")} e {formatarContagem(reativados, "reativado", "reativados")} ·{" "}
         <Valor valor={somar(itens.map((item) => item.faturadoDesde))} compacto /> desde que chegaram
       </p>
       <TabelaDeClientes
         descricao="Clientes novos e reativados"
         itens={itens}
-        clienteDe={(item) => item.cliente}
         colunas={colunas}
         vazio="Nenhum cliente novo ou reativado nos últimos 12 meses."
       />
@@ -201,11 +201,10 @@ function Mix({ itens }: { itens: ClienteComMix[] }) {
       icone={Lightbulb}
       subtitulo="Famílias que pelo menos metade dos clientes parecidos (mesmo mercado e porte, em toda a Suprens) comprou em 12 meses e que o cliente não compra há 24. O percentual é a parte dos parecidos que compra."
     >
-      <p className={estilos.resumo}>{contar(itens.length, "cliente tem", "clientes têm")} famílias a oferecer, dos maiores para os menores</p>
+      <p className={estilos.resumo}>{formatarContagem(itens.length, "cliente tem", "clientes têm")} famílias a oferecer, dos maiores para os menores</p>
       <TabelaDeClientes
         descricao="Clientes com oportunidades de mix"
         itens={itens}
-        clienteDe={(item) => item.cliente}
         colunas={colunas}
         vazio="Todos os clientes já compram as famílias mais comuns entre os parecidos."
       />
@@ -213,33 +212,29 @@ function Mix({ itens }: { itens: ClienteComMix[] }) {
   );
 }
 
-function DataRelativa({ data, hoje }: { data: string | null; hoje: string }) {
-  if (!data) return <>—</>;
+type PropsDaTabela<T> = { descricao: string; itens: T[]; colunas: ColunaDaTabela<T>[]; vazio: string };
+
+/** Toda lista de análise começa pelo cliente, e a linha leva à ficha dele. */
+function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...props }: PropsDaTabela<T>) {
   return (
-    <>
-      <span>{formatarTempoDesde(data, hoje)}</span>
-      <span className={estilos.suave}>{formatarData(data)}</span>
-    </>
+    <TabelaResponsiva
+      {...props}
+      chaveDe={(item) => item.cliente.codigo}
+      linkDe={(item) => `/clientes/${item.cliente.codigo}`}
+      colunas={[
+        { titulo: "Cliente", celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={`${item.cliente.cidade}/${item.cliente.uf}`} /> },
+        ...colunas,
+      ]}
+    />
   );
 }
 
 function TipoDeEntrada({ tipo }: { tipo: ClienteNovoOuReativado["tipo"] }) {
-  const reativado = tipo === "reativado";
-  const Icone = reativado ? RotateCcw : CirclePlus;
-  return (
-    <span className={reativado ? `${estilos.etiqueta} ${estilos.reativado}` : estilos.etiqueta}>
-      <Icone size={13} strokeWidth={2.25} aria-hidden="true" />
-      {reativado ? "Reativado" : "Novo"}
-    </span>
-  );
+  return tipo === "reativado" ? <Selo rotulo="Reativado" icone={RotateCcw} tom="ok" /> : <Selo rotulo="Novo" icone={CirclePlus} tom="neutro" />;
 }
 
 function diferenca(item: ClienteComVariacao): number {
   return item.semestre - item.semestreAnoAnterior;
-}
-
-function contar(quantidade: number, singular: string, plural: string): string {
-  return `${quantidade} ${quantidade === 1 ? singular : plural}`;
 }
 
 function somar(valores: number[]): number {

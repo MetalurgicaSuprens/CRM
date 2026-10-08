@@ -95,6 +95,35 @@ export function formatarTempoDesde(dataIso: string, hojeIso: string): string {
   return anos === 1 ? "há mais de 1 ano" : `há mais de ${anos} anos`;
 }
 
+/** "1 cliente", "9 clientes". */
+export function formatarContagem(quantidade: number, singular: string, plural: string): string {
+  return `${formatarNumero(quantidade)} ${quantidade === 1 ? singular : plural}`;
+}
+
+/** Para buscas: sem acento e em minúsculas ("Retífica" acha "retifica"). */
+export function normalizarParaBusca(texto: string): string {
+  return texto.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+}
+
+/** Prazo até uma data futura: "hoje", "amanhã", "em 12 dias", "em 3 meses". */
+export function formatarPrazo(dataIso: string, hojeIso: string): string {
+  const dias = diasEntre(hojeIso, dataIso);
+  if (dias <= 0) return "hoje";
+  if (dias === 1) return "amanhã";
+  if (dias < 60) return `em ${dias} dias`;
+  return `em ${Math.round(dias / 30.4)} meses`;
+}
+
+/** Data e hora ("2026-10-07T15:10") em relação a hoje: "hoje, 15:10", "ontem, 09:05", "07/10 às 15:10". */
+export function formatarMomento(momentoIso: string, hojeIso: string): string {
+  const [data = "", hora = ""] = momentoIso.split("T");
+  const dias = diasEntre(data, hojeIso);
+  if (dias === 0) return `hoje, ${hora}`;
+  if (dias === 1) return `ontem, ${hora}`;
+  const diaEMes = formatarData(data).slice(0, 5);
+  return data.slice(0, 4) === hojeIso.slice(0, 4) ? `${diaEMes} às ${hora}` : `${formatarData(data)} às ${hora}`;
+}
+
 export function diasEntre(deIso: string, ateIso: string): number {
   return Math.round((paraDiaUtc(ateIso) - paraDiaUtc(deIso)) / 86_400_000);
 }

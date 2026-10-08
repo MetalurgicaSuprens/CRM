@@ -1,6 +1,5 @@
 import { Link, useParams } from "react-router";
 import {
-  ArrowLeft,
   Boxes,
   CalendarCheck,
   ChartNoAxesColumn,
@@ -16,12 +15,14 @@ import {
   Store,
   type LucideIcon,
 } from "lucide-react";
+import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
 import { SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
+import { Voltar } from "../componentes/Voltar";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import type { FichaCliente as Ficha, Mercado, Porte } from "../dados/tipos";
@@ -42,7 +43,7 @@ export function FichaCliente() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
-        antes={<Voltar />}
+        antes={<Voltar para="/clientes" rotulo="Clientes" />}
         titulo={ficha.nome}
         selo={<SituacaoCliente situacao={ficha.situacao} tamanho="grande" />}
         descricao={ficha.razaoSocial}
@@ -81,7 +82,7 @@ export function FichaCliente() {
 
 function NovoPedido({ codigo }: { codigo: string }) {
   return (
-    <Link to={`/pedidos?cliente=${codigo}`} className={estilos.botaoPrincipal}>
+    <Link to={`/pedidos/novo?cliente=${codigo}`} className={`${botoes.primario} ${estilos.novoPedido}`}>
       <FilePlus2 size={19} aria-hidden="true" />
       Novo pedido
     </Link>
@@ -236,19 +237,10 @@ function TabelaPedidos({ ficha }: { ficha: Ficha }) {
   );
 }
 
-function Voltar() {
-  return (
-    <Link to="/clientes" className={estilos.voltar}>
-      <ArrowLeft size={15} aria-hidden="true" />
-      Clientes
-    </Link>
-  );
-}
-
 function NaoEncontrado() {
   return (
     <div className={estilos.pagina}>
-      <Voltar />
+      <Voltar para="/clientes" rotulo="Clientes" />
       <p className={estilos.vazio}>Cliente não encontrado na sua carteira.</p>
     </div>
   );

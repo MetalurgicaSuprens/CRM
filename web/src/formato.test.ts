@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   diasEntre,
   formatarCompacto,
+  formatarContagem,
   formatarData,
   formatarMesAno,
+  formatarMomento,
   formatarPeriodo,
+  formatarPrazo,
   formatarReais,
   formatarReaisCompacto,
   formatarTempoDesde,
@@ -34,6 +37,35 @@ describe("formatarReaisCompacto", () => {
   it("não mostra 1.000 mil na virada para milhão", () => {
     expect(formatarCompacto(999_600)).toBe("1 mi");
     expect(formatarCompacto(99_970)).toBe("100 mil");
+  });
+});
+
+describe("formatarContagem", () => {
+  it("usa o singular só para um", () => {
+    expect(formatarContagem(1, "cliente", "clientes")).toBe("1 cliente");
+    expect(formatarContagem(0, "cliente", "clientes")).toBe("0 clientes");
+    expect(formatarContagem(1_200, "peça", "peças")).toBe("1.200 peças");
+  });
+});
+
+describe("formatarPrazo", () => {
+  it("fala do futuro em linguagem de conversa", () => {
+    expect(formatarPrazo("2026-10-08", "2026-10-08")).toBe("hoje");
+    expect(formatarPrazo("2026-10-09", "2026-10-08")).toBe("amanhã");
+    expect(formatarPrazo("2026-10-20", "2026-10-08")).toBe("em 12 dias");
+    expect(formatarPrazo("2027-01-08", "2026-10-08")).toBe("em 3 meses");
+  });
+});
+
+describe("formatarMomento", () => {
+  it("usa hoje e ontem com a hora", () => {
+    expect(formatarMomento("2026-10-08T16:42", "2026-10-08")).toBe("hoje, 16:42");
+    expect(formatarMomento("2026-10-07T09:05", "2026-10-08")).toBe("ontem, 09:05");
+  });
+
+  it("mostra dia e mês no mesmo ano, e o ano quando muda", () => {
+    expect(formatarMomento("2026-10-01T15:10", "2026-10-08")).toBe("01/10 às 15:10");
+    expect(formatarMomento("2025-12-30T08:00", "2026-01-05")).toBe("30/12/2025 às 08:00");
   });
 });
 

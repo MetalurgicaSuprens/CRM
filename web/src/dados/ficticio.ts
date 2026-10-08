@@ -1,5 +1,7 @@
 import { diasUteisAte, diasUteisDoMes, hojeIso, mesDe, somarDias, somarMeses, ultimoDiaDoMes } from "../calendario";
+import { diasEntre } from "../formato";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
+import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
 import {
   classificarSituacao,
   diasSemComprar,
@@ -18,8 +20,10 @@ import type {
   FichaCliente,
   GrupoDestaque,
   Mercado,
+  NotaFaturada,
   PainelInicio,
   PedidoEmAberto,
+  PedidoNoErp,
   ProdutoComprado,
   Situacao,
   SituacaoDosDados,
@@ -60,18 +64,6 @@ const CIDADES: readonly (readonly [string, string])[] = [
   ["Uberlândia", "MG"], ["Uberaba", "MG"], ["Poços de Caldas", "MG"], ["Rio Verde", "GO"],
   ["Campo Grande", "MS"], ["Dourados", "MS"],
 ];
-const FAMILIAS = [
-  { nome: "FLEXIL", prefixo: "FAB", popularidade: 0.85 },
-  { nome: "PRESIL", prefixo: "PRB", popularidade: 0.7 },
-  { nome: "MICRO", prefixo: "MAB", popularidade: 0.55 },
-  { nome: "TIGRE", prefixo: "TGR", popularidade: 0.4 },
-  { nome: "ZIP", prefixo: "ZIP", popularidade: 0.35 },
-  { nome: "SIMPLEX", prefixo: "SPX", popularidade: 0.3 },
-  { nome: "RADIAL", prefixo: "ARI", popularidade: 0.25 },
-  { nome: "MOLA", prefixo: "AMD", popularidade: 0.2 },
-  { nome: "TUCHO CANALETA", prefixo: "TCC", popularidade: 0.2 },
-  { nome: "STEPLESS", prefixo: "STP", popularidade: 0.15 },
-] as const;
 /** Peso de cada mês do ano no faturamento: férias coletivas em dezembro e janeiro. */
 const SAZONALIDADE = [0.72, 0.88, 1.04, 1.02, 1.08, 1.04, 0.98, 1.06, 1.04, 1.1, 1.0, 0.78];
 
@@ -144,6 +136,31 @@ export function painelFicticio(): PainelInicio {
 
 export function analisesFicticias(): Analises {
   return montarAnalises(carteira());
+}
+
+/** Pedidos em aberto no ERP de todos os clientes da carteira, do mais próximo da entrega ao mais longe. */
+export function pedidosNoErpFicticios(): PedidoNoErp[] {
+  return carteira()
+    .clientes.flatMap((cliente) => cliente.pedidos.map((pedido) => ({ ...pedido, cliente: resumirCliente(cliente) })))
+    .sort((a, b) => a.entrega.localeCompare(b.entrega));
+}
+
+/** Notas dos últimos 45 dias, da mais recente à mais antiga. */
+export function notasFaturadasFicticias(): NotaFaturada[] {
+  const { clientes, hoje } = carteira();
+  const aleatorio = criarAleatorio(SEMENTE + 3);
+  return clientes
+    .flatMap((cliente) =>
+      cliente.datasCompra
+        .filter((data) => diasEntre(data, hoje) <= 45)
+        .map((data) => ({
+          numero: String(aleatorio.inteiro(180_000, 199_999)),
+          emissao: data,
+          cliente: resumirCliente(cliente),
+          valor: cliente.mensal.find((mes) => mes.mes === data.slice(0, 7))?.valor ?? 0,
+        })),
+    )
+    .sort((a, b) => b.emissao.localeCompare(a.emissao));
 }
 
 // ---------------------------------------------------------------- geração
@@ -379,20 +396,26 @@ function distribuirPorFamilia(cliente: ClienteFicticio, base: number) {
     .sort((a, b) => b.valor - a.valor);
 }
 
+/** Produtos do catálogo que o cliente comprou, de 1 a 3 por família, sem repetir. */
 function produtosDoCliente(cliente: ClienteFicticio, familias: FichaCliente["familias"]): ProdutoComprado[] {
   const aleatorio = criarAleatorio(Number(cliente.codigo.slice(0, 8)));
+  const catalogo = catalogoFicticio();
   const produtos = familias.flatMap(({ familia, valor }) => {
-    const prefixo = FAMILIAS.find((f) => f.nome === familia)?.prefixo ?? "PRD";
-    const quantidade = aleatorio.inteiro(1, 3);
-    return Array.from({ length: quantidade }, () => {
+    const daFamilia = catalogo.filter((produto) => produto.familia === familia);
+    const quantidade = Math.min(aleatorio.inteiro(1, 3), daFamilia.length);
+    const inicio = aleatorio.inteiro(0, daFamilia.length - 1);
+    return Array.from({ length: quantidade }, (_, i) => daFamilia[(inicio + i) % daFamilia.length]).flatMap((produto) => {
+      if (!produto) return [];
       const valorDoProduto = Math.round((valor / quantidade) * aleatorio.entre(0.6, 1.4));
-      return {
-        codigo: `${prefixo}${aleatorio.inteiro(10_000, 99_999)}`,
-        familia,
-        pecas: Math.round(valorDoProduto / cliente.precoMedioPeca),
-        valor: valorDoProduto,
-        ultimaCompra: aleatorio.escolher(cliente.datasCompra.slice(-4).length ? cliente.datasCompra.slice(-4) : [cliente.primeiraCompra]),
-      };
+      return [
+        {
+          codigo: produto.codigo,
+          familia,
+          pecas: Math.round(valorDoProduto / cliente.precoMedioPeca),
+          valor: valorDoProduto,
+          ultimaCompra: aleatorio.escolher(cliente.datasCompra.slice(-4).length ? cliente.datasCompra.slice(-4) : [cliente.primeiraCompra]),
+        },
+      ];
     });
   });
   return produtos.sort((a, b) => b.valor - a.valor).slice(0, 8);

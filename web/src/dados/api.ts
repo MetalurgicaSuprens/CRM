@@ -1,5 +1,25 @@
 import { analisesFicticias, clientesFicticios, fichaFicticia, painelFicticio, situacaoDosDadosFicticia } from "./ficticio";
-import type { Analises, ClienteResumo, FichaCliente, PainelInicio, SituacaoDosDados } from "./tipos";
+import {
+  catalogoDoClienteFicticio,
+  enviarRascunhoFicticio,
+  excluirRascunhoFicticio,
+  painelDePedidosFicticio,
+  pedidoEnviadoFicticio,
+  rascunhoFicticio,
+  salvarRascunhoFicticio,
+} from "./pedidosFicticios";
+import type {
+  Analises,
+  CatalogoDoCliente,
+  ClienteResumo,
+  FichaCliente,
+  PainelDePedidos,
+  PainelInicio,
+  PedidoEnviado,
+  Rascunho,
+  RascunhoParaSalvar,
+  SituacaoDosDados,
+} from "./tipos";
 
 /*
  * Única porta de entrada dos dados nas telas.
@@ -24,4 +44,38 @@ export function carregarFicha(codigo: string): Promise<FichaCliente | null> {
 
 export function carregarAnalises(): Promise<Analises> {
   return Promise.resolve(analisesFicticias());
+}
+
+// ---------------------------------------------------------------- pedidos
+
+export function carregarCatalogo(codigoCliente: string): Promise<CatalogoDoCliente | null> {
+  return Promise.resolve(catalogoDoClienteFicticio(codigoCliente));
+}
+
+export function carregarPedidos(): Promise<PainelDePedidos> {
+  return Promise.resolve(painelDePedidosFicticio());
+}
+
+export function carregarPedidoEnviado(numero: string): Promise<PedidoEnviado | null> {
+  return Promise.resolve(pedidoEnviadoFicticio(numero));
+}
+
+export function carregarRascunho(id: string): Promise<Rascunho | null> {
+  return Promise.resolve(rascunhoFicticio(id));
+}
+
+export function salvarRascunho(dados: RascunhoParaSalvar): Promise<Rascunho> {
+  const rascunho = salvarRascunhoFicticio(dados);
+  return rascunho ? Promise.resolve(rascunho) : Promise.reject(new Error("Cliente fora da carteira"));
+}
+
+export function excluirRascunho(id: string): Promise<void> {
+  excluirRascunhoFicticio(id);
+  return Promise.resolve();
+}
+
+/** Na F5, o envio leva junto a confirmação da chave de acesso, ligada ao conteúdo do pedido. */
+export function enviarPedido(idDoRascunho: string): Promise<PedidoEnviado> {
+  const pedido = enviarRascunhoFicticio(idDoRascunho);
+  return pedido ? Promise.resolve(pedido) : Promise.reject(new Error("Rascunho não encontrado"));
 }

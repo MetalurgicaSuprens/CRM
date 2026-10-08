@@ -178,3 +178,108 @@ export type PainelInicio = {
     novos: GrupoDestaque;
   };
 };
+
+// ---------------------------------------------------------------- pedidos
+
+export type ProdutoDoCatalogo = {
+  codigo: string;
+  familia: string;
+  medida: string;
+  /** Peças por embalagem: o pedido anda de embalagem em embalagem. */
+  embalagem: number;
+  /** Preço do cento (100 peças) na tabela do cliente; só referência, o SGI recalcula. */
+  precoCento: number;
+  /** Código que o próprio cliente usa para o produto, quando ele tem. */
+  codigoNoCliente: string | null;
+  jaComprou: boolean;
+};
+
+export type CatalogoDoCliente = {
+  cliente: ClienteResumo;
+  /** Nome da tabela de preço do cliente no SGI (a tabela vem do cliente, nunca do navegador). */
+  tabela: string;
+  produtos: ProdutoDoCatalogo[];
+};
+
+export type ItemDoPedido = {
+  codigo: string;
+  /** Em peças. */
+  quantidade: number;
+};
+
+/** O que a tela manda para salvar: o representante vem sempre da sessão. */
+export type RascunhoParaSalvar = {
+  id: string | null;
+  codigoCliente: string;
+  itens: ItemDoPedido[];
+  entrega: string | null;
+  observacao: string;
+};
+
+export type Rascunho = {
+  id: string;
+  cliente: ClienteResumo;
+  itens: ItemDoPedido[];
+  entrega: string | null;
+  observacao: string;
+  /** "2026-10-08T16:42" */
+  atualizadoEm: string;
+  totalEstimado: number;
+};
+
+/**
+ * "enviado" é a última etapa que o CRM controla; as outras voltam do ERP pela foto, ligadas
+ * pelo número CRM.
+ */
+export type EtapaDoPedido =
+  | "enviado"
+  | "recebido"
+  | "recusado"
+  | "em_aprovacao"
+  | "aprovado"
+  | "no_erp"
+  | "faturado_parcial"
+  | "faturado"
+  | "cancelado";
+
+export type ItemEnviado = ItemDoPedido & {
+  familia: string;
+  medida: string;
+  precoCento: number;
+};
+
+export type PedidoEnviado = {
+  /** "CRM-00106" */
+  numero: string;
+  cliente: ClienteResumo;
+  enviadoEm: string;
+  entrega: string | null;
+  observacao: string;
+  itens: ItemEnviado[];
+  totalEstimado: number;
+  /** Total recalculado pelo SGI pela tabela do cliente; null até ele calcular. */
+  totalSgi: number | null;
+  numeroSgi: string | null;
+  /** Número do pedido no ERP (Omega), depois de aprovado. */
+  numeroErp: string | null;
+  etapa: EtapaDoPedido;
+  motivoRecusa: string | null;
+  /** Quando o pedido chegou a cada etapa, em ordem. */
+  historico: { etapa: EtapaDoPedido; em: string }[];
+};
+
+export type PedidoNoErp = PedidoEmAberto & { cliente: ClienteResumo };
+
+export type NotaFaturada = {
+  numero: string;
+  emissao: string;
+  cliente: ClienteResumo;
+  valor: number;
+};
+
+export type PainelDePedidos = {
+  enviados: PedidoEnviado[];
+  rascunhos: Rascunho[];
+  emAberto: PedidoNoErp[];
+  faturados: NotaFaturada[];
+};
