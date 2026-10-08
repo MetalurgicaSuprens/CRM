@@ -131,11 +131,11 @@
   stroke-width: 2;
 }
 
+/* left e transform vêm do componente, que mantém a dica dentro do desenho */
 .dica {
   position: absolute;
   top: 0;
-  transform: translate(-50%, -8px);
-  min-width: 176px;
+  width: max-content;
   padding: var(--esp-2) var(--esp-3);
   background: var(--cor-superficie);
   border: 1px solid var(--cor-linha-forte);
@@ -143,20 +143,27 @@
   box-shadow: 0 4px 16px rgb(22 22 22 / 8%);
   pointer-events: none;
   font-size: var(--tam-pequeno);
+  white-space: nowrap;
   z-index: 2;
 }
 
 .dicaTitulo {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   color: var(--cor-texto-2);
   font-weight: 500;
 }
 
-.dicaLinha {
-  display: flex;
+.dicaLinhas {
+  display: grid;
+  grid-template-columns: auto auto auto;
   align-items: center;
-  gap: 8px;
+  gap: 2px var(--esp-2);
   font-variant-numeric: tabular-nums;
+}
+
+/* Valores alinhados à direita: os dígitos ficam um embaixo do outro */
+.dicaValor {
+  justify-self: end;
 }
 
 .dicaRotulo {

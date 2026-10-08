@@ -113,9 +113,7 @@ function Desenho({ barras, rotulos, descricao, altura }: Required<Pick<Props, "a
           ))}
         </svg>
       ) : null}
-      {barraAtiva && ativo !== null ? (
-        <Dica barra={barraAtiva} rotulos={rotulos} esquerda={Math.min(Math.max(centro(ativo), 96), largura - 96)} />
-      ) : null}
+      {barraAtiva && ativo !== null ? <Dica barra={barraAtiva} rotulos={rotulos} centro={centro(ativo)} larguraDesenho={largura} /> : null}
     </div>
   );
 }
@@ -195,19 +193,34 @@ function maiorValor(barras: BarraMensal[]): number {
   return Math.max(0, ...barras.map((b) => Math.max((b.valor ?? 0) + (b.aFaturar ?? 0), b.comparacao ?? 0)));
 }
 
-function Dica({ barra, rotulos, esquerda }: { barra: BarraMensal; rotulos: Rotulos; esquerda: number }) {
+type PropsDica = {
+  barra: BarraMensal;
+  rotulos: Rotulos;
+  /** Centro da coluna, em px a partir da borda esquerda do desenho. */
+  centro: number;
+  larguraDesenho: number;
+};
+
+/**
+ * Para não sair do desenho, a dica recua a própria largura na mesma proporção em que a
+ * coluna está no gráfico: centrada no meio, rente à borda nas pontas.
+ */
+function Dica({ barra, rotulos, centro, larguraDesenho }: PropsDica) {
   const formato = useFormatoDeReais();
   const fechado = barra.valor !== null && !barra.aFaturar;
+  const recuo = larguraDesenho > 0 ? (centro / larguraDesenho) * 100 : 50;
   return (
-    <div className={estilos.dica} style={{ left: esquerda }} role="status">
+    <div className={estilos.dica} style={{ left: centro, transform: `translate(-${recuo}%, -8px)` }} role="status">
       <p className={estilos.dicaTitulo}>{formatarMesPorExtenso(barra.mes)}</p>
-      {barra.valor !== null ? (
-        <LinhaDica chave={estilos.chaveValor} valor={formato.reais(barra.valor)} rotulo={barra.aFaturar ? "faturado até agora" : rotulos.valor} />
-      ) : null}
-      {barra.aFaturar ? <LinhaDica chave={estilos.chaveAFaturar} valor={formato.reais(barra.aFaturar)} rotulo={rotulos.aFaturar ?? "a faturar"} /> : null}
-      {barra.comparacao != null && rotulos.comparacao ? (
-        <LinhaDica chave={estilos.chaveComparacao} valor={formato.reais(barra.comparacao)} rotulo={rotulos.comparacao} />
-      ) : null}
+      <div className={estilos.dicaLinhas}>
+        {barra.valor !== null ? (
+          <LinhaDica chave={estilos.chaveValor} valor={formato.reais(barra.valor)} rotulo={barra.aFaturar ? "Faturado até agora" : rotulos.valor} />
+        ) : null}
+        {barra.aFaturar ? <LinhaDica chave={estilos.chaveAFaturar} valor={formato.reais(barra.aFaturar)} rotulo={rotulos.aFaturar ?? "A faturar"} /> : null}
+        {barra.comparacao != null && rotulos.comparacao ? (
+          <LinhaDica chave={estilos.chaveComparacao} valor={formato.reais(barra.comparacao)} rotulo={rotulos.comparacao} />
+        ) : null}
+      </div>
       {fechado && barra.comparacao ? (
         <p className={estilos.dicaVariacao}>
           <Variacao razao={(barra.valor ?? 0) / barra.comparacao - 1} referencia={`vs ${rotulos.comparacao ?? "anterior"}`} />
@@ -217,13 +230,14 @@ function Dica({ barra, rotulos, esquerda }: { barra: BarraMensal; rotulos: Rotul
   );
 }
 
+/** Três células da grade da dica: traço da série, valor e rótulo, sempre na mesma linha. */
 function LinhaDica({ chave, valor, rotulo }: { chave: string | undefined; valor: string; rotulo: string }) {
   return (
-    <p className={estilos.dicaLinha}>
+    <>
       <span className={chave} aria-hidden="true" />
-      <strong>{valor}</strong>
+      <strong className={estilos.dicaValor}>{valor}</strong>
       <span className={estilos.dicaRotulo}>{rotulo}</span>
-    </p>
+    </>
   );
 }
 
