@@ -108,9 +108,8 @@
   color: var(--cor-texto-2);
 }
 
-.sair:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+.sair:hover {
+  color: var(--cor-texto);
 }
 
 /* ------------------------------------------------ área de conteúdo */

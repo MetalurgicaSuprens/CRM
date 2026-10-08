@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { ChartColumn, ClipboardList, Clock, Eye, EyeOff, House, LogOut, MapIcon, Users } from "lucide-react";
 import { useValores } from "../contexto/valores";
 import { carregarSituacaoDosDados } from "../dados/api";
@@ -42,10 +42,10 @@ export function Layout() {
           <div className={estilos.usuario}>
             <p className={estilos.nomeUsuario}>{situacao.representante.nome}</p>
             <p className={estilos.codigoUsuario}>Representante {situacao.representante.codigo}</p>
-            <button type="button" className={estilos.sair} disabled title="Disponível com o login (F3)">
+            <Link to="/entrar?motivo=saiu" className={estilos.sair}>
               <LogOut size={15} aria-hidden="true" />
               Sair
-            </button>
+            </Link>
           </div>
         ) : null}
       </aside>

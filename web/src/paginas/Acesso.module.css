@@ -1,0 +1,116 @@
+.texto {
+  color: var(--cor-texto-2);
+}
+
+.botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 3.25rem;
+  border: 0;
+  border-radius: var(--raio);
+  background: var(--cor-texto);
+  color: var(--cor-superficie);
+  font-size: var(--tam-titulo-cartao);
+  font-weight: 600;
+}
+
+.botao:hover {
+  background: #2b2b2b;
+}
+
+.botao:disabled {
+  cursor: progress;
+  opacity: 0.85;
+}
+
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  padding: var(--esp-3);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+  border: 1px solid var(--cor-linha);
+  font-size: var(--tam-pequeno);
+}
+
+.aviso svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alerta {
+  background: var(--cor-alerta-fundo);
+  border-color: transparent;
+  color: var(--cor-alerta);
+}
+
+.sucesso {
+  background: var(--cor-ok-fundo);
+  border-color: transparent;
+  color: var(--cor-ok);
+}
+
+.ajuda {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+}
+
+.ajuda summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--cor-texto);
+}
+
+.ajuda ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin-top: var(--esp-3);
+}
+
+.passos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.passo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-3);
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+}
+
+.passo svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--cor-texto);
+}
+
+.saudacao {
+  font-size: var(--tam-destaque);
+  font-weight: 600;
+}
+
+.validade {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.copiar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  font-size: var(--tam-pequeno);
+  font-weight: 500;
+}
