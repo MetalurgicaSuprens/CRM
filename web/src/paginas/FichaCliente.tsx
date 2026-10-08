@@ -6,10 +6,15 @@ import {
   ChartNoAxesColumn,
   ClipboardList,
   FilePlus2,
+  Handshake,
+  Hash,
   Lightbulb,
+  MapPin,
   Package,
   ReceiptText,
   Repeat,
+  Store,
+  type LucideIcon,
 } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
@@ -38,25 +43,11 @@ export function FichaCliente() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
-        antes={<Voltar />}
+        antes={<BarraDaFicha codigo={ficha.codigo} />}
         titulo={ficha.nome}
-        descricao={
-          <span className={estilos.identificacao}>
-            <span>{ficha.razaoSocial}</span>
-            <span>
-              {ficha.cidade}/{ficha.uf} · {MERCADOS[ficha.mercado]} · código {ficha.codigo} · cliente desde {ficha.primeiraCompra.slice(0, 4)}
-            </span>
-          </span>
-        }
-        acoes={
-          <>
-            <SituacaoCliente situacao={ficha.situacao} />
-            <Link to={`/pedidos?cliente=${ficha.codigo}`} className={estilos.botaoPrincipal}>
-              <FilePlus2 size={16} aria-hidden="true" />
-              Novo pedido
-            </Link>
-          </>
-        }
+        selo={<SituacaoCliente situacao={ficha.situacao} tamanho="grande" />}
+        descricao={ficha.razaoSocial}
+        acoes={<DadosDoCliente ficha={ficha} />}
       />
       <Indicadores ficha={ficha} hoje={situacao.hoje} />
       <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo="Últimos 24 meses e o mês atual">
@@ -84,6 +75,42 @@ export function FichaCliente() {
       <Cartao titulo="Pedidos em aberto" icone={ClipboardList} subtitulo="Ainda não faturados">
         <TabelaPedidos ficha={ficha} />
       </Cartao>
+    </div>
+  );
+}
+
+function BarraDaFicha({ codigo }: { codigo: string }) {
+  return (
+    <div className={estilos.barraDaFicha}>
+      <Voltar />
+      <Link to={`/pedidos?cliente=${codigo}`} className={estilos.botaoPrincipal}>
+        <FilePlus2 size={16} aria-hidden="true" />
+        Novo pedido
+      </Link>
+    </div>
+  );
+}
+
+/** Cadastro do cliente em cartões, à direita do nome. */
+function DadosDoCliente({ ficha }: { ficha: Ficha }) {
+  return (
+    <dl className={estilos.dados}>
+      <Dado icone={MapPin} rotulo="Cidade" valor={`${ficha.cidade}/${ficha.uf}`} />
+      <Dado icone={Store} rotulo="Mercado" valor={MERCADOS[ficha.mercado]} />
+      <Dado icone={Hash} rotulo="Código" valor={ficha.codigo} />
+      <Dado icone={Handshake} rotulo="Cliente desde" valor={ficha.primeiraCompra.slice(0, 4)} />
+    </dl>
+  );
+}
+
+function Dado({ icone: Icone, rotulo, valor }: { icone: LucideIcon; rotulo: string; valor: string }) {
+  return (
+    <div className={estilos.dado}>
+      <dt className={estilos.rotuloDado}>
+        <Icone size={14} strokeWidth={1.75} aria-hidden="true" />
+        {rotulo}
+      </dt>
+      <dd className={estilos.valorDado}>{valor}</dd>
     </div>
   );
 }

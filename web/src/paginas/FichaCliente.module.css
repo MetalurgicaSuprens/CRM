@@ -16,14 +16,11 @@
   color: var(--cor-texto);
 }
 
-.identificacao {
+.barraDaFicha {
   display: flex;
-  flex-direction: column;
-  font-size: var(--tam-pequeno);
-}
-
-.identificacao span + span {
-  color: var(--cor-texto-suave);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
 }
 
 .botaoPrincipal {
@@ -34,6 +31,42 @@
   border-radius: var(--raio-pequeno);
   background: var(--cor-texto);
   color: var(--cor-superficie);
+  font-size: var(--tam-texto);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Cadastro em cartões, à direita do nome; no celular, dois por linha */
+.dados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+  margin: 0;
+}
+
+.dado {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 7.5rem;
+  padding: 10px 14px;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+}
+
+.rotuloDado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--tam-legenda);
+  font-weight: 500;
+  color: var(--cor-texto-2);
+}
+
+.valorDado {
+  margin: 0;
+  font-size: var(--tam-texto);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -159,5 +192,15 @@
 
   .opcional {
     display: none;
+  }
+
+  .dados {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .valorDado {
+    white-space: normal;
   }
 }

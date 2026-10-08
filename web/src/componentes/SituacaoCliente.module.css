@@ -9,6 +9,12 @@
   white-space: nowrap;
 }
 
+.grande {
+  gap: 7px;
+  padding: 5px 14px 5px 10px;
+  font-size: var(--tam-texto);
+}
+
 .ok {
   color: var(--cor-ok);
   background: var(--cor-ok-fundo);
