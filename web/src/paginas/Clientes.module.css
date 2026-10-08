@@ -180,6 +180,23 @@ li:last-child .linha {
   text-align: right;
 }
 
+/* O cabeçalho da tendência traz a própria legenda: a linha tracejada é o valor de 1 ano atrás */
+.tituloTendencia {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.legendaTendencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .rotuloCelular {
   display: none;
 }

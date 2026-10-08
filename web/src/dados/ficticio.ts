@@ -312,9 +312,9 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
       indicadores.faturamento12mAnterior >= 2_000
         ? indicadores.faturamento12m / indicadores.faturamento12mAnterior - 1
         : null,
-    tendencia12m: Array.from({ length: 12 }, (_, i) => {
-      const fim = ULTIMO_FECHADO - 11 + i;
-      return somarValores(cliente.mensal, fim - 5, fim);
+    evolucao12m: Array.from({ length: 13 }, (_, i) => {
+      const fim = ULTIMO_FECHADO - 12 + i;
+      return somarValores(cliente.mensal, fim - 11, fim);
     }),
   };
 }

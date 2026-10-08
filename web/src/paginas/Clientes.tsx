@@ -9,7 +9,7 @@ import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
 import type { ClienteResumo, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarData, formatarTempoDesde } from "../formato";
-import { Sparkline } from "../graficos/Sparkline";
+import { AmostraReferencia, Sparkline } from "../graficos/Sparkline";
 import { Carregando } from "./Carregando";
 import estilos from "./Clientes.module.css";
 
@@ -114,7 +114,13 @@ export function Clientes() {
           <span>Última compra</span>
           <span className={estilos.direita}>Faturado 12 meses</span>
           <span className={estilos.direita}>Variação</span>
-          <span className={estilos.direita}>Tendência</span>
+          <span className={`${estilos.direita} ${estilos.tituloTendencia}`}>
+            Tendência
+            <span className={estilos.legendaTendencia}>
+              <AmostraReferencia />
+              há 1 ano
+            </span>
+          </span>
         </div>
         {visiveis.length === 0 ? (
           <p className={estilos.vazio}>Nenhum cliente encontrado com esses filtros.</p>
@@ -156,7 +162,7 @@ function LinhaCliente({ cliente, hoje }: { cliente: ClienteResumo; hoje: string 
         <Variacao razao={cliente.variacao12m} />
       </span>
       <span className={`${estilos.tendencia} ${estilos.direita}`}>
-        <Sparkline valores={cliente.tendencia12m} />
+        <Sparkline valores={cliente.evolucao12m} />
       </span>
     </Link>
   );

@@ -3,16 +3,28 @@
   overflow: visible;
 }
 
+/* Azul do dado e cinza do ano anterior, como nos gráficos mensais */
 .linha {
   fill: none;
-  stroke: var(--cor-tendencia);
-  stroke-width: 1.75;
+  stroke: var(--cor-dado);
+  stroke-width: 1.5;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+
+.referencia {
+  stroke: var(--cor-comparacao);
+  stroke-width: 1.25;
+  stroke-dasharray: 3 2.5;
 }
 
 .ponto {
   fill: var(--cor-dado);
   stroke: var(--cor-superficie);
   stroke-width: 2;
+}
+
+.amostra {
+  display: block;
+  flex-shrink: 0;
 }

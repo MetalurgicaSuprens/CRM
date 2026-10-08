@@ -22,14 +22,17 @@ export type ClienteResumo = {
   mercado: Mercado;
   situacao: Situacao;
   ultimaCompra: string | null;
+  /** Soma dos últimos 12 meses fechados. */
   faturamento12m: number;
   /** Variação contra os 12 meses anteriores; null quando a base é pequena demais. */
   variacao12m: number | null;
   /**
-   * Faturamento móvel de 6 meses em cada um dos últimos 12 meses fechados (do mais antigo ao
-   * mais recente): mostra a direção sem o zigue-zague de quem compra a cada 2 ou 3 meses.
+   * O faturado em 12 meses recalculado no fim de cada mês fechado, de um ano atrás até o último
+   * (13 pontos, do mais antigo ao mais recente). O primeiro é a base da variação e o último é
+   * `faturamento12m`; assim variação = último ÷ primeiro − 1. Por somar 12 meses, não tem o
+   * zigue-zague de quem compra a cada 2 ou 3 meses.
    */
-  tendencia12m: number[];
+  evolucao12m: number[];
 };
 
 export type FaturamentoMensal = {
