@@ -1,0 +1,34 @@
+/* Do tamanho do Início; quem usa pode mudar width e height, e o ícone acompanha */
+.icone {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+.icone svg {
+  width: 52%;
+  height: 52%;
+}
+
+.critico {
+  color: var(--cor-critico);
+  background: var(--cor-critico-fundo);
+}
+
+.alerta {
+  color: var(--cor-alerta);
+  background: var(--cor-alerta-fundo);
+}
+
+.ok {
+  color: var(--cor-ok);
+  background: var(--cor-ok-fundo);
+}
+
+.neutro {
+  color: var(--cor-neutro);
+  background: var(--cor-neutro-fundo);
+}

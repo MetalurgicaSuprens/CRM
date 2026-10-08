@@ -1,10 +1,9 @@
 import { useSearchParams } from "react-router";
-import { CirclePause, CirclePlus, Lightbulb, RotateCcw, TrendingDown, TrendingUp } from "lucide-react";
+import { CirclePlus, RotateCcw } from "lucide-react";
 import { somarMeses } from "../calendario";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
-import { Cartao } from "../componentes/Cartao";
+import { ANALISES, CartaoDaAnalise, IconeDaAnalise, type TipoDeAnalise } from "../componentes/IdentidadeDaAnalise";
 import { DataRelativa } from "../componentes/Quando";
-import { Segmentos } from "../componentes/Segmentos";
 import { Selo } from "../componentes/Selo";
 import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
@@ -24,15 +23,8 @@ import { formatarContagem, formatarParticipacao, formatarPeriodo } from "../form
 import { Carregando } from "./Carregando";
 import estilos from "./Analises.module.css";
 
-type Lista = keyof Omit<ListasDeAnalise, "semestre">;
-
-const LISTAS: { valor: Lista; rotulo: string }[] = [
-  { valor: "pararam", rotulo: "Pararam de comprar" },
-  { valor: "menos", rotulo: "Comprando menos" },
-  { valor: "mais", rotulo: "Comprando mais" },
-  { valor: "novos", rotulo: "Novos e reativados" },
-  { valor: "mix", rotulo: "Oportunidades de mix" },
-];
+/** Na ordem da tela: primeiro o que pede atenção, por último a oportunidade. */
+const LISTAS: readonly TipoDeAnalise[] = ["pararam", "menos", "mais", "novos", "mix"];
 
 export function Analises() {
   const { dados: analises } = useCarga("analises", carregarAnalises);
@@ -43,19 +35,40 @@ export function Analises() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina titulo="Análises" descricao="Quem pede atenção na carteira, pelas regras do CRM" />
-      <Segmentos
-        rotulo="Análise"
-        opcoes={LISTAS.map((opcao) => ({ ...opcao, contagem: analises[opcao.valor].length }))}
-        selecionado={lista}
-        aoEscolher={(valor) => setParametros(valor === "pararam" ? {} : { lista: valor }, { replace: true })}
-        className={estilos.listas}
+      <EscolhaDaLista
+        analises={analises}
+        selecionada={lista}
+        aoEscolher={(escolhida) => setParametros(escolhida === "pararam" ? {} : { lista: escolhida }, { replace: true })}
       />
       <ListaEscolhida lista={lista} analises={analises} hoje={situacao.hoje} />
     </div>
   );
 }
 
-function ListaEscolhida({ lista, analises, hoje }: { lista: Lista; analises: ListasDeAnalise; hoje: string }) {
+type PropsDaEscolha = { analises: ListasDeAnalise; selecionada: TipoDeAnalise; aoEscolher: (lista: TipoDeAnalise) => void };
+
+/** Um botão por análise, com o ícone e quantos clientes ela tem; a escolhida aparece embaixo. */
+function EscolhaDaLista({ analises, selecionada, aoEscolher }: PropsDaEscolha) {
+  return (
+    <div className={estilos.escolhas} role="group" aria-label="Análise">
+      {LISTAS.map((lista) => {
+        const quantidade = analises[lista].length;
+        return (
+          <button key={lista} type="button" className={estilos.escolha} aria-pressed={lista === selecionada} onClick={() => aoEscolher(lista)}>
+            <IconeDaAnalise tipo={lista} className={estilos.icone} />
+            <span className={estilos.nome}>{ANALISES[lista].rotulo}</span>
+            <span className={estilos.quantidade}>
+              {quantidade}
+              <span className="visualmente-oculto">{quantidade === 1 ? " cliente" : " clientes"}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ListaEscolhida({ lista, analises, hoje }: { lista: TipoDeAnalise; analises: ListasDeAnalise; hoje: string }) {
   switch (lista) {
     case "pararam":
       return <Pararam itens={analises.pararam} hoje={hoje} />;
@@ -85,10 +98,8 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
     },
   ];
   return (
-    <Cartao
-      titulo="Pararam de comprar"
-      icone={CirclePause}
-      tom="critico"
+    <CartaoDaAnalise
+      tipo="pararam"
       subtitulo="Sem comprar há mais que o dobro do ciclo típico (no mínimo 60 dias; 180 para quem compra sem ritmo) e sem pedido em aberto. Com 24 meses sem comprar, o cliente vira inativo e sai da lista."
     >
       <p className={estilos.resumo}>
@@ -100,7 +111,7 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
         colunas={colunas}
         vazio="Nenhum cliente parou de comprar."
       />
-    </Cartao>
+    </CartaoDaAnalise>
   );
 }
 
@@ -111,8 +122,8 @@ type PropsRitmo = {
 };
 
 const RITMOS = {
-  menos: { titulo: "Comprando menos", icone: TrendingDown, tom: "alerta", mudanca: "queda", vazio: "Nenhuma queda relevante no semestre." },
-  mais: { titulo: "Comprando mais", icone: TrendingUp, tom: "ok", mudanca: "alta", vazio: "Nenhuma alta relevante no semestre." },
+  menos: { mudanca: "queda", vazio: "Nenhuma queda relevante no semestre." },
+  mais: { mudanca: "alta", vazio: "Nenhuma alta relevante no semestre." },
 } as const;
 
 function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
@@ -127,23 +138,21 @@ function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
     { titulo: "Em peças", numerica: true, celula: (item) => <Variacao razao={item.variacaoPecas} /> },
   ];
   return (
-    <Cartao
-      titulo={ritmo.titulo}
-      icone={ritmo.icone}
-      tom={ritmo.tom}
+    <CartaoDaAnalise
+      tipo={direcao}
       subtitulo={`${atual} contra ${anterior}: ${ritmo.mudanca} de 20% ou mais e de pelo menos R$ 2 mil, com 3 compras ou mais nos dois períodos.`}
     >
       <p className={estilos.resumo}>
         {formatarContagem(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map(diferenca))} compacto comSinal /> em {atual}
       </p>
       <TabelaDeClientes
-        descricao={`Clientes ${ritmo.titulo.toLowerCase()}`}
+        descricao={`Clientes ${ANALISES[direcao].rotulo.toLowerCase()}`}
         itens={itens}
         colunas={colunas}
         vazio={ritmo.vazio}
       />
       <p className={estilos.nota}>Em peças: a mesma comparação em quantidade, sem o efeito do reajuste de preço.</p>
-    </Cartao>
+    </CartaoDaAnalise>
   );
 }
 
@@ -155,9 +164,8 @@ function NovosEReativados({ itens, hoje }: { itens: ClienteNovoOuReativado[]; ho
     { titulo: "Faturado desde então", numerica: true, celula: (item) => <Valor valor={item.faturadoDesde} /> },
   ];
   return (
-    <Cartao
-      titulo="Novos e reativados"
-      icone={CirclePlus}
+    <CartaoDaAnalise
+      tipo="novos"
       subtitulo="Novo: primeira compra nos últimos 12 meses. Reativado: voltou a comprar nos últimos 12 meses depois de um ano ou mais sem comprar."
     >
       <p className={estilos.resumo}>
@@ -170,7 +178,7 @@ function NovosEReativados({ itens, hoje }: { itens: ClienteNovoOuReativado[]; ho
         colunas={colunas}
         vazio="Nenhum cliente novo ou reativado nos últimos 12 meses."
       />
-    </Cartao>
+    </CartaoDaAnalise>
   );
 }
 
@@ -196,9 +204,8 @@ function Mix({ itens }: { itens: ClienteComMix[] }) {
     { titulo: "Faturado 12 meses", numerica: true, celula: (item) => <Valor valor={item.cliente.faturamento12m} /> },
   ];
   return (
-    <Cartao
-      titulo="Oportunidades de mix"
-      icone={Lightbulb}
+    <CartaoDaAnalise
+      tipo="mix"
       subtitulo="Famílias que pelo menos metade dos clientes parecidos (mesmo mercado e porte, em toda a Suprens) comprou em 12 meses e que o cliente não compra há 24. O percentual é a parte dos parecidos que compra."
     >
       <p className={estilos.resumo}>{formatarContagem(itens.length, "cliente tem", "clientes têm")} famílias a oferecer, dos maiores para os menores</p>
@@ -208,7 +215,7 @@ function Mix({ itens }: { itens: ClienteComMix[] }) {
         colunas={colunas}
         vazio="Todos os clientes já compram as famílias mais comuns entre os parecidos."
       />
-    </Cartao>
+    </CartaoDaAnalise>
   );
 }
 
@@ -241,6 +248,6 @@ function somar(valores: number[]): number {
   return valores.reduce((soma, valor) => soma + valor, 0);
 }
 
-function lerLista(valor: string | null): Lista {
-  return LISTAS.find((opcao) => opcao.valor === valor)?.valor ?? "pararam";
+function lerLista(valor: string | null): TipoDeAnalise {
+  return LISTAS.find((lista) => lista === valor) ?? "pararam";
 }

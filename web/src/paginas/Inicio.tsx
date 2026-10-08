@@ -1,21 +1,9 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import {
-  Activity,
-  CalendarRange,
-  ChartNoAxesColumn,
-  ChevronRight,
-  CirclePause,
-  CirclePlus,
-  ClipboardList,
-  Gauge,
-  ReceiptText,
-  TrendingDown,
-  TrendingUp,
-  type LucideIcon,
-} from "lucide-react";
+import { Activity, CalendarRange, ChartNoAxesColumn, ChevronRight, ClipboardList, Gauge, ReceiptText } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
+import { ANALISES, CartaoDaAnalise, IconeDaAnalise } from "../componentes/IdentidadeDaAnalise";
 import { Indicador } from "../componentes/Indicador";
 import { ListaClientes } from "../componentes/ListaClientes";
 import { Valor } from "../componentes/Valor";
@@ -47,10 +35,8 @@ export function Inicio() {
         <AtencaoNaCarteira destaques={painel.destaques} />
       </div>
       <div className={estilos.gradeListas}>
-        <Cartao
-          titulo="Pararam de comprar"
-          icone={CirclePause}
-          tom="critico"
+        <CartaoDaAnalise
+          tipo="pararam"
           subtitulo="Ordenados pelo faturamento mensal que deixou de entrar"
           acoes={<VerTodos lista="pararam" quantidade={painel.destaques.pararam.quantidade} />}
         >
@@ -68,11 +54,9 @@ export function Inicio() {
               ),
             }))}
           />
-        </Cartao>
-        <Cartao
-          titulo="Comprando menos"
-          icone={TrendingDown}
-          tom="alerta"
+        </CartaoDaAnalise>
+        <CartaoDaAnalise
+          tipo="menos"
           subtitulo="Últimos 6 meses contra os mesmos meses do ano passado"
           acoes={<VerTodos lista="menos" quantidade={painel.destaques.menos.quantidade} />}
         >
@@ -90,7 +74,7 @@ export function Inicio() {
               ),
             }))}
           />
-        </Cartao>
+        </CartaoDaAnalise>
       </div>
     </div>
   );
@@ -144,31 +128,26 @@ function Indicadores({ painel }: { painel: PainelInicio }) {
 
 type LinhaAtencao = {
   chave: keyof PainelInicio["destaques"];
-  rotulo: string;
-  Icone: LucideIcon;
-  tom: string | undefined;
   descrever: (grupo: GrupoDestaque) => ReactNode;
 };
 
 const LINHAS_ATENCAO: LinhaAtencao[] = [
-  { chave: "pararam", rotulo: "Pararam de comprar", Icone: CirclePause, tom: estilos.critico, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> por mês</> },
-  { chave: "menos", rotulo: "Comprando menos", Icone: TrendingDown, tom: estilos.alerta, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> no semestre</> },
-  { chave: "mais", rotulo: "Comprando mais", Icone: TrendingUp, tom: estilos.ok, descrever: (g) => <><Valor valor={g.valorTotal} compacto comSinal /> no semestre</> },
-  { chave: "novos", rotulo: "Novos e reativados", Icone: CirclePlus, tom: estilos.neutro, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> desde que chegaram</> },
+  { chave: "pararam", descrever: (g) => <><Valor valor={g.valorTotal} compacto /> por mês</> },
+  { chave: "menos", descrever: (g) => <><Valor valor={g.valorTotal} compacto /> no semestre</> },
+  { chave: "mais", descrever: (g) => <><Valor valor={g.valorTotal} compacto comSinal /> no semestre</> },
+  { chave: "novos", descrever: (g) => <><Valor valor={g.valorTotal} compacto /> desde que chegaram</> },
 ];
 
 function AtencaoNaCarteira({ destaques }: { destaques: PainelInicio["destaques"] }) {
   return (
     <Cartao titulo="Atenção na carteira" icone={Activity} subtitulo="Pelas regras de análise do CRM">
       <ul className={estilos.atencao}>
-        {LINHAS_ATENCAO.map(({ chave, rotulo, Icone, tom, descrever }) => (
+        {LINHAS_ATENCAO.map(({ chave, descrever }) => (
           <li key={chave}>
             <Link to={`/analises?lista=${chave}`} className={estilos.linhaAtencao}>
-              <span className={`${estilos.iconeAtencao} ${tom ?? ""}`}>
-                <Icone size={18} strokeWidth={2} aria-hidden="true" />
-              </span>
+              <IconeDaAnalise tipo={chave} />
               <span className={estilos.textoAtencao}>
-                <span className={estilos.rotuloAtencao}>{rotulo}</span>
+                <span className={estilos.rotuloAtencao}>{ANALISES[chave].rotulo}</span>
                 <span className={estilos.descricaoAtencao}>{descrever(destaques[chave])}</span>
               </span>
               <span className={estilos.quantidade}>{destaques[chave].quantidade}</span>

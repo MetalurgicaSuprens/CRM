@@ -64,34 +64,6 @@
   background: var(--cor-superficie-2);
 }
 
-.iconeAtencao {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-}
-
-.critico {
-  color: var(--cor-critico);
-  background: var(--cor-critico-fundo);
-}
-
-.alerta {
-  color: var(--cor-alerta);
-  background: var(--cor-alerta-fundo);
-}
-
-.ok {
-  color: var(--cor-ok);
-  background: var(--cor-ok-fundo);
-}
-
-.neutro {
-  color: var(--cor-neutro);
-  background: var(--cor-neutro-fundo);
-}
-
 .textoAtencao {
   display: flex;
   flex-direction: column;
