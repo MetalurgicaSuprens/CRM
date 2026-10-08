@@ -68,6 +68,12 @@ export function formatarMesAno(mesIso: string): string {
   return `${formatarMesCurto(mesIso)}/${mesIso.slice(2, 4)}`;
 }
 
+/** "2026-04" a "2026-09" → "abr–set/26"; com anos diferentes, "nov/25–abr/26". */
+export function formatarPeriodo(inicioIso: string, fimIso: string): string {
+  const inicio = inicioIso.slice(0, 4) === fimIso.slice(0, 4) ? formatarMesCurto(inicioIso) : formatarMesAno(inicioIso);
+  return `${inicio}–${formatarMesAno(fimIso)}`;
+}
+
 /** "2026-03" → "março" */
 export function formatarNomeDoMes(mesIso: string): string {
   return MESES_LONGOS[Number(mesIso.slice(5, 7)) - 1] ?? mesIso;

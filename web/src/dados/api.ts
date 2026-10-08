@@ -1,5 +1,5 @@
-import { clientesFicticios, fichaFicticia, painelFicticio, situacaoDosDadosFicticia } from "./ficticio";
-import type { ClienteResumo, FichaCliente, PainelInicio, SituacaoDosDados } from "./tipos";
+import { analisesFicticias, clientesFicticios, fichaFicticia, painelFicticio, situacaoDosDadosFicticia } from "./ficticio";
+import type { Analises, ClienteResumo, FichaCliente, PainelInicio, SituacaoDosDados } from "./tipos";
 
 /*
  * Única porta de entrada dos dados nas telas.
@@ -20,4 +20,8 @@ export function carregarClientes(): Promise<ClienteResumo[]> {
 
 export function carregarFicha(codigo: string): Promise<FichaCliente | null> {
   return Promise.resolve(fichaFicticia(codigo));
+}
+
+export function carregarAnalises(): Promise<Analises> {
+  return Promise.resolve(analisesFicticias());
 }

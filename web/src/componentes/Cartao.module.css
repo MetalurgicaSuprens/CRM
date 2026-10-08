@@ -49,6 +49,12 @@
   color: var(--cor-alerta);
 }
 
+.ok {
+  border-color: transparent;
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
+}
+
 .titulos {
   display: flex;
   flex-direction: column;

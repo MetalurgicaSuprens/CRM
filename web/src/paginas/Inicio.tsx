@@ -47,7 +47,13 @@ export function Inicio() {
         <AtencaoNaCarteira destaques={painel.destaques} />
       </div>
       <div className={estilos.gradeListas}>
-        <Cartao titulo="Pararam de comprar" icone={CirclePause} tom="critico" subtitulo="Ordenados pelo faturamento mensal que deixou de entrar">
+        <Cartao
+          titulo="Pararam de comprar"
+          icone={CirclePause}
+          tom="critico"
+          subtitulo="Ordenados pelo faturamento mensal que deixou de entrar"
+          acoes={<VerTodos lista="pararam" quantidade={painel.destaques.pararam.quantidade} />}
+        >
           <ListaClientes
             vazio="Nenhum cliente parado."
             itens={painel.destaques.pararam.itens.map(({ cliente, valor }) => ({
@@ -63,7 +69,13 @@ export function Inicio() {
             }))}
           />
         </Cartao>
-        <Cartao titulo="Comprando menos" icone={TrendingDown} tom="alerta" subtitulo="Últimos 6 meses contra os mesmos meses do ano passado">
+        <Cartao
+          titulo="Comprando menos"
+          icone={TrendingDown}
+          tom="alerta"
+          subtitulo="Últimos 6 meses contra os mesmos meses do ano passado"
+          acoes={<VerTodos lista="menos" quantidade={painel.destaques.menos.quantidade} />}
+        >
           <ListaClientes
             vazio="Nenhuma queda relevante no semestre."
             itens={painel.destaques.menos.itens.map(({ cliente, valor, variacao }) => ({
@@ -81,6 +93,15 @@ export function Inicio() {
         </Cartao>
       </div>
     </div>
+  );
+}
+
+function VerTodos({ lista, quantidade }: { lista: keyof PainelInicio["destaques"]; quantidade: number }) {
+  return (
+    <Link to={`/analises?lista=${lista}`} className={estilos.verTodos}>
+      Ver todos ({quantidade})
+      <ChevronRight size={15} aria-hidden="true" />
+    </Link>
   );
 }
 
@@ -133,7 +154,7 @@ const LINHAS_ATENCAO: LinhaAtencao[] = [
   { chave: "pararam", rotulo: "Pararam de comprar", Icone: CirclePause, tom: estilos.critico, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> por mês</> },
   { chave: "menos", rotulo: "Comprando menos", Icone: TrendingDown, tom: estilos.alerta, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> no semestre</> },
   { chave: "mais", rotulo: "Comprando mais", Icone: TrendingUp, tom: estilos.ok, descrever: (g) => <><Valor valor={g.valorTotal} compacto comSinal /> no semestre</> },
-  { chave: "novos", rotulo: "Clientes novos", Icone: CirclePlus, tom: estilos.neutro, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> desde a 1ª compra</> },
+  { chave: "novos", rotulo: "Novos e reativados", Icone: CirclePlus, tom: estilos.neutro, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> desde que chegaram</> },
 ];
 
 function AtencaoNaCarteira({ destaques }: { destaques: PainelInicio["destaques"] }) {

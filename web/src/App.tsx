@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { Layout } from "./componentes/Layout";
+import { Analises } from "./paginas/Analises";
 import { Clientes } from "./paginas/Clientes";
 import { EmPreparacao } from "./paginas/EmPreparacao";
 import { FichaCliente } from "./paginas/FichaCliente";
@@ -13,7 +14,7 @@ export function App() {
           <Route index element={<Inicio />} />
           <Route path="clientes" element={<Clientes />} />
           <Route path="clientes/:codigo" element={<FichaCliente />} />
-          <Route path="analises" element={<EmPreparacao titulo="Análises" etapa="na próxima entrega do protótipo" />} />
+          <Route path="analises" element={<Analises />} />
           <Route path="pedidos" element={<EmPreparacao titulo="Pedidos" etapa="na próxima entrega do protótipo" />} />
           <Route path="mapa" element={<EmPreparacao titulo="Mapa" etapa="quando o mapa for portado do protótipo antigo (F6)" />} />
           <Route path="*" element={<Navigate to="/" replace />} />

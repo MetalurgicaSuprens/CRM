@@ -27,6 +27,20 @@
   color: var(--cor-texto-suave);
 }
 
+.verTodos {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--tam-pequeno);
+  font-weight: 500;
+  color: var(--cor-texto-2);
+  white-space: nowrap;
+}
+
+.verTodos:hover {
+  color: var(--cor-texto);
+}
+
 .atencao {
   display: flex;
   flex-direction: column;

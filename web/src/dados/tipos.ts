@@ -4,7 +4,8 @@
  * Datas são texto ISO ("2026-10-07") e meses "2026-10".
  */
 
-export type Situacao = "ativo" | "em_risco" | "parado" | "novo";
+/** "inativo": 24 meses ou mais sem comprar. */
+export type Situacao = "ativo" | "em_risco" | "parado" | "novo" | "inativo";
 
 export type Mercado = "PRACA" | "MONTADORA" | "EXPORTACAO";
 
@@ -101,7 +102,7 @@ export type MesDoPainel = {
 
 export type DestaqueCliente = {
   cliente: ClienteResumo;
-  /** Parou: faturamento mensal médio perdido. Menos/mais: diferença em R$ no semestre. Novo: faturamento desde a 1ª compra. */
+  /** Parou: faturamento mensal médio perdido. Menos/mais: diferença em R$ no semestre. Novo ou reativado: faturado desde que chegou. */
   valor: number;
   variacao: number | null;
 };
@@ -111,6 +112,48 @@ export type GrupoDestaque = {
   /** Soma de `valor` de todos os clientes do grupo, não só dos listados. */
   valorTotal: number;
   itens: DestaqueCliente[];
+};
+
+export type ClienteParado = {
+  cliente: ClienteResumo;
+  diasSemComprar: number;
+  cicloDias: number | null;
+  /** Média mensal dos 12 meses até a última compra: o que deixou de entrar por mês. */
+  perdaMensal: number;
+};
+
+export type ClienteComVariacao = {
+  cliente: ClienteResumo;
+  semestre: number;
+  semestreAnoAnterior: number;
+  variacao: number;
+  /** Variação em peças: separa o volume do reajuste de preço. */
+  variacaoPecas: number | null;
+};
+
+export type ClienteNovoOuReativado = {
+  cliente: ClienteResumo;
+  tipo: "novo" | "reativado";
+  /** Primeira compra (novo) ou a compra da volta (reativado). */
+  desde: string;
+  faturadoDesde: number;
+};
+
+export type ClienteComMix = {
+  cliente: ClienteResumo;
+  porte: Porte | null;
+  oportunidades: OportunidadeMix[];
+};
+
+/** As listas da tela de análises, já ordenadas pela regra de cada uma. */
+export type Analises = {
+  /** Meses de "comprando menos/mais": os 6 últimos fechados e os mesmos do ano anterior. */
+  semestre: { inicio: string; fim: string };
+  pararam: ClienteParado[];
+  menos: ClienteComVariacao[];
+  mais: ClienteComVariacao[];
+  novos: ClienteNovoOuReativado[];
+  mix: ClienteComMix[];
 };
 
 export type PainelInicio = {

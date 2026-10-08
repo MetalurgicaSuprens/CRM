@@ -1,0 +1,113 @@
+/* --colunas vem do componente: quantas colunas há além da do cliente */
+.cabecalho,
+.linha {
+  display: grid;
+  grid-template-columns: minmax(12rem, 2.2fr) repeat(var(--colunas), minmax(6.5rem, 1fr));
+  align-items: center;
+  gap: var(--esp-4);
+  padding: 0 var(--esp-3);
+}
+
+/* Fica grudado abaixo da barra superior ao rolar listas longas */
+.cabecalho {
+  position: sticky;
+  top: var(--altura-barra-superior);
+  z-index: 1;
+  min-height: 36px;
+  background: var(--cor-superficie);
+  border-bottom: 1px solid var(--cor-linha);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--cor-texto-2);
+}
+
+.tabela {
+  margin: 0 calc(var(--esp-3) * -1);
+}
+
+.linha {
+  min-height: 58px;
+  padding-top: var(--esp-2);
+  padding-bottom: var(--esp-2);
+  border-bottom: 1px solid var(--cor-linha);
+  border-radius: var(--raio-pequeno);
+  font-size: var(--tam-pequeno);
+  font-variant-numeric: tabular-nums;
+}
+
+li:last-child .linha {
+  border-bottom: 0;
+}
+
+.linha:hover {
+  background: var(--cor-superficie-2);
+}
+
+.identificacao {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nome {
+  font-size: var(--tam-texto);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local {
+  color: var(--cor-texto-suave);
+}
+
+.celula {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.numerica {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.rotuloCelular {
+  display: none;
+}
+
+.vazio {
+  color: var(--cor-texto-suave);
+  font-size: var(--tam-pequeno);
+}
+
+/* Sem espaço para as colunas: cada cliente vira um cartão, com os valores dois a dois */
+@container (max-width: 900px) {
+  .cabecalho {
+    display: none;
+  }
+
+  .linha {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--esp-2) var(--esp-4);
+    padding: var(--esp-3);
+  }
+
+  .identificacao {
+    grid-column: 1 / -1;
+  }
+
+  .numerica {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .rotuloCelular {
+    display: block;
+    font-size: var(--tam-legenda);
+    color: var(--cor-texto-suave);
+  }
+}

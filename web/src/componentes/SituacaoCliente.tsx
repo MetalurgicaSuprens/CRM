@@ -1,4 +1,4 @@
-import { CircleCheck, CirclePause, CirclePlus, TriangleAlert } from "lucide-react";
+import { CircleCheck, CircleOff, CirclePause, CirclePlus, TriangleAlert } from "lucide-react";
 import type { Situacao } from "../dados/tipos";
 import estilos from "./SituacaoCliente.module.css";
 
@@ -7,6 +7,7 @@ export const SITUACOES = {
   em_risco: { rotulo: "Em risco", Icone: TriangleAlert, tom: "alerta" },
   parado: { rotulo: "Parado", Icone: CirclePause, tom: "critico" },
   novo: { rotulo: "Novo", Icone: CirclePlus, tom: "neutro" },
+  inativo: { rotulo: "Inativo", Icone: CircleOff, tom: "neutro" },
 } as const;
 
 type Props = {

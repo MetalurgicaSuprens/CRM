@@ -1,8 +1,17 @@
-import { diasEntre } from "../formato";
 import { diasUteisAte, diasUteisDoMes, hojeIso, mesDe, somarDias, somarMeses, ultimoDiaDoMes } from "../calendario";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
+import {
+  classificarSituacao,
+  diasSemComprar,
+  entradaRecente,
+  mudancaDeRitmo,
+  parouDeComprar,
+  perdaMensal,
+  type HistoricoDoCliente,
+} from "./analises";
 import { sugerirMix, type ClienteNoMix } from "./mix";
 import type {
+  Analises,
   ClienteResumo,
   DestaqueCliente,
   FaturamentoMensal,
@@ -25,6 +34,8 @@ const SEMENTE = 1401;
 const QUANTIDADE_DE_CLIENTES = 86;
 /** Clientes dos outros representantes: só entram na comparação do mix, nunca aparecem na tela. */
 const OUTROS_CLIENTES_DA_SUPRENS = 600;
+/** Gerados à parte (outra semente) para não mudar os 86 clientes que já existiam no protótipo. */
+const CLIENTES_QUE_VOLTARAM = 3;
 /** Índices de `mensal`: 0..35 são os meses fechados (35 = mês passado); 36 é o mês corrente. */
 const MESES_FECHADOS = 36;
 const ULTIMO_FECHADO = MESES_FECHADOS - 1;
@@ -64,7 +75,8 @@ const FAMILIAS = [
 /** Peso de cada mês do ano no faturamento: férias coletivas em dezembro e janeiro. */
 const SAZONALIDADE = [0.72, 0.88, 1.04, 1.02, 1.08, 1.04, 0.98, 1.06, 1.04, 1.1, 1.0, 0.78];
 
-type Perfil = "estavel" | "crescendo" | "caindo" | "parou" | "novo" | "irregular";
+/** "voltou" fica fora do sorteio: só os clientes reativados, gerados à parte, usam. */
+type Perfil = "estavel" | "crescendo" | "caindo" | "parou" | "novo" | "irregular" | "voltou";
 const PERFIS: readonly (readonly [Perfil, number])[] = [
   ["estavel", 0.44], ["crescendo", 0.14], ["caindo", 0.14], ["parou", 0.1], ["novo", 0.06], ["irregular", 0.12],
 ];
@@ -89,11 +101,8 @@ type ClienteFicticio = {
 
 type Indicadores = {
   ultimaCompra: string | null;
-  diasSemCompra: number;
   faturamento12m: number;
   faturamento12mAnterior: number;
-  faturamento6m: number;
-  faturamento6mAnoAnterior: number;
   cicloDias: number | null;
   situacao: Situacao;
 };
@@ -133,6 +142,10 @@ export function painelFicticio(): PainelInicio {
   return montarPainel(carteira());
 }
 
+export function analisesFicticias(): Analises {
+  return montarAnalises(carteira());
+}
+
 // ---------------------------------------------------------------- geração
 
 function gerarCarteira(hoje: string): Carteira {
@@ -140,12 +153,14 @@ function gerarCarteira(hoje: string): Carteira {
   const mesAtual = mesDe(hoje);
   const contexto: Contexto = { hoje, mesAtual, diaUtil: diasUteisAte(hoje), diasUteis: diasUteisDoMes(mesAtual) };
   const clientes = Array.from({ length: QUANTIDADE_DE_CLIENTES }, () => gerarCliente(aleatorio, contexto));
+  const aleatorioDosQueVoltaram = criarAleatorio(SEMENTE + 2);
+  clientes.push(...Array.from({ length: CLIENTES_QUE_VOLTARAM }, () => gerarCliente(aleatorioDosQueVoltaram, contexto, "voltou")));
   const outros = gerarOutrosClientesDaSuprens(criarAleatorio(SEMENTE + 1));
   return { ...contexto, clientes, suprens: [...clientes.map(paraMix), ...outros] };
 }
 
-function gerarCliente(aleatorio: Aleatorio, contexto: Contexto): ClienteFicticio {
-  const perfil = sortearComPeso(aleatorio, PERFIS);
+function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Perfil): ClienteFicticio {
+  const perfil = perfilFixo ?? sortearComPeso(aleatorio, PERFIS);
   const mercado = sortearMercado(aleatorio);
   const [cidade, uf] = aleatorio.escolher(CIDADES);
   const nome = `${aleatorio.escolher(RAMOS)} ${aleatorio.escolher(NOMES)}`;
@@ -205,6 +220,8 @@ function gerarHistorico(
   const fase = aleatorio.inteiro(0, intervalo - 1);
   const mesesParado = aleatorio.inteiro(3, 9);
   const mesesDeVida = aleatorio.inteiro(3, 10);
+  // Só quem voltou sorteia a pausa: a sequência dos outros perfis não muda.
+  const pausa = perfil === "voltou" ? { mesesDesdeAVolta: aleatorio.inteiro(2, 9), duracao: aleatorio.inteiro(13, 18) } : null;
   const mensal: FaturamentoMensal[] = [];
   const datasCompra: string[] = [];
   for (let indice = 0; indice <= MESES_FECHADOS; indice++) {
@@ -213,6 +230,7 @@ function gerarHistorico(
     const comprou =
       (perfil !== "parou" || mesesAtras >= mesesParado) &&
       (perfil !== "novo" || mesesAtras <= mesesDeVida) &&
+      (pausa === null || mesesAtras <= pausa.mesesDesdeAVolta || mesesAtras > pausa.mesesDesdeAVolta + pausa.duracao) &&
       (perfil === "irregular" ? aleatorio.chance(1 / intervalo) : indice % intervalo === fase);
     // Mês corrente: só a parte já faturada até o dia útil de hoje.
     const parcial = mesesAtras === 0 ? contexto.diaUtil / contexto.diasUteis : 1;
@@ -277,23 +295,27 @@ function dataAntiga(aleatorio: Aleatorio): string {
 
 // ---------------------------------------------------------------- regras (espelho do plano)
 
-function calcularIndicadores(
-  cliente: Pick<ClienteFicticio, "mensal" | "datasCompra" | "primeiraCompra">,
-  contexto: Contexto,
-): Indicadores {
-  const ultimaCompra = cliente.datasCompra.at(-1) ?? null;
-  const diasSemCompra = ultimaCompra ? diasEntre(ultimaCompra, contexto.hoje) : Number.POSITIVE_INFINITY;
-  const cicloDias = cicloTipico(cliente.mensal);
-  const indicadores = {
-    ultimaCompra,
-    diasSemCompra,
+type BaseDoCliente = Pick<ClienteFicticio, "mensal" | "datasCompra" | "primeiraCompra" | "pedidos">;
+
+function calcularIndicadores(cliente: BaseDoCliente, contexto: Contexto): Indicadores {
+  const historico = historicoParaAnalise(cliente);
+  return {
+    ultimaCompra: cliente.datasCompra.at(-1) ?? null,
     faturamento12m: somarValores(cliente.mensal, ULTIMO_FECHADO - 11, ULTIMO_FECHADO),
     faturamento12mAnterior: somarValores(cliente.mensal, ULTIMO_FECHADO - 23, ULTIMO_FECHADO - 12),
-    faturamento6m: somarValores(cliente.mensal, ULTIMO_FECHADO - 5, ULTIMO_FECHADO),
-    faturamento6mAnoAnterior: somarValores(cliente.mensal, ULTIMO_FECHADO - 17, ULTIMO_FECHADO - 12),
-    cicloDias,
+    cicloDias: historico.cicloDias,
+    situacao: classificarSituacao(historico, contexto.hoje),
   };
-  return { ...indicadores, situacao: classificar(indicadores, cliente.primeiraCompra, contexto.hoje) };
+}
+
+function historicoParaAnalise(cliente: BaseDoCliente): HistoricoDoCliente {
+  return {
+    mensal: cliente.mensal.slice(0, MESES_FECHADOS),
+    compras: cliente.datasCompra,
+    primeiraCompra: cliente.primeiraCompra,
+    cicloDias: cicloTipico(cliente.mensal),
+    temPedidoEmAberto: cliente.pedidos.length > 0,
+  };
 }
 
 /** Mediana dos intervalos entre compras em 24 meses, entre 30 e 180 dias; null com menos de 4 compras. */
@@ -307,23 +329,6 @@ function cicloTipico(mensal: FaturamentoMensal[]): number | null {
   return Math.min(180, Math.max(30, Math.round(mediana(intervalos))));
 }
 
-function classificar(
-  indicadores: Omit<Indicadores, "situacao">,
-  primeiraCompra: string,
-  hoje: string,
-): Situacao {
-  const limiteParado = indicadores.cicloDias === null ? 180 : Math.max(60, 2 * indicadores.cicloDias);
-  if (indicadores.diasSemCompra > limiteParado) return "parado";
-  if (diasEntre(primeiraCompra, hoje) <= 365) return "novo";
-  const variacao = variacaoSemestre(indicadores);
-  if (variacao !== null && variacao <= -0.2) return "em_risco";
-  return "ativo";
-}
-
-function variacaoSemestre(indicadores: Pick<Indicadores, "faturamento6m" | "faturamento6mAnoAnterior">): number | null {
-  if (indicadores.faturamento6mAnoAnterior < 3_000) return null;
-  return indicadores.faturamento6m / indicadores.faturamento6mAnoAnterior - 1;
-}
 
 // ---------------------------------------------------------------- telas
 
@@ -423,7 +428,7 @@ function montarPainel(dados: Carteira): PainelInicio {
     ano: acumuladoDoAno(dados, fracaoDoMes),
     pedidosEmAberto: { quantidade: pedidos.length, valor: somar(pedidos.map((p) => p.valor)) },
     mensal: mesesDoAno(dados, aFaturarNoMes),
-    destaques: destaquesDaCarteira(dados.clientes),
+    destaques: destaquesDasAnalises(montarAnalises(dados)),
   };
 }
 
@@ -454,46 +459,79 @@ function mesesDoAno(dados: Carteira, aFaturarNoMes: number): PainelInicio["mensa
   });
 }
 
-function destaquesDaCarteira(clientes: ClienteFicticio[]): PainelInicio["destaques"] {
-  const comVariacao = clientes.map((cliente) => ({ cliente, variacao: variacaoSemestre(cliente.indicadores) }));
-  const diferenca = (c: ClienteFicticio) => c.indicadores.faturamento6m - c.indicadores.faturamento6mAnoAnterior;
+/** As listas das análises; o Início mostra os primeiros de cada uma, com as mesmas contas. */
+function montarAnalises(dados: Carteira): Analises {
+  const linhas = dados.clientes.map((cliente) => ({
+    cliente,
+    historico: historicoParaAnalise(cliente),
+    resumo: resumirCliente(cliente),
+    situacao: cliente.indicadores.situacao,
+  }));
+  const ativos = linhas.filter(({ situacao }) => situacao !== "parado" && situacao !== "inativo");
+  const comRitmo = ativos.flatMap((linha) => {
+    const ritmo = mudancaDeRitmo(linha.historico);
+    return ritmo ? [{ ...linha, ritmo }] : [];
+  });
+  const comVariacao = ({ resumo, ritmo }: (typeof comRitmo)[number]) => ({
+    cliente: resumo,
+    semestre: ritmo.semestre,
+    semestreAnoAnterior: ritmo.semestreAnoAnterior,
+    variacao: ritmo.variacao,
+    variacaoPecas: ritmo.variacaoPecas,
+  });
+  const diferenca = (item: { semestre: number; semestreAnoAnterior: number }) => item.semestre - item.semestreAnoAnterior;
   return {
-    pararam: agrupar(
-      clientes
-        .filter((c) => c.indicadores.situacao === "parado" && c.indicadores.diasSemCompra <= 730)
-        .map((c) => destaque(c, perdaMensal(c), null))
-        .sort((a, b) => b.valor - a.valor),
-    ),
-    menos: agrupar(
-      comVariacao
-        .filter(({ cliente, variacao }) => variacao !== null && variacao <= -0.2 && !["parado", "novo"].includes(cliente.indicadores.situacao))
-        .map(({ cliente, variacao }) => destaque(cliente, diferenca(cliente), variacao))
-        .sort((a, b) => a.valor - b.valor),
-    ),
-    mais: agrupar(
-      comVariacao
-        .filter(({ cliente, variacao }) => variacao !== null && variacao >= 0.2 && cliente.indicadores.situacao !== "novo")
-        .map(({ cliente, variacao }) => destaque(cliente, diferenca(cliente), variacao))
-        .sort((a, b) => b.valor - a.valor),
-    ),
-    novos: agrupar(
-      clientes
-        .filter((c) => c.indicadores.situacao === "novo")
-        .map((c) => destaque(c, somarValores(c.mensal, 0, MESES_FECHADOS), null))
-        .sort((a, b) => b.valor - a.valor),
-    ),
+    semestre: { inicio: somarMeses(dados.mesAtual, -6), fim: somarMeses(dados.mesAtual, -1) },
+    pararam: linhas
+      .filter(({ historico }) => parouDeComprar(historico, dados.hoje))
+      .map(({ historico, resumo }) => ({
+        cliente: resumo,
+        diasSemComprar: diasSemComprar(historico, dados.hoje) ?? 0,
+        cicloDias: historico.cicloDias,
+        perdaMensal: perdaMensal(historico),
+      }))
+      .sort((a, b) => b.perdaMensal - a.perdaMensal),
+    menos: comRitmo
+      .filter(({ ritmo, situacao }) => ritmo.direcao === "menos" && situacao === "em_risco")
+      .map(comVariacao)
+      .sort((a, b) => diferenca(a) - diferenca(b)),
+    mais: comRitmo
+      .filter(({ ritmo, situacao }) => ritmo.direcao === "mais" && situacao !== "novo")
+      .map(comVariacao)
+      .sort((a, b) => diferenca(b) - diferenca(a)),
+    novos: ativos
+      .flatMap(({ cliente, historico, resumo }) => {
+        const entrada = entradaRecente(historico, dados.hoje);
+        return entrada ? [{ cliente: resumo, ...entrada, faturadoDesde: faturadoDesde(cliente, entrada.desde) }] : [];
+      })
+      .sort((a, b) => b.faturadoDesde - a.faturadoDesde),
+    mix: ativos
+      .flatMap(({ cliente, resumo }) => {
+        const mix = sugerirMix(paraMix(cliente), dados.suprens);
+        return mix && mix.oportunidades.length > 0 ? [{ cliente: resumo, porte: mix.porte, oportunidades: mix.oportunidades }] : [];
+      })
+      .sort((a, b) => b.cliente.faturamento12m - a.cliente.faturamento12m),
   };
 }
 
-/** Faturamento mensal médio nos 12 meses anteriores à última compra. */
-function perdaMensal(cliente: ClienteFicticio): number {
-  const ultimoComCompra = cliente.mensal.findLastIndex((mes) => mes.valor > 0);
-  if (ultimoComCompra < 0) return 0;
-  return Math.round(somarValores(cliente.mensal, ultimoComCompra - 11, ultimoComCompra) / 12);
+/** Inclui o mês corrente, até hoje. */
+function faturadoDesde(cliente: ClienteFicticio, data: string): number {
+  const mesDaData = data.slice(0, 7);
+  return somar(cliente.mensal.filter((mes) => mes.mes >= mesDaData).map((mes) => mes.valor));
 }
 
-function destaque(cliente: ClienteFicticio, valor: number, variacao: number | null): DestaqueCliente {
-  return { cliente: resumirCliente(cliente), valor, variacao };
+function destaquesDasAnalises(analises: Analises): PainelInicio["destaques"] {
+  const variacao = (item: Analises["menos"][number]): DestaqueCliente => ({
+    cliente: item.cliente,
+    valor: item.semestre - item.semestreAnoAnterior,
+    variacao: item.variacao,
+  });
+  return {
+    pararam: agrupar(analises.pararam.map((item) => ({ cliente: item.cliente, valor: item.perdaMensal, variacao: null }))),
+    menos: agrupar(analises.menos.map(variacao)),
+    mais: agrupar(analises.mais.map(variacao)),
+    novos: agrupar(analises.novos.map((item) => ({ cliente: item.cliente, valor: item.faturadoDesde, variacao: null }))),
+  };
 }
 
 function agrupar(itens: DestaqueCliente[]): GrupoDestaque {

@@ -1,0 +1,61 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+/* Do tamanho do conteúdo; sem espaço, as listas quebram linha em vez de sumir na rolagem */
+.listas {
+  align-self: flex-start;
+  flex-wrap: wrap;
+}
+
+.resumo {
+  font-weight: 500;
+  color: var(--cor-texto-2);
+}
+
+.suave {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.nota {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.etiqueta {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: var(--cor-neutro-fundo);
+  color: var(--cor-neutro);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reativado {
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
+}
+
+.familias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.familia {
+  padding: 1px 8px;
+  border: 1px solid var(--cor-linha);
+  border-radius: 999px;
+  background: var(--cor-superficie-2);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  white-space: nowrap;
+}

@@ -23,6 +23,7 @@ import { SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
+import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import type { FichaCliente as Ficha, Mercado, Porte } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
@@ -31,8 +32,6 @@ import { BarrasMensais } from "../graficos/BarrasMensais";
 import { Carregando } from "./Carregando";
 import estilos from "./FichaCliente.module.css";
 
-const MERCADOS: Record<Mercado, string> = { PRACA: "Praça", MONTADORA: "Montadora", EXPORTACAO: "Exportação" };
-const PORTES: Record<Porte, string> = { pequeno: "pequeno", medio: "médio", grande: "grande" };
 
 export function FichaCliente() {
   const { codigo = "" } = useParams();
@@ -94,7 +93,7 @@ function DadosDoCliente({ ficha }: { ficha: Ficha }) {
   return (
     <dl className={estilos.dados}>
       <Dado icone={MapPin} rotulo="Cidade" valor={`${ficha.cidade}/${ficha.uf}`} />
-      <Dado icone={Store} rotulo="Mercado" valor={MERCADOS[ficha.mercado]} />
+      <Dado icone={Store} rotulo="Mercado" valor={ROTULOS_DE_MERCADO[ficha.mercado]} />
       <Dado icone={Hash} rotulo="Código" valor={ficha.codigo} />
       <Dado icone={Handshake} rotulo="Cliente desde" valor={ficha.primeiraCompra.slice(0, 4)} />
     </dl>
@@ -169,8 +168,8 @@ function OportunidadesDeMix({ ficha }: { ficha: Ficha }) {
 }
 
 function descreverParecidos(mercado: Mercado, porte: Porte | null): string {
-  const faixa = porte ? `, porte ${PORTES[porte]}` : "";
-  return `Parecidos: clientes ativos do mercado ${MERCADOS[mercado]}${faixa}, em toda a Suprens.`;
+  const faixa = porte ? `, porte ${ROTULOS_DE_PORTE[porte]}` : "";
+  return `Parecidos: clientes ativos do mercado ${ROTULOS_DE_MERCADO[mercado]}${faixa}, em toda a Suprens.`;
 }
 
 function TabelaProdutos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {

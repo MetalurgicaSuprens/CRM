@@ -7,7 +7,7 @@ type Props = {
   /** Acompanha o título, em tom neutro: a cor fica com os dados. */
   icone: LucideIcon;
   /** Só quando o cartão repete uma situação que já aparece com essa cor na tela. */
-  tom?: "critico" | "alerta";
+  tom?: "critico" | "alerta" | "ok";
   subtitulo?: ReactNode;
   acoes?: ReactNode;
   children: ReactNode;

@@ -4,6 +4,7 @@ import {
   formatarCompacto,
   formatarData,
   formatarMesAno,
+  formatarPeriodo,
   formatarReais,
   formatarReaisCompacto,
   formatarTempoDesde,
@@ -33,6 +34,16 @@ describe("formatarReaisCompacto", () => {
   it("não mostra 1.000 mil na virada para milhão", () => {
     expect(formatarCompacto(999_600)).toBe("1 mi");
     expect(formatarCompacto(99_970)).toBe("100 mil");
+  });
+});
+
+describe("formatarPeriodo", () => {
+  it("mostra o ano só no fim quando os meses são do mesmo ano", () => {
+    expect(formatarPeriodo("2026-04", "2026-09")).toBe("abr–set/26");
+  });
+
+  it("mostra os dois anos quando o período vira o ano", () => {
+    expect(formatarPeriodo("2025-11", "2026-04")).toBe("nov/25–abr/26");
   });
 });
 

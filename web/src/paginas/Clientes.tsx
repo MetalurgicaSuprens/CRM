@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Search } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
+import { Segmentos } from "../componentes/Segmentos";
 import { SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
@@ -81,20 +82,13 @@ export function Clientes() {
             onChange={(evento) => alterar("busca", evento.target.value, "")}
           />
         </label>
-        <div className={estilos.filtros} role="group" aria-label="Situação">
-          {FILTROS.map(({ valor, rotulo }) => (
-            <button
-              key={valor}
-              type="button"
-              className={estilos.filtro}
-              aria-pressed={filtro === valor}
-              onClick={() => alterar("situacao", valor, "todas")}
-            >
-              {rotulo}
-              <span className={estilos.contagem}>{contar(clientes, valor)}</span>
-            </button>
-          ))}
-        </div>
+        <Segmentos
+          rotulo="Situação"
+          opcoes={FILTROS.map((opcao) => ({ ...opcao, contagem: contar(clientes, opcao.valor) }))}
+          selecionado={filtro}
+          aoEscolher={(valor) => alterar("situacao", valor, "todas")}
+          className={estilos.filtros}
+        />
         <label className={estilos.ordem}>
           <span>Ordenar</span>
           <select value={ordem} onChange={(evento) => alterar("ordem", evento.target.value, "faturamento")}>
