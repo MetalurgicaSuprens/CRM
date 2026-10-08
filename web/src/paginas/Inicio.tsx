@@ -1,6 +1,19 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { ChevronRight, CirclePause, CirclePlus, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  CalendarRange,
+  ChartNoAxesColumn,
+  ChevronRight,
+  CirclePause,
+  CirclePlus,
+  ClipboardList,
+  Gauge,
+  ReceiptText,
+  TrendingDown,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
@@ -24,7 +37,7 @@ export function Inicio() {
       <CabecalhoPagina titulo={`${saudacao()}, ${primeiroNome(situacao.representante.nome)}`} descricao={descricaoDoDia(painel)} />
       <Indicadores painel={painel} />
       <div className={estilos.gradePrincipal}>
-        <Cartao titulo="Faturamento mensal" subtitulo={`${anoDe(painel)}, comparado a ${anoDe(painel) - 1}`}>
+        <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo={`${anoDe(painel)}, comparado a ${anoDe(painel) - 1}`}>
           <BarrasMensais
             descricao={`Faturamento mensal de ${anoDe(painel)} comparado a ${anoDe(painel) - 1}`}
             rotulos={{ valor: String(anoDe(painel)), comparacao: String(anoDe(painel) - 1), aFaturar: "A faturar no mês" }}
@@ -34,7 +47,7 @@ export function Inicio() {
         <AtencaoNaCarteira destaques={painel.destaques} />
       </div>
       <div className={estilos.gradeListas}>
-        <Cartao titulo="Pararam de comprar" subtitulo="Ordenados pelo faturamento mensal que deixou de entrar">
+        <Cartao titulo="Pararam de comprar" icone={CirclePause} tom="critico" subtitulo="Ordenados pelo faturamento mensal que deixou de entrar">
           <ListaClientes
             vazio="Nenhum cliente parado."
             itens={painel.destaques.pararam.itens.map(({ cliente, valor }) => ({
@@ -50,7 +63,7 @@ export function Inicio() {
             }))}
           />
         </Cartao>
-        <Cartao titulo="Comprando menos" subtitulo="Últimos 6 meses contra os mesmos meses do ano passado">
+        <Cartao titulo="Comprando menos" icone={TrendingDown} tom="alerta" subtitulo="Últimos 6 meses contra os mesmos meses do ano passado">
           <ListaClientes
             vazio="Nenhuma queda relevante no semestre."
             itens={painel.destaques.menos.itens.map(({ cliente, valor, variacao }) => ({
@@ -78,11 +91,13 @@ function Indicadores({ painel }: { painel: PainelInicio }) {
     <div className={estilos.indicadores}>
       <Indicador
         rotulo={`Faturado em ${nomeDoMes}`}
+        icone={ReceiptText}
         valor={<Valor valor={mesAtual.faturado} compacto />}
         detalhe={<Variacao razao={razao(mesAtual.faturado, mesAtual.anoAnteriorMesmoDiaUtil)} referencia={`vs ${formatarMesAno(`${anoDe(painel) - 1}${mesAtual.mes.slice(4)}`)}, mesmo dia útil`} />}
       />
       <Indicador
         rotulo={`Projeção de ${nomeDoMes}`}
+        icone={Gauge}
         valor={<Valor valor={mesAtual.faturado + mesAtual.aFaturarNoMes} compacto />}
         detalhe={
           <>
@@ -92,11 +107,13 @@ function Indicadores({ painel }: { painel: PainelInicio }) {
       />
       <Indicador
         rotulo={`Acumulado de ${anoDe(painel)}`}
+        icone={CalendarRange}
         valor={<Valor valor={ano.acumulado} compacto />}
         detalhe={<Variacao razao={razao(ano.acumulado, ano.acumuladoAnoAnterior)} referencia={`vs ${anoDe(painel) - 1}`} />}
       />
       <Indicador
         rotulo="Pedidos em aberto"
+        icone={ClipboardList}
         valor={<Valor valor={pedidosEmAberto.valor} compacto />}
         detalhe={`${pedidosEmAberto.quantidade} pedidos`}
       />
@@ -121,7 +138,7 @@ const LINHAS_ATENCAO: LinhaAtencao[] = [
 
 function AtencaoNaCarteira({ destaques }: { destaques: PainelInicio["destaques"] }) {
   return (
-    <Cartao titulo="Atenção na carteira" subtitulo="Pelas regras de análise do CRM">
+    <Cartao titulo="Atenção na carteira" icone={Activity} subtitulo="Pelas regras de análise do CRM">
       <ul className={estilos.atencao}>
         {LINHAS_ATENCAO.map(({ chave, rotulo, Icone, tom, descrever }) => (
           <li key={chave}>

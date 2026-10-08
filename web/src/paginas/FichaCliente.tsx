@@ -1,5 +1,16 @@
 import { Link, useParams } from "react-router";
-import { ArrowLeft, FilePlus2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Boxes,
+  CalendarCheck,
+  ChartNoAxesColumn,
+  ClipboardList,
+  FilePlus2,
+  Lightbulb,
+  Package,
+  ReceiptText,
+  Repeat,
+} from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
@@ -47,7 +58,7 @@ export function FichaCliente() {
         }
       />
       <Indicadores ficha={ficha} hoje={situacao.hoje} />
-      <Cartao titulo="Faturamento mensal" subtitulo="Últimos 24 meses e o mês atual">
+      <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo="Últimos 24 meses e o mês atual">
         <BarrasMensais
           descricao={`Faturamento mensal de ${ficha.nome} nos últimos 24 meses`}
           rotulos={{ valor: "Faturado" }}
@@ -56,13 +67,13 @@ export function FichaCliente() {
         />
       </Cartao>
       <div className={estilos.gradeDupla}>
-        <Cartao titulo="Famílias compradas" subtitulo="Últimos 12 meses">
+        <Cartao titulo="Famílias compradas" icone={Boxes} subtitulo="Últimos 12 meses">
           <BarrasHorizontais
             descricao="Participação de cada família no faturamento dos últimos 12 meses"
             barras={ficha.familias.map((f) => ({ rotulo: f.familia, valor: f.valor, participacao: f.participacao }))}
           />
         </Cartao>
-        <Cartao titulo="Oportunidades de mix" subtitulo="Famílias que clientes parecidos compram e este não">
+        <Cartao titulo="Oportunidades de mix" icone={Lightbulb} subtitulo="Famílias que clientes parecidos compram e este não">
           {ficha.oportunidades.length === 0 ? (
             <p className={estilos.vazio}>Este cliente já compra as famílias mais comuns do segmento.</p>
           ) : (
@@ -79,10 +90,10 @@ export function FichaCliente() {
           )}
         </Cartao>
       </div>
-      <Cartao titulo="Produtos mais comprados" subtitulo="Últimos 12 meses">
+      <Cartao titulo="Produtos mais comprados" icone={Package} subtitulo="Últimos 12 meses">
         <TabelaProdutos ficha={ficha} hoje={situacao.hoje} />
       </Cartao>
-      <Cartao titulo="Pedidos em aberto" subtitulo="Ainda não faturados">
+      <Cartao titulo="Pedidos em aberto" icone={ClipboardList} subtitulo="Ainda não faturados">
         <TabelaPedidos ficha={ficha} />
       </Cartao>
     </div>
@@ -94,22 +105,26 @@ function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
   return (
     <div className={estilos.indicadores}>
       <Indicador
-        rotulo="Faturamento em 12 meses"
+        rotulo="Faturado em 12 meses"
+        icone={ReceiptText}
         valor={<Valor valor={ficha.faturamento12m} compacto />}
         detalhe={<Variacao razao={ficha.variacao12m} referencia="vs 12 meses anteriores" />}
       />
       <Indicador
         rotulo="Última compra"
+        icone={CalendarCheck}
         valor={ficha.ultimaCompra ? formatarTempoDesde(ficha.ultimaCompra, hoje) : "—"}
         detalhe={ficha.ultimaCompra ? `em ${formatarData(ficha.ultimaCompra)}` : "sem compras"}
       />
       <Indicador
         rotulo="Ciclo de compra"
+        icone={Repeat}
         valor={ficha.cicloDias ? `${ficha.cicloDias} dias` : "Irregular"}
         detalhe={ficha.cicloDias ? "intervalo típico entre compras" : "poucas compras para estimar"}
       />
       <Indicador
         rotulo="Pedidos em aberto"
+        icone={ClipboardList}
         valor={ficha.pedidosEmAberto.length ? <Valor valor={totalEmAberto} compacto /> : "Nenhum"}
         detalhe={ficha.pedidosEmAberto.length ? `${ficha.pedidosEmAberto.length} pedido(s)` : "tudo faturado"}
       />

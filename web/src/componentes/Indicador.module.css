@@ -1,7 +1,13 @@
+/*
+ * Cada bloco ocupa três linhas da grade da página (rótulo, valor, detalhe) e herda as
+ * linhas dela (subgrid): quando um rótulo quebra em duas linhas, os valores dos blocos
+ * vizinhos continuam na mesma altura.
+ */
 .indicador {
-  display: flex;
-  flex-direction: column;
-  gap: var(--esp-1);
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  row-gap: var(--esp-1);
   min-width: 0;
   padding: var(--esp-5) var(--esp-6);
   background: var(--cor-superficie);
@@ -10,8 +16,25 @@
 }
 
 .rotulo {
-  font-size: var(--tam-pequeno);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--esp-1);
+  font-size: var(--tam-rotulo);
   font-weight: 500;
+  line-height: 1.35;
+}
+
+/* Mesmo selo neutro dos títulos dos cartões, um pouco menor */
+.icone {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
   color: var(--cor-texto-2);
 }
 
@@ -32,6 +55,16 @@
 @media (max-width: 640px) {
   .indicador {
     padding: var(--esp-4);
+  }
+
+  .rotulo {
+    gap: var(--esp-2);
+    font-size: var(--tam-pequeno);
+  }
+
+  .icone {
+    width: 26px;
+    height: 26px;
   }
 
   .valor {
