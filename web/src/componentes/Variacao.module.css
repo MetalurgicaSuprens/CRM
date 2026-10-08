@@ -6,14 +6,24 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * Linha de base vem do número, não da seta: assim o percentual fica alinhado ao texto
+ * ao lado (a seta, sem linha de base própria, empurrava o número para cima).
+ */
 .alta,
 .queda,
 .estavel {
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 2px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.alta svg,
+.queda svg,
+.estavel svg {
+  align-self: center;
 }
 
 .alta {
