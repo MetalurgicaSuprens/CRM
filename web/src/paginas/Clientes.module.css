@@ -107,7 +107,8 @@
   background: var(--cor-superficie);
   border: 1px solid var(--cor-linha);
   border-radius: var(--raio);
-  overflow: hidden;
+  /* clip, e não hidden: hidden criaria uma rolagem própria e o cabeçalho deixaria de grudar no topo */
+  overflow: clip;
 }
 
 /* Em telas largas, a sobra se divide entre todas as colunas, e os números não ficam longe do nome */
@@ -120,7 +121,11 @@
   padding: 0 var(--esp-5);
 }
 
+/* Ao rolar a carteira, o cabeçalho fica grudado logo abaixo da barra superior */
 .cabecalhoTabela {
+  position: sticky;
+  top: var(--altura-barra-superior);
+  z-index: 1;
   min-height: 40px;
   background: var(--cor-superficie-2);
   border-bottom: 1px solid var(--cor-linha);
