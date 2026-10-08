@@ -1,4 +1,4 @@
-import { useFormatoDeReais } from "../contexto/valores";
+import { Valor } from "../componentes/Valor";
 import { formatarParticipacao } from "../formato";
 import estilos from "./BarrasHorizontais.module.css";
 
@@ -10,7 +10,6 @@ export type BarraHorizontal = {
 
 /** Uma série só: todas as barras na mesma cor, comprimento proporcional à maior. */
 export function BarrasHorizontais({ barras, descricao }: { barras: BarraHorizontal[]; descricao: string }) {
-  const formato = useFormatoDeReais();
   const maior = Math.max(1, ...barras.map((barra) => barra.valor));
   return (
     <ul className={estilos.lista} aria-label={descricao}>
@@ -21,7 +20,9 @@ export function BarrasHorizontais({ barras, descricao }: { barras: BarraHorizont
             <span className={estilos.barra} style={{ width: `${(barra.valor / maior) * 100}%` }} />
           </span>
           <span className={estilos.participacao}>{formatarParticipacao(barra.participacao)}</span>
-          <span className={estilos.valor}>{formato.reaisCompacto(barra.valor)}</span>
+          <span className={estilos.valor}>
+            <Valor valor={barra.valor} compacto />
+          </span>
         </li>
       ))}
     </ul>

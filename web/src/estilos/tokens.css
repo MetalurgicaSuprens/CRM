@@ -27,6 +27,8 @@
 
   --cor-alta: #2e6b45;
   --cor-queda: #a3361f;
+  /* Valores em R$: verde-floresta, sóbrio ao lado dos cinzas quentes (6,1:1 sobre os cartões) */
+  --cor-dinheiro: #2e6b45;
 
   /* Situação do cliente: sempre acompanhada de ícone e texto */
   --cor-ok: #2e6b45;

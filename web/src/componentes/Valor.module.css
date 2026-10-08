@@ -1,5 +1,11 @@
 .valor {
   white-space: nowrap;
+  color: var(--cor-dinheiro);
+}
+
+.perda {
+  white-space: nowrap;
+  color: var(--cor-queda);
 }
 
 .oculto {

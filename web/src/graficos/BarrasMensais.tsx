@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Table2, ChartColumn } from "lucide-react";
 import { useFormatoDeReais } from "../contexto/valores";
+import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { formatarMesAno, formatarMesPorExtenso } from "../formato";
 import { eixoRedondo, escalarAltura, type Eixo } from "./escala";
@@ -206,7 +207,6 @@ type PropsDica = {
  * coluna está no gráfico: centrada no meio, rente à borda nas pontas.
  */
 function Dica({ barra, rotulos, centro, larguraDesenho }: PropsDica) {
-  const formato = useFormatoDeReais();
   const fechado = barra.valor !== null && !barra.aFaturar;
   const recuo = larguraDesenho > 0 ? (centro / larguraDesenho) * 100 : 50;
   return (
@@ -214,11 +214,11 @@ function Dica({ barra, rotulos, centro, larguraDesenho }: PropsDica) {
       <p className={estilos.dicaTitulo}>{formatarMesPorExtenso(barra.mes)}</p>
       <div className={estilos.dicaLinhas}>
         {barra.valor !== null ? (
-          <LinhaDica chave={estilos.chaveValor} valor={formato.reais(barra.valor)} rotulo={barra.aFaturar ? "Faturado até agora" : rotulos.valor} />
+          <LinhaDica chave={estilos.chaveValor} valor={barra.valor} rotulo={barra.aFaturar ? "Faturado até agora" : rotulos.valor} />
         ) : null}
-        {barra.aFaturar ? <LinhaDica chave={estilos.chaveAFaturar} valor={formato.reais(barra.aFaturar)} rotulo={rotulos.aFaturar ?? "A faturar"} /> : null}
+        {barra.aFaturar ? <LinhaDica chave={estilos.chaveAFaturar} valor={barra.aFaturar} rotulo={rotulos.aFaturar ?? "A faturar"} /> : null}
         {barra.comparacao != null && rotulos.comparacao ? (
-          <LinhaDica chave={estilos.chaveComparacao} valor={formato.reais(barra.comparacao)} rotulo={rotulos.comparacao} />
+          <LinhaDica chave={estilos.chaveComparacao} valor={barra.comparacao} rotulo={rotulos.comparacao} />
         ) : null}
       </div>
       {fechado && barra.comparacao ? (
@@ -231,11 +231,13 @@ function Dica({ barra, rotulos, centro, larguraDesenho }: PropsDica) {
 }
 
 /** Três células da grade da dica: traço da série, valor e rótulo, sempre na mesma linha. */
-function LinhaDica({ chave, valor, rotulo }: { chave: string | undefined; valor: string; rotulo: string }) {
+function LinhaDica({ chave, valor, rotulo }: { chave: string | undefined; valor: number; rotulo: string }) {
   return (
     <>
       <span className={chave} aria-hidden="true" />
-      <strong className={estilos.dicaValor}>{valor}</strong>
+      <strong className={estilos.dicaValor}>
+        <Valor valor={valor} />
+      </strong>
       <span className={estilos.dicaRotulo}>{rotulo}</span>
     </>
   );
@@ -268,7 +270,6 @@ function Legenda({ barras, rotulos }: { barras: BarraMensal[]; rotulos: Rotulos 
 }
 
 function TabelaMensal({ barras, rotulos }: { barras: BarraMensal[]; rotulos: Rotulos }) {
-  const formato = useFormatoDeReais();
   const temComparacao = Boolean(rotulos.comparacao);
   const temAFaturar = barras.some((b) => b.aFaturar);
   return (
@@ -287,9 +288,9 @@ function TabelaMensal({ barras, rotulos }: { barras: BarraMensal[]; rotulos: Rot
           {barras.map((barra) => (
             <tr key={barra.mes}>
               <th scope="row">{formatarMesAno(barra.mes)}</th>
-              <td>{barra.valor === null ? "—" : formato.reais(barra.valor)}</td>
-              {temAFaturar ? <td>{barra.aFaturar ? formato.reais(barra.aFaturar) : "—"}</td> : null}
-              {temComparacao ? <td>{barra.comparacao != null ? formato.reais(barra.comparacao) : "—"}</td> : null}
+              <td>{barra.valor === null ? "—" : <Valor valor={barra.valor} />}</td>
+              {temAFaturar ? <td>{barra.aFaturar ? <Valor valor={barra.aFaturar} /> : "—"}</td> : null}
+              {temComparacao ? <td>{barra.comparacao != null ? <Valor valor={barra.comparacao} /> : "—"}</td> : null}
               {temComparacao ? (
                 <td>
                   {barra.valor !== null && !barra.aFaturar && barra.comparacao ? (

@@ -132,7 +132,7 @@ type LinhaAtencao = {
 const LINHAS_ATENCAO: LinhaAtencao[] = [
   { chave: "pararam", rotulo: "Pararam de comprar", Icone: CirclePause, tom: estilos.critico, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> por mês</> },
   { chave: "menos", rotulo: "Comprando menos", Icone: TrendingDown, tom: estilos.alerta, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> no semestre</> },
-  { chave: "mais", rotulo: "Comprando mais", Icone: TrendingUp, tom: estilos.ok, descrever: (g) => <>+<Valor valor={g.valorTotal} compacto /> no semestre</> },
+  { chave: "mais", rotulo: "Comprando mais", Icone: TrendingUp, tom: estilos.ok, descrever: (g) => <><Valor valor={g.valorTotal} compacto comSinal /> no semestre</> },
   { chave: "novos", rotulo: "Clientes novos", Icone: CirclePlus, tom: estilos.neutro, descrever: (g) => <><Valor valor={g.valorTotal} compacto /> desde a 1ª compra</> },
 ];
 
