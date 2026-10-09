@@ -1,0 +1,104 @@
+.filtros {
+  --espaco: var(--esp-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco);
+}
+
+/*
+ * --por-linha vem do componente: quantos blocos cabem numa linha. Os da última linha crescem até
+ * ocupá-la; o -1px absorve arredondamentos, para o último da linha não descer.
+ */
+.filtro {
+  display: grid;
+  flex: 1 1 calc((100% - (var(--por-linha) - 1) * var(--espaco)) / var(--por-linha) - 1px);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--esp-3);
+  min-width: 0;
+  min-height: 4.5rem;
+  padding: var(--esp-3) var(--esp-4);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  text-align: left;
+}
+
+.filtro:hover {
+  border-color: var(--cor-linha-forte);
+  background: var(--cor-superficie-2);
+}
+
+.filtro > .icone {
+  width: 40px;
+  height: 40px;
+}
+
+.nome {
+  font-size: var(--tam-texto);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.quantidade {
+  font-size: var(--tam-destaque);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto-2);
+}
+
+/* O escolhido: borda escura e o ícone cheio, no tom da opção */
+.filtro[aria-pressed="true"] {
+  border-color: var(--cor-texto);
+  box-shadow: inset 0 0 0 1px var(--cor-texto);
+}
+
+.filtro[aria-pressed="true"]:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--cor-texto), var(--foco);
+}
+
+.filtro[aria-pressed="true"] > .icone {
+  background: currentColor;
+}
+
+.filtro[aria-pressed="true"] > .icone svg {
+  color: var(--cor-superficie);
+}
+
+.filtro[aria-pressed="true"] .quantidade {
+  color: var(--cor-texto);
+}
+
+@container (max-width: 1199px) {
+  .filtro {
+    gap: var(--esp-2);
+    padding: var(--esp-3);
+  }
+
+  .nome {
+    font-size: var(--tam-rotulo);
+  }
+}
+
+/* No celular os blocos ficam dois a dois, com recuos menores: em telas de 360 px, "Comprando" ainda cabe numa linha */
+@container (max-width: 599px) {
+  .filtros {
+    --espaco: var(--esp-2);
+  }
+
+  .filtro {
+    gap: 6px;
+    min-height: 4rem;
+    padding: var(--esp-2);
+  }
+
+  .filtro > .icone {
+    width: 32px;
+    height: 32px;
+  }
+
+  .quantidade {
+    font-size: var(--tam-texto);
+  }
+}

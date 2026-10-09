@@ -2,7 +2,8 @@ import { useSearchParams } from "react-router";
 import { CirclePlus, RotateCcw } from "lucide-react";
 import { somarMeses } from "../calendario";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
-import { ANALISES, CartaoDaAnalise, IconeDaAnalise, type TipoDeAnalise } from "../componentes/IdentidadeDaAnalise";
+import { Filtros } from "../componentes/Filtros";
+import { ANALISES, CartaoDaAnalise, type TipoDeAnalise } from "../componentes/IdentidadeDaAnalise";
 import { DataRelativa } from "../componentes/Quando";
 import { Selo } from "../componentes/Selo";
 import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
@@ -35,35 +36,13 @@ export function Analises() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina titulo="Análises" descricao="Quem pede atenção na carteira, pelas regras do CRM" />
-      <EscolhaDaLista
-        analises={analises}
-        selecionada={lista}
+      <Filtros
+        rotulo="Análise"
+        opcoes={LISTAS.map((valor) => ({ valor, ...ANALISES[valor], quantidade: analises[valor].length }))}
+        selecionado={lista}
         aoEscolher={(escolhida) => setParametros(escolhida === "pararam" ? {} : { lista: escolhida }, { replace: true })}
       />
       <ListaEscolhida lista={lista} analises={analises} hoje={situacao.hoje} />
-    </div>
-  );
-}
-
-type PropsDaEscolha = { analises: ListasDeAnalise; selecionada: TipoDeAnalise; aoEscolher: (lista: TipoDeAnalise) => void };
-
-/** Um botão por análise, com o ícone e quantos clientes ela tem; a escolhida aparece embaixo. */
-function EscolhaDaLista({ analises, selecionada, aoEscolher }: PropsDaEscolha) {
-  return (
-    <div className={estilos.escolhas} role="group" aria-label="Análise">
-      {LISTAS.map((lista) => {
-        const quantidade = analises[lista].length;
-        return (
-          <button key={lista} type="button" className={estilos.escolha} aria-pressed={lista === selecionada} onClick={() => aoEscolher(lista)}>
-            <IconeDaAnalise tipo={lista} className={estilos.icone} />
-            <span className={estilos.nome}>{ANALISES[lista].rotulo}</span>
-            <span className={estilos.quantidade}>
-              {quantidade}
-              <span className="visualmente-oculto">{quantidade === 1 ? " cliente" : " clientes"}</span>
-            </span>
-          </button>
-        );
-      })}
     </div>
   );
 }

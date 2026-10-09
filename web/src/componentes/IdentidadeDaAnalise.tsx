@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import { CirclePause, CirclePlus, Lightbulb, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 import type { Analises } from "../dados/tipos";
 import { Cartao } from "./Cartao";
-import estilos from "./IdentidadeDaAnalise.module.css";
+import type { TomDoSelo } from "./Selo";
 
 export type TipoDeAnalise = keyof Omit<Analises, "semestre">;
 
-type Identidade = { rotulo: string; icone: LucideIcon; tom: "critico" | "alerta" | "ok" | "neutro" };
+type Identidade = { rotulo: string; icone: LucideIcon; tom: TomDoSelo };
 
 /** Nome, ícone e tom de cada análise: os mesmos no Início e nas Análises. */
 export const ANALISES: Record<TipoDeAnalise, Identidade> = {
@@ -16,16 +16,6 @@ export const ANALISES: Record<TipoDeAnalise, Identidade> = {
   novos: { rotulo: "Novos e reativados", icone: CirclePlus, tom: "neutro" },
   mix: { rotulo: "Oportunidades de mix", icone: Lightbulb, tom: "neutro" },
 };
-
-/** O ícone da análise num círculo com o tom dela. O tamanho muda pelo className, e o ícone acompanha. */
-export function IconeDaAnalise({ tipo, className }: { tipo: TipoDeAnalise; className?: string }) {
-  const { icone: Icone, tom } = ANALISES[tipo];
-  return (
-    <span className={`${estilos.icone} ${estilos[tom]} ${className ?? ""}`} aria-hidden="true">
-      <Icone strokeWidth={2} />
-    </span>
-  );
-}
 
 type PropsDoCartao = { tipo: TipoDeAnalise; subtitulo: ReactNode; acoes?: ReactNode; children: ReactNode };
 

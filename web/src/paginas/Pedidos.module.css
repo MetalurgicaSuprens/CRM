@@ -4,12 +4,6 @@
   gap: var(--esp-5);
 }
 
-/* Do tamanho do conteúdo; sem espaço, as abas quebram linha em vez de sumir na rolagem */
-.abas {
-  align-self: flex-start;
-  flex-wrap: wrap;
-}
-
 .suave {
   font-size: var(--tam-legenda);
   color: var(--cor-texto-suave);

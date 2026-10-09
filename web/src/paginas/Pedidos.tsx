@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { ClipboardList, FilePen, FilePlus2, ReceiptText, Send, Trash } from "lucide-react";
+import { ClipboardList, FilePen, FilePlus2, ReceiptText, Send, Trash, type LucideIcon } from "lucide-react";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { EtapaDoPedido } from "../componentes/EtapaDoPedido";
-import { Segmentos } from "../componentes/Segmentos";
+import { Filtros } from "../componentes/Filtros";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho } from "../dados/api";
@@ -15,20 +16,23 @@ import { DataRelativa, MomentoRelativo } from "../componentes/Quando";
 import { Carregando } from "./Carregando";
 import estilos from "./Pedidos.module.css";
 
-type Aba = "enviados" | "rascunhos" | "emAberto" | "faturados";
+type Aba = keyof PainelDePedidos;
 
-const ABAS: { valor: Aba; rotulo: string }[] = [
-  { valor: "enviados", rotulo: "Acompanhamento" },
-  { valor: "rascunhos", rotulo: "Rascunhos" },
-  { valor: "emAberto", rotulo: "Em aberto no ERP" },
-  { valor: "faturados", rotulo: "Faturados" },
-];
+/** Nome e ícone de cada aba: os mesmos no filtro e no cartão da lista. */
+const ABAS: Record<Aba, { rotulo: string; icone: LucideIcon }> = {
+  enviados: { rotulo: "Enviados pelo CRM", icone: Send },
+  rascunhos: { rotulo: "Rascunhos", icone: FilePen },
+  emAberto: { rotulo: "Em aberto no ERP", icone: ClipboardList },
+  faturados: { rotulo: "Faturados", icone: ReceiptText },
+};
+
+const ORDEM_DAS_ABAS: readonly Aba[] = ["enviados", "rascunhos", "emAberto", "faturados"];
 
 export function Pedidos() {
   const { dados: painel, recarregar } = useCarga("pedidos", carregarPedidos);
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   const [parametros, setParametros] = useSearchParams();
-  const aba = ABAS.find((opcao) => opcao.valor === parametros.get("aba"))?.valor ?? "enviados";
+  const aba = ORDEM_DAS_ABAS.find((opcao) => opcao === parametros.get("aba")) ?? "enviados";
   if (!painel || !situacao) return <Carregando />;
   return (
     <div className={estilos.pagina}>
@@ -42,12 +46,11 @@ export function Pedidos() {
           </Link>
         }
       />
-      <Segmentos
+      <Filtros
         rotulo="Pedidos"
-        opcoes={ABAS.map((opcao) => ({ ...opcao, contagem: painel[opcao.valor].length }))}
+        opcoes={ORDEM_DAS_ABAS.map((valor) => ({ valor, ...ABAS[valor], quantidade: painel[valor].length }))}
         selecionado={aba}
         aoEscolher={(valor) => setParametros(valor === "enviados" ? {} : { aba: valor }, { replace: true })}
-        className={estilos.abas}
       />
       <AbaEscolhida aba={aba} painel={painel} hoje={situacao.hoje} recarregar={recarregar} />
     </div>
@@ -69,9 +72,19 @@ function AbaEscolhida({ aba, painel, hoje, recarregar }: PropsDaAba) {
   }
 }
 
+/** O cartão de cada lista leva o nome e o ícone da aba. */
+function CartaoDaAba({ aba, subtitulo, children }: { aba: Aba; subtitulo: string; children: ReactNode }) {
+  const { rotulo, icone } = ABAS[aba];
+  return (
+    <Cartao titulo={rotulo} icone={icone} subtitulo={subtitulo}>
+      {children}
+    </Cartao>
+  );
+}
+
 function Enviados({ pedidos, hoje }: { pedidos: PedidoEnviado[]; hoje: string }) {
   return (
-    <Cartao titulo="Acompanhamento" icone={Send} subtitulo="Pedidos enviados pelo CRM, do envio até o faturamento. A situação volta do ERP a cada atualização dos dados.">
+    <CartaoDaAba aba="enviados" subtitulo="Do envio até o faturamento. A situação volta do ERP a cada atualização dos dados.">
       <TabelaResponsiva
         descricao="Pedidos enviados pelo CRM"
         itens={pedidos}
@@ -94,17 +107,13 @@ function Enviados({ pedidos, hoje }: { pedidos: PedidoEnviado[]; hoje: string })
           },
         ]}
       />
-    </Cartao>
+    </CartaoDaAba>
   );
 }
 
 function Rascunhos({ rascunhos, hoje, recarregar }: { rascunhos: Rascunho[]; hoje: string; recarregar: () => void }) {
   return (
-    <Cartao
-      titulo="Rascunhos"
-      icone={FilePen}
-      subtitulo="Pedidos começados e ainda não enviados. No protótipo, ficam só até recarregar a página."
-    >
+    <CartaoDaAba aba="rascunhos" subtitulo="Pedidos começados e ainda não enviados. No protótipo, ficam só até recarregar a página.">
       <TabelaResponsiva
         descricao="Rascunhos de pedido"
         itens={rascunhos}
@@ -121,7 +130,7 @@ function Rascunhos({ rascunhos, hoje, recarregar }: { rascunhos: Rascunho[]; hoj
           { titulo: "Ações", largura: 8.5, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
         ]}
       />
-    </Cartao>
+    </CartaoDaAba>
   );
 }
 
@@ -144,9 +153,8 @@ function AcoesDoRascunho({ rascunho, aoExcluir }: { rascunho: Rascunho; aoExclui
 
 function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
   return (
-    <Cartao
-      titulo="Em aberto no ERP"
-      icone={ClipboardList}
+    <CartaoDaAba
+      aba="emAberto"
       subtitulo="Todos os pedidos da sua carteira ainda não faturados, pelo CRM ou não, da entrega mais próxima à mais distante."
     >
       <TabelaResponsiva
@@ -163,13 +171,13 @@ function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
           { titulo: "Valor", numerica: true, celula: (pedido) => <Valor valor={pedido.valor} /> },
         ]}
       />
-    </Cartao>
+    </CartaoDaAba>
   );
 }
 
 function Faturados({ notas, hoje }: { notas: NotaFaturada[]; hoje: string }) {
   return (
-    <Cartao titulo="Faturados" icone={ReceiptText} subtitulo="Notas dos últimos 45 dias, da mais recente à mais antiga.">
+    <CartaoDaAba aba="faturados" subtitulo="Notas dos últimos 45 dias, da mais recente à mais antiga.">
       <TabelaResponsiva
         descricao="Notas faturadas nos últimos 45 dias"
         itens={notas}
@@ -182,6 +190,6 @@ function Faturados({ notas, hoje }: { notas: NotaFaturada[]; hoje: string }) {
           { titulo: "Valor", numerica: true, celula: (nota) => <Valor valor={nota.valor} /> },
         ]}
       />
-    </Cartao>
+    </CartaoDaAba>
   );
 }

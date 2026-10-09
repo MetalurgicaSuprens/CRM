@@ -3,7 +3,8 @@ import { Link } from "react-router";
 import { Activity, CalendarRange, ChartNoAxesColumn, ChevronRight, ClipboardList, Gauge, ReceiptText } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
-import { ANALISES, CartaoDaAnalise, IconeDaAnalise } from "../componentes/IdentidadeDaAnalise";
+import { IconeNoCirculo } from "../componentes/IconeNoCirculo";
+import { ANALISES, CartaoDaAnalise } from "../componentes/IdentidadeDaAnalise";
 import { Indicador } from "../componentes/Indicador";
 import { ListaClientes } from "../componentes/ListaClientes";
 import { Valor } from "../componentes/Valor";
@@ -145,7 +146,7 @@ function AtencaoNaCarteira({ destaques }: { destaques: PainelInicio["destaques"]
         {LINHAS_ATENCAO.map(({ chave, descrever }) => (
           <li key={chave}>
             <Link to={`/analises?lista=${chave}`} className={estilos.linhaAtencao}>
-              <IconeDaAnalise tipo={chave} />
+              <IconeNoCirculo icone={ANALISES[chave].icone} tom={ANALISES[chave].tom} />
               <span className={estilos.textoAtencao}>
                 <span className={estilos.rotuloAtencao}>{ANALISES[chave].rotulo}</span>
                 <span className={estilos.descricaoAtencao}>{descrever(destaques[chave])}</span>

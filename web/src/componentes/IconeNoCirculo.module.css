@@ -1,5 +1,5 @@
-/* Do tamanho do Início; quem usa pode mudar width e height, e o ícone acompanha */
-.icone {
+/* 34 px por padrão; quem usa pode mudar width e height, e o ícone acompanha */
+.circulo {
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -8,7 +8,7 @@
   border-radius: 50%;
 }
 
-.icone svg {
+.circulo svg {
   width: 52%;
   height: 52%;
 }
