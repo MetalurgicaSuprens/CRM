@@ -24,14 +24,14 @@
   min-width: 0;
 }
 
-/* Selo do título no azul-aço da interface; com situação na tela, ganha o tom dela */
+/* Círculo do título no azul-aço da interface, como nos filtros; com situação na tela, ganha o tom dela */
 .icone {
   display: grid;
   place-items: center;
   flex-shrink: 0;
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 82%, var(--cor-acento)));
   color: var(--cor-acento);
 }

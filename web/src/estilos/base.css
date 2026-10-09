@@ -8,9 +8,14 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Fundo cinza-azulado com um brilho suave de azul-aço e de verde no alto da página */
 body {
   margin: 0;
-  background: var(--cor-fundo);
+  background:
+    radial-gradient(1100px 560px at 90% -160px, rgb(47 111 174 / 12%), transparent 70%),
+    radial-gradient(900px 480px at 35% -200px, rgb(46 107 69 / 7%), transparent 70%),
+    var(--cor-fundo);
+  background-repeat: no-repeat;
   color: var(--cor-texto);
   font-family: var(--fonte-texto);
   font-size: var(--tam-texto);

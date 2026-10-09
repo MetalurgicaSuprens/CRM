@@ -8,7 +8,7 @@ type Props = {
   icone: LucideIcon;
   valor: ReactNode;
   detalhe?: ReactNode;
-  /** O número principal da tela, em grafite. Um por tela. */
+  /** O número principal da tela, no visual do filtro escolhido. Um por tela. */
   destaque?: boolean;
 };
 

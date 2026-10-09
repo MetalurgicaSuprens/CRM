@@ -16,21 +16,13 @@
   box-shadow: var(--sombra-1);
 }
 
-/*
- * O número principal da tela, em grafite com um brilho de óxido. As cores de texto, dinheiro e
- * variação são redefinidas aqui para o fundo escuro, e os componentes de dentro as herdam.
- */
+/* O número principal da tela, no visual do filtro escolhido: contorno, fundo e brilho em azul-aço */
 .destaque {
-  --cor-texto: #ffffff;
-  --cor-texto-2: rgb(255 255 255 / 80%);
-  --cor-texto-suave: rgb(255 255 255 / 64%);
-  --cor-dinheiro: #8fd9ab;
-  --cor-alta: #8fd9ab;
-  --cor-queda: #ffa18a;
-  color: var(--cor-texto);
-  background: var(--brilho-oxido), var(--grafite-gradiente);
-  border-color: transparent;
-  box-shadow: 0 12px 28px -12px rgb(22 22 22 / 55%);
+  border-color: var(--cor-acento);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cor-acento-fundo) 75%, var(--cor-superficie)), var(--cor-superficie));
+  box-shadow:
+    inset 0 0 0 1px var(--cor-acento),
+    0 12px 24px -12px color-mix(in srgb, var(--cor-acento) 60%, transparent);
 }
 
 .rotulo {
@@ -43,21 +35,22 @@
   line-height: 1.35;
 }
 
-/* Mesmo selo azul-aço dos títulos dos cartões, um pouco menor */
+/* Mesmo círculo azul-aço dos títulos dos cartões, um pouco menor */
 .icone {
   display: grid;
   place-items: center;
   flex-shrink: 0;
   width: 30px;
   height: 30px;
-  border-radius: 9px;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 82%, var(--cor-acento)));
   color: var(--cor-acento);
 }
 
+/* No número principal, o ícone fica cheio, como no filtro escolhido */
 .destaque .icone {
-  background: rgb(255 255 255 / 12%);
-  color: #ffffff;
+  background: var(--cor-acento);
+  color: var(--cor-superficie);
 }
 
 .valor {

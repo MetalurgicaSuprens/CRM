@@ -5,8 +5,9 @@
   min-height: 100dvh;
 }
 
-/* ------------------------------------------------ menu lateral (desktop), em grafite */
+/* ------------------------------------------------ menu lateral (desktop) */
 
+/* Branco translúcido sobre o fundo: o brilho do alto da página aparece de leve através dele */
 .menu {
   position: sticky;
   top: 0;
@@ -16,11 +17,9 @@
   height: 100vh;
   height: 100dvh;
   padding: var(--esp-5) var(--esp-3);
-  /* Um brilho de óxido atrás do logotipo, apagando-se para baixo */
-  background:
-    radial-gradient(160% 38% at 0% 0%, rgb(210 44 18 / 22%), transparent 70%),
-    var(--grafite-gradiente);
-  color: rgb(255 255 255 / 72%);
+  background: color-mix(in srgb, var(--cor-superficie) 82%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-right: 1px solid var(--cor-borda);
 }
 
 .marca {
@@ -34,17 +33,6 @@
   display: block;
 }
 
-/* O globo tem traços escuros: no grafite, ele vai num medalhão branco */
-.menu .marca img {
-  width: 42px;
-  height: 42px;
-  padding: 3px;
-  border-radius: 50%;
-  background: #ffffff;
-  object-fit: contain;
-  box-shadow: 0 0 0 3px rgb(255 255 255 / 8%);
-}
-
 .nomeProduto {
   font-family: var(--fonte-titulo);
   font-size: 1.25rem;
@@ -55,11 +43,6 @@
   border-left: 1px solid var(--cor-linha-forte);
 }
 
-.menu .nomeProduto {
-  color: #ffffff;
-  border-left-color: rgb(255 255 255 / 22%);
-}
-
 .itensMenu {
   display: flex;
   flex-direction: column;
@@ -67,39 +50,33 @@
 }
 
 .itemMenu {
-  position: relative;
   display: flex;
   align-items: center;
   gap: var(--esp-3);
   padding: 10px var(--esp-3);
   border-radius: var(--raio-pequeno);
-  color: rgb(255 255 255 / 68%);
+  color: var(--cor-texto-2);
   font-weight: 500;
-  transition: background-color var(--transicao), color var(--transicao);
+  transition:
+    background-color var(--transicao),
+    color var(--transicao),
+    box-shadow var(--transicao);
 }
 
 .itemMenu:hover {
-  background: rgb(255 255 255 / 6%);
-  color: #ffffff;
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
 }
 
+/* O item ativo como o filtro escolhido: fundo, contorno e ícone no azul-aço */
 .ativo,
 .ativo:hover {
-  background: rgb(255 255 255 / 10%);
-  color: #ffffff;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cor-acento-fundo) 70%, var(--cor-superficie)), var(--cor-acento-fundo));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--cor-acento) 30%, transparent),
+    0 8px 18px -10px color-mix(in srgb, var(--cor-acento) 60%, transparent);
+  color: var(--cor-acento);
   font-weight: 600;
-}
-
-.ativo::before {
-  content: "";
-  position: absolute;
-  left: -12px;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--cor-marca);
-  box-shadow: 0 0 12px rgb(210 44 18 / 70%);
 }
 
 .usuario {
@@ -109,10 +86,10 @@
   column-gap: var(--esp-3);
   margin-top: auto;
   padding: var(--esp-4) var(--esp-2) 0;
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--cor-linha);
 }
 
-/* Iniciais do representante num círculo de óxido */
+/* Iniciais do representante no mesmo círculo dos ícones */
 .avatar {
   grid-row: span 2;
   display: grid;
@@ -120,8 +97,8 @@
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e5512f, #b3240e);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 75%, var(--cor-acento)));
+  color: var(--cor-acento);
   font-size: var(--tam-pequeno);
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -129,12 +106,11 @@
 
 .nomeUsuario {
   font-weight: 600;
-  color: #ffffff;
 }
 
 .codigoUsuario {
   font-size: var(--tam-pequeno);
-  color: rgb(255 255 255 / 55%);
+  color: var(--cor-texto-suave);
 }
 
 .sair {
@@ -148,22 +124,20 @@
   border: 0;
   background: none;
   font-size: var(--tam-pequeno);
-  color: rgb(255 255 255 / 60%);
+  color: var(--cor-texto-2);
   transition: color var(--transicao);
 }
 
 .sair:hover {
-  color: #ffffff;
+  color: var(--cor-texto);
 }
 
 /* ------------------------------------------------ área de conteúdo */
 
-/* Um brilho quente de óxido no alto da página, bem de leve */
 .area {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: radial-gradient(1100px 380px at 100% -140px, rgb(210 44 18 / 8%), transparent 70%) no-repeat;
 }
 
 .barraSuperior {
@@ -303,24 +277,21 @@
     color: var(--cor-texto-suave);
   }
 
+  /* Todo ícone tem a pílula (transparente): a do ativo ganha cor sem mudar o tamanho */
+  .aba svg {
+    box-sizing: content-box;
+    padding: 4px 16px;
+    border-radius: 999px;
+    transition: background-color var(--transicao), color var(--transicao);
+  }
+
   .abaAtiva {
-    color: var(--cor-texto);
+    color: var(--cor-acento);
     font-weight: 600;
   }
 
   .abaAtiva svg {
-    color: var(--cor-marca);
-  }
-
-  .abaAtiva::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 30%;
-    right: 30%;
-    height: 3px;
-    border-radius: 0 0 3px 3px;
-    background: var(--cor-marca);
+    background: var(--cor-acento-fundo);
   }
 }
 
