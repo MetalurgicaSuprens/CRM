@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { Activity, CalendarRange, ChartNoAxesColumn, ChevronRight, ClipboardList, Gauge, ReceiptText } from "lucide-react";
+import { Activity, ChartLine, ChartNoAxesColumn, ChevronRight, ClipboardList, Gauge, ReceiptText } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { IconeNoCirculo } from "../componentes/IconeNoCirculo";
@@ -114,7 +114,7 @@ function Indicadores({ painel }: { painel: PainelInicio }) {
       />
       <Indicador
         rotulo={`Acumulado de ${anoDe(painel)}`}
-        icone={CalendarRange}
+        icone={ChartLine}
         valor={<Valor valor={ano.acumulado} compacto />}
         detalhe={<Variacao razao={razao(ano.acumulado, ano.acumuladoAnoAnterior)} referencia={`vs ${anoDe(painel) - 1}`} />}
       />
