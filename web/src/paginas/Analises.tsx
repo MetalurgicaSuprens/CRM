@@ -70,7 +70,7 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
       numerica: true,
       celula: (item) => (
         <>
-          <Valor valor={item.perdaMensal} />
+          <Valor valor={item.perdaMensal} comoPerda />
           <span className={estilos.suave}>por mês</span>
         </>
       ),
@@ -82,7 +82,7 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
       subtitulo="Sem comprar há mais que o dobro do ciclo típico (no mínimo 60 dias; 180 para quem compra sem ritmo) e sem pedido em aberto. Com 24 meses sem comprar, o cliente vira inativo e sai da lista."
     >
       <p className={estilos.resumo}>
-        {formatarContagem(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map((item) => item.perdaMensal))} compacto /> por mês deixaram de entrar
+        {formatarContagem(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map((item) => item.perdaMensal))} compacto comoPerda /> por mês deixaram de entrar
       </p>
       <TabelaDeClientes
         descricao="Clientes que pararam de comprar"

@@ -49,7 +49,7 @@ export function Inicio() {
               detalhe: `${cliente.cidade}/${cliente.uf} · última compra ${cliente.ultimaCompra ? formatarTempoDesde(cliente.ultimaCompra, situacao.hoje) : "—"}`,
               direita: (
                 <>
-                  <Valor valor={valor} compacto />
+                  <Valor valor={valor} compacto comoPerda />
                   <span className={estilos.suave}>por mês</span>
                 </>
               ),
@@ -134,7 +134,7 @@ type LinhaAtencao = {
 };
 
 const LINHAS_ATENCAO: LinhaAtencao[] = [
-  { chave: "pararam", descrever: (g) => <><Valor valor={g.valorTotal} compacto /> por mês</> },
+  { chave: "pararam", descrever: (g) => <><Valor valor={g.valorTotal} compacto comoPerda /> por mês</> },
   { chave: "menos", descrever: (g) => <><Valor valor={g.valorTotal} compacto /> no semestre</> },
   { chave: "mais", descrever: (g) => <><Valor valor={g.valorTotal} compacto comSinal /> no semestre</> },
   { chave: "novos", descrever: (g) => <><Valor valor={g.valorTotal} compacto /> desde que chegaram</> },

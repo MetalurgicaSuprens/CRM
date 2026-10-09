@@ -6,15 +6,17 @@ type Props = {
   compacto?: boolean;
   /** Põe "+" nos valores positivos, para ganhos. */
   comSinal?: boolean;
+  /** Valor positivo que é ruim (o que deixou de entrar): no vermelho de queda, sem sinal. */
+  comoPerda?: boolean;
 };
 
-/** Dinheiro sempre em verde; perda (valor negativo) no vermelho de queda, para não parecer ganho. */
-export function Valor({ valor, compacto = false, comSinal = false }: Props) {
+/** Dinheiro sempre em verde; perda (valor negativo, ou marcado comoPerda) no vermelho de queda, para não parecer ganho. */
+export function Valor({ valor, compacto = false, comSinal = false, comoPerda = false }: Props) {
   const { visiveis } = useValores();
   const formato = useFormatoDeReais();
   const sinal = comSinal && valor > 0 ? "+" : "";
   const texto = `${sinal}${compacto ? formato.reaisCompacto(valor) : formato.reais(valor)}`;
-  if (visiveis) return <span className={valor < 0 ? estilos.perda : estilos.valor}>{texto}</span>;
+  if (visiveis) return <span className={comoPerda || valor < 0 ? estilos.perda : estilos.valor}>{texto}</span>;
   return (
     <span className={estilos.oculto}>
       <span aria-hidden="true">{texto}</span>
