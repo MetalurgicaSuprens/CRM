@@ -53,7 +53,12 @@ Lucas (LAN) ──────────────────────�
 
 ### `extrator/` (Node/TS, numa máquina da LAN, conta própria do Windows)
 
-- Conta Oracle **própria**, só com SELECT nas tabelas necessárias (não usa a do Lucas).
+- Conta Oracle **própria**, só com SELECT nas tabelas necessárias, obrigatória **antes do piloto da F4**, quando o extrator passa a rodar sozinho na LAN.
+  - Na F2 o desenvolvimento usa o `LUCAS_RO` (decisão do Lucas em 2026-10-09), com quatro cuidados:
+    - a senha fica num `extrator/.env` local, que o git ignora e que só o Lucas preenche;
+    - só o `extrator/` usa a conexão;
+    - o extrator roda à mão, na máquina do Lucas;
+    - os dados reais ficam num arquivo local fora do git. O `.bat` da rede continua com os fictícios.
 - Gera a `foto.db` já com as regras de negócio calculadas, como a "tela servida pronta" do Gestao: situação, ciclo, análises, mix e município IBGE. A API só faz leituras com escopo e somas simples.
 - Antes de gravar:
   - compara a impressão digital com a da última foto;
@@ -309,8 +314,10 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - domínio (ex.: `crm.suprens.com.br`) e quem controla o DNS. Ele vira a identidade das chaves e não pode mudar depois;
   - VM dedicada no servidor da empresa (não compartilhar com o site);
   - quem administra a rede e o firewall, para as regras da seção Arquitetura.
-- **Antes da F2:**
-  - quem é o DBA, para criar a conta Oracle do extrator e liberar SELECT na view `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI` (preço líquido);
+- **Durante a F2:**
+  - quem é o DBA, para liberar ao `LUCAS_RO` o SELECT na view `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI` (preço líquido), que o usuário somente leitura não enxerga. Até lá, a foto da F2 sai sem preço.
+- **Antes do piloto da F4:**
+  - a conta Oracle própria do extrator, criada pelo DBA com SELECT só nas tabelas da lista que a F2 fecha, já com a view de preço líquido;
   - qual máquina da LAN roda o extrator (o servidor do Gestao?).
 - **Antes da F5:**
   - quem mantém o código do SGI (layout "CRM");
@@ -325,7 +332,8 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - cadastro de representantes (`SGI5_TAB_FIN_VEN`: tipo e situação);
   - significado de `ATIVO-DB`;
   - escolha da tabela quando o cliente tem principal e secundária;
-  - metas (tabela `SGI5_TAB_VEN_MT1` ou meta calculada).
+  - metas (tabela `SGI5_TAB_VEN_MT1` ou meta calculada);
+  - como identificar o cliente nas telas sem CPF/CNPJ: `CRCL.CLIENTE` é a raiz do CNPJ mais a filial (no cliente pessoa física, pode embutir parte do CPF), e o protótipo mostra esse código em Clientes e na ficha.
 
 ## Verificação
 
