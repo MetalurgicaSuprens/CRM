@@ -7,7 +7,7 @@ export const SITUACOES = {
   ativo: { rotulo: "Ativo", icone: CircleCheck, tom: "ok" },
   em_risco: { rotulo: "Em risco", icone: TriangleAlert, tom: "alerta" },
   parado: { rotulo: "Parado", icone: CirclePause, tom: "critico" },
-  novo: { rotulo: "Novo", icone: CirclePlus, tom: "neutro" },
+  novo: { rotulo: "Novo", icone: CirclePlus, tom: "novo" },
   inativo: { rotulo: "Inativo", icone: CircleOff, tom: "neutro" },
 } as const;
 

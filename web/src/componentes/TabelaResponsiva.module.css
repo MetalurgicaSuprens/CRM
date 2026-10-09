@@ -74,9 +74,11 @@ li:last-child .linha {
   white-space: nowrap;
 }
 
+/* Cada conteúdo fica do próprio tamanho: os selos não esticam até a largura da coluna */
 .celula {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   min-width: 0;
 }
 

@@ -53,6 +53,11 @@
   --tom-fundo: var(--cor-ok-fundo);
 }
 
+.novo {
+  --tom: var(--cor-novo);
+  --tom-fundo: var(--cor-novo-fundo);
+}
+
 .neutro {
   --tom: var(--cor-acento);
   --tom-fundo: var(--cor-acento-fundo);

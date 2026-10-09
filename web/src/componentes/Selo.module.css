@@ -34,3 +34,8 @@
   color: var(--cor-neutro);
   background: var(--cor-neutro-fundo);
 }
+
+.novo {
+  color: var(--cor-novo);
+  background: var(--cor-novo-fundo);
+}

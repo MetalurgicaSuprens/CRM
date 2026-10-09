@@ -216,7 +216,7 @@ function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...pr
 }
 
 function TipoDeEntrada({ tipo }: { tipo: ClienteNovoOuReativado["tipo"] }) {
-  return tipo === "reativado" ? <Selo rotulo="Reativado" icone={RotateCcw} tom="ok" /> : <Selo rotulo="Novo" icone={CirclePlus} tom="neutro" />;
+  return tipo === "reativado" ? <Selo rotulo="Reativado" icone={RotateCcw} tom="ok" /> : <Selo rotulo="Novo" icone={CirclePlus} tom="novo" />;
 }
 
 function diferenca(item: ClienteComVariacao): number {

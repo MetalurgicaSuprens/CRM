@@ -13,7 +13,7 @@ export const ANALISES: Record<TipoDeAnalise, Identidade> = {
   pararam: { rotulo: "Pararam de comprar", icone: CirclePause, tom: "critico" },
   menos: { rotulo: "Comprando menos", icone: TrendingDown, tom: "alerta" },
   mais: { rotulo: "Comprando mais", icone: TrendingUp, tom: "ok" },
-  novos: { rotulo: "Novos e reativados", icone: CirclePlus, tom: "neutro" },
+  novos: { rotulo: "Novos e reativados", icone: CirclePlus, tom: "novo" },
   mix: { rotulo: "Oportunidades de mix", icone: Lightbulb, tom: "neutro" },
 };
 

@@ -52,6 +52,11 @@
   color: var(--cor-ok);
 }
 
+.novo {
+  background: linear-gradient(135deg, var(--cor-novo-fundo), color-mix(in srgb, var(--cor-novo-fundo) 82%, var(--cor-novo)));
+  color: var(--cor-novo);
+}
+
 .titulos {
   display: flex;
   flex-direction: column;

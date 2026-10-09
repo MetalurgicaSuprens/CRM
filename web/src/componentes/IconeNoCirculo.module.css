@@ -28,6 +28,11 @@
   background: linear-gradient(135deg, var(--cor-ok-fundo), color-mix(in srgb, var(--cor-ok-fundo) 82%, var(--cor-ok)));
 }
 
+.novo {
+  color: var(--cor-novo);
+  background: linear-gradient(135deg, var(--cor-novo-fundo), color-mix(in srgb, var(--cor-novo-fundo) 82%, var(--cor-novo)));
+}
+
 /* Sem situação: o azul-aço da interface, como nos títulos dos cartões */
 .neutro {
   color: var(--cor-acento);

@@ -47,6 +47,9 @@
   --cor-critico-fundo: #f6e5e0;
   --cor-neutro: #4f5866;
   --cor-neutro-fundo: #eceff4;
+  /* Cliente novo: violeta, para não se confundir com o verde de ativo nem com o azul-aço da interface (5,2:1 sobre o fundo) */
+  --cor-novo: #6a4fb6;
+  --cor-novo-fundo: #eeeafa;
 
   --fonte-texto: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --fonte-titulo: "Oswald", "IBM Plex Sans", system-ui, sans-serif;

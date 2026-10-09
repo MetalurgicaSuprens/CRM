@@ -1,7 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import estilos from "./Selo.module.css";
 
-export type TomDoSelo = "ok" | "alerta" | "critico" | "neutro";
+/** "novo" é o tom do cliente que acabou de chegar; os demais seguem a situação (bom, atenção, crítico, sem situação). */
+export type TomDoSelo = "ok" | "alerta" | "critico" | "neutro" | "novo";
 
 type Props = {
   rotulo: string;
