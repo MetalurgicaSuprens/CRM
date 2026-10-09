@@ -46,7 +46,7 @@
 }
 
 .alerta {
-  background: linear-gradient(135deg, var(--cor-alerta-fundo), color-mix(in srgb, var(--cor-alerta-fundo) 82%, var(--cor-alerta)));
+  background: linear-gradient(135deg, var(--cor-alerta-fundo), color-mix(in srgb, var(--cor-alerta-fundo) 65%, var(--cor-alerta-vivo)));
   color: var(--cor-alerta);
 }
 

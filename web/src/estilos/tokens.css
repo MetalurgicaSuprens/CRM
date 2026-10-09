@@ -53,7 +53,12 @@
   --cor-ok: #2e6b45;
   --cor-ok-fundo: #e6efe9;
   --cor-alerta: #7f5600;
-  --cor-alerta-fundo: #f5ecd8;
+  --cor-alerta-fundo: #fef4cc;
+  /*
+   * Amarelo de sinalização, só em área cheia e com o ícone grafite por cima (11,5:1): como texto não
+   * tem contraste. O âmbar escuro de --cor-alerta, em área grande, ficava mostarda.
+   */
+  --cor-alerta-vivo: #ffc61a;
   --cor-critico: #a3361f;
   --cor-critico-fundo: #f6e5e0;
   --cor-neutro: #4d4d4b;

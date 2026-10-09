@@ -43,9 +43,13 @@
   --tom-fundo: var(--cor-critico-fundo);
 }
 
+/* Escolhido, fica amarelo com o ícone grafite, como uma placa: o âmbar escuro do texto, cheio, ficava mostarda */
 .alerta {
   --tom: var(--cor-alerta);
   --tom-fundo: var(--cor-alerta-fundo);
+  --tom-cheio: var(--cor-alerta-vivo);
+  --tom-borda: color-mix(in srgb, var(--cor-alerta-vivo) 85%, var(--cor-alerta));
+  --tom-sobre-cheio: var(--cor-acento);
 }
 
 .ok {
@@ -84,13 +88,16 @@
   color: var(--cor-texto-2);
 }
 
-/* O escolhido: borda, fundo, brilho e ícone cheio, no tom da opção */
+/*
+ * O escolhido: borda, fundo, brilho e ícone cheio, no tom da opção. Quem precisa de outra cor na
+ * área cheia (o alerta) declara --tom-cheio, --tom-borda e --tom-sobre-cheio.
+ */
 .filtro[aria-pressed="true"] {
-  border-color: var(--tom);
+  border-color: var(--tom-borda, var(--tom));
   background: linear-gradient(180deg, color-mix(in srgb, var(--tom-fundo) 75%, var(--cor-superficie)), var(--cor-superficie));
   box-shadow:
-    inset 0 0 0 1px var(--tom),
-    0 12px 24px -12px color-mix(in srgb, var(--tom) 60%, transparent);
+    inset 0 0 0 1px var(--tom-borda, var(--tom)),
+    0 12px 24px -12px color-mix(in srgb, var(--tom-cheio, var(--tom)) 60%, transparent);
 }
 
 /* O grafite pesa mais que as cores: no neutro escolhido, só a borda de 1 px e uma sombra mais suave */
@@ -100,16 +107,16 @@
 
 .filtro[aria-pressed="true"]:focus-visible {
   box-shadow:
-    inset 0 0 0 1px var(--tom),
+    inset 0 0 0 1px var(--tom-borda, var(--tom)),
     var(--foco);
 }
 
 .filtro[aria-pressed="true"] > .icone {
-  background: currentColor;
+  background: var(--tom-cheio, currentColor);
 }
 
 .filtro[aria-pressed="true"] > .icone svg {
-  color: var(--cor-superficie);
+  color: var(--tom-sobre-cheio, var(--cor-superficie));
 }
 
 .filtro[aria-pressed="true"] .quantidade {
