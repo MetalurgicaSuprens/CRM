@@ -25,8 +25,8 @@
 }
 
 /*
- * Círculo do título no azul-aço da interface, como nos filtros; com situação na tela, ganha o tom
- * dela. 34 px com ícone de 18 px (no Cartao.tsx): 8 px inteiros de cada lado, ícone no centro exato.
+ * Círculo do título em cinza com o ícone grafite, como nos filtros; com situação na tela, ganha o
+ * tom dela. 34 px com ícone de 18 px (no Cartao.tsx): 8 px inteiros de cada lado, ícone no centro exato.
  */
 .icone {
   display: grid;
@@ -35,7 +35,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 82%, var(--cor-acento)));
+  background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 90%, var(--cor-acento)));
   color: var(--cor-acento);
 }
 

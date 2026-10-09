@@ -93,6 +93,11 @@
     0 12px 24px -12px color-mix(in srgb, var(--tom) 60%, transparent);
 }
 
+/* O grafite pesa mais que as cores: no neutro escolhido, só a borda de 1 px e uma sombra mais suave */
+.neutro[aria-pressed="true"] {
+  box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--tom) 35%, transparent);
+}
+
 .filtro[aria-pressed="true"]:focus-visible {
   box-shadow:
     inset 0 0 0 1px var(--tom),

@@ -11,7 +11,7 @@ const MARGEM = 3;
 
 /**
  * Tendência em miniatura, como nos aplicativos de cotação: a linha tracejada marca o ponto de
- * partida e o ponto azul, onde a série está hoje. A escala começa no zero, para a inclinação
+ * partida e o ponto no fim da linha, onde a série está hoje. A escala começa no zero, para a inclinação
  * ser proporcional à variação.
  */
 export function Sparkline({ valores, largura = 88, altura = 32 }: Props) {

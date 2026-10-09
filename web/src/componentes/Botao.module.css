@@ -1,4 +1,4 @@
-/* O primário (azul-aço, com brilho) é a ação principal da tela; o secundário, as demais. */
+/* O primário (grafite, em relevo) é a ação principal da tela; o secundário, as demais. */
 .primario,
 .secundario {
   display: inline-flex;
@@ -19,12 +19,12 @@
 
 .primario {
   border: 0;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cor-acento) 82%, white), var(--cor-acento));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cor-acento) 80%, white), var(--cor-acento));
   color: #ffffff;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 20%),
-    0 1px 2px color-mix(in srgb, var(--cor-acento) 30%, transparent),
-    0 8px 18px -8px color-mix(in srgb, var(--cor-acento) 70%, transparent);
+    inset 0 1px 0 rgb(255 255 255 / 16%),
+    0 1px 2px color-mix(in srgb, var(--cor-acento) 20%, transparent),
+    0 8px 18px -10px color-mix(in srgb, var(--cor-acento) 55%, transparent);
 }
 
 /* Só com mouse: no celular, o toque deixaria o botão "levantado" */
@@ -32,9 +32,9 @@
   .primario:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 20%),
-      0 2px 4px color-mix(in srgb, var(--cor-acento) 30%, transparent),
-      0 12px 24px -8px color-mix(in srgb, var(--cor-acento) 75%, transparent);
+      inset 0 1px 0 rgb(255 255 255 / 16%),
+      0 2px 4px color-mix(in srgb, var(--cor-acento) 20%, transparent),
+      0 12px 24px -10px color-mix(in srgb, var(--cor-acento) 60%, transparent);
   }
 }
 

@@ -38,8 +38,8 @@
   background: linear-gradient(135deg, var(--cor-novo-fundo), color-mix(in srgb, var(--cor-novo-fundo) 82%, var(--cor-novo)));
 }
 
-/* Sem situação: o azul-aço da interface, como nos títulos dos cartões */
+/* Sem situação: o grafite da interface sobre cinza, como nos títulos dos cartões */
 .neutro {
   color: var(--cor-acento);
-  background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 82%, var(--cor-acento)));
+  background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 90%, var(--cor-acento)));
 }

@@ -6,6 +6,12 @@
  * do bloco, sem os recuos): a fatia e o valor crescem com ela.
  */
 .indicador {
+  /* A fatia é mais clara que os círculos dos títulos: numa área grande, o mesmo cinza pesaria */
+  --fundo-do-icone: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--cor-acento-fundo) 50%, var(--cor-superficie)),
+    color-mix(in srgb, var(--cor-acento-fundo) 96%, var(--cor-acento))
+  );
   display: grid;
   grid-row: span 3;
   grid-template-rows: subgrid;
@@ -19,15 +25,6 @@
   box-shadow: var(--sombra-1);
 }
 
-/* O número principal da tela, no visual do filtro escolhido: contorno, fundo e brilho em azul-aço */
-.destaque {
-  border-color: var(--cor-acento);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--cor-acento-fundo) 75%, var(--cor-superficie)), var(--cor-superficie));
-  box-shadow:
-    inset 0 0 0 1px var(--cor-acento),
-    0 12px 24px -12px color-mix(in srgb, var(--cor-acento) 60%, transparent);
-}
-
 .icone {
   grid-column: 1;
   grid-row: 1 / -1;
@@ -37,7 +34,7 @@
   width: var(--fatia);
   margin-right: var(--esp-4);
   border-radius: 14px;
-  background: linear-gradient(160deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 80%, var(--cor-acento)));
+  background: var(--fundo-do-icone);
   color: var(--cor-acento);
 }
 
@@ -47,7 +44,7 @@
   height: var(--icone);
 }
 
-/* No número principal, a fatia fica cheia, como o ícone do filtro escolhido */
+/* O número principal da tela: só a fatia fica cheia de grafite, como o ícone do filtro escolhido */
 .destaque .icone {
   background: linear-gradient(160deg, color-mix(in srgb, var(--cor-acento) 80%, white), var(--cor-acento));
   color: var(--cor-superficie);
@@ -82,7 +79,11 @@
   min-height: 1.5em;
 }
 
-/* Bloco estreito (celular): ícone pequeno na linha do rótulo; valor e detalhe na largura toda */
+/* Bloco estreito (celular): ícone pequeno na linha do rótulo, no círculo dos títulos; valor e detalhe na largura toda */
+.estreito {
+  --fundo-do-icone: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 90%, var(--cor-acento)));
+}
+
 .estreito .icone {
   grid-row: 1;
   align-self: center;

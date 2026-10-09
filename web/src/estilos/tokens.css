@@ -1,37 +1,48 @@
 /*
- * Visual do CRM: superfícies claras, tons pastel e o azul-aço como destaque da interface, com o
- * óxido da Suprens no logotipo e no traço dos títulos.
- * As cores de dados e de texto foram conferidas com o validador de paleta e de
- * contraste (WCAG) contra --cor-superficie, que é o fundo dos cartões.
+ * Visual do CRM: superfícies claras, o grafite como destaque da interface e o óxido da Suprens
+ * como assinatura (logotipo, traço dos títulos e item ativo do menu). O preto fica nos ícones,
+ * contornos, botões e no que está escolhido, nunca em superfícies grandes: o visual continua leve.
+ * As cores de texto foram conferidas com o validador de contraste (WCAG) contra
+ * --cor-superficie, que é o fundo dos cartões.
  */
 :root {
-  /* Cinza-azulado claro: combina com os tons pastel; o brilho do alto está em base.css */
-  --cor-fundo: #eff2f7;
+  /* Cinza claro quase neutro, com um toque quente para combinar com o óxido; o brilho do alto está em base.css */
+  --cor-fundo: #f3f3f2;
   --cor-superficie: #ffffff;
-  --cor-superficie-2: #f4f6fa;
-  --cor-linha: #e1e6ed;
-  --cor-linha-forte: #c8d0db;
+  --cor-superficie-2: #f6f6f5;
+  --cor-linha: #e6e6e4;
+  --cor-linha-forte: #cfcfcc;
   /* Contorno dos cartões: quase invisível, a sombra é que separa do fundo */
-  --cor-borda: rgb(16 24 40 / 7%);
+  --cor-borda: rgb(20 20 20 / 7%);
 
   --cor-texto: #161616;
-  --cor-texto-2: #4f5866;
-  /* 5:1 só sobre --cor-superficie; não usar texto pequeno suave sobre --cor-fundo */
-  --cor-texto-suave: #667085;
+  --cor-texto-2: #4d4d4b;
+  /* 5,3:1 só sobre --cor-superficie; não usar texto pequeno suave sobre --cor-fundo */
+  --cor-texto-suave: #6b6b69;
 
-  /* Óxido: logotipo e traço dos títulos. Nunca é cor de dado. */
+  /* Óxido: logotipo, traço dos títulos e item ativo do menu. Nunca é cor de dado. */
   --cor-marca: #d22c12;
+  --cor-marca-fundo: #fbebe7;
+  /* O traço acima dos títulos: a assinatura da Suprens em cada tela */
+  --traco-da-marca: linear-gradient(90deg, var(--cor-marca), #f0643f);
 
-  --cor-dado: #2f6fae;
-  --cor-dado-claro: #c3d6eb;
+  /*
+   * Gráficos em aço, como na identidade da Suprens. Sem matiz, o dado se separa do ano anterior
+   * pela claridade e pela forma (barra e traço); por isso o validador de paleta acusa o piso de
+   * croma, que vale para séries identificadas só pela cor. O aço fica na faixa de claridade dele,
+   * um tom acima do aço da marca (#5c5f63), que em 24 barras pesava.
+   */
+  --cor-dado: #6f7276;
+  /* O "a faturar" empilhado: mais claro que o dado, mas com 2:1 contra o cartão (validador, rampa ordinal) */
+  --cor-dado-claro: #b2b4b7;
   --cor-comparacao: #a7a8a3;
   --cor-tendencia: #8c8d88;
-  --cor-grade: #e6eaf0;
-  --cor-eixo: #c8d0db;
+  --cor-grade: #ebebea;
+  --cor-eixo: #cfcfcc;
 
-  /* Destaque da interface (ícones, item ativo, escolha neutra, botão principal): o azul-aço dos dados */
-  --cor-acento: #2f6fae;
-  --cor-acento-fundo: #e5eef8;
+  /* Destaque da interface (ícones, escolha neutra, botão principal, foco): o grafite da Suprens */
+  --cor-acento: #161616;
+  --cor-acento-fundo: #efefed;
 
   --cor-alta: #2e6b45;
   --cor-queda: #a3361f;
@@ -45,9 +56,9 @@
   --cor-alerta-fundo: #f5ecd8;
   --cor-critico: #a3361f;
   --cor-critico-fundo: #f6e5e0;
-  --cor-neutro: #4f5866;
-  --cor-neutro-fundo: #eceff4;
-  /* Cliente novo: violeta, para não se confundir com o verde de ativo nem com o azul-aço da interface (5,2:1 sobre o fundo) */
+  --cor-neutro: #4d4d4b;
+  --cor-neutro-fundo: #efefed;
+  /* Cliente novo: violeta, para não se confundir com o verde de ativo nem com o grafite da interface (5,2:1 sobre o fundo) */
   --cor-novo: #6a4fb6;
   --cor-novo-fundo: #eeeafa;
 
@@ -76,9 +87,9 @@
   --raio-pequeno: 8px;
 
   /* Sombras em camadas, suaves: 1 para cartões, 2 ao passar o mouse, 3 para o que flutua (diálogo, dica) */
-  --sombra-1: 0 1px 2px rgb(16 24 40 / 4%), 0 2px 6px rgb(16 24 40 / 4%);
-  --sombra-2: 0 2px 4px rgb(16 24 40 / 5%), 0 10px 24px -6px rgb(16 24 40 / 12%);
-  --sombra-3: 0 4px 8px rgb(16 24 40 / 6%), 0 24px 48px -12px rgb(16 24 40 / 22%);
+  --sombra-1: 0 1px 2px rgb(20 20 20 / 4%), 0 2px 6px rgb(20 20 20 / 4%);
+  --sombra-2: 0 2px 4px rgb(20 20 20 / 5%), 0 10px 24px -6px rgb(20 20 20 / 12%);
+  --sombra-3: 0 4px 8px rgb(20 20 20 / 6%), 0 24px 48px -12px rgb(20 20 20 / 22%);
   --transicao: 160ms ease;
 
   --largura-menu: 236px;
@@ -86,7 +97,7 @@
   --largura-conteudo: 2400px;
   --altura-barra-superior: 56px;
   --altura-barra-inferior: 64px;
-  --foco: 0 0 0 2px var(--cor-superficie), 0 0 0 4px var(--cor-dado);
-  /* Campo em foco: junto com a borda azul-aço, fecha um contorno de 2 px e um halo suave, como o brilho dos filtros */
-  --foco-campo: 0 0 0 1px var(--cor-acento), 0 0 0 4px color-mix(in srgb, var(--cor-acento) 18%, transparent);
+  --foco: 0 0 0 2px var(--cor-superficie), 0 0 0 4px var(--cor-acento);
+  /* Campo em foco: a borda fica grafite e ganha um halo cinza suave; um contorno de 2 px em preto pesaria */
+  --foco-campo: 0 0 0 3px color-mix(in srgb, var(--cor-acento) 10%, transparent);
 }
