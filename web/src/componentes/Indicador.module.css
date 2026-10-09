@@ -2,14 +2,17 @@
  * Cada bloco ocupa três linhas da grade da página (rótulo, valor, detalhe) e herda as
  * linhas dela (subgrid): quando um rótulo quebra em duas linhas, os valores dos blocos
  * vizinhos continuam na mesma altura.
+ * O ícone é uma fatia à esquerda, da altura do bloco. --largura vem do componente (a largura
+ * do bloco, sem os recuos): a fatia e o valor crescem com ela.
  */
 .indicador {
   display: grid;
   grid-row: span 3;
   grid-template-rows: subgrid;
+  grid-template-columns: auto minmax(0, 1fr);
   row-gap: var(--esp-1);
   min-width: 0;
-  padding: var(--esp-5) var(--esp-6);
+  padding: var(--esp-4) var(--esp-5) var(--esp-4) var(--esp-4);
   background: var(--cor-superficie);
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
@@ -25,36 +28,47 @@
     0 12px 24px -12px color-mix(in srgb, var(--cor-acento) 60%, transparent);
 }
 
+.icone {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  width: clamp(56px, calc(var(--largura) * 0.26), 88px);
+  margin-right: var(--esp-4);
+  border-radius: 14px;
+  background: linear-gradient(160deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 80%, var(--cor-acento)));
+  color: var(--cor-acento);
+}
+
+.icone svg {
+  width: 44%;
+  height: auto;
+}
+
+/* No número principal, a fatia fica cheia, como o ícone do filtro escolhido */
+.destaque .icone {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--cor-acento) 80%, white), var(--cor-acento));
+  color: var(--cor-superficie);
+}
+
+.rotulo,
+.valor,
+.detalhe {
+  grid-column: 2;
+}
+
 .rotulo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  align-self: end;
   margin-bottom: var(--esp-1);
   font-size: var(--tam-rotulo);
   font-weight: 500;
   line-height: 1.35;
 }
 
-/* Mesmo círculo azul-aço dos títulos dos cartões, um pouco menor */
-.icone {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 82%, var(--cor-acento)));
-  color: var(--cor-acento);
-}
-
-/* No número principal, o ícone fica cheio, como no filtro escolhido */
-.destaque .icone {
-  background: var(--cor-acento);
-  color: var(--cor-superficie);
-}
-
+/* Encolhe só o necessário para caber ao lado da fatia nos blocos mais estreitos */
 .valor {
-  font-size: var(--tam-numero);
+  font-size: clamp(1.375rem, calc(var(--largura) * 0.125), var(--tam-numero));
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -67,22 +81,37 @@
   min-height: 1.5em;
 }
 
+/* Bloco estreito (celular): ícone pequeno na linha do rótulo; valor e detalhe na largura toda */
+.estreito .icone {
+  grid-row: 1;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  margin-right: var(--esp-2);
+  border-radius: 50%;
+}
+
+.estreito .icone svg {
+  width: 15px;
+  height: 15px;
+}
+
+.estreito .rotulo {
+  align-self: center;
+  font-size: var(--tam-pequeno);
+}
+
+.estreito .valor,
+.estreito .detalhe {
+  grid-column: 1 / -1;
+}
+
+.estreito .valor {
+  font-size: 1.375rem;
+}
+
 @media (max-width: 640px) {
   .indicador {
     padding: var(--esp-4);
-  }
-
-  .rotulo {
-    gap: var(--esp-2);
-    font-size: var(--tam-pequeno);
-  }
-
-  .icone {
-    width: 26px;
-    height: 26px;
-  }
-
-  .valor {
-    font-size: 1.375rem;
   }
 }
