@@ -29,6 +29,16 @@
   min-width: 0;
 }
 
+/* Traço de óxido acima do título: a assinatura da Suprens em cada tela */
+.textos::before {
+  content: "";
+  width: 32px;
+  height: 4px;
+  margin-bottom: var(--esp-2);
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--cor-marca), #f0643f);
+}
+
 /* Contêiner próprio: quem estiver dentro escolhe o arranjo pela largura que sobrou */
 .aoLado {
   grid-area: aoLado;

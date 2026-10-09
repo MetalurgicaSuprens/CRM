@@ -11,8 +11,26 @@
   min-width: 0;
   padding: var(--esp-5) var(--esp-6);
   background: var(--cor-superficie);
-  border: 1px solid var(--cor-linha);
+  border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
+  box-shadow: var(--sombra-1);
+}
+
+/*
+ * O número principal da tela, em grafite com um brilho de óxido. As cores de texto, dinheiro e
+ * variação são redefinidas aqui para o fundo escuro, e os componentes de dentro as herdam.
+ */
+.destaque {
+  --cor-texto: #ffffff;
+  --cor-texto-2: rgb(255 255 255 / 80%);
+  --cor-texto-suave: rgb(255 255 255 / 64%);
+  --cor-dinheiro: #8fd9ab;
+  --cor-alta: #8fd9ab;
+  --cor-queda: #ffa18a;
+  color: var(--cor-texto);
+  background: var(--brilho-oxido), var(--grafite-gradiente);
+  border-color: transparent;
+  box-shadow: 0 12px 28px -12px rgb(22 22 22 / 55%);
 }
 
 .rotulo {
@@ -25,17 +43,21 @@
   line-height: 1.35;
 }
 
-/* Mesmo selo neutro dos títulos dos cartões, um pouco menor */
+/* Mesmo selo azul-aço dos títulos dos cartões, um pouco menor */
 .icone {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--cor-linha);
-  border-radius: var(--raio-pequeno);
-  background: var(--cor-superficie-2);
-  color: var(--cor-texto-2);
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 82%, var(--cor-acento)));
+  color: var(--cor-acento);
+}
+
+.destaque .icone {
+  background: rgb(255 255 255 / 12%);
+  color: #ffffff;
 }
 
 .valor {

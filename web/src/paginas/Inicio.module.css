@@ -60,8 +60,12 @@
   border-radius: var(--raio-pequeno);
 }
 
+.linhaAtencao {
+  transition: background-color var(--transicao);
+}
+
 .linhaAtencao:hover {
-  background: var(--cor-superficie-2);
+  background: color-mix(in srgb, var(--cor-acento) 5%, var(--cor-superficie));
 }
 
 .textoAtencao {

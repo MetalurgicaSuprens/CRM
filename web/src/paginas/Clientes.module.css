@@ -61,8 +61,9 @@
 
 .tabela {
   background: var(--cor-superficie);
-  border: 1px solid var(--cor-linha);
+  border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
+  box-shadow: var(--sombra-1);
   /* clip, e não hidden: hidden criaria uma rolagem própria e o cabeçalho deixaria de grudar no topo */
   overflow: clip;
 }
@@ -105,8 +106,12 @@ li:last-child .linha {
   border-bottom: 0;
 }
 
+.linha {
+  transition: background-color var(--transicao);
+}
+
 .linha:hover {
-  background: var(--cor-superficie-2);
+  background: color-mix(in srgb, var(--cor-acento) 5%, var(--cor-superficie));
 }
 
 .identificacao {
@@ -253,13 +258,14 @@ li:last-child .linha {
   .linha {
     height: 100%;
     background: var(--cor-superficie);
-    border: 1px solid var(--cor-linha);
+    border: 1px solid var(--cor-borda);
     border-radius: var(--raio);
+    box-shadow: var(--sombra-1);
   }
 
   /* Repõe a borda que o último item da lista perde */
   li:last-child .linha {
-    border-bottom: 1px solid var(--cor-linha);
+    border-bottom: 1px solid var(--cor-borda);
   }
 }
 

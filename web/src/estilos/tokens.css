@@ -5,21 +5,27 @@
  */
 :root {
   --cor-fundo: #ecebe8;
-  --cor-superficie: #fbfbfa;
+  --cor-superficie: #ffffff;
   --cor-superficie-2: #f3f2ef;
   --cor-linha: #dddcd7;
   --cor-linha-forte: #c5c6c2;
+  /* Contorno dos cartões: quase invisível, a sombra é que separa do fundo */
+  --cor-borda: rgb(22 22 22 / 7%);
 
   --cor-texto: #161616;
   --cor-texto-2: #5c5f63;
-  /* 4,8:1 só sobre --cor-superficie; não usar texto pequeno suave sobre --cor-fundo */
+  /* 5:1 só sobre --cor-superficie; não usar texto pequeno suave sobre --cor-fundo */
   --cor-texto-suave: #6e7074;
 
-  /* Óxido: logotipo e item ativo. Nunca é cor de dado. */
+  /* Óxido: logotipo, item ativo e os toques de marca (traço do título, brilhos). Nunca é cor de dado. */
   --cor-marca: #d22c12;
 
   --cor-dado: #2f6fae;
   --cor-dado-claro: #c3d6eb;
+
+  /* Destaque da interface (ícones sem situação, escolha neutra): o mesmo azul-aço dos dados */
+  --cor-acento: #2f6fae;
+  --cor-acento-fundo: #e5eef8;
   --cor-comparacao: #a7a8a3;
   --cor-tendencia: #8c8d88;
   --cor-grade: #e8e7e2;
@@ -61,8 +67,18 @@
   --esp-8: 32px;
   --esp-10: 40px;
 
-  --raio: 8px;
-  --raio-pequeno: 6px;
+  --raio: 12px;
+  --raio-pequeno: 8px;
+
+  /* Sombras em camadas, suaves: 1 para cartões, 2 ao passar o mouse, 3 para o que flutua (diálogo, dica) */
+  --sombra-1: 0 1px 2px rgb(22 22 22 / 4%), 0 2px 6px rgb(22 22 22 / 4%);
+  --sombra-2: 0 2px 4px rgb(22 22 22 / 5%), 0 10px 24px -6px rgb(22 22 22 / 12%);
+  --sombra-3: 0 4px 8px rgb(22 22 22 / 6%), 0 24px 48px -12px rgb(22 22 22 / 22%);
+  --transicao: 160ms ease;
+
+  /* Superfícies escuras da marca: menu, número principal da tela e entrada */
+  --grafite-gradiente: linear-gradient(165deg, #2a2a2a 0%, #161616 70%);
+  --brilho-oxido: radial-gradient(120% 120% at 100% 0%, rgb(210 44 18 / 32%), transparent 55%);
   --largura-menu: 236px;
   /* Preenche telas de até 2560 px ao lado do menu; só nas ultralargas o conteúdo fica centralizado */
   --largura-conteudo: 2400px;

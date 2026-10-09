@@ -40,6 +40,9 @@ export function Layout() {
         </nav>
         {situacao ? (
           <div className={estilos.usuario}>
+            <span className={estilos.avatar} aria-hidden="true">
+              {iniciais(situacao.representante.nome)}
+            </span>
             <p className={estilos.nomeUsuario}>{situacao.representante.nome}</p>
             <p className={estilos.codigoUsuario}>Representante {situacao.representante.codigo}</p>
             <Link to="/entrar?motivo=saiu" className={estilos.sair}>
@@ -83,6 +86,14 @@ function Marca() {
       <span className={estilos.nomeProduto}>CRM</span>
     </div>
   );
+}
+
+/** "Carlos Andrade" vira "CA": a primeira letra do primeiro e do último nome. */
+function iniciais(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  const primeiro = partes[0] ?? "";
+  const ultimo = partes.length > 1 ? (partes[partes.length - 1] ?? "") : "";
+  return `${primeiro.charAt(0)}${ultimo.charAt(0)}`.toUpperCase();
 }
 
 function Atualizacao({ atualizadoEm, hoje }: { atualizadoEm: string; hoje: string }) {

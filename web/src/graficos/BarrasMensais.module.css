@@ -138,9 +138,9 @@
   width: max-content;
   padding: var(--esp-2) var(--esp-3);
   background: var(--cor-superficie);
-  border: 1px solid var(--cor-linha-forte);
+  border: 1px solid var(--cor-borda);
   border-radius: var(--raio-pequeno);
-  box-shadow: 0 4px 16px rgb(22 22 22 / 8%);
+  box-shadow: var(--sombra-3);
   pointer-events: none;
   font-size: var(--tam-pequeno);
   white-space: nowrap;

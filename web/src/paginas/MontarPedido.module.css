@@ -228,9 +228,10 @@
 .dialogo {
   width: min(28rem, calc(100% - 2rem));
   padding: var(--esp-6);
-  border: 1px solid var(--cor-linha);
+  border: 0;
   border-radius: var(--raio);
   background: var(--cor-superficie);
+  box-shadow: var(--sombra-3);
   color: var(--cor-texto);
 }
 

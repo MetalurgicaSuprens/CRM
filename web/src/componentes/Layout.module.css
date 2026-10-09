@@ -5,7 +5,7 @@
   min-height: 100dvh;
 }
 
-/* ------------------------------------------------ menu lateral (desktop) */
+/* ------------------------------------------------ menu lateral (desktop), em grafite */
 
 .menu {
   position: sticky;
@@ -16,8 +16,11 @@
   height: 100vh;
   height: 100dvh;
   padding: var(--esp-5) var(--esp-3);
-  background: var(--cor-superficie);
-  border-right: 1px solid var(--cor-linha);
+  /* Um brilho de óxido atrás do logotipo, apagando-se para baixo */
+  background:
+    radial-gradient(160% 38% at 0% 0%, rgb(210 44 18 / 22%), transparent 70%),
+    var(--grafite-gradiente);
+  color: rgb(255 255 255 / 72%);
 }
 
 .marca {
@@ -31,6 +34,17 @@
   display: block;
 }
 
+/* O globo tem traços escuros: no grafite, ele vai num medalhão branco */
+.menu .marca img {
+  width: 42px;
+  height: 42px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #ffffff;
+  object-fit: contain;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 8%);
+}
+
 .nomeProduto {
   font-family: var(--fonte-titulo);
   font-size: 1.25rem;
@@ -39,6 +53,11 @@
   color: var(--cor-texto-2);
   padding-left: var(--esp-3);
   border-left: 1px solid var(--cor-linha-forte);
+}
+
+.menu .nomeProduto {
+  color: #ffffff;
+  border-left-color: rgb(255 255 255 / 22%);
 }
 
 .itensMenu {
@@ -52,21 +71,22 @@
   display: flex;
   align-items: center;
   gap: var(--esp-3);
-  padding: 9px var(--esp-3);
+  padding: 10px var(--esp-3);
   border-radius: var(--raio-pequeno);
-  color: var(--cor-texto-2);
+  color: rgb(255 255 255 / 68%);
   font-weight: 500;
+  transition: background-color var(--transicao), color var(--transicao);
 }
 
 .itemMenu:hover {
-  background: var(--cor-superficie-2);
-  color: var(--cor-texto);
+  background: rgb(255 255 255 / 6%);
+  color: #ffffff;
 }
 
 .ativo,
 .ativo:hover {
-  background: var(--cor-superficie-2);
-  color: var(--cor-texto);
+  background: rgb(255 255 255 / 10%);
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -79,25 +99,48 @@
   width: 3px;
   border-radius: 0 3px 3px 0;
   background: var(--cor-marca);
+  box-shadow: 0 0 12px rgb(210 44 18 / 70%);
 }
 
 .usuario {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--esp-3);
   margin-top: auto;
   padding: var(--esp-4) var(--esp-2) 0;
-  border-top: 1px solid var(--cor-linha);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+/* Iniciais do representante num círculo de óxido */
+.avatar {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e5512f, #b3240e);
+  color: #ffffff;
+  font-size: var(--tam-pequeno);
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 .nomeUsuario {
   font-weight: 600;
+  color: #ffffff;
 }
 
 .codigoUsuario {
   font-size: var(--tam-pequeno);
-  color: var(--cor-texto-suave);
+  color: rgb(255 255 255 / 55%);
 }
 
 .sair {
+  grid-column: 1 / -1;
   display: inline-flex;
+  justify-self: start;
   align-items: center;
   gap: 6px;
   margin-top: var(--esp-3);
@@ -105,19 +148,22 @@
   border: 0;
   background: none;
   font-size: var(--tam-pequeno);
-  color: var(--cor-texto-2);
+  color: rgb(255 255 255 / 60%);
+  transition: color var(--transicao);
 }
 
 .sair:hover {
-  color: var(--cor-texto);
+  color: #ffffff;
 }
 
 /* ------------------------------------------------ área de conteúdo */
 
+/* Um brilho quente de óxido no alto da página, bem de leve */
 .area {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: radial-gradient(1100px 380px at 100% -140px, rgb(210 44 18 / 8%), transparent 70%) no-repeat;
 }
 
 .barraSuperior {
@@ -131,9 +177,9 @@
   /* Altura fixa: o cabeçalho da lista de clientes gruda logo abaixo dela */
   height: var(--altura-barra-superior);
   padding: var(--esp-2) var(--esp-8);
-  background: color-mix(in srgb, var(--cor-fundo) 92%, transparent);
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid var(--cor-linha);
+  background: color-mix(in srgb, var(--cor-fundo) 78%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--cor-borda);
 }
 
 .marcaCelular {
@@ -143,9 +189,9 @@
 
 .prototipo {
   margin-right: auto;
-  padding: 2px 8px;
+  padding: 2px 10px;
   border: 1px dashed var(--cor-linha-forte);
-  border-radius: var(--raio-pequeno);
+  border-radius: 999px;
   font-size: var(--tam-legenda);
   color: var(--cor-texto-2);
 }
@@ -163,17 +209,19 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--cor-linha-forte);
-  border-radius: var(--raio-pequeno);
+  padding: 6px 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
   background: var(--cor-superficie);
+  box-shadow: var(--sombra-1);
   font-size: var(--tam-pequeno);
   font-weight: 500;
   white-space: nowrap;
+  transition: box-shadow var(--transicao), background-color var(--transicao);
 }
 
 .botaoValores:hover {
-  background: var(--cor-superficie-2);
+  box-shadow: var(--sombra-2);
 }
 
 /*
@@ -237,8 +285,10 @@
     grid-template-columns: repeat(5, 1fr);
     height: calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
-    background: var(--cor-superficie);
-    border-top: 1px solid var(--cor-linha);
+    background: color-mix(in srgb, var(--cor-superficie) 88%, transparent);
+    backdrop-filter: saturate(140%) blur(12px);
+    border-top: 1px solid var(--cor-borda);
+    box-shadow: 0 -6px 20px rgb(22 22 22 / 6%);
   }
 
   .aba {
@@ -256,6 +306,10 @@
   .abaAtiva {
     color: var(--cor-texto);
     font-weight: 600;
+  }
+
+  .abaAtiva svg {
+    color: var(--cor-marca);
   }
 
   .abaAtiva::before {

@@ -35,7 +35,9 @@
 .segmento[aria-pressed="true"] {
   background: var(--cor-superficie);
   color: var(--cor-texto);
-  box-shadow: 0 0 0 1px var(--cor-linha);
+  box-shadow:
+    0 0 0 1px var(--cor-borda),
+    var(--sombra-1);
 }
 
 .contagem {

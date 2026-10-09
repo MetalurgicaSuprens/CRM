@@ -32,19 +32,22 @@ export function Filtros<T extends string>({ rotulo, opcoes, selecionado, aoEscol
   const porLinha = { "--por-linha": quantosPorLinha(largura, opcoes.length) } as CSSProperties;
   return (
     <div ref={referencia} className={estilos.filtros} style={porLinha} role="group" aria-label={rotulo}>
-      {opcoes.map((opcao) => (
-        <button
-          key={opcao.valor}
-          type="button"
-          className={estilos.filtro}
-          aria-pressed={opcao.valor === selecionado}
-          onClick={() => aoEscolher(opcao.valor)}
-        >
-          <IconeNoCirculo icone={opcao.icone} tom={opcao.tom ?? "neutro"} className={estilos.icone} />
-          <span className={estilos.nome}>{opcao.rotulo}</span>
-          <span className={estilos.quantidade}>{opcao.quantidade}</span>
-        </button>
-      ))}
+      {opcoes.map((opcao) => {
+        const tom = opcao.tom ?? "neutro";
+        return (
+          <button
+            key={opcao.valor}
+            type="button"
+            className={`${estilos.filtro} ${estilos[tom]}`}
+            aria-pressed={opcao.valor === selecionado}
+            onClick={() => aoEscolher(opcao.valor)}
+          >
+            <IconeNoCirculo icone={opcao.icone} tom={tom} className={estilos.icone} />
+            <span className={estilos.nome}>{opcao.rotulo}</span>
+            <span className={estilos.quantidade}>{opcao.quantidade}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

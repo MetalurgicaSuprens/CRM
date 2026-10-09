@@ -96,6 +96,7 @@ function Indicadores({ painel }: { painel: PainelInicio }) {
   return (
     <div className={estilos.indicadores}>
       <Indicador
+        destaque
         rotulo={`Faturado em ${nomeDoMes}`}
         icone={ReceiptText}
         valor={<Valor valor={mesAtual.faturado} compacto />}

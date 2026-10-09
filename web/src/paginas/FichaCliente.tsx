@@ -118,6 +118,7 @@ function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
   return (
     <div className={estilos.indicadores}>
       <Indicador
+        destaque
         rotulo="Faturado em 12 meses"
         icone={ReceiptText}
         valor={<Valor valor={ficha.faturamento12m} compacto />}

@@ -4,16 +4,18 @@ import estilos from "./Indicador.module.css";
 
 type Props = {
   rotulo: string;
-  /** Acompanha o rótulo, sempre em tom neutro, como nos títulos dos cartões. */
+  /** Acompanha o rótulo, no mesmo selo dos títulos dos cartões. */
   icone: LucideIcon;
   valor: ReactNode;
   detalhe?: ReactNode;
+  /** O número principal da tela, em grafite. Um por tela. */
+  destaque?: boolean;
 };
 
 /** Bloco de número (stat tile): rótulo, valor e, se houver, a comparação. */
-export function Indicador({ rotulo, icone: Icone, valor, detalhe }: Props) {
+export function Indicador({ rotulo, icone: Icone, valor, detalhe, destaque = false }: Props) {
   return (
-    <div className={estilos.indicador}>
+    <div className={destaque ? `${estilos.indicador} ${estilos.destaque}` : estilos.indicador}>
       <p className={estilos.rotulo}>
         <span className={estilos.icone} aria-hidden="true">
           <Icone size={15} strokeWidth={1.75} />

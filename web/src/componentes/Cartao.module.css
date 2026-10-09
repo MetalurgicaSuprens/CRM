@@ -5,8 +5,9 @@
   min-width: 0;
   padding: var(--esp-5) var(--esp-6) var(--esp-6);
   background: var(--cor-superficie);
-  border: 1px solid var(--cor-linha);
+  border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
+  box-shadow: var(--sombra-1);
 }
 
 .cabecalho {
@@ -23,35 +24,31 @@
   min-width: 0;
 }
 
-/* Selo neutro: dá presença ao título sem competir com as cores dos dados */
+/* Selo do título no azul-aço da interface; com situação na tela, ganha o tom dela */
 .icone {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--cor-linha);
-  border-radius: var(--raio-pequeno);
-  background: var(--cor-superficie-2);
-  color: var(--cor-texto-2);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 82%, var(--cor-acento)));
+  color: var(--cor-acento);
 }
 
 /* Mesmos tons das situações em "Atenção na carteira" */
 .critico {
-  border-color: transparent;
-  background: var(--cor-critico-fundo);
+  background: linear-gradient(135deg, var(--cor-critico-fundo), color-mix(in srgb, var(--cor-critico-fundo) 82%, var(--cor-critico)));
   color: var(--cor-critico);
 }
 
 .alerta {
-  border-color: transparent;
-  background: var(--cor-alerta-fundo);
+  background: linear-gradient(135deg, var(--cor-alerta-fundo), color-mix(in srgb, var(--cor-alerta-fundo) 82%, var(--cor-alerta)));
   color: var(--cor-alerta);
 }
 
 .ok {
-  border-color: transparent;
-  background: var(--cor-ok-fundo);
+  background: linear-gradient(135deg, var(--cor-ok-fundo), color-mix(in srgb, var(--cor-ok-fundo) 82%, var(--cor-ok)));
   color: var(--cor-ok);
 }
 

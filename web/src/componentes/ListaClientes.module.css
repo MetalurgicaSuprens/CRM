@@ -13,8 +13,12 @@
   border-radius: var(--raio-pequeno);
 }
 
+.item {
+  transition: background-color var(--transicao);
+}
+
 .item:hover {
-  background: var(--cor-superficie-2);
+  background: color-mix(in srgb, var(--cor-acento) 5%, var(--cor-superficie));
 }
 
 li + li .item {

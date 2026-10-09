@@ -62,6 +62,15 @@ table {
   border-radius: var(--raio-pequeno);
 }
 
+/* Quem pediu menos movimento ao sistema não vê os cartões subindo ao passar o mouse */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
 ::selection {
   background: color-mix(in srgb, var(--cor-marca) 22%, white);
 }

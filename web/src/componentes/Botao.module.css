@@ -1,4 +1,4 @@
-/* O primário (escuro) é a ação principal da tela; o secundário, as demais. */
+/* O primário (grafite) é a ação principal da tela; o secundário, as demais. */
 .primario,
 .secundario {
   display: inline-flex;
@@ -10,21 +10,42 @@
   border-radius: var(--raio-pequeno);
   font-weight: 600;
   white-space: nowrap;
+  transition:
+    transform var(--transicao),
+    box-shadow var(--transicao),
+    background-color var(--transicao),
+    border-color var(--transicao);
 }
 
 .primario {
   border: 0;
-  background: var(--cor-texto);
-  color: var(--cor-superficie);
+  background: linear-gradient(180deg, #333333, #161616);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 10%),
+    0 1px 2px rgb(22 22 22 / 20%),
+    0 6px 16px -6px rgb(22 22 22 / 40%);
 }
 
-.primario:hover {
-  background: #2b2b2b;
+/* Só com mouse: no celular, o toque deixaria o botão "levantado" */
+@media (hover: hover) {
+  .primario:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 10%),
+      0 2px 4px rgb(22 22 22 / 20%),
+      0 10px 22px -8px rgb(22 22 22 / 50%);
+  }
+}
+
+.primario:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .primario:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+  box-shadow: none;
 }
 
 /* Esperando o aparelho ou o servidor: não parece erro, só ocupado */
@@ -37,10 +58,12 @@
   border: 1px solid var(--cor-linha-forte);
   background: var(--cor-superficie);
   color: var(--cor-texto);
+  box-shadow: var(--sombra-1);
 }
 
 .secundario:hover {
-  background: var(--cor-superficie-2);
+  border-color: var(--cor-texto-suave);
+  box-shadow: var(--sombra-2);
 }
 
 /* Só o ícone: o botão leva aria-label */
@@ -53,6 +76,7 @@
   border-radius: var(--raio-pequeno);
   background: none;
   color: var(--cor-texto-2);
+  transition: background-color var(--transicao), color var(--transicao);
 }
 
 .icone:hover {

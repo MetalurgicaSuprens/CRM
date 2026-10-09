@@ -45,8 +45,12 @@ li:last-child .linha {
   border-bottom: 0;
 }
 
+.link {
+  transition: background-color var(--transicao);
+}
+
 .link:hover {
-  background: var(--cor-superficie-2);
+  background: color-mix(in srgb, var(--cor-acento) 5%, var(--cor-superficie));
 }
 
 .identificacao {
