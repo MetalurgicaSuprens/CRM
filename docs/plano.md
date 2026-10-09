@@ -281,7 +281,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
 - **F7 — Disponibilidade de estoque** (futuro, depois dos pedidos):
   - uma carga rápida e separada (`estoque-<data>.db` + manifesto, mesmo canal SFTP), enviada a cada 2–5 min e só quando o estoque mudou;
   - a tela de pedido mostra a situação do item ("disponível", "parcial: consulte a fábrica", "sob encomenda"), e não a quantidade exata, com a hora do dado;
-  - a regra de "disponível" (físico menos o reservado para pedidos) é definida com o Lucas e o DBA, porque a view de reserva do SGI não é visível para o usuário somente leitura.
+  - a regra de "disponível" (físico menos o reservado para pedidos) é definida com o Lucas e o DBA. A view de reserva do SGI ficou legível para o `LUCAS_RO` com o `READ ANY TABLE` (2026-10-09); a conta do extrator vai precisar de SELECT explícito nela.
 
 **Trilha da infraestrutura**
 - **I1 — Esqueleto publicado**, assim que a VM, a rede e o domínio existirem:
@@ -314,10 +314,8 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - domínio (ex.: `crm.suprens.com.br`) e quem controla o DNS. Ele vira a identidade das chaves e não pode mudar depois;
   - VM dedicada no servidor da empresa (não compartilhar com o site);
   - quem administra a rede e o firewall, para as regras da seção Arquitetura.
-- **Durante a F2:**
-  - quem é o DBA, para liberar ao `LUCAS_RO` o SELECT na view `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI` (preço líquido), que o usuário somente leitura não enxerga. Até lá, a foto da F2 sai sem preço.
 - **Antes do piloto da F4:**
-  - a conta Oracle própria do extrator, criada pelo DBA com SELECT só nas tabelas da lista que a F2 fecha, já com a view de preço líquido;
+  - a conta Oracle própria do extrator, criada pelo DBA com SELECT só nas tabelas da lista que a F2 fecha, inclusive a view de preço líquido `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`. O `LUCAS_RO` lê essa view desde 2026-10-09, quando ganhou `READ ANY TABLE`; a conta do extrator não deve ganhar esse privilégio, só os SELECT da lista;
   - qual máquina da LAN roda o extrator (o servidor do Gestao?).
 - **Antes da F5:**
   - quem mantém o código do SGI (layout "CRM");
