@@ -84,4 +84,6 @@
   --altura-barra-superior: 56px;
   --altura-barra-inferior: 64px;
   --foco: 0 0 0 2px var(--cor-superficie), 0 0 0 4px var(--cor-dado);
+  /* Campo em foco: junto com a borda azul-aço, fecha um contorno de 2 px e um halo suave, como o brilho dos filtros */
+  --foco-campo: 0 0 0 1px var(--cor-acento), 0 0 0 4px color-mix(in srgb, var(--cor-acento) 18%, transparent);
 }

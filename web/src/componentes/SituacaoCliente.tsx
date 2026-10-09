@@ -2,7 +2,8 @@ import { CircleCheck, CircleOff, CirclePause, CirclePlus, TriangleAlert } from "
 import type { Situacao } from "../dados/tipos";
 import { Selo } from "./Selo";
 
-const SITUACOES = {
+/** Nome, ícone e tom de cada situação: os mesmos no selo e nos filtros da carteira. */
+export const SITUACOES = {
   ativo: { rotulo: "Ativo", icone: CircleCheck, tom: "ok" },
   em_risco: { rotulo: "Em risco", icone: TriangleAlert, tom: "alerta" },
   parado: { rotulo: "Parado", icone: CirclePause, tom: "critico" },

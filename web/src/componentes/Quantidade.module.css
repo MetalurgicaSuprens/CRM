@@ -8,8 +8,10 @@
   overflow: hidden;
 }
 
+/* Um contorno só, no conjunto todo; o campo de dentro não desenha o seu (ver .campo:focus-visible) */
 .quantidade:focus-within {
-  box-shadow: var(--foco);
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
 }
 
 .botao {
@@ -42,6 +44,10 @@
   outline: none;
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+.campo:focus-visible {
+  box-shadow: none;
 }
 
 .campo::-webkit-outer-spin-button,

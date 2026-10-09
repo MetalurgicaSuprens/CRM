@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { KeyRound, PackageSearch, Search, ShoppingBasket, Trash, Users } from "lucide-react";
+import { KeyRound, PackageSearch, ShoppingBasket, Trash, Users } from "lucide-react";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
+import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Cartao } from "../componentes/Cartao";
 import { Quantidade } from "../componentes/Quantidade";
 import { DataRelativa } from "../componentes/Quando";
@@ -219,11 +220,7 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
   return (
     <Cartao titulo="Produtos" icone={PackageSearch} subtitulo="Busque pelo código, pela família, pela medida ou pelo código que o cliente usa.">
       <div className={estilos.ferramentas}>
-        <label className={estilos.busca}>
-          <Search size={16} aria-hidden="true" />
-          <span className="visualmente-oculto">Buscar produto</span>
-          <input type="search" value={busca} placeholder="Código, família ou medida" onChange={(evento) => setBusca(evento.target.value)} />
-        </label>
+        <CampoDeBusca rotulo="Buscar produto" valor={busca} dica="Código, família ou medida" aoMudar={setBusca} />
         <Segmentos
           rotulo="Produtos"
           opcoes={[
@@ -377,11 +374,14 @@ function EscolherCliente() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina antes={<Voltar para="/pedidos" rotulo="Pedidos" />} titulo="Novo pedido" descricao="Para qual cliente é o pedido?" />
-      <label className={`${estilos.busca} ${estilos.buscaDeCliente}`}>
-        <Search size={16} aria-hidden="true" />
-        <span className="visualmente-oculto">Buscar cliente</span>
-        <input type="search" value={busca} placeholder="Nome, código ou cidade" autoFocus onChange={(evento) => setBusca(evento.target.value)} />
-      </label>
+      <CampoDeBusca
+        rotulo="Buscar cliente"
+        valor={busca}
+        dica="Nome, código ou cidade"
+        aoMudar={setBusca}
+        focarAoAbrir
+        className={estilos.buscaDeCliente}
+      />
       <Cartao titulo="Clientes da carteira" icone={Users} subtitulo="Do maior faturamento para o menor">
         <TabelaResponsiva
           descricao="Clientes da carteira"

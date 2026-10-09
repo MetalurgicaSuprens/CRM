@@ -1,0 +1,39 @@
+.busca {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  flex: 1 1 240px;
+  max-width: 380px;
+  padding: 0 var(--esp-3);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  box-shadow: var(--sombra-1);
+  color: var(--cor-texto-suave);
+  transition:
+    border-color var(--transicao),
+    box-shadow var(--transicao),
+    color var(--transicao);
+}
+
+/* Um contorno só, na caixa toda, e a lupa acende junto */
+.busca:focus-within {
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
+  color: var(--cor-acento);
+}
+
+.busca input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  outline: none;
+  color: var(--cor-texto);
+}
+
+/* O foco global (base.css) desenharia um segundo contorno, dentro da caixa */
+.busca input:focus-visible {
+  box-shadow: none;
+}

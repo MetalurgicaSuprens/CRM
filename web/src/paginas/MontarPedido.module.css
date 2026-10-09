@@ -43,33 +43,6 @@
   gap: var(--esp-3);
 }
 
-.busca {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-2);
-  flex: 1 1 220px;
-  max-width: 360px;
-  padding: 0 var(--esp-3);
-  background: var(--cor-superficie);
-  border: 1px solid var(--cor-linha-forte);
-  border-radius: var(--raio-pequeno);
-  color: var(--cor-texto-suave);
-}
-
-.busca:focus-within {
-  box-shadow: var(--foco);
-}
-
-.busca input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 0;
-  border: 0;
-  background: none;
-  outline: none;
-  color: var(--cor-texto);
-}
-
 .buscaDeCliente {
   flex: none;
   width: 100%;
@@ -145,7 +118,8 @@
 .campo input:focus,
 .campo textarea:focus {
   outline: none;
-  box-shadow: var(--foco);
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
 }
 
 /* Total, avisos e o botão de enviar; com o pedido ao lado do catálogo, ficam presos no pé dele */

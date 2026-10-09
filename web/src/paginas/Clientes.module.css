@@ -13,33 +13,6 @@
   gap: var(--esp-3);
 }
 
-.busca {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-2);
-  flex: 1 1 260px;
-  max-width: 380px;
-  padding: 0 var(--esp-3);
-  background: var(--cor-superficie);
-  border: 1px solid var(--cor-linha-forte);
-  border-radius: var(--raio-pequeno);
-  color: var(--cor-texto-suave);
-}
-
-.busca:focus-within {
-  box-shadow: var(--foco);
-}
-
-.busca input {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 0;
-  border: 0;
-  background: none;
-  outline: none;
-  color: var(--cor-texto);
-}
-
 .ordem {
   display: flex;
   align-items: center;
@@ -54,7 +27,13 @@
   border: 1px solid var(--cor-linha-forte);
   border-radius: var(--raio-pequeno);
   background: var(--cor-superficie);
+  box-shadow: var(--sombra-1);
   color: var(--cor-texto);
+}
+
+.ordem select:focus-visible {
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
 }
 
 /* ------------------------------------------------ tabela (desktop) */
@@ -269,13 +248,10 @@ li:last-child .linha {
   }
 }
 
+/* No celular, a busca ocupa a linha toda (o tamanho padrão vem de CampoDeBusca) */
 @media (max-width: 640px) {
   .busca {
     max-width: none;
-    flex-basis: 100%;
-  }
-
-  .filtros {
     flex-basis: 100%;
   }
 }

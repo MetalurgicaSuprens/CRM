@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Search } from "lucide-react";
+import { Users } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
-import { Segmentos } from "../componentes/Segmentos";
-import { SituacaoCliente } from "../componentes/SituacaoCliente";
+import { CampoDeBusca } from "../componentes/CampoDeBusca";
+import { Filtros, type Filtro } from "../componentes/Filtros";
+import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
@@ -16,12 +17,13 @@ import estilos from "./Clientes.module.css";
 
 type FiltroSituacao = "todas" | Situacao;
 
-const FILTROS: { valor: FiltroSituacao; rotulo: string }[] = [
-  { valor: "todas", rotulo: "Todos" },
-  { valor: "ativo", rotulo: "Ativos" },
-  { valor: "em_risco", rotulo: "Em risco" },
-  { valor: "parado", rotulo: "Parados" },
-  { valor: "novo", rotulo: "Novos" },
+/** "Todos" e as situações da carteira, com o ícone e o tom do selo de cada uma. */
+const FILTROS: readonly Omit<Filtro<FiltroSituacao>, "quantidade">[] = [
+  { valor: "todas", rotulo: "Todos", icone: Users, tom: "neutro" },
+  { ...SITUACOES.ativo, valor: "ativo", rotulo: "Ativos" },
+  { ...SITUACOES.em_risco, valor: "em_risco", rotulo: "Em risco" },
+  { ...SITUACOES.parado, valor: "parado", rotulo: "Parados" },
+  { ...SITUACOES.novo, valor: "novo", rotulo: "Novos" },
 ];
 
 const ORDENACOES = {
@@ -71,23 +73,20 @@ export function Clientes() {
     <div className={estilos.pagina}>
       <CabecalhoPagina titulo="Clientes" descricao={`${clientes.length} clientes na carteira`} />
 
+      <Filtros
+        rotulo="Situação"
+        opcoes={FILTROS.map((opcao) => ({ ...opcao, quantidade: contar(clientes, opcao.valor) }))}
+        selecionado={filtro}
+        aoEscolher={(valor) => alterar("situacao", valor, "todas")}
+      />
+
       <div className={estilos.ferramentas}>
-        <label className={estilos.busca}>
-          <Search size={16} aria-hidden="true" />
-          <span className="visualmente-oculto">Buscar cliente</span>
-          <input
-            type="search"
-            value={busca}
-            placeholder="Nome, código ou cidade"
-            onChange={(evento) => alterar("busca", evento.target.value, "")}
-          />
-        </label>
-        <Segmentos
-          rotulo="Situação"
-          opcoes={FILTROS.map((opcao) => ({ ...opcao, contagem: contar(clientes, opcao.valor) }))}
-          selecionado={filtro}
-          aoEscolher={(valor) => alterar("situacao", valor, "todas")}
-          className={estilos.filtros}
+        <CampoDeBusca
+          rotulo="Buscar cliente"
+          valor={busca}
+          dica="Nome, código ou cidade"
+          aoMudar={(valor) => alterar("busca", valor, "")}
+          className={estilos.busca}
         />
         <label className={estilos.ordem}>
           <span>Ordenar</span>
