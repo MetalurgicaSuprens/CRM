@@ -34,16 +34,17 @@
   align-self: stretch;
   display: grid;
   place-items: center;
-  width: clamp(56px, calc(var(--largura) * 0.26), 88px);
+  width: var(--fatia);
   margin-right: var(--esp-4);
   border-radius: 14px;
   background: linear-gradient(160deg, var(--cor-acento-fundo), color-mix(in srgb, var(--cor-acento-fundo) 80%, var(--cor-acento)));
   color: var(--cor-acento);
 }
 
+/* --fatia e --icone vêm do componente, em múltiplos de 8 px: o ícone cai no centro exato */
 .icone svg {
-  width: 44%;
-  height: auto;
+  width: var(--icone);
+  height: var(--icone);
 }
 
 /* No número principal, a fatia fica cheia, como o ícone do filtro escolhido */
@@ -85,15 +86,15 @@
 .estreito .icone {
   grid-row: 1;
   align-self: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   margin-right: var(--esp-2);
   border-radius: 50%;
 }
 
 .estreito .icone svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 
 .estreito .rotulo {

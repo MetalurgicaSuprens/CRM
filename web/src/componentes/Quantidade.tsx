@@ -20,7 +20,7 @@ export function Quantidade({ valor, embalagem, rotulo, aoMudar }: Props) {
   return (
     <span className={estilos.quantidade} role="group" aria-label={`Quantidade de ${rotulo}, em peças`}>
       <button type="button" className={estilos.botao} onClick={() => aoMudar(Math.max(0, valor - embalagem))} disabled={valor === 0} aria-label="Tirar uma embalagem">
-        <Minus size={15} aria-hidden="true" />
+        <Minus size={16} aria-hidden="true" />
       </button>
       <input
         className={estilos.campo}
@@ -38,7 +38,7 @@ export function Quantidade({ valor, embalagem, rotulo, aoMudar }: Props) {
         }}
       />
       <button type="button" className={estilos.botao} onClick={() => aoMudar(valor + embalagem)} aria-label="Pôr mais uma embalagem">
-        <Plus size={15} aria-hidden="true" />
+        <Plus size={16} aria-hidden="true" />
       </button>
     </span>
   );

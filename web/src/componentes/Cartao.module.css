@@ -24,7 +24,10 @@
   min-width: 0;
 }
 
-/* Círculo do título no azul-aço da interface, como nos filtros; com situação na tela, ganha o tom dela */
+/*
+ * Círculo do título no azul-aço da interface, como nos filtros; com situação na tela, ganha o tom
+ * dela. 34 px com ícone de 18 px (no Cartao.tsx): 8 px inteiros de cada lado, ícone no centro exato.
+ */
 .icone {
   display: grid;
   place-items: center;

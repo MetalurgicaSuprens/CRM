@@ -1,5 +1,10 @@
-/* 34 px por padrão; quem usa pode mudar width e height, e o ícone acompanha */
+/*
+ * 34 px com ícone de 18 px por padrão. Quem muda o tamanho do círculo muda também
+ * --tamanho-do-icone, com diferença múltipla de 8 px entre os dois: a sobra de cada lado fica em
+ * pixel inteiro, e o ícone cai no centro exato também em telas com escala de 125% e 150%.
+ */
 .circulo {
+  --tamanho-do-icone: 18px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -9,8 +14,8 @@
 }
 
 .circulo svg {
-  width: 52%;
-  height: 52%;
+  width: var(--tamanho-do-icone);
+  height: var(--tamanho-do-icone);
 }
 
 .critico {

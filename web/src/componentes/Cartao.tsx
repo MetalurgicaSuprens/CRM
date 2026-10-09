@@ -21,7 +21,7 @@ export function Cartao({ titulo, icone: Icone, tom, subtitulo, acoes, children, 
       <header className={estilos.cabecalho}>
         <div className={estilos.identificacao}>
           <span className={tom ? `${estilos.icone} ${estilos[tom]}` : estilos.icone} aria-hidden="true">
-            <Icone size={17} strokeWidth={1.75} />
+            <Icone size={18} strokeWidth={1.75} />
           </span>
           <div className={estilos.titulos}>
             <h2 className={estilos.titulo}>{titulo}</h2>

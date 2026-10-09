@@ -63,7 +63,9 @@
   --tom-fundo: var(--cor-acento-fundo);
 }
 
+/* Diferença de 16 px entre círculo e ícone: o ícone fica no centro exato (ver IconeNoCirculo) */
 .filtro > .icone {
+  --tamanho-do-icone: 24px;
   width: 40px;
   height: 40px;
 }
@@ -133,6 +135,7 @@
   }
 
   .filtro > .icone {
+    --tamanho-do-icone: 16px;
     width: 32px;
     height: 32px;
   }
