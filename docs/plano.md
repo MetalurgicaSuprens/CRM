@@ -53,7 +53,7 @@ Lucas (LAN) ──────────────────────�
 
 ### `extrator/` (Node/TS, numa máquina da LAN, conta própria do Windows)
 
-- Conta Oracle **própria**, só com SELECT nas tabelas necessárias, obrigatória **antes do piloto da F4**, quando o extrator passa a rodar sozinho na LAN.
+- Conta Oracle **própria**, só com SELECT em views do CRM com as colunas necessárias (ver Pendências), obrigatória **antes do piloto da F4**, quando o extrator passa a rodar sozinho na LAN.
   - Na F2 o desenvolvimento usa o `LUCAS_RO` (decisão do Lucas em 2026-10-09), com quatro cuidados:
     - a senha fica num `extrator/.env` local, que o git ignora e que só o Lucas preenche;
     - só o `extrator/` usa a conexão;
@@ -167,7 +167,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 **Na LAN, antes de gravar na pasta do SGI**, a rotina do extrator:
 - só aceita arquivos com nome no padrão, até 64 KB, com limite de quantidade por execução e por representante por dia;
 - valida o schema estrito: limites de tamanho, conjunto de caracteres permitido e datas válidas pelas regras do SGI;
-- **revalida no Oracle** que o representante está ativo, que o cliente é dele e não está suspenso, que cada produto é vendável e tem preço, e que as quantidades estão dentro dos limites;
+- **revalida no Oracle** que o representante está ativo, que o cliente é dele e não está suspenso (pelo status do SGI, `NVL(CLI3_STA,'ATIVO')`, sem ler `CRCL.SUSPENSO` nem a restrição financeira; decisão do Lucas em 2026-10-09), que cada produto é vendável e tem preço, e que as quantidades estão dentro dos limites;
 - manda pedidos acima de um valor-teto para revisão manual;
 - monta o arquivo do SGI **só com os campos validados**, gravando `.tmp` e depois renomeando;
 - mantém um registro de idempotência e uma quarentena;
@@ -193,15 +193,15 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 3. **Ficha do cliente** (celular primeiro): evolução mensal, famílias, produtos, ciclo de compra, pedidos em aberto e oportunidades de mix.
 4. **Análises:** parou de comprar, comprando menos, comprando mais, novos e reativados, mix.
 5. **Pedidos** (celular primeiro): catálogo com busca por código, família, medidas e o código do produto no cliente; montagem do pedido com o preço da tabela do cliente (informativo); rascunhos; envio; acompanhamento da situação; pedidos em aberto no ERP; histórico faturado.
-6. **Mapa**, portado do protótipo. Na portabilidade:
+6. **Mapa**, portado do protótipo, só com a carteira do representante: saem as classes "atendida" e "carteira de outros", que olham os outros representantes (decisão do Lucas em 2026-10-09). Na portabilidade:
    - usar o código IBGE do município, se o cadastro de clientes tiver (a NF-e exige);
    - corrigir os 48 nomes de município desatualizados;
    - corrigir os valores que aparecem nos tooltips mesmo com "ocultar valores".
 7. **Admin** (só LAN): representantes, convites, chaves, auditoria e situação das cargas.
 
 **Dois escopos, sempre explícitos**
-- **Visão do cliente** (o histórico completo do cliente, de qualquer representante): Clientes, Ficha, Análises, Mapa e pedidos em aberto.
-- **Visão do representante** (só as vendas atribuídas a ele): os indicadores do Início.
+- **Visão do cliente** (o histórico completo do cliente, de qualquer representante): Clientes, Ficha, Análises e Mapa.
+- **Visão do representante** (só as vendas atribuídas a ele): os indicadores do Início e os pedidos em aberto, no Início, em Pedidos e na Ficha. O pedido é atribuído por `VEPM.VENDEDOR` e, sem ele, pelo dono atual do cliente (`VEND_1`), com a conta na LAN (decisão do Lucas em 2026-10-09).
 - Isso evita que um cliente transferido apareça como "novo" ou "parado" para o novo representante.
 
 ## Regras de negócio (validadas com o Lucas na fase de análises)
@@ -281,7 +281,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
 - **F7 — Disponibilidade de estoque** (futuro, depois dos pedidos):
   - uma carga rápida e separada (`estoque-<data>.db` + manifesto, mesmo canal SFTP), enviada a cada 2–5 min e só quando o estoque mudou;
   - a tela de pedido mostra a situação do item ("disponível", "parcial: consulte a fábrica", "sob encomenda"), e não a quantidade exata, com a hora do dado;
-  - a regra de "disponível" (físico menos o reservado para pedidos) é definida com o Lucas e o DBA. A view de reserva do SGI ficou legível para o `LUCAS_RO` com o `READ ANY TABLE` (2026-10-09); a conta do extrator vai precisar de SELECT explícito nela.
+  - a regra de "disponível" (físico menos o reservado para pedidos) é definida com o Lucas e o DBA. A view de reserva do SGI ficou legível para o `LUCAS_RO` com o `READ ANY TABLE` (2026-10-09); a conta do extrator vai precisar de uma view do CRM sobre ela, como os outros objetos (ver Pendências).
 
 **Trilha da infraestrutura**
 - **I1 — Esqueleto publicado**, assim que a VM, a rede e o domínio existirem:
@@ -315,7 +315,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - VM dedicada no servidor da empresa (não compartilhar com o site);
   - quem administra a rede e o firewall, para as regras da seção Arquitetura.
 - **Antes do piloto da F4:**
-  - a conta Oracle própria do extrator, criada pelo DBA com SELECT só nas tabelas da lista que a F2 fecha, inclusive a view de preço líquido `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`. O `LUCAS_RO` lê essa view desde 2026-10-09, quando ganhou `READ ANY TABLE`; a conta do extrator não deve ganhar esse privilégio, só os SELECT da lista;
+  - a conta Oracle própria do extrator. O DBA cria, num esquema do CRM, uma view por objeto da lista que a F2 fecha, só com as colunas listadas, inclusive sobre a view de preço líquido `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`, e concede à conta SELECT só nessas views (decisão do Lucas em 2026-10-09). O esquema do CRM é o dono das views e não tem login (conta bloqueada). Ele recebe do ABC71 SELECT WITH GRANT OPTION, por grant direto, em cada objeto da lista; sem isso, o GRANT na view falha (ORA-01720). Como o Oracle não concede SELECT por coluna, são as views que impedem a conta de ler CNPJ, contatos e restrição financeira. O `LUCAS_RO` lê a view de preço líquido desde 2026-10-09, quando ganhou `READ ANY TABLE`; a conta do extrator não ganha esse privilégio;
   - qual máquina da LAN roda o extrator (o servidor do Gestao?).
 - **Antes da F5:**
   - quem mantém o código do SGI (layout "CRM");
@@ -326,12 +326,11 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - O ERP não tem essa informação hoje: `GRUPO_1`, `SUB_GRUPO_1` e `SEGMENTO` do cadastro de clientes vêm vazios.
   - Sugestão: registrar o ramo no próprio SGI, no campo `SEGMENTO`, se a tela de cadastro permitir. Assim o extrator lê direto do ERP e cliente novo já nasce classificado.
 - **A conferir nos dados (F2):**
-  - origem do status do cliente (`CLI3_STA` ou `SUSPENSO`);
   - cadastro de representantes (`SGI5_TAB_FIN_VEN`: tipo e situação);
   - significado de `ATIVO-DB`;
   - escolha da tabela quando o cliente tem principal e secundária;
   - metas (tabela `SGI5_TAB_VEN_MT1` ou meta calculada);
-  - como identificar o cliente nas telas sem CPF/CNPJ: `CRCL.CLIENTE` é a raiz do CNPJ mais a filial (no cliente pessoa física, pode embutir parte do CPF), e o protótipo mostra esse código em Clientes e na ficha.
+  - como identificar o cliente nas telas sem CPF/CNPJ: `CRCL.CLIENTE` é a raiz do CNPJ mais a filial (no cliente pessoa física, pode embutir parte do CPF; a contagem de 2026-10-09 achou 196 pessoas físicas com vendedor, 46 com venda em 24 meses), e o protótipo mostra esse código em Clientes e na ficha.
 
 ## Verificação
 

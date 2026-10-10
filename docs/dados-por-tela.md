@@ -1,6 +1,6 @@
 # Dados por tela
 
-Versão de 2026-10-09. Entrega da F1: "a lista de dados que cada tela usa, que fecha o esquema da foto" (`docs/plano.md`, F1). A F2 constrói o extrator a partir dela.
+Versão de 2026-10-09, com as decisões do Lucas desse dia. Entrega da F1: "a lista de dados que cada tela usa, que fecha o esquema da foto" (`docs/plano.md`, F1). A F2 constrói o extrator a partir dela.
 
 ## O que é
 
@@ -17,12 +17,13 @@ Versão de 2026-10-09. Entrega da F1: "a lista de dados que cada tela usa, que f
 - `app.db`: o que o próprio CRM produz. São usuários, chaves, convites, sessões, auditoria, rascunhos e pedidos enviados (plano.md:78).
 
 **Dois escopos** (plano.md:202-205)
-- **Visão do cliente:** o histórico completo dos clientes da carteira, de qualquer representante. Vale para Clientes, Ficha, Análises, Mapa, pedidos em aberto e os destaques do Início.
-- **Visão do representante:** só as vendas atribuídas a ele. Vale para os indicadores de faturamento do Início.
-- Os pedidos em aberto e a projeção do Início ainda não têm escopo decidido (pergunta 22).
+- **Visão do cliente:** o histórico completo dos clientes da carteira, de qualquer representante. Vale para Clientes, Ficha, Análises, Mapa e os destaques do Início.
+- **Visão do representante:** só as vendas atribuídas a ele. Vale para todos os indicadores do Início, inclusive pedidos em aberto e projeção, e para os pedidos em aberto de Pedidos e da Ficha.
+- Decidido em 2026-10-09 (pergunta 22): pedidos são sempre só os do representante. O pedido é atribuído por `VEPM.VENDEDOR` e, sem ele, pelo dono atual do cliente (`VEND_1`), com a conta na LAN. O servidor nunca recebe vendedor do navegador.
+- A aba Faturados também usa a visão do representante. Isso é interpretação da decisão sobre pedidos, a confirmar com o Lucas (pergunta 23).
 - A carteira (quem é cliente de quem, pelo `VEND_1` atual) define as telas da visão do cliente.
-- A visão do representante não se limita à carteira atual. Ela soma as notas atribuídas a ele (plano.md:215), inclusive as de clientes que hoje são de outro representante.
-- Por isso a visão do representante vai para a foto só como somas por representante e mês (`painel_mes`), nunca por cliente.
+- A visão do representante não se limita à carteira atual. Ela soma as notas atribuídas a ele (plano.md:215), inclusive as de clientes que hoje são de outro representante. O mesmo vale para os pedidos.
+- Por isso os indicadores de faturamento da visão do representante vão para a foto só como somas por representante e mês (`painel_mes`). Os pedidos em aberto e as notas de Faturados vão um a um, com o representante já atribuído na LAN (`pedido_aberto` e `nota`). Quando o cliente é de outra carteira, a linha vai sem o cliente (ver Pedidos).
 
 **Minimização** (CLAUDE.md, regra 3; plano.md:35)
 - Só entra na foto o campo que alguma tela usa, e só dos representantes autorizados.
@@ -53,23 +54,21 @@ Versão de 2026-10-09. Entrega da F1: "a lista de dados que cada tela usa, que f
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Hora do dado (`atualizadoEm`) | "Dados de hoje, 14:32", com a dica "Hora em que os dados foram copiados do ERP" (Layout.tsx:62 e 99-107) | Início da leitura do ERP que gerou a foto | `TO_CHAR(SYSDATE)` no Oracle; nenhuma tabela | extrator |
-| Data da foto (`hoje`) | Base de "há 12 dias" e das datas relativas em todas as telas | Data de referência das regras | `TO_CHAR(SYSDATE,'YYYY-MM-DD')` | extrator |
-| Código do representante | "Representante 1401" no menu (Layout.tsx:47) | Vem da sessão, nunca do navegador | É o mesmo número em `CRVN.VENDEDOR`, `SGI5_TAB_FIN_VEN.FIN_VEN`, `CRCL.VEND_1` e `NFME.VENDEDOR` | app.db |
-| Nome do representante | Nome e iniciais no menu (Layout.tsx:44-46) | `MAX(TRIM(NOME))` por VENDEDOR, com `EMP_FIL = 20210001`, como o SGI | `CRVN.NOME` (a confirmar) | extrator |
+| Hora do dado (`atualizadoEm`) | "Dados de hoje, 14:32", com a dica "Hora em que os dados foram copiados do ERP" (Layout.tsx:68 e 105-113) | Início da leitura do ERP que gerou a foto | `TO_CHAR(SYSDATE)` no Oracle; nenhuma tabela | extrator |
+| Data da foto (`hoje`) | Base de "há 12 dias" e das datas relativas que vêm do ERP, em todas as telas | Data de referência das regras | `TO_CHAR(SYSDATE,'YYYY-MM-DD')` | extrator |
+| Relógio (`relogio`) | O "hoje" da barra, a entrega mínima, a data e a saudação do Início e os momentos que o CRM grava | Relógio do servidor em Brasília, a cada resposta | nenhuma | servidor |
+| Código do representante | "Representante 1401" no menu (Layout.tsx:53) | Vem da sessão, nunca do navegador | É o mesmo número em `CRVN.VENDEDOR`, `SGI5_TAB_FIN_VEN.FIN_VEN`, `CRCL.VEND_1`, `NFME.VENDEDOR` e `VEPM.VENDEDOR` (este a confirmar, pergunta 1) | app.db |
+| Nome do representante | Nome e iniciais no menu (Layout.tsx:50-52) | `MAX(TRIM(NOME))` por VENDEDOR, com `EMP_FIL = 20210001`, como o SGI | `CRVN.NOME` (a confirmar) | extrator |
 | Ocultar valores | "R$ ••••" (valores.tsx:11) | Começa oculto em toda sessão e não é lembrado | nenhuma | navegador |
-| Sair | Link do menu (Layout.tsx:48) | Na F3 vira POST, revoga a sessão e manda `Clear-Site-Data` (plano.md:143) | nenhuma | app.db |
+| Sair | Link do menu (Layout.tsx:54) | Na F3 vira POST, revoga a sessão e manda `Clear-Site-Data` (plano.md:143) | nenhuma | app.db |
 
-- **Defeito a corrigir.** `Layout.tsx:101` escreve "hoje" quando a data de `atualizadoEm` é igual ao `hoje` da própria foto. Com o extrator parado desde ontem, a tela continua dizendo "hoje, 23:50" e esconde o atraso.
-- **Proposta: separar a data da foto do relógio.**
-  - A data da foto vale para as regras do extrator.
-  - O "hoje do relógio" o servidor manda junto, em Brasília.
+- **Data da foto e relógio (corrigido em 2026-10-09).** A barra comparava `atualizadoEm` com o `hoje` da própria foto, e a foto parada desde ontem aparecia como "hoje, 23:50". Agora o contrato traz `SituacaoDosDados.relogio`, o relógio do servidor em Brasília (tipos.ts:20-25), e a barra compara com ele (Layout.tsx:105-113).
+  - A data da foto vale para as regras do extrator e para as datas que vêm do ERP.
   - O relógio vale para:
     - o rótulo "hoje" da barra;
-    - a data mínima de entrega (MontarPedido.tsx:114; pedido.ts:77);
-    - o dia por extenso e a saudação do Início. Hoje os dois usam o relógio do navegador, com `new Date()` (Inicio.tsx:174 e 178-183);
-    - todo momento gravado no app.db: "Enviado" e "Atualizado" em Pedidos (Pedidos.tsx:97 e 132), "Rascunho salvo" (MontarPedido.tsx:134) e o cabeçalho e o Andamento do Detalhe (DetalheDoPedido.tsx:40 e 120).
-  - Hoje esses momentos comparam com o `hoje` da foto (formato.ts:118-124). Com a foto de ontem, um rascunho salvo agora aparece como "09/10 às 16:42", e não como "hoje, 16:42".
+    - a data mínima de entrega (MontarPedido.tsx:67 e 116; pedido.ts:70-80);
+    - o dia por extenso e a saudação do Início (Inicio.tsx:28-29 e 177-188);
+    - todo momento gravado no app.db: "Enviado" e "Atualizado" em Pedidos, "Rascunho salvo" e o cabeçalho e o Andamento do Detalhe (formato.ts:127-139).
 - A CRVN tem uma linha por gerente e supervisor (PK em ABC71-CR.md:5475). Por isso o nome é agrupado por VENDEDOR.
 - O SGI só lê a CRVN na empresa 20210001 (`untDmVenPvd.dfm:499-503`). Sem esse filtro, o nome pode vir de outra EMP_FIL.
 - O alerta de foto com mais de 2 h de atraso já existe na LAN (plano.md:305).
@@ -78,19 +77,19 @@ Versão de 2026-10-09. Entrega da F1: "a lista de dados que cada tela usa, que f
 
 **Indicadores**
 
-Faturado, mesmo dia útil, acumulados e gráfico usam a visão do representante. Projeção e pedidos em aberto ainda não têm escopo decidido (pergunta 22).
+Todos os indicadores usam a visão do representante. Projeção e pedidos em aberto seguem a decisão de 2026-10-09 (pergunta 22).
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
 | Faturado no mês | "Faturado em outubro" (Inicio.tsx:98-104) | RF do mês até hoje, atribuída ao representante | NFME, NFDE, `NFME.VENDEDOR`, CRCLH | extrator |
 | Mesmo dia útil do ano anterior | "vs out/2025, mesmo dia útil" | RF atribuída no mesmo mês do ano anterior, até o Nº dia útil | o mesmo, mais `SGI5_TAB_DP_CALEND` | extrator |
 | Dia útil e dias úteis | "8º de 22 dias úteis" (Inicio.tsx:173-176) | Dias com `NVL(TRIM(CAL_DUT_COM),'SIM') <> 'NAO'`, como o SGI (`untFunMat.pas:676`): de 1º até hoje e no mês todo | `SGI5_TAB_DP_CALEND` | extrator |
-| Projeção | "Projeção de outubro", com "X a faturar" (Inicio.tsx:105-114) | Faturado mais o valor em aberto com entrega até o fim do mês | VEPM, VEPD | servidor; escopo a decidir (pergunta 22) |
+| Projeção | "Projeção de outubro", com "X a faturar" (Inicio.tsx:105-114) | Faturado mais o valor em aberto do representante com entrega até o fim do mês | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
 | Acumulado do ano | "Acumulado de 2026" | Soma dos meses do ano corrente | (foto) | servidor |
 | Acumulado do ano anterior | "vs 2025" | Janeiro até o mês anterior inteiros, mais o mesmo dia útil do mês corrente | (foto) | servidor |
-| Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:121-126) | Contagem e soma dos pedidos em aberto | VEPM, VEPD | servidor; escopo a decidir (pergunta 22) |
+| Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:121-126) | Contagem e soma dos pedidos em aberto atribuídos ao representante | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
 | Gráfico mensal | Barras do ano, comparação com o ano anterior e "A faturar no mês" (BarrasMensais.tsx:154-160) | Mês sem dado ainda é nulo. O ano anterior usa o mês inteiro | NFME, NFDE, VEPD | extrator; a faturar: servidor |
-| Saudação | "Boa tarde, Carlos" (Inicio.tsx:26) | Primeiro nome do representante; "Bom dia", "Boa tarde" ou "Boa noite" pela hora | `CRVN.NOME` (a confirmar) | nome: extrator; parte do dia: navegador (Inicio.tsx:178-183) |
+| Saudação | "Boa tarde, Carlos" (Inicio.tsx:28) | Primeiro nome do representante; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | `CRVN.NOME` (a confirmar) | nome: extrator; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:182-188) |
 
 **Destaques (visão do cliente, sobre a carteira)**
 
@@ -104,21 +103,21 @@ Faturado, mesmo dia útil, acumulados e gráfico usam a visão do representante.
   - Vale o vendedor da nota (`NFME.VENDEDOR`).
   - Se ele vier nulo ou 0, vale o dono do cliente na data da nota, pelas trocas de `VEND_1` no CRCLH.
   - Antes da primeira troca, vale o "de" dela. Sem trocas, vale o `VEND_1` atual.
-  - O extrator aplica a regra na LAN e grava só as somas por representante e mês. Nada do CRCLH vai para a foto (plano.md:35).
+  - O extrator aplica a regra na LAN. Para os indicadores, grava as somas por representante e mês (`painel_mes`). Para a aba Faturados, grava só o representante já atribuído de cada nota (`nota.representante`, pergunta 23). Nada do CRCLH vai para a foto (plano.md:35).
 - **Mesmo dia útil (proposta a confirmar).** Com N = dia útil de hoje, soma-se o mesmo mês do ano anterior até antes do (N+1)º dia útil. Assim entram as notas de sábado ou de feriado logo depois do Nº. Se o mês do ano anterior tiver menos de N dias úteis, entra o mês inteiro. O fictício faz só uma proporção (ficticio.ts:446) e não serve de regra.
 - **A faturar no mês.**
   - Entram os itens com saldo e `VEPD.DT_ENTREGA` até o último dia do mês, inclusive os vencidos.
   - Conta a entrega de cada item, como no protótipo (CRM-prototipo/REGRAS.md:52). O fictício usa a entrega do pedido inteiro.
-  - Na visão do cliente, o extrator grava em cada pedido o valor com entrega até o fim do mês, e o servidor soma.
+  - O extrator grava em cada pedido o valor com entrega até o fim do mês, e o servidor soma os pedidos do representante.
   - A reconstrução das 00:10 resolve a virada do mês (plano.md:302).
-  - No gráfico, a tela reconhece o mês corrente pelo `aFaturar` diferente de nulo e de zero (BarrasMensais.tsx:210, 217 e 296). Com 0 a faturar, o mês parcial passa por fechado: some o "Faturado até agora" e aparece a variação do parcial contra o mês inteiro do ano anterior.
-  - Proposta: o servidor manda `aFaturar` como número, inclusive 0, só no mês corrente, e nulo nos outros (tipos.ts:99-100). A tela passa a testar `aFaturar !== null`.
-- **Escopo dos pedidos em aberto e da projeção.**
-  - O plano põe os pedidos em aberto na visão do cliente (plano.md:203) e os indicadores do Início na visão do representante (plano.md:204). A projeção soma o faturado com os pedidos (plano.md:191).
-  - O fictício usa a carteira.
-  - Visão do cliente: o servidor soma `pedido_aberto` por junção com `cliente`.
-  - Visão do representante: a atribuição seria `VEPM.VENDEDOR` e, sem ele, o dono do cliente. O extrator faz a conta na LAN e grava em `painel_mes`, na linha do mês corrente, `aberto_quantidade`, `aberto_valor` e `a_faturar_no_mes` por representante, como já faz com o faturado. O servidor nunca lê `pedido_aberto` por vendedor.
-  - Com escopos diferentes, o total do Início não bate com a aba "Em aberto no ERP" (pergunta 22).
+  - No gráfico, o mês corrente é o único com `aFaturar` como número, inclusive 0; nos outros ele é nulo (tipos.ts:108-112). O fictício manda 0 quando não há nada a faturar (ficticio.ts:505).
+  - Corrigido em 2026-10-09: antes a tela pedia `aFaturar` diferente de zero, e com 0 a faturar o mês parcial passava por fechado. Agora ela testa `aFaturar != null` (BarrasMensais.tsx:22-25). O teste é frouxo de propósito, porque a Ficha usa o mesmo gráfico sem mandar `aFaturar`.
+- **Escopo dos pedidos em aberto e da projeção (decidido em 2026-10-09, pergunta 22).**
+  - Visão do representante, como os outros indicadores do Início (plano.md:204). A projeção soma o faturado com os pedidos dele (plano.md:191).
+  - Atribuição: `VEPM.VENDEDOR`; se vier nulo ou 0, o dono do cliente pelo `VEND_1` atual. O extrator faz a conta na LAN e grava o representante em cada linha de `pedido_aberto`.
+  - O servidor soma `pedido_aberto` só pelo representante da sessão. Nenhuma rota recebe vendedor do navegador.
+  - A mesma regra vale para a aba "Em aberto no ERP" e para a Ficha. Com um escopo só, o total do Início bate com a aba.
+  - O fictício ainda usa a carteira.
 - **Valor de cada destaque:**
   - Pararam: perda mensal.
   - Menos e mais: semestre menos o semestre do ano anterior.
@@ -130,7 +129,7 @@ Faturado, mesmo dia útil, acumulados e gráfico usam a visão do representante.
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Carteira | "N clientes na carteira" (Clientes.tsx:67) | Clientes com `VEND_1` igual ao código da sessão (proposta) | `CRCL.EMP_FIL`, `CLIENTE`, `VEND_1` | extrator |
+| Carteira | "N clientes na carteira" (Clientes.tsx:67) | Clientes com `VEND_1` igual ao código da sessão (decidido em 2026-10-09) | `CRCL.EMP_FIL`, `CLIENTE`, `VEND_1` | extrator |
 | Código | "Ribeirão Preto/SP · 123456780001", busca e URL `/clientes/:codigo` | Proposta: id opaco | `CRCL.CLIENTE`, só na LAN | extrator |
 | Nome | Título da linha, busca, ordem A–Z | Fantasia; se vazio, razão social; razão completa quando o fantasia vem cortado | `CRCL.NOM_FANTAS`, `RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
 | Cidade e UF | "Ribeirão Preto/SP" | Nome do IBGE pelo código de `RESERVADO7` (a confirmar); sem ele, `TRIM(CIDADE)`. Exterior: "EX" | `CRCL.CIDADE`, `ESTADO`, `RESERVADO7` | extrator |
@@ -141,15 +140,16 @@ Faturado, mesmo dia útil, acumulados e gráfico usam a visão do representante.
 | Tendência | Minigráfico de 13 pontos (Clientes.tsx:150-152) | Faturado em 12 meses recalculado no fim de cada mês fechado, de um ano atrás até o mês passado | NFME, NFDE | extrator |
 | Busca, filtros e ordem | Campo, botões e títulos das colunas (Clientes.tsx:54 e 86-110) | Sobre a lista recebida | nenhuma | navegador |
 
-- **Carteira (proposta, a confirmar).**
-  - Clientes da `CRCL` com `VEND_1` igual ao código da sessão. Proposta: também `EMP_FIL = 20210001`.
+- **Carteira (decidida em 2026-10-09; filtro de empresa e exclusões ainda em aberto).**
+  - Clientes da `CRCL` com `VEND_1`, o campo vendedor do cliente, igual ao código da sessão. Proposta: também `EMP_FIL = 20210001`.
   - É a mesma regra que a LAN usa na revalidação do pedido, "o cliente é dele" (plano.md:170).
   - A tela Representantes - Clientes do SGI usa `VEND_1` de representante com `FIN_STA = 'ATIVO'` e `TRIM(FIS_JURID) = 'J'`, sem filtro de EMP_FIL (`Representantes - Clientes {REPCLI}/untDmVenRepCli.dfm:626-631`). A exportação para os representantes usa o mesmo filtro (`untDmRepAbd.dfm:159-164`). Incluir pessoa física diverge do SGI.
+  - Há pessoa física com vendedor. A contagem de 2026-10-09 no banco, só de quantidades e sem dado pessoal, achou 196 clientes com `FIS_JURID = 'F'` e vendedor, 46 deles com venda nos últimos 24 meses. Pessoa jurídica com vendedor: 17.602, das quais 3.469 com venda em 24 meses. Segue em aberto se a pessoa física entra, junto com o código do cliente (perguntas 17 e 18).
   - O cliente transferido aparece só para o dono atual, com todo o histórico.
   - Ficam em aberto as exclusões: pessoa física, `CLI3_STA` inativo, `TIPO_CAD` diferente de 'C' e cliente sem compra há anos.
 - **Código do cliente.**
   - `CRCL.CLIENTE` é a raiz do CNPJ em 8 dígitos mais a filial em 4 (OracleDB/docs/licoes.md:97).
-  - Os dígitos verificadores se calculam a partir dos 12, então mostrar o código é mostrar o CNPJ. Isso fere a regra 3 do CLAUDE.md e o plano.md:20, e já é pendência (plano.md:334).
+  - Os dígitos verificadores se calculam a partir dos 12, então mostrar o código é mostrar o CNPJ. Isso fere a regra 3 do CLAUDE.md e o plano.md:20, e já é pendência (plano.md:333).
   - Proposta:
     - o extrator gera um id opaco, estável entre fotos: um HMAC de EMP_FIL + CLIENTE com uma chave que só existe na LAN, ou um sequencial com a tabela de correspondência na LAN;
     - ele precisa ser estável porque rascunhos e pedidos no app.db o guardam;
@@ -181,11 +181,11 @@ Faturado, mesmo dia útil, acumulados e gráfico usam a visão do representante.
 | Faturado em 12 meses | Indicador, com "vs 12 meses anteriores" | Como em Clientes | NFME, NFDE | extrator |
 | Última compra | Indicador | Como em Clientes | NFME | extrator |
 | Ciclo de compra | "N dias" ou "Irregular" (FichaCliente.tsx:136-141) | Mediana dos intervalos entre eventos de compra em 24 meses | `NFME.DT_EMISSAO` | extrator |
-| Pedidos em aberto (indicador) | Soma e "N pedidos", ou "Nenhum" | Soma da lista do cliente | VEPM, VEPD | navegador |
+| Pedidos em aberto (indicador) | Soma e "N pedidos", ou "Nenhum" | Soma da lista: pedidos do cliente atribuídos ao representante | VEPM, VEPD | navegador |
 | Faturamento mensal | 24 meses fechados e o mês corrente | RF por mês; mês sem compra = 0 | NFME, NFDE | extrator |
 | Famílias compradas | Barras com valor e % (12 meses), do maior valor para o menor (FichaCliente.tsx:69) | RF por família nos mesmos 12 meses do faturado | NFDE, família do produto | extrator |
 | Produtos mais comprados | Produto, família, peças, valor, última compra (FichaCliente.tsx:217-225) | Os 8 maiores em valor nos 12 meses | Peças: `TRIM(NFDE.C_PROD)`, `QTDE`, `UNIDADE`. Valor: `NFDE.VLR_TOTAL − Z_FRANCA_DESC` com a RF. Última compra: `NFME.DT_EMISSAO`. Família: `PAC_GRC` → `GRP_DES` | extrator, já com o corte em 8 |
-| Pedidos em aberto (lista) | Pedido, emissão, entrega, itens, valor, abre da entrega mais próxima para a mais distante, ordenada no navegador (FichaCliente.tsx:243-246) | Ver Pedidos | VEPM, VEPD | extrator |
+| Pedidos em aberto (lista) | Pedido, emissão, entrega, itens, valor, abre da entrega mais próxima para a mais distante, ordenada no navegador (FichaCliente.tsx:243-246) | Pedidos do cliente atribuídos ao representante. Ver Pedidos | VEPM, VEPD | extrator |
 | Oportunidades de mix | Família e "X% dos clientes parecidos compram" | Ver Análises | NFDE, CRCL | extrator |
 | Com quem comparou | "mercado Praça, porte médio" ou "Poucos clientes parecidos" | Ver Análises | CRCL, NFDE | extrator |
 | Novo pedido | Botão para Montar pedido (FichaCliente.tsx:88) | Leva o código do cliente | nenhuma | navegador |
@@ -201,8 +201,9 @@ Faturado, mesmo dia útil, acumulados e gráfico usam a visão do representante.
   - A mesma regra vale para a Ficha, o mix e o catálogo. Senão, "Já comprados" e o mix deixam de bater.
 - **Peças por mês.** `FaturamentoMensal.pecas` não aparece em nenhuma tela (FichaCliente.tsx:61), então sai do contrato. As peças por mês ficam no extrator, para a variação em peças das Análises.
 - **Cliente sem compra em 12 meses.** Famílias e produtos ficam vazios. O fictício usa 1/3 dos 36 meses (ficticio.ts:375), o que é só um marcador de lugar.
-- **Cliente que nunca comprou.** Ele existe na carteira como inativo (analises.ts:43), e Clientes já mostra "sem compras" (Clientes.tsx:141). Mas o contrato declara `primeiraCompra: string` (tipos.ts:78), e a Ficha faz `primeiraCompra.slice(0, 4)` (FichaCliente.tsx:102), que quebra com nulo. Proposta: o contrato passa a levar só o ano, anulável, e o cartão mostra "—".
+- **Cliente que nunca comprou.** Ele existe na carteira como inativo (analises.ts:43), e Clientes já mostra "sem compras" (Clientes.tsx:141). Corrigido em 2026-10-09: a Ficha quebrava com a primeira compra nula. Agora o contrato leva só o ano, `clienteDesde: number | null` (tipos.ts:86-87), e o cartão mostra "—" quando ele é nulo (FichaCliente.tsx:102).
 - **Ciclo.** Pelo plano (plano.md:217), o extrator usa os intervalos em dias entre eventos. Exige pelo menos 4 compras. Fora de 30 a 180 dias, o valor é nulo (irregular). O fictício prende o valor entre 30 e 180 e conta meses × 30,4 (ficticio.ts:338-347).
+- **Pedidos em aberto (decidido em 2026-10-09, pergunta 22).** A ficha mostra só os pedidos do cliente atribuídos ao representante da sessão, como em Pedidos. O pedido do cliente atribuído a outro representante não aparece. Pela proposta da pergunta 26, ele ainda impede "parado" (ver Análises). Por isso a ficha pode mostrar "Nenhum" em pedidos em aberto num cliente que não está parado.
 - **Auditoria.** Abrir a ficha é evento auditado (plano.md:150). O registro leva o código opaco, nunca o nome.
 
 ## 5. Análises
@@ -245,7 +246,7 @@ Regras:
   - dias sem comprar acima do maior entre 60 e 2× o ciclo, ou 180 se o cliente é irregular;
   - sem pedido em aberto;
   - até 730 dias (analises.ts:55-65; plano.md:218-221).
-- **Pedido em aberto que impede "parado":** `VEPD.SALDO > 0` nos tipos de venda, com `VEPM` não bloqueado. É a regra da carteira do Gestao (`Gestao/server/src/pcp/emAberto.ts:58-71`). Falta decidir se contam o pedido ainda no SGI e o pedido enviado pelo CRM.
+- **Pedido em aberto que impede "parado":** `VEPD.SALDO > 0` nos tipos de venda, com `VEPM` não bloqueado. É a regra da carteira do Gestao (`Gestao/server/src/pcp/emAberto.ts:58-71`). Proposta, a confirmar (pergunta 26): conta qualquer pedido em aberto do cliente, de qualquer representante, porque Análises é visão do cliente e a conta é da LAN. Falta decidir se contam o pedido ainda no SGI e o pedido enviado pelo CRM.
 - **Perda mensal:** soma dos 12 meses até o mês da última compra, inclusive, ÷ 12 e arredondada (analises.ts:67-73).
 - **Comprando menos e mais** (analises.ts:75-98; plano.md:224-228):
   - base de R$ 3 mil no semestre do ano anterior;
@@ -272,8 +273,7 @@ Regras:
   - O valor somado do grupo (faturado, primeira compra) só aparece numa filial quando todas as filiais do grupo estão na carteira do mesmo representante. Senão, mostrar ao representante A o valor do grupo revela as compras da filial que é de B, o que vai além da visão do cliente (plano.md:203).
   - Nos outros casos, a filial mostra só os próprios números, e o grupo serve só para não marcar parado, novo ou reativado.
 - **Alerta rápido de queda (plano.md:229):** não tem tela, campo em `tipos.ts` nem implementação. Fica fora da foto até haver tela.
-- **Sem tela:** `ClienteParado.diasSemComprar` (tipos.ts:119) não aparece em nenhuma tela e sai do contrato.
-- **Comentário desatualizado:** `tipos.ts:64` ("mesmo segmento"). O critério é mercado e porte.
+- **Sem tela:** `ClienteParado.diasSemComprar` (tipos.ts:131) não aparece em nenhuma tela e sai do contrato.
 
 ## 6. Pedidos (abas)
 
@@ -281,11 +281,11 @@ Regras:
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Número CRM | "CRM-00106" (Pedidos.tsx:96) | Gerado no envio, sequencial, nunca reutilizado | vai para `PV1_LR1` (a confirmar) | app.db |
+| Número CRM | "CRM-00106" (Pedidos.tsx:97) | Gerado no envio, sequencial, nunca reutilizado | vai para `PV1_LR1` (a confirmar) | app.db |
 | Cliente | Nome abaixo do número | O app.db guarda o código; o nome vem da foto atual | (foto) | servidor |
 | Enviado em | "Enviado hoje, 16:42" | Relógio do servidor em Brasília | nenhuma | app.db |
-| Situação | Selo da etapa (Pedidos.tsx:98) | Ver Detalhe do pedido | `PV1_STA`, `VIEW_STA_FAT` | extrator; "enviado": app.db |
-| Total | Total do SGI com "no SGI", ou a estimativa com "estimado" (Pedidos.tsx:99-109) | Ver Detalhe do pedido | `SGI5_TAB_VEN_PV2_V2` | extrator e app.db |
+| Situação | Selo da etapa (Pedidos.tsx:99) | Ver Detalhe do pedido | `PV1_STA`, `VIEW_STA_FAT` | extrator; "enviado": app.db |
+| Total | Total do SGI com "no SGI", ou a estimativa com "estimado" (Pedidos.tsx:100-110) | Ver Detalhe do pedido | `SGI5_TAB_VEN_PV2_V2` | extrator e app.db |
 
 **Rascunhos**
 
@@ -296,29 +296,38 @@ Regras:
 | Atualizado | Data e hora relativas ("hoje, 16:42") | Relógio do servidor a cada gravação | nenhuma | app.db |
 | Total estimado | Coluna | Σ peças ÷ 100 × cento, com os preços da foto atual, na leitura | `VIEW_VLR_LIQ` (pela foto) | servidor |
 
-**Em aberto no ERP (visão do cliente)**
+**Em aberto no ERP (visão do representante)**
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Pedido | Número, com o cliente embaixo | Item de venda com saldo e pedido não bloqueado | `VEPM.NUMERO` | extrator |
-| Cliente | Nome e link para a ficha | Cliente do pedido, só da carteira | `VEPM.CLIENTE` = `CRCL.CLIENTE` na mesma EMP_FIL | extrator |
+| Pedido | Número, com o cliente embaixo | Item de venda com saldo e pedido não bloqueado, atribuído ao representante | `VEPM.NUMERO`; atribuição por `VEPM.VENDEDOR`, na LAN | extrator |
+| Cliente | Nome e link para a ficha | Cliente do pedido. Nome e link só se o cliente é da carteira do representante (ver abaixo) | `VEPM.CLIENTE` = `CRCL.CLIENTE` na mesma EMP_FIL | extrator; nome: servidor, por junção com `cliente` do representante da sessão |
 | Emissão | Data | Data do pedido | `VEPM.DT_PED` | extrator |
-| Entrega | Prazo relativo; a lista abre ordenada por ela, no navegador (Pedidos.tsx:170) | Menor entrega entre os itens com saldo (proposta) | `VEPD.DT_ENTREGA` | extrator |
+| Entrega | Prazo relativo; a lista abre ordenada por ela, no navegador (Pedidos.tsx:171) | Menor entrega entre os itens com saldo (proposta) | `VEPD.DT_ENTREGA` | extrator |
 | Itens | Contagem | Linhas com saldo (proposta) | `VEPD.SEQUENCIA`, `SALDO` | extrator |
 | Valor | Coluna | Saldo × preço com descontos e Zona Franca (proposta), sem IPI | `VEPD.SALDO`, `VLR_UNIT`, `PORC_DESC*`; `VEPM.Z_FRANCA_DESC` | extrator |
 
-**Faturados**
+**Faturados (visão do representante, a confirmar)**
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Nota | "NF 123456", com o cliente (Pedidos.tsx:194) | Notas de venda dos últimos 45 dias, da mais recente à mais antiga (ordem de abertura no navegador, Pedidos.tsx:192). Os 45 dias estão no texto da tela (Pedidos.tsx:185, 187 e 191) e no fictício (ficticio.ts:148); o plano não fixa janela (plano.md:195). A confirmar | `NFME.N_FISCAL`, `SERIE` | extrator |
+| Nota | "NF 123456", com o cliente (Pedidos.tsx:195) | Notas de venda dos últimos 45 dias atribuídas ao representante (interpretação a confirmar), da mais recente à mais antiga (ordem de abertura no navegador, Pedidos.tsx:193). Os 45 dias estão no texto da tela (Pedidos.tsx:186, 188 e 192) e no fictício (ficticio.ts:148); o plano não fixa janela (plano.md:195). A confirmar | `NFME.N_FISCAL`, `SERIE` | extrator |
 | Emissão | Data relativa | | `NFME.DT_EMISSAO` | extrator |
-| Cliente | Nome e link para a ficha | Só clientes da carteira | `NFME.FORNEC` → cliente | extrator |
+| Cliente | Nome e link para a ficha | Cliente da nota. Nome e link só se o cliente é da carteira do representante (ver abaixo) | `NFME.FORNEC` → cliente | extrator; nome: servidor, por junção com `cliente` do representante da sessão |
 | Valor | Coluna | RF da nota, sem IPI e sem ICMS-ST | `NFDE.VLR_TOTAL`, `Z_FRANCA_DESC` | extrator |
 
 - **Pedido em aberto.**
   - É `VEPD.SALDO > 0` com `VEPD.TIPO_MOVTO` nos 7 tipos de venda e `NVL(TRIM(VEPM.BLOQUEADO),'N') <> 'S'` (emAberto.ts:58-71).
   - O protótipo excluía 450, 305 e 430 em vez de filtrar pelos tipos de venda, um erro conhecido (CRM-prototipo/REGRAS.md:80-82).
+- **Escopo dos pedidos em aberto (decidido em 2026-10-09, pergunta 22).**
+  - Só os pedidos atribuídos ao representante, pela regra do Início: `VEPM.VENDEDOR`; se vier nulo ou 0, o dono do cliente pelo `VEND_1` atual. A conta é da LAN, e a foto leva o representante em cada pedido.
+  - O servidor lê `pedido_aberto` só pelo representante da sessão, nunca por vendedor vindo do navegador.
+  - O pedido de cliente da carteira atribuído a outro representante não aparece. Pela proposta da pergunta 26, ele ainda impede "parado" (ver Análises).
+  - O subtítulo da aba diz "Todos os pedidos da sua carteira" (Pedidos.tsx:163) e muda para falar dos pedidos do representante.
+- **Pedido ou nota de cliente de outra carteira.** Pela atribuição, o representante pode ter um pedido ou uma nota de cliente que hoje é de outro (cliente transferido). Proposta, a confirmar com o Lucas (pergunta 33):
+  - a linha aparece sem o nome, com o texto "Cliente de outra carteira", e sem link para a ficha, que responderia 404;
+  - assim a foto não leva nome nem id de cliente de fora da carteira (`cliente` nulo), e o nome continua vindo só de `cliente` com o representante da sessão;
+  - hoje toda linha das duas abas tem link para a ficha (Pedidos.tsx:169 e 191).
 - **Valor em aberto.**
   - Na carga do SGI para o Omega, `VEPM.Z_FRANCA_DESC` recebe a alíquota de ICMS (%), só no tipo 315 (`Recebimento {REC}/Carga Pedido Venda e NF {CPV}/untDmRecCpv_Cpv.dfm:915-928`). A mesma `VIEW_PIC` vai para `PORC_ICM` (874-875). Não é um valor em R$.
   - A RF desconta `NFDE.Z_FRANCA_DESC` em R$. Sem o desconto no pedido, o valor em aberto de um pedido 315 fica acima do que ele vai faturar, e a projeção soma duas bases diferentes.
@@ -328,9 +337,11 @@ Regras:
   - Falta conferir se o total bate com a tela de pedidos do SGI.
 - Do VEPM, nunca ler `PEDIDO_CLI`, `CONTATO`, `CONT_FONE`, `CONT_FAX`, `NRO_CARTAO`, `BANCO` nem `AGENCIA`.
 - **Faturados.**
-  - O escopo proposto é a visão do cliente, como em "Em aberto no ERP" e no fictício.
+  - Escopo (pergunta 23): só as notas atribuídas ao representante, pela regra da Atribuição do Início (`NFME.VENDEDOR`; se vier nulo ou 0, o dono do cliente na data). É a mesma visão dos indicadores de faturamento, e a conta é da LAN.
+  - Isso é interpretação. Em 2026-10-09 o Lucas decidiu que os pedidos são sempre só os do representante. Falta confirmar com ele se a regra vale também para as notas faturadas.
+  - O fictício ainda usa a carteira.
   - No Oracle, a nota é única por (EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO) (omega/ABC71-NF.md:6655). A foto leva uma linha por nota (N_FISCAL, SERIE), com o valor somado de todas as linhas dela, inclusive de tipos de movimento diferentes. Se houver mais de uma EMP_FIL com notas de venda (pergunta 4), a chave inclui a empresa.
-  - Nenhuma tela mostra a série. Hoje a lista usa só `nota.numero` como chave (Pedidos.tsx:189), e duas notas de mesmo número em séries diferentes colidem. Proposta: o contrato `NotaFaturada` ganha um `id` (série e número, ou opaco), e a lista passa a usá-lo como chave.
+  - Nenhuma tela mostra a série. Corrigido em 2026-10-09: a lista usava só o número como chave, e duas notas de mesmo número em séries diferentes colidiam. Agora `NotaFaturada` tem um `id`, série e número (tipos.ts:285-287), que a lista usa como chave (Pedidos.tsx:190).
 - **Rascunho ou pedido enviado de outro representante:** responde 404 (plano.md:42).
 
 ## 7. Montar pedido
@@ -366,7 +377,7 @@ Regras:
   - O relatório de preço líquido rotula as colunas "Tabela (CT)" e "Liquido (CT)" (`untVenRel_RelTabelaPrecoLiquido.dfm:614 e 668`).
   - A tela de item grava a unidade 'CT' com `VIEW_VLR_LIQ` como valor líquido e de venda (`untVenPvd_ItensMov.pas:139-149`).
   - O preço já tem o desconto do cliente e não tem IPI. O SGI aplica o IPI à parte (`untVenPvd_ItensMov.pas:181-185`).
-- **Tabela.** Proposta: a linha com `CLI_STA = 'PRINCIPAL'`. O SGI ignora `CLI_STA` e deixa o usuário escolher quando há mais de uma (`untVenPvd_PvdIncluir.pas:1167-1176`). Pendência do plano.md:332.
+- **Tabela.** Proposta: a linha com `CLI_STA = 'PRINCIPAL'`. O SGI ignora `CLI_STA` e deixa o usuário escolher quando há mais de uma (`untVenPvd_PvdIncluir.pas:1167-1176`). Pendência do plano.md:331.
 - **Part number.** A PK da `SGI5_TAB_VEN_TP2` inclui o part number (TP2_COD, TP2_PRO, TP2_CMO). O mesmo produto pode aparecer mais de uma vez na tabela, mas o CRM indexa só pelo código (MontarPedido.tsx:237).
 - **O navegador nunca manda preço, tabela nem representante.** `RascunhoParaSalvar` tem só id, código do cliente, itens, entrega e observação (tipos.ts:211-217). O servidor confere:
   - cliente na carteira;
@@ -377,7 +388,7 @@ Regras:
 - **Rascunho com produto que saiu do catálogo** (deixou de ser vendável ou perdeu o preço entre duas fotos).
   - A tela carrega as quantidades de todos os itens do rascunho (MontarPedido.tsx:66-67), mostra só os que estão no catálogo (MontarPedido.tsx:74) e reenvia todos em cada salvamento automático (MontarPedido.tsx:172-174).
   - Com a validação "produto no catálogo do cliente", o servidor recusaria o rascunho inteiro em todo salvamento.
-  - A aba Rascunhos conta esse item em "N produtos" (Pedidos.tsx:131), e o total estimado não tem preço para ele (pergunta 33).
+  - A aba Rascunhos conta esse item em "N produtos" (Pedidos.tsx:132), e o total estimado não tem preço para ele (pergunta 33).
 - **URL do catálogo.** O catálogo é pedido pelo código do cliente na URL (`/pedidos/novo?cliente=`). Com o id opaco, a query string deixa de levar o CNPJ.
 - **Quantidade.** A única conversão é peças ÷ 100 = CT (pedido.ts:8-9 e 23-25). Ela acontece na LAN, ao montar o arquivo do SGI.
 - **Entrega.**
@@ -434,7 +445,7 @@ Regras:
 - **Motivo da recusa.**
   - Lista fechada de códigos com frases fixas.
   - Nunca texto do Oracle, crédito, restrição financeira, preço mínimo ou nome de cliente.
-  - Recusa por crédito ou suspensão sai com texto genérico.
+  - A recusa por cliente inativo no SGI (`CLI3_STA`) sai com texto genérico. A LAN não recusa por crédito, porque não lê a restrição financeira (pergunta 16).
   - A tela de hoje mostra uma frase que cita o produto ("O produto X saiu de linha…", pedidosFicticios.ts:195). A recusa por item (fora de linha, sem preço, fora do catálogo) leva o código do produto em `pedido_crm.motivo_produto`, único parâmetro da frase fixa. Nenhum outro texto variável entra.
 - Não extrair `PV1_ULB_*`, `PV1_JCA`, `PV1_JLB_CRE`, `PV1_JUS_BPV`, `PV1_LIM_CRE`, `PV1_TIT_ABE`, `PV1_PED_ABE`, `PV1_VLR_PED`, `PV1_TRA_*` nem `LOG_USU`.
 
@@ -467,6 +478,7 @@ Regras:
 
 O plano prevê (plano.md:196-199):
 - porte do mapa do protótipo, na visão do cliente (plano.md:203);
+- só a carteira do representante, sem as classes que olham os outros representantes (decidido em 2026-10-09);
 - código IBGE do município;
 - correção dos 48 nomes antigos;
 - valores ocultos também nos tooltips.
@@ -477,13 +489,11 @@ O plano prevê (plano.md:196-199):
 | Nome e desenho do município | Rótulos e contornos | Base pública do IBGE (`CRM-prototipo/data/geo`) | não é ERP: arquivo estático | servidor |
 | Faturamento por área | Cor da área | Soma da RF dos clientes da carteira na área | (foto: cliente, cliente_mes) | servidor |
 | Clientes da área | Lista no tooltip | Nome, faturamento e última compra | (foto: cliente) | servidor |
-| Classe da área | Vazia, fria, fraca, saudável ou forte (CRM-prototipo/REGRAS.md) | Fraca: menos de 15% da média; forte: 75% da maior | (derivado) | extrator, gravada por representante × município na tabela do mapa da F6 (plano.md:62) |
-| "Atendida" e "carteira de outros" | Classes do protótipo | Só outros representantes atuam ali | clientes de outros representantes | a decidir |
+| Classe da área | Vazia, fria, fraca, saudável ou forte (CRM-prototipo/REGRAS.md) | Vazia: sem cliente da carteira, mesmo que outro representante tenha cliente ali; fria: tem cliente da carteira, mas sem faturamento; fraca: menos de 15% da média; forte: 75% da maior | (derivado) | extrator, gravada por representante × município na tabela do mapa da F6 (plano.md:62) |
 
-- **Classes que olham os outros representantes.**
-  - "Atendida" e "carteira de outros" precisam de dado de fora da carteira.
-  - Pela minimização (plano.md:35 e 237), a recomendação é tirar essas classes do mapa. Mesmo um sinal por município revela onde os outros representantes têm clientes.
-  - Mantê-las é decisão do Lucas, a registrar no plano. Nesse caso, o sinal viria só dos representantes autorizados, sem cliente e sem valor. Decidir antes da F6.
+- **Classes que olham os outros representantes (decidido em 2026-10-09, pergunta 34).**
+  - "Atendida" e "carteira de outros" saem do mapa. Elas precisavam de dado de fora da carteira, e mesmo um sinal por município revela onde os outros representantes têm clientes (plano.md:35 e 237).
+  - O mapa mostra só a carteira do representante (plano.md:196). Nada de outros representantes entra na tabela do mapa.
 - **Escopo.** O protótipo somava as vendas atribuídas ao representante (`CRM-prototipo/server/src/mapa.ts:295`). O plano põe o Mapa na visão do cliente.
 - **Município na foto.** A coluna do município só entra na foto com a F6.
 
@@ -517,7 +527,7 @@ Convenções:
 - **Datas:** texto ISO ('AAAA-MM-DD'), meses 'AAAA-MM' e momentos 'AAAA-MM-DDTHH:MM', todos gerados por `TO_CHAR` no Oracle (plano.md:66).
 - **Cliente:** `cliente` é sempre o id opaco. `CRCL.CLIENTE`, a raiz do CNPJ e o histórico de vendedores não aparecem em nenhuma tabela.
 - **Produto:** sempre o código com TRIM (`TRIM(NFDE.C_PROD)`, `TRIM(VIEW_PAC)`, `TRIM(PAC_COD)`, `TRIM(ESTQ.C_PROD)`). `NFDE.C_PROD` é CHAR(14) (omega/ABC71-NF.md:2833). Sem TRIM, a junção do "já comprou" falha. O Gestao lê `TRIM(D.C_PROD)` (moduloVendasEntradas.ts:48), e o SGI liga a view ao ESTQ com TRIM nos dois lados (`untVenPvd_PosPac.dfm:551-552`).
-- **Escopo:** toda leitura do servidor parte de `cliente.representante` ou de `painel_mes.representante`, igual ao representante da sessão. Tabela sem a coluna `representante` só é lida por junção com `cliente`.
+- **Escopo:** toda leitura do servidor parte de `cliente.representante`, `painel_mes.representante`, `pedido_aberto.representante` ou `nota.representante`, igual ao representante da sessão. Tabela sem a coluna `representante` só é lida por junção com `cliente`. O nome do cliente de um pedido ou de uma nota vem só de `cliente` com o mesmo representante da sessão.
 - **Pedido CRM:** `pedido_crm` e `pedido_crm_etapa` não têm cliente nem representante. O servidor só os lê pelo `numero_crm` de um pedido do usuário da sessão no app.db. Número CRM de outro representante, ou inexistente, responde 404 (plano.md:42). Como o número é sequencial (CRM-00106, CRM-00107…), a rota `/pedidos/:numero` (App.tsx:28) entra no teste de escopo da F3.
 - **Valores:** R$ com centavos. O arredondamento é da tela.
 
@@ -536,9 +546,9 @@ Convenções:
 | `analise_ritmo` | Cliente comprando menos ou mais; PK `cliente` | `cliente`, `direcao`, `semestre`, `semestre_ano_anterior`, `variacao`, `variacao_pecas`, `ordem` | Análises, Início |
 | `analise_novo` | Cliente novo ou reativado; PK `cliente` | `cliente`, `tipo`, `desde`, `faturado_desde`, `ordem` | Análises, Início |
 | `analise_mix` | Cliente da lista de mix; PK `cliente` | `cliente`, `ordem` | Análises |
-| `painel_mes` | Representante × mês do ano corrente; PK (`representante`, `mes`) | `representante`, `mes`, `faturado`, `ano_anterior`, `ano_anterior_ate_dia_util`; `aberto_quantidade`, `aberto_valor` e `a_faturar_no_mes` só se a pergunta 22 escolher a visão do representante | Início |
-| `pedido_aberto` | Pedido do Omega com saldo, de cliente da carteira; PK `pedido` | `pedido`, `cliente`, `emissao`, `entrega`, `itens`, `valor`, `valor_entrega_no_mes` | Pedidos, Ficha, Início |
-| `nota` | Nota de venda da janela da aba Faturados (45 dias, a confirmar), de cliente da carteira; uma linha por nota; PK (`nota`, `serie`) | `nota`, `serie`, `cliente`, `emissao`, `valor` | Pedidos |
+| `painel_mes` | Representante × mês do ano corrente; PK (`representante`, `mes`) | `representante`, `mes`, `faturado`, `ano_anterior`, `ano_anterior_ate_dia_util` | Início |
+| `pedido_aberto` | Pedido do Omega com saldo, atribuído a um representante autorizado; PK `pedido` | `pedido`, `representante`, `cliente`, `emissao`, `entrega`, `itens`, `valor`, `valor_entrega_no_mes` | Pedidos, Ficha, Início |
+| `nota` | Nota de venda da janela da aba Faturados (45 dias, a confirmar), atribuída a um representante autorizado (interpretação a confirmar, pergunta 23); uma linha por nota; PK (`nota`, `serie`) | `nota`, `serie`, `representante`, `cliente`, `emissao`, `valor` | Pedidos |
 | `pedido_crm` | Pedido enviado pelo CRM que a LAN já tratou; PK `numero_crm` | `numero_crm`, `etapa`, `numero_sgi`, `total_sgi`, `motivo_recusa`, `motivo_produto` | Pedidos, Detalhe |
 | `pedido_crm_etapa` | Pedido CRM × etapa alcançada; PK (`numero_crm`, `etapa`) | `numero_crm`, `etapa`, `em` | Detalhe |
 
@@ -546,14 +556,16 @@ Colunas que pedem nota:
 - `cliente.evolucao_12m`: texto JSON com 13 números, do mais antigo ao mais recente.
 - `cliente.grupo_mix`: 'pequeno', 'medio' ou 'grande'. 'mercado' quando a comparação usou o mercado inteiro. Nulo quando nem o mercado tem 20 clientes.
 - `cliente.situacao`, `ciclo_dias` e `variacao_12m`: nulos conforme as regras de Análises e Clientes.
-- `cliente.cliente_desde`: só o ano (inteiro), que é o que a Ficha mostra. A data completa fica na LAN. Nulo quando o cliente nunca comprou. O contrato troca `primeiraCompra: string` (tipos.ts:78) pelo ano anulável, e o cartão "Cliente desde" mostra "—" (FichaCliente.tsx:102 hoje quebra com nulo).
+- `cliente.cliente_desde`: só o ano (inteiro), que é o que a Ficha mostra (`FichaCliente.clienteDesde`). A data completa fica na LAN. Nulo quando o cliente nunca comprou, e então o cartão "Cliente desde" mostra "—".
 - `cliente.uf`: `ESTADO`. Para o cliente do exterior, "EX", até a pergunta 5 decidir sobre o país.
 - `cliente.tabela_preco`: nome da tabela (`TP1_NOM`, ou `TP1_COD` na falta).
 - `ficha_produto`: o extrator já faz o corte dos 8. Peças, valor e última compra dos outros produtos não aparecem em nenhuma tela e ficam na LAN.
 - `catalogo.ja_comprou`: 0 ou 1, calculado pelo extrator na janela da pergunta 28. É o que o Montar pedido usa (`ProdutoDoCatalogo.jaComprou`, tipos.ts:194; MontarPedido.tsx:212).
 - `catalogo.embalagem`: fica no catálogo porque a fonte pode ser por tabela (`TP2_MVE`). Se for por produto (`EAN_QTD`), passa para `produto`.
 - `painel_mes.faturado`: nulo nos meses que ainda não chegaram. `ano_anterior_ate_dia_util` só tem valor no mês corrente.
-- `painel_mes.aberto_quantidade`, `aberto_valor` e `a_faturar_no_mes`: só na linha do mês corrente e só na visão do representante. A atribuição pedido a pedido fica na LAN.
+- `pedido_aberto.representante`: atribuído na LAN, `VEPM.VENDEDOR` ou, se vier nulo ou 0, o `VEND_1` atual do cliente. `VEPM.VENDEDOR` não vai para a foto.
+- `nota.representante`: atribuído na LAN pela regra do faturamento (plano.md:215). `NFME.VENDEDOR` e o CRCLH não vão para a foto.
+- `pedido_aberto.cliente` e `nota.cliente`: o id opaco quando o cliente é da carteira do representante atribuído; nulo nos outros casos, com a conta na LAN. A linha com cliente nulo mostra "Cliente de outra carteira" (proposta, pergunta 33).
 - `pedido_aberto.pedido`: o número do Omega. Se houver mais de uma EMP_FIL com pedidos, a chave inclui a empresa.
 - `pedido_aberto.valor_entrega_no_mes`: parte do valor com entrega até o fim do mês corrente, inclusive os vencidos.
 - `nota`: o valor soma todas as linhas NFME/NFDE da nota, inclusive de tipos de movimento diferentes. Nenhuma tela mostra `serie`: ela serve só de chave. Se houver mais de uma EMP_FIL com notas de venda, a chave inclui a empresa.
@@ -564,19 +576,19 @@ Colunas que pedem nota:
 - `produto.familia`, `cliente_familia.familia` e `cliente_mix.familia`: o mesmo nome (`GRP_DES`).
 
 O que o servidor calcula sobre a foto (leituras com escopo e somas simples):
-- junção de rascunhos e pedidos enviados com `cliente`, para nome e cidade;
+- junção de rascunhos e pedidos enviados com `cliente`, para nome e cidade; e de `pedido_aberto` e `nota` com `cliente` do representante da sessão, só para o nome;
 - no Início:
   - faturado do mês (linha do mês corrente de `painel_mes`);
   - acumulado e acumulado do ano anterior;
-  - pedidos em aberto: soma de `pedido_aberto` por junção com `cliente`, ou a linha de `painel_mes`, conforme a pergunta 22;
-  - a faturar no mês, que também vai para a barra do mês corrente no gráfico;
+  - pedidos em aberto: contagem e soma de `pedido_aberto` do representante da sessão;
+  - a faturar no mês, soma de `valor_entrega_no_mes` dos mesmos pedidos, que também vai para a barra do mês corrente no gráfico;
   - destaques: contagem, soma e os 5 primeiros de cada lista;
 - a ordem das listas que a tela mostra como recebe:
   - clientes do Montar pedido por `faturamento_12m` decrescente (MontarPedido.tsx:385-401);
   - famílias da Ficha por valor decrescente (FichaCliente.tsx:66-70);
   - famílias sugeridas do mix pela coluna `ordem` de `cliente_mix` (FichaCliente.tsx:159-168);
   - os 5 primeiros de cada cartão do Início, na ordem da análise (Inicio.tsx:46 e 66);
-- as demais tabelas o navegador ordena pelo título das colunas, com a ordem de abertura na própria tela (Clientes.tsx:41 e 54; Analises.tsx:94, 135, 163 e 202; Pedidos.tsx:94, 124, 170 e 192; FichaCliente.tsx:189-192 e 243-246). Empate mantém a ordem recebida (componentes/ordenacao.ts:22-23).
+- as demais tabelas o navegador ordena pelo título das colunas, com a ordem de abertura na própria tela (Clientes.tsx:41 e 54; Analises.tsx:94, 135, 163 e 202; Pedidos.tsx:95, 125, 171 e 193; FichaCliente.tsx:189-192 e 243-246). Empate mantém a ordem recebida (componentes/ordenacao.ts:22-23).
 - total estimado do rascunho, na leitura; e o do envio, que fica congelado no app.db.
 
 A tabela `catalogo` (cliente × produto) é a maior. O volume dela define o tamanho da foto e é medido na F2.
@@ -603,13 +615,15 @@ A tabela `catalogo` (cliente × produto) é a maior. O volume dela define o tama
 
 ## Tabelas do ERP que o extrator lê
 
-É a lista dos SELECT da conta própria do extrator, que o DBA cria antes do piloto da F4 (plano.md:56 e 318).
+É a lista do que a conta própria do extrator lê, pelas views que o DBA cria no esquema do CRM antes do piloto da F4 (plano.md:56 e 318).
 
 - Na F2, o extrator usa o `LUCAS_RO` (plano.md:57-61). Desde 2026-10-09 ele tem `READ ANY TABLE` e lê todos os objetos abaixo, inclusive a view de preço líquido, sem grant novo (plano.md:318; OracleDB/docs/lacunas.md:7).
-- A conta do extrator não ganha `READ ANY TABLE`, só os SELECT desta lista (plano.md:318).
+- A conta do extrator não ganha `READ ANY TABLE` nem SELECT nas tabelas e views do ABC71 (plano.md:318).
 - O SQL do extrator lê só as colunas listadas.
 - O Oracle não concede SELECT por coluna: o GRANT só aceita lista de colunas em INSERT, UPDATE e REFERENCES. Com SELECT na tabela, a conta do extrator leria também `CRCL.CGC_CPF`, os telefones, `CLI3_RFI`, `VEPM.NRO_CARTAO` e o resto de "O que nunca entra na foto".
-- Proposta para o DBA (pergunta 42): num esquema próprio do CRM, uma view por objeto só com as colunas listadas, e SELECT só nessas views, nunca nas tabelas ou views do ABC71.
+- Decidido em 2026-10-09 (pergunta 42): o DBA cria, num esquema do CRM, uma view por objeto desta lista só com as colunas listadas, e concede à conta do extrator SELECT só nessas views. A coluna marcada "só se" entra na view quando a pergunta dela fechar.
+  - O esquema do CRM é o dono das views e não tem login (conta bloqueada).
+  - Ele recebe do ABC71 SELECT WITH GRANT OPTION, por grant direto, em cada objeto desta lista. Sem isso, o GRANT na view para a conta do extrator falha (ORA-01720).
 
 As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são relativas a `SGI12CodigoFonte/Vendas {VEN}/Pedido Venda V2 {PVD}/`, salvo quando o caminho vem completo. "Não" em Confirmada quer dizer que o objeto está fora do catálogo e que as colunas vêm do fonte do SGI. Elas precisam ser conferidas em `DBA_VIEWS`, que o `LUCAS_RO` lê desde 2026-10-09 (OracleDB/docs/lacunas.md:7).
 
@@ -623,7 +637,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 | `ABC71.NFME` | EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO, ID_CANCEL, DT_EMISSAO, VENDEDOR, NRO_PEDIDO | Cabeçalho da nota: cliente, data, cancelamento, vendedor (atribuição), número da NF e pedido da nota (datas de faturado do pedido CRM) | omega/ABC71-NF.md:6647-6739 (PK 6655; 6663-6667, 6674, 6678, 6694, 6739); Gestao/server/src/producao/foto/moduloVendasEntradas.ts:13 e 32-43; `Vendas {VEN}/Consulta Pedidos Venda {CONPVE}/untDmVenConPve_ConPve.dfm:527-528 e 1257-1261` | sim |
 | `ABC71.NFDE` | EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO, C_PROD, UNIDADE, QTDE, VLR_TOTAL, Z_FRANCA_DESC | Valor, peças e produto de cada item | omega/ABC71-NF.md:2804-2884 (PK 2812; 2833, 2836, 2840, 2849, 2884); Gestao/server/src/producao/foto/moduloVendasClientes.ts:25-36 | sim |
 | `ABC71.ESTQ` | C_PROD, GRUPO, QT_ALT_OBR | Produto ativo no Omega; família pela regra do Gestao (conferência). O PA tem uma linha por C_PROD (produto-acabado.md:9), apesar da PK com EMP_FIL, ESTAB e DEPOSITO | omega/ABC71-ES.md:335-378 (PK 343; 354, 355, 378); untVenPvd_PosPac.dfm:555-557 | sim |
-| `ABC71.VEPM` | EMP_FIL, NUMERO, CLIENTE, DT_PED, BLOQUEADO, DT_ENTREGA, Z_FRANCA_DESC; VENDEDOR só se a pergunta 22 escolher a visão do representante (conta na LAN); LIVRE só se a ligação pelo número CRM se confirmar | Pedido em aberto, etapa "no ERP", alíquota da Zona Franca no tipo 315 | omega/ABC71-VE.md:8041-8138 (PK 8049; 8057-8060, 8076, 8083, 8097, 8137, 8138); Gestao/server/src/pcp/emAberto.ts:58-72; SGI12CodigoFonte/Recebimento {REC}/Carga Pedido Venda e NF {CPV}/untDmRecCpv_Cpv.dfm:915-931 | sim; LIVRE a confirmar |
+| `ABC71.VEPM` | EMP_FIL, NUMERO, CLIENTE, DT_PED, BLOQUEADO, DT_ENTREGA, Z_FRANCA_DESC, VENDEDOR; LIVRE só se a ligação pelo número CRM se confirmar | Pedido em aberto e sua atribuição ao representante (conta na LAN), etapa "no ERP", alíquota da Zona Franca no tipo 315 | omega/ABC71-VE.md:8041-8138 (PK 8049; 8057-8060, 8076, 8083, 8097, 8137, 8138); Gestao/server/src/pcp/emAberto.ts:58-72; SGI12CodigoFonte/Recebimento {REC}/Carga Pedido Venda e NF {CPV}/untDmRecCpv_Cpv.dfm:915-931 | sim; LIVRE a confirmar |
 | `ABC71.VEPD` | EMP_FIL, NUMERO, SEQUENCIA, TIPO_MOVTO, DT_ENTREGA, SALDO, VLR_UNIT, PORC_DESC, PORC_DESC2, PORC_DESC_CPAG, PORC_DESC_CLI | Saldo, entrega, contagem de itens e valor em aberto | omega/ABC71-VE.md:6774-6868 (PK 6782; 6790-6792, 6797, 6799, 6808, 6812-6813, 6866-6868); Gestao/server/src/pcp/emAberto.ts:58-72 | sim |
 | `ABC71.VEPM_SGI5_LOG` | LOG_NPE, LOG_DTA | Data do cancelamento (candidata) | omega/ABC71-VE.md:8417-8436 | sim; uso a confirmar |
 | `ABC71.TGPA` | EMPRESA, FILIAL, COD_PAIS, NOME_PAIS, só se a pergunta 5 decidir mostrar o país | Nome do país do cliente do exterior | omega/ABC71-TG.md:437-455 | sim; uso a confirmar |
@@ -633,7 +647,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 | Tabela | Colunas | Para quê | Citação | Confirmada |
 |---|---|---|---|---|
 | `ABC71.SGI5_TAB_FIN_VEN` | FIN_VEN, FIN_TIP, FIN_STA | Representante ativo: quem entra na foto e revalidação na LAN | sgi/ABC71-SGI5-TAB_FIN.md:826-843; SGI12CodigoFonte/Financeiro {FIN}/Vendedores {VEN}/untFinVen_VenMov.dfm:563-578 | sim |
-| `ABC71.SGI5_TAB_VEN_CLI3` | CLI3_CLI, CLI3_STA; CLI3_GRP só se servir para grupos; CLI3_RFI só se a pergunta 16 decidir que a revalidação da LAN usa a restrição financeira (lido só na revalidação, nunca na foto) | Status cadastral (carteira, aceite de pedido, bloqueio de montadora): `NVL(CLI3_STA,'ATIVO')` por LEFT JOIN em `CLI3_CLI = CRCL.CLIENTE`; cliente sem linha conta como ativo | sgi/ABC71-SGI5-TAB_VEN.md:162-198 (STA 188; GRP 198); untDmVenPvd.dfm:2572-2573 e 2657-2658; untVenPvd_PvdIncluir.pas:1007-1008 | sim |
+| `ABC71.SGI5_TAB_VEN_CLI3` | CLI3_CLI, CLI3_STA; CLI3_GRP só se servir para grupos. `CLI3_RFI` não é lido (pergunta 16) | Status cadastral (carteira, aceite de pedido, revalidação na LAN, bloqueio de montadora): `NVL(CLI3_STA,'ATIVO')`, como o SGI (decidido em 2026-10-09), por LEFT JOIN em `CLI3_CLI = CRCL.CLIENTE`; cliente sem linha conta como ativo | sgi/ABC71-SGI5-TAB_VEN.md:162-198 (STA 188; GRP 198); untDmVenPvd.dfm:2572-2573 e 2657-2658; untVenPvd_PvdIncluir.pas:1007-1008 | sim |
 | `ABC71.SGI5_TAB_VEN_CLI` | CLI_COD, CLI_TAB, CLI_STA | Tabela de preço do cliente | sgi/ABC71-SGI5-TAB_VEN.md:61-92 (PK 69; 77, 78, 91); untDmVenPvd.dfm:2642-2673 | sim |
 | `ABC71.SGI5_TAB_VEN_TP1` | TP1_COD, TP1_NOM, TP1_STA, TP1_MOE | Nome, tabela obsoleta e moeda | sgi/ABC71-SGI5-TAB_VEN.md:2687-2719 (2702, 2703, 2715, 2719) | sim |
 | `ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI` | VIEW_CLI, VIEW_TAB, VIEW_PAC, VIEW_PNU, VIEW_PNU_FOR, VIEW_STA, VIEW_VLR_LIQ; VIEW_MVE só se for a fonte da embalagem | Preço do cento, part number, filtro de vendável | untVenPvd_PosPac.dfm:443-557; untDmVenPvd.dfm:3080-3114 e 6440-6458; Relatorios {REL}/untVenRel_RelTabelaPrecoLiquido.dfm:614 e 668; plano.md:318 | não (fora do catálogo); colunas do fonte do SGI, a confirmar na F2 em DBA_VIEWS; abre com o `LUCAS_RO` desde 2026-10-09 (plano.md:318) |
@@ -652,7 +666,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 | Objeto | Colunas | Para quê | Citação |
 |---|---|---|---|
-| `ABC71.SGI5_TAB_CUS_REP_FAT` | CUS_CLI, CUS_DFA, CUS_TMO, CUS_QTF, CUS_VLF, CUS_VEN, CUS_CLI_MER | Totais do RELCUS001, inclusive por representante e por mercado (plano.md:275 e 340) | sgi/ABC71-SGI5-TAB_CUS.md:635-691 (687, 691); SGI12CodigoFonte/Diretoria {DIR}/Custos {CUS}/untDirCus_RelRepresSin.dfm:2933-2956 |
+| `ABC71.SGI5_TAB_CUS_REP_FAT` | CUS_CLI, CUS_DFA, CUS_TMO, CUS_QTF, CUS_VLF, CUS_VEN, CUS_CLI_MER | Totais do RELCUS001, inclusive por representante e por mercado (plano.md:275 e 339) | sgi/ABC71-SGI5-TAB_CUS.md:635-691 (687, 691); SGI12CodigoFonte/Diretoria {DIR}/Custos {CUS}/untDirCus_RelRepresSin.dfm:2933-2956 |
 | `ABC71.SGI5_VIEW_M_NFME_ULT_CPA_CLI` | VIEW_CLI, VIEW_DMO, VIEW_STA, VIEW_VEN | Última compra e situação que o CRM interno do SGI já calcula | sgi/ABC71-SGI5-VIEW_M.md:100-120; SGI12CodigoFonte/Vendas - CRM {CRM}/Clientes {CLI}/untDmCrmCli.dfm:21 e 107-108 |
 | `ABC71.SGI5_TAB_VEN_TP2` | TP2_COD, TP2_PRO, TP2_CMO, TP2_CMO_FOR, TP2_STA, TP2_LMI, TP2_MVE, TP2_IPR | Base da view de preço: part number repetido, valores de status, múltiplo, lote e o indicador de produto na tabela impressa. Se `TP2_IPR` virar filtro (pergunta 29), a TP2 passa para a lista do extrator | sgi/ABC71-SGI5-TAB_VEN.md:2721-2764 (PK 2729; IPR 2759); untDmVenPvd.dfm:6443 |
 | `ABC71.TPMU` | EMPRESA, COD_CIDADE, NOME_CIDADE, ESTADO | Conferir o código de `RESERVADO7` (pergunta 5). O nome não serve, porque é CHAR(20) | omega/ABC71-TP.md:3048-3067; SGI12CodigoFonte/Contabilidade {CONT}/Geracao GNRE {GNRE}/untDmContGnre.dfm:420-424 |
@@ -679,14 +693,15 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
   - `VEPM.NRO_CARTAO`, `BANCO`, `AGENCIA`;
   - `PV1_LIM_CRE`, `PV1_TIT_ABE`, `PV1_PED_ABE`, `PV1_VLR_PED`;
   - percentuais de comissão da CRVN e da NFME.
-  - `CRCL.SUSPENSO`, que sai da leitura se a pergunta 16 fechar como proposto: o status do cliente vem de `CLI3_STA`.
-  - O que a LAN usa para "não está suspenso" na revalidação (plano.md:170) serve só para recusar o pedido, com texto genérico. Não filtra a carteira, o catálogo nem outra tabela da foto, para a ausência não revelar a restrição.
+  - `CRCL.SUSPENSO`, que nem é lido: o status do cliente vem de `CLI3_STA`, como no SGI (decidido em 2026-10-09, pergunta 16).
+  - A revalidação de "não está suspenso" na LAN (plano.md:170) também usa `CLI3_STA`, e `CLI3_RFI` não é lido. A recusa sai com texto genérico.
 - **Pessoas do ERP:** `PV1_ULB_*`, `PV1_USU`, `PV1_ORC`, `LOG_USU`, `LOG_USU_ORA`.
 - **Texto livre do ERP:** `PV1_JCA`, `PV1_JLB_CRE`, `PV1_JUS_BPV` (justificativa de preço abaixo do mínimo), `CLI3_OBS`, `LOG_HIS` e mensagens do Oracle.
 - **Só na LAN, para calcular:**
   - CRCLH e o dono anterior;
   - os itens das notas, as notas fora da janela da aba Faturados e a lista de datas de compra (a foto leva só a última, o ano da primeira, a de "desde" e a última por produto da Ficha);
-  - a atribuição de cada pedido em aberto a um representante, se a pergunta 22 escolher a visão do representante;
+  - as entradas da atribuição de pedidos e notas, `VEPM.VENDEDOR` e `NFME.VENDEDOR`. A foto leva só o representante já atribuído, e o cliente só quando ele é da carteira desse representante;
+  - os pedidos em aberto e as notas atribuídos a representante não autorizado, mesmo de cliente da carteira de um autorizado. Eles só entram nas contas da visão do cliente, como a regra de parado (proposta, pergunta 26) e o faturado em 12 meses;
   - peças, valor e última compra dos produtos fora dos 8 da Ficha;
   - clientes que não estão na carteira de nenhum representante autorizado;
   - os dados de toda a Suprens usados no mix (clientes, faturamento e famílias);
@@ -709,7 +724,8 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 1. **Atribuição.**
    - Qual é o formato real de `CRCLH.HISTORICO` para `CAMPO='VEND_1'`? O protótipo supõe "de: X para: Y", e quem grava é o Omega.
    - Quantas notas de venda vêm com `NFME.VENDEDOR` nulo ou 0?
-   - Ler em DBA_SOURCE como `SGI5_IUD_CUS_REP_FAT_V2` preenche `CUS_VEN`. Se ela usar o `VEND_1` atual para todo o histórico, o total por representante não bate com a regra do plano (plano.md:215 e 340). Qual dos dois vence?
+   - Quantos pedidos em aberto vêm com `VEPM.VENDEDOR` nulo, 0 ou diferente do `VEND_1` atual do cliente? Isso confirma que `VEPM.VENDEDOR` usa o mesmo código do representante e mede o pedido de cliente de outra carteira (ver Pedidos).
+   - Ler em DBA_SOURCE como `SGI5_IUD_CUS_REP_FAT_V2` preenche `CUS_VEN`. Se ela usar o `VEND_1` atual para todo o histórico, o total por representante não bate com a regra do plano (plano.md:215 e 339). Qual dos dois vence?
 2. **Calendário.** Período coberto por `SGI5_TAB_DP_CALEND` (790 linhas): todo dia tem linha? O ano anterior inteiro está lá? Os feriados do ano seguinte são cadastrados com antecedência?
 3. **Unidades e tipos.** Quais são as unidades reais das notas e dos pedidos além de CT e PC? O Gestao faz CT ×100 e o resto ×1; o RELCUS001 faz ×100 sempre (custos-faturamento.md:23-24). Listar também os tipos de movimento (plano.md:276).
 4. **EMP_FIL.** Quantas empresas têm notas e pedidos de venda? Hoje o código do cliente leva só `CLIENTE`.
@@ -741,19 +757,21 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 13. **Valor em aberto.** Conferir o total contra a tela de pedidos do SGI, com a cadeia de descontos do VEPD e a alíquota de `VEPM.Z_FRANCA_DESC` num pedido 315 já faturado. O que significa `BLOQUEADO = 'F'`?
 14. **Primeira compra.** Desde quando o NFME tem notas? O extrator recalcula o MIN a cada foto, ou guarda o resultado na LAN? O NFDE tem cerca de 3,5 milhões de linhas.
 15. **Grupo de clientes.** `SGI5_TAB_VEN_CLI3.CLI3_GRP` está preenchido? Serve para grupo econômico?
-16. **Status do cliente** (plano.md:329).
-    - Proposta de fechamento: o SGI usa `NVL(CLI3_STA,'ATIVO')` na tela de pedido e no CRM interno (`untDmVenPvd.dfm:2572`; `Vendas - CRM {CRM}/Clientes {CLI}/untDmCrmCli.dfm:18`). O uso de `SUSPENSO` foi erro do protótipo (CRM-prototipo/REGRAS.md:79). Falta o Lucas confirmar e tirar a pendência do plano.
-    - O que a LAN usa para "não está suspenso" na revalidação (plano.md:170): só `CLI3_STA` ou também `CLI3_RFI` (restrição financeira)? Seja qual for, fica só na consulta de revalidação da LAN.
+16. **Status do cliente** (plano.md:170).
+    - Decidido em 2026-10-09: o mesmo do SGI, `NVL(CLI3_STA,'ATIVO')` (`untDmVenPvd.dfm:2572`; `Vendas - CRM {CRM}/Clientes {CLI}/untDmCrmCli.dfm:18`). `CRCL.SUSPENSO` não é lido; usá-lo foi erro do protótipo (CRM-prototipo/REGRAS.md:79).
+    - Decidido em 2026-10-09: a revalidação de "não está suspenso" na LAN também segue o SGI, com `CLI3_STA`. `CLI3_RFI` não é lido.
 
 **Decidir com o Lucas**
 
 17. **Código do cliente.**
     - Aprovar o id opaco gerado na LAN (HMAC com chave só na LAN, ou sequencial com correspondência na LAN).
     - O que mostrar no cartão "Código" da Ficha e na busca por código?
-    - Hoje os representantes conhecem o cliente pelo código do ERP? (plano.md:334)
+    - Hoje os representantes conhecem o cliente pelo código do ERP? (plano.md:333)
 18. **Carteira.**
-    - Vale `CRCL.VEND_1` igual ao código da sessão? Com ou sem o filtro `EMP_FIL = 20210001`, que o SGI não usa?
+    - Decidido em 2026-10-09: vale `CRCL.VEND_1`, o campo vendedor do cliente, igual ao código da sessão. Segue em aberto o filtro `EMP_FIL = 20210001`, que o SGI não usa.
     - Entra pessoa física? A tela Representantes - Clientes e a exportação do SGI para os representantes levam só `FIS_JURID='J'` (`Representantes - Clientes {REPCLI}/untDmVenRepCli.dfm:626-631`; `Representantes - Atualicacao Base Dados {REPABD}/untDmRepAbd.dfm:159-164`).
+      - O Lucas achava que não havia. A contagem de 2026-10-09 achou 196 pessoas físicas com vendedor, 46 com venda em 24 meses, contra 17.602 pessoas jurídicas com vendedor, 3.469 com venda em 24 meses (ver Clientes).
+      - Segue em aberto, junto com a pergunta 17: na pessoa física, `CRCL.CLIENTE` pode embutir parte do CPF (plano.md:333), e o nome é dado pessoal.
     - Saem `CLI3_STA` inativo, `TIPO_CAD` diferente de 'C' e cliente sem compra há N anos?
     - `VEND_2` e `VEND_3` têm uso?
 19. **Grupos por raiz de CNPJ (plano.md:240).**
@@ -769,9 +787,9 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
     - O nome vem de `CRVN.NOME` (pode ser o nome da empresa de representação), de `NOME_CONH` ou é digitado no Admin?
     - Aprovar a exceção à regra 4 do CLAUDE.md para a rota de admin que liga o usuário ao código do representante (ver Admin). Com o aval, ela entra no CLAUDE.md.
 21. **Hora do dado.** `atualizadoEm` é a hora da última conferência do ERP ou a da última mudança (plano.md:301)? Vale o SYSDATE do Oracle no início da leitura?
-22. **Escopo do Início.** Os pedidos em aberto e a projeção usam a visão do representante (`VEPM.VENDEDOR`) ou a carteira? Com escopos diferentes, o total do Início e o da aba "Em aberto no ERP" não batem. Na visão do representante, a foto leva só os totais por representante em `painel_mes`.
+22. **Escopo dos pedidos.** Decidido em 2026-10-09: pedidos sempre só os do representante. Pedidos em aberto e projeção usam a visão do representante no Início, em Pedidos e na Ficha: `VEPM.VENDEDOR` e, sem ele, o dono atual do cliente (`VEND_1`), com a conta na LAN.
 23. **Faturados.**
-    - A aba mostra todas as notas dos clientes da carteira (visão do cliente) ou só as atribuídas ao representante?
+    - Proposta, por interpretação da decisão da pergunta 22, a confirmar com o Lucas: só as notas atribuídas ao representante, como os indicadores de faturamento.
     - Qual é a janela da aba: os 45 dias da tela e do fictício, ou outra? Quanto menor a janela, menos notas vão para a foto.
 24. **Mesmo dia útil.** Aprovar a regra proposta no Início.
 25. **Regras das análises.**
@@ -785,6 +803,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
     - "Comprando mais" exclui o cliente novo, como faz o fictício (`ficticio.ts:522`)? O plano não diz (plano.md:224-228).
     - Antes da F2, a regra de quem entra em cada lista sai do fictício (`ficticio.ts:493-536`) e vai para `analises.ts`, com teste.
 26. **Pedido em aberto que impede "parado".** Conta só o VEPD com saldo e o VEPM não bloqueado? Ou contam também o pedido bloqueado, o pedido do SGI ainda não exportado e o enviado pelo CRM? E o saldo antigo esquecido?
+    - O pedido do cliente atribuído a outro representante conta? A decisão da pergunta 22 vale para as listas de pedidos. Proposta: conta, porque Análises usa a visão do cliente (ver Análises).
 27. **Ficha.**
     - Famílias e produtos usam os mesmos 12 meses fechados do faturado, para a soma bater?
     - Fica o limite de 8 produtos?
@@ -793,7 +812,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 28. **Já comprou.** A janela é de 12 meses, como a Ficha, ou de 24, como o mix? A compra de outra filial do mesmo CNPJ conta?
 29. **Catálogo.**
     - A tabela é a linha com `CLI_STA='PRINCIPAL'`? Cliente sem principal, ou com duas, fica sem catálogo?
-    - 'ATIVO-DB' aparece para o representante (plano.md:331)?
+    - 'ATIVO-DB' aparece para o representante (plano.md:330)?
     - Tabelas fora de REAL ficam fora do CRM?
     - Os bloqueios que o SGI aplica só a montadora valem para todos?
     - Item com preço nulo ou zero sai do catálogo?
@@ -808,13 +827,9 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 33. **Rascunho de cliente que saiu da carteira.** Some, fica bloqueado para envio ou continua visível? O pedido já enviado continua visível para quem enviou?
     - E o rascunho com produto que saiu do catálogo do cliente? O servidor tira o item na leitura e avisa o representante, ou bloqueia só o envio? Hoje a tela esconde o item (MontarPedido.tsx:74), mas o reenvia em todo salvamento (MontarPedido.tsx:172-174), e a validação recusaria o rascunho inteiro.
     - Como esse item entra em "N produtos" e no total estimado da aba Rascunhos?
-34. **Mapa.** A recomendação é tirar as classes "atendida" e "carteira de outros" (plano.md:35 e 237). Ficam, com um sinal por município só dos representantes autorizados? Se ficarem, a decisão vai para o plano.
-35. **Contrato.**
-    - Tirar os campos sem tela: `FaturamentoMensal.pecas`, `ClienteParado.diasSemComprar` e os itens de "mais" e "novos" nos destaques do Início.
-    - Trocar `FichaCliente.primeiraCompra` pelo ano da primeira compra, anulável.
-    - Dar um `id` a `NotaFaturada`.
-    - Mandar `aFaturar` como 0 no mês corrente sem nada a faturar, e a tela testar `aFaturar !== null` (BarrasMensais.tsx:210 e 296).
-    - Corrigir o comentário de `tipos.ts:64`.
+    - E o pedido em aberto ou a nota atribuídos ao representante de cliente que hoje é de outra carteira? Proposta: a linha aparece sem o nome, com "Cliente de outra carteira", e sem link para a ficha (ver Pedidos).
+34. **Mapa.** Decidido em 2026-10-09: saem as classes "atendida" e "carteira de outros". O mapa mostra só a carteira do representante (plano.md:196).
+35. **Contrato.** Tirar os campos sem tela: `FaturamentoMensal.pecas`, `ClienteParado.diasSemComprar` e os itens de "mais" e "novos" nos destaques do Início.
 36. **Auditoria.** Grava o IP? O Marco Civil define registro de acesso com data, hora e IP. É dado pessoal.
 37. **Sistema atual dos representantes.** O SGI já exporta CNPJ, razão social, endereço, telefone e e-mail dos clientes para o sistema dos representantes (SGI6R; `untDmRepAbd.dfm:9-164`). O CRM vai substituí-lo? Os representantes precisam ser avisados de que o CRM não mostra CNPJ nem contatos (plano.md:20)?
 
@@ -830,4 +845,5 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
     - O layout CRM fixa PROGRAMADA quando houver entrega desejada? E o que faz sem ela?
     - A regra de hoje+7 para entrega PROGRAMADA vale para o layout CRM?
 41. **Assinatura.** A LAN confere a assinatura do envio (plano.md:145)? Isso só protege contra um servidor comprometido se a LAN tiver as chaves públicas por um caminho confiável, e não só pelo app.db do servidor.
-42. **Conta do extrator.** O Oracle não concede SELECT por coluna. O DBA cria, num esquema próprio do CRM, uma view por objeto da lista só com as colunas listadas, e concede à conta do extrator SELECT só nessas views? Ou há outro jeito de a conta não ler as colunas de "O que nunca entra na foto"?
+42. **Conta do extrator.** Decidido em 2026-10-09: o DBA cria, num esquema do CRM, uma view por objeto da lista só com as colunas listadas, e concede à conta do extrator SELECT só nessas views (plano.md:318).
+    - O esquema do CRM é o dono das views e não tem login (conta bloqueada). Ele recebe do ABC71 SELECT WITH GRANT OPTION, por grant direto, em cada objeto da lista. Sem isso, o GRANT na view falha (ORA-01720).
