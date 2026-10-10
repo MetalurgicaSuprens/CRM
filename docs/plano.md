@@ -269,7 +269,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
 - Primeiro push, assim que o `SUPRENS/CRM` existir.
 
 **Trilha do produto**
-- **F1 — Protótipo navegável com dados fictícios**, no celular e no desktop, para aprovar o visual. Junto, a lista de dados que cada tela usa, que fecha o esquema da foto.
+- **F1 — Protótipo navegável com dados fictícios**, no celular e no desktop, para aprovar o visual. Junto, a lista de dados que cada tela usa, que fecha o esquema da foto: [`docs/dados-por-tela.md`](dados-por-tela.md), com as perguntas que a F2 precisa responder.
 - **F2 — Extrator e foto:**
   - SQL de faturamento do Gestao;
   - totais conferidos com o RELCUS001, inclusive o relatório por representante;
