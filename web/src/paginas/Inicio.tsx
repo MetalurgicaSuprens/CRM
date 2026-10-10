@@ -9,10 +9,11 @@ import { Indicador } from "../componentes/Indicador";
 import { ListaClientes } from "../componentes/ListaClientes";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
+import { dataDoMomento, horaDoMomento } from "../calendario";
 import { carregarPainel, carregarSituacaoDosDados } from "../dados/api";
 import type { GrupoDestaque, PainelInicio } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarMesAno, formatarNomeDoMes, formatarTempoDesde } from "../formato";
+import { formatarDiaPorExtenso, formatarMesAno, formatarNomeDoMes, formatarTempoDesde } from "../formato";
 import { BarrasMensais } from "../graficos/BarrasMensais";
 import { Carregando } from "./Carregando";
 import estilos from "./Inicio.module.css";
@@ -23,7 +24,10 @@ export function Inicio() {
   if (!painel || !situacao) return <Carregando />;
   return (
     <div className={estilos.pagina}>
-      <CabecalhoPagina titulo={`${saudacao()}, ${primeiroNome(situacao.representante.nome)}`} descricao={descricaoDoDia(painel)} />
+      <CabecalhoPagina
+        titulo={`${saudacao(situacao.relogio)}, ${primeiroNome(situacao.representante.nome)}`}
+        descricao={descricaoDoDia(painel, situacao.relogio)}
+      />
       <Indicadores painel={painel} />
       <div className={estilos.gradePrincipal}>
         <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo={`${anoDe(painel)}, comparado a ${anoDe(painel) - 1}`}>
@@ -170,13 +174,14 @@ function anoDe(painel: PainelInicio): number {
   return Number(painel.mesAtual.mes.slice(0, 4));
 }
 
-function descricaoDoDia(painel: PainelInicio): string {
-  const data = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
-  return `${data.charAt(0).toUpperCase()}${data.slice(1)} · ${painel.mesAtual.diaUtil}º de ${painel.mesAtual.diasUteis} dias úteis`;
+/** O dia vem do relógio; o dia útil, da foto. */
+function descricaoDoDia(painel: PainelInicio, relogio: string): string {
+  return `${formatarDiaPorExtenso(dataDoMomento(relogio))} · ${painel.mesAtual.diaUtil}º de ${painel.mesAtual.diasUteis} dias úteis`;
 }
 
-function saudacao(agora = new Date()): string {
-  const hora = agora.getHours();
+/** Pela hora do relógio de Brasília. */
+function saudacao(relogio: string): string {
+  const hora = Number(horaDoMomento(relogio).slice(0, 2));
   if (hora < 12) return "Bom dia";
   if (hora < 18) return "Boa tarde";
   return "Boa noite";

@@ -1,7 +1,30 @@
-/** Datas de calendário como texto ISO ("2026-10-07"), sem fuso. */
+/** Datas de calendário como texto ISO ("2026-10-07"), sem fuso, e o relógio de Brasília. */
 
-export function hojeIso(agora = new Date()): string {
-  return `${agora.getFullYear()}-${doisDigitos(agora.getMonth() + 1)}-${doisDigitos(agora.getDate())}`;
+const RELOGIO_DE_BRASILIA = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Data e hora em Brasília ("2026-10-09T09:15"), qualquer que seja o fuso do aparelho. */
+export function momentoEmBrasilia(agora = new Date()): string {
+  const partes = new Map(RELOGIO_DE_BRASILIA.formatToParts(agora).map(({ type, value }) => [type, value]));
+  const parte = (tipo: Intl.DateTimeFormatPartTypes) => partes.get(tipo) ?? "";
+  return `${parte("year")}-${parte("month")}-${parte("day")}T${parte("hour")}:${parte("minute")}`;
+}
+
+/** "2026-10-09T09:15" → "2026-10-09" */
+export function dataDoMomento(momentoIso: string): string {
+  return momentoIso.slice(0, 10);
+}
+
+/** "2026-10-09T09:15" → "09:15" */
+export function horaDoMomento(momentoIso: string): string {
+  return momentoIso.slice(11, 16);
 }
 
 /** "2026-10-07" → "2026-10" */

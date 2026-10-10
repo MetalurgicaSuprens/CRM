@@ -1,3 +1,4 @@
+import { momentoEmBrasilia } from "../calendario";
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
@@ -82,7 +83,7 @@ export function salvarRascunhoFicticio(dados: RascunhoParaSalvar): Rascunho | nu
     itens,
     entrega: dados.entrega,
     observacao: dados.observacao,
-    atualizadoEm: momento(new Date()),
+    atualizadoEm: momentoEmBrasilia(),
     totalEstimado: totalDoPedido(linhasDe(itens, catalogo)),
   };
   rascunhos.set(id, rascunho);
@@ -98,7 +99,7 @@ export function enviarRascunhoFicticio(id: string): PedidoEnviado | null {
   const rascunho = rascunhos.get(id);
   const catalogo = rascunho ? catalogoDoClienteFicticio(rascunho.cliente.codigo) : null;
   if (!rascunho || !catalogo) return null;
-  const agora = momento(new Date());
+  const agora = momentoEmBrasilia();
   const pedido: PedidoEnviado = {
     numero: numeroCrm(proximoNumero++),
     cliente: rascunho.cliente,
@@ -183,7 +184,7 @@ function gerarExemplos(): PedidoEnviado[] {
       {
         numero: numeroCrm(numero),
         cliente: catalogo.cliente,
-        enviadoEm: momento(new Date(enviadoEm)),
+        enviadoEm: momentoEmBrasilia(new Date(enviadoEm)),
         entrega: null,
         observacao: "",
         itens: itensEnviados(itens, catalogo),
@@ -193,7 +194,7 @@ function gerarExemplos(): PedidoEnviado[] {
         numeroErp: passou("no_erp") ? String(aleatorio.inteiro(1_800_000, 1_850_000)) : null,
         etapa,
         motivoRecusa: etapa === "recusado" ? `O produto ${itens[0]?.codigo ?? ""} saiu de linha. Troque por outro e envie de novo.` : null,
-        historico: caminho.map((passo) => ({ etapa: passo, em: momento(new Date(enviadoEm + MINUTOS_ATE[passo] * 60_000)) })),
+        historico: caminho.map((passo) => ({ etapa: passo, em: momentoEmBrasilia(new Date(enviadoEm + MINUTOS_ATE[passo] * 60_000)) })),
       },
     ];
   });
@@ -245,10 +246,4 @@ function siglaDe(nome: string): string {
     .map((palavra) => palavra.charAt(0).toUpperCase())
     .join("")
     .slice(0, 3);
-}
-
-/** "2026-10-08T16:42", no horário local. */
-function momento(data: Date): string {
-  const doisDigitos = (valor: number) => String(valor).padStart(2, "0");
-  return `${data.getFullYear()}-${doisDigitos(data.getMonth() + 1)}-${doisDigitos(data.getDate())}T${doisDigitos(data.getHours())}:${doisDigitos(data.getMinutes())}`;
 }

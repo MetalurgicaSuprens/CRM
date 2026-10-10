@@ -15,9 +15,14 @@ export type BarraMensal = {
   valor: number | null;
   /** Mesmo mês do ano anterior. */
   comparacao?: number | null;
-  /** Só no mês corrente: o que ainda está a faturar. */
+  /** Só no mês corrente, inclusive 0: o que ainda está a faturar. null ou ausente nos outros meses. */
   aFaturar?: number | null;
 };
+
+/** O mês corrente é o único que traz `aFaturar`, mesmo quando não há nada a faturar. */
+function isMesCorrente(barra: BarraMensal): barra is BarraMensal & { aFaturar: number } {
+  return barra.aFaturar != null;
+}
 
 type Rotulos = {
   valor: string;
@@ -207,16 +212,16 @@ type PropsDica = {
  * coluna está no gráfico: centrada no meio, rente à borda nas pontas.
  */
 function Dica({ barra, rotulos, centro, larguraDesenho }: PropsDica) {
-  const fechado = barra.valor !== null && !barra.aFaturar;
+  const fechado = barra.valor !== null && !isMesCorrente(barra);
   const recuo = larguraDesenho > 0 ? (centro / larguraDesenho) * 100 : 50;
   return (
     <div className={estilos.dica} style={{ left: centro, transform: `translate(-${recuo}%, -8px)` }} role="status">
       <p className={estilos.dicaTitulo}>{formatarMesPorExtenso(barra.mes)}</p>
       <div className={estilos.dicaLinhas}>
         {barra.valor !== null ? (
-          <LinhaDica chave={estilos.chaveValor} valor={barra.valor} rotulo={barra.aFaturar ? "Faturado até agora" : rotulos.valor} />
+          <LinhaDica chave={estilos.chaveValor} valor={barra.valor} rotulo={isMesCorrente(barra) ? "Faturado até agora" : rotulos.valor} />
         ) : null}
-        {barra.aFaturar ? <LinhaDica chave={estilos.chaveAFaturar} valor={barra.aFaturar} rotulo={rotulos.aFaturar ?? "A faturar"} /> : null}
+        {isMesCorrente(barra) ? <LinhaDica chave={estilos.chaveAFaturar} valor={barra.aFaturar} rotulo={rotulos.aFaturar ?? "A faturar"} /> : null}
         {barra.comparacao != null && rotulos.comparacao ? (
           <LinhaDica chave={estilos.chaveComparacao} valor={barra.comparacao} rotulo={rotulos.comparacao} />
         ) : null}
@@ -271,7 +276,7 @@ function Legenda({ barras, rotulos }: { barras: BarraMensal[]; rotulos: Rotulos 
 
 function TabelaMensal({ barras, rotulos }: { barras: BarraMensal[]; rotulos: Rotulos }) {
   const temComparacao = Boolean(rotulos.comparacao);
-  const temAFaturar = barras.some((b) => b.aFaturar);
+  const temMesCorrente = barras.some(isMesCorrente);
   return (
     <div className={estilos.tabelaRolagem}>
       <table className={estilos.tabela}>
@@ -279,7 +284,7 @@ function TabelaMensal({ barras, rotulos }: { barras: BarraMensal[]; rotulos: Rot
           <tr>
             <th scope="col">Mês</th>
             <th scope="col">{rotulos.valor}</th>
-            {temAFaturar ? <th scope="col">{rotulos.aFaturar ?? "A faturar"}</th> : null}
+            {temMesCorrente ? <th scope="col">{rotulos.aFaturar ?? "A faturar"}</th> : null}
             {temComparacao ? <th scope="col">{rotulos.comparacao}</th> : null}
             {temComparacao ? <th scope="col">Variação</th> : null}
           </tr>
@@ -289,11 +294,11 @@ function TabelaMensal({ barras, rotulos }: { barras: BarraMensal[]; rotulos: Rot
             <tr key={barra.mes}>
               <th scope="row">{formatarMesAno(barra.mes)}</th>
               <td>{barra.valor === null ? "—" : <Valor valor={barra.valor} />}</td>
-              {temAFaturar ? <td>{barra.aFaturar ? <Valor valor={barra.aFaturar} /> : "—"}</td> : null}
+              {temMesCorrente ? <td>{isMesCorrente(barra) ? <Valor valor={barra.aFaturar} /> : "—"}</td> : null}
               {temComparacao ? <td>{barra.comparacao != null ? <Valor valor={barra.comparacao} /> : "—"}</td> : null}
               {temComparacao ? (
                 <td>
-                  {barra.valor !== null && !barra.aFaturar && barra.comparacao ? (
+                  {barra.valor !== null && !isMesCorrente(barra) && barra.comparacao ? (
                     <Variacao razao={barra.valor / barra.comparacao - 1} />
                   ) : (
                     "—"

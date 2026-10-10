@@ -12,7 +12,7 @@ export function DataRelativa({ data, hoje }: { data: string | null; hoje: string
   );
 }
 
-/** Data e hora em relação a hoje: "hoje, 16:42", "07/10 às 15:10". */
-export function MomentoRelativo({ momento, hoje }: { momento: string; hoje: string }) {
-  return <span>{formatarMomento(momento, hoje)}</span>;
+/** Data e hora em relação ao relógio: "hoje, 16:42", "07/10 às 15:10". */
+export function MomentoRelativo({ momento, relogio }: { momento: string; relogio: string }) {
+  return <span>{formatarMomento(momento, relogio)}</span>;
 }

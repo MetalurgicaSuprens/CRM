@@ -4,6 +4,7 @@ import {
   formatarCompacto,
   formatarContagem,
   formatarData,
+  formatarDiaPorExtenso,
   formatarMesAno,
   formatarMomento,
   formatarPeriodo,
@@ -59,13 +60,23 @@ describe("formatarPrazo", () => {
 
 describe("formatarMomento", () => {
   it("usa hoje e ontem com a hora", () => {
-    expect(formatarMomento("2026-10-08T16:42", "2026-10-08")).toBe("hoje, 16:42");
-    expect(formatarMomento("2026-10-07T09:05", "2026-10-08")).toBe("ontem, 09:05");
+    expect(formatarMomento("2026-10-08T16:42", "2026-10-08T17:00")).toBe("hoje, 16:42");
+    expect(formatarMomento("2026-10-07T09:05", "2026-10-08T17:00")).toBe("ontem, 09:05");
+  });
+
+  it("decide o hoje pelo relógio: a foto de ontem não aparece como de hoje", () => {
+    expect(formatarMomento("2026-10-08T23:50", "2026-10-09T09:15")).toBe("ontem, 23:50");
   });
 
   it("mostra dia e mês no mesmo ano, e o ano quando muda", () => {
-    expect(formatarMomento("2026-10-01T15:10", "2026-10-08")).toBe("01/10 às 15:10");
-    expect(formatarMomento("2025-12-30T08:00", "2026-01-05")).toBe("30/12/2025 às 08:00");
+    expect(formatarMomento("2026-10-01T15:10", "2026-10-08T17:00")).toBe("01/10 às 15:10");
+    expect(formatarMomento("2025-12-30T08:00", "2026-01-05T17:00")).toBe("30/12/2025 às 08:00");
+  });
+});
+
+describe("formatarDiaPorExtenso", () => {
+  it("escreve o dia da semana com inicial maiúscula, o dia e o mês", () => {
+    expect(formatarDiaPorExtenso("2026-10-09")).toBe("Sexta-feira, 9 de outubro");
   });
 });
 

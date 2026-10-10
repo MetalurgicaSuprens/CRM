@@ -65,7 +65,10 @@ export function passosDoAndamento(pedido: Pick<PedidoEnviado, "etapa" | "histori
   }));
 }
 
-/** O que impede o envio, em frases para o representante; lista vazia quando dá para enviar. */
+/**
+ * O que impede o envio, em frases para o representante; lista vazia quando dá para enviar.
+ * `hoje` é a data do relógio de Brasília, nunca a da foto: com a foto atrasada, ontem passaria.
+ */
 export function problemasDoPedido(linhas: readonly LinhaDoPedido[], observacao: string, entrega: string | null, hoje: string): string[] {
   const problemas: string[] = [];
   if (!linhas.some((linha) => linha.quantidade > 0)) problemas.push("Inclua pelo menos um produto.");

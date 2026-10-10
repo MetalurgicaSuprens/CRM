@@ -1,5 +1,37 @@
-import { describe, expect, it } from "vitest";
-import { diasUteisAte, diasUteisDoMes, somarDias, somarMeses, ultimoDiaDoMes } from "./calendario";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  dataDoMomento,
+  diasUteisAte,
+  diasUteisDoMes,
+  horaDoMomento,
+  momentoEmBrasilia,
+  somarDias,
+  somarMeses,
+  ultimoDiaDoMes,
+} from "./calendario";
+
+describe("relógio de Brasília", () => {
+  // Um aparelho em outro fuso: esta máquina já está em Brasília e não pegaria o erro.
+  beforeAll(() => vi.stubEnv("TZ", "Asia/Tokyo"));
+  afterAll(() => vi.unstubAllEnvs());
+
+  it("converte o instante para a hora de Brasília", () => {
+    expect(momentoEmBrasilia(new Date("2026-10-09T12:15:00Z"))).toBe("2026-10-09T09:15");
+  });
+
+  it("ainda é o dia anterior em Brasília depois da meia-noite em UTC", () => {
+    expect(momentoEmBrasilia(new Date("2026-10-09T02:30:00Z"))).toBe("2026-10-08T23:30");
+  });
+
+  it("escreve a meia-noite como 00, não 24", () => {
+    expect(momentoEmBrasilia(new Date("2026-10-09T03:05:00Z"))).toBe("2026-10-09T00:05");
+  });
+
+  it("separa a data e a hora do momento", () => {
+    expect(dataDoMomento("2026-10-09T09:15")).toBe("2026-10-09");
+    expect(horaDoMomento("2026-10-09T09:15")).toBe("09:15");
+  });
+});
 
 describe("calendário", () => {
   it("soma dias atravessando mês e ano", () => {

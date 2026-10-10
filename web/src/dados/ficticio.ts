@@ -1,4 +1,13 @@
-import { diasUteisAte, diasUteisDoMes, hojeIso, mesDe, somarDias, somarMeses, ultimoDiaDoMes } from "../calendario";
+import {
+  dataDoMomento,
+  diasUteisAte,
+  diasUteisDoMes,
+  mesDe,
+  momentoEmBrasilia,
+  somarDias,
+  somarMeses,
+  ultimoDiaDoMes,
+} from "../calendario";
 import { diasEntre } from "../formato";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
@@ -44,6 +53,10 @@ const CLIENTES_QUE_VOLTARAM = 3;
 const MESES_FECHADOS = 36;
 const ULTIMO_FECHADO = MESES_FECHADOS - 1;
 const DESTAQUES_POR_GRUPO = 5;
+const SERIE_DAS_NOTAS = "1";
+const PRIMEIRO_NUMERO_DE_NOTA = 180_000;
+/** A foto fictícia começa a ser lida 14 minutos antes da primeira consulta. */
+const ATRASO_DA_FOTO_MS = 14 * 60_000;
 
 const REPRESENTANTE = { codigo: "1401", nome: "Carlos Andrade" };
 
@@ -100,6 +113,8 @@ type Indicadores = {
 };
 
 type Carteira = Contexto & {
+  /** Início da leitura que gerou a foto, em Brasília. A data dele é o `hoje`. */
+  atualizadoEm: string;
   clientes: ClienteFicticio[];
   /** Todos os clientes da Suprens (os da carteira e os dos outros), para comparar o mix. */
   suprens: ClienteNoMix[];
@@ -107,15 +122,15 @@ type Carteira = Contexto & {
 
 let carteiraEmCache: Carteira | null = null;
 
+/** A foto fictícia é tirada uma vez, como o extrator faria em Brasília; só o relógio anda. */
 function carteira(): Carteira {
-  carteiraEmCache ??= gerarCarteira(hojeIso());
+  carteiraEmCache ??= gerarCarteira(momentoEmBrasilia(new Date(Date.now() - ATRASO_DA_FOTO_MS)));
   return carteiraEmCache;
 }
 
 export function situacaoDosDadosFicticia(agora = new Date()): SituacaoDosDados {
-  const atualizacao = new Date(agora.getTime() - 14 * 60_000);
-  const hora = `${String(atualizacao.getHours()).padStart(2, "0")}:${String(atualizacao.getMinutes()).padStart(2, "0")}`;
-  return { atualizadoEm: `${hojeIso(atualizacao)}T${hora}`, hoje: carteira().hoje, representante: REPRESENTANTE };
+  const { atualizadoEm, hoje } = carteira();
+  return { atualizadoEm, hoje, relogio: momentoEmBrasilia(agora), representante: REPRESENTANTE };
 }
 
 export function clientesFicticios(): ClienteResumo[] {
@@ -145,35 +160,44 @@ export function pedidosNoErpFicticios(): PedidoNoErp[] {
     .sort((a, b) => a.entrega.localeCompare(b.entrega));
 }
 
-/** Notas dos últimos 45 dias, da mais recente à mais antiga. */
+/**
+ * Notas dos últimos 45 dias, da mais recente à mais antiga. Os números crescem com a emissão, como
+ * no ERP, e nunca se repetem na mesma série.
+ */
 export function notasFaturadasFicticias(): NotaFaturada[] {
   const { clientes, hoje } = carteira();
   const aleatorio = criarAleatorio(SEMENTE + 3);
+  let numero = PRIMEIRO_NUMERO_DE_NOTA;
   return clientes
     .flatMap((cliente) =>
       cliente.datasCompra
         .filter((data) => diasEntre(data, hoje) <= 45)
         .map((data) => ({
-          numero: String(aleatorio.inteiro(180_000, 199_999)),
           emissao: data,
           cliente: resumirCliente(cliente),
           valor: cliente.mensal.find((mes) => mes.mes === data.slice(0, 7))?.valor ?? 0,
         })),
     )
-    .sort((a, b) => b.emissao.localeCompare(a.emissao));
+    .sort((a, b) => a.emissao.localeCompare(b.emissao))
+    .map((nota) => {
+      numero += aleatorio.inteiro(1, 40);
+      return { id: `${SERIE_DAS_NOTAS}-${numero}`, numero: String(numero), ...nota };
+    })
+    .reverse();
 }
 
 // ---------------------------------------------------------------- geração
 
-function gerarCarteira(hoje: string): Carteira {
+function gerarCarteira(atualizadoEm: string): Carteira {
   const aleatorio = criarAleatorio(SEMENTE);
+  const hoje = dataDoMomento(atualizadoEm);
   const mesAtual = mesDe(hoje);
   const contexto: Contexto = { hoje, mesAtual, diaUtil: diasUteisAte(hoje), diasUteis: diasUteisDoMes(mesAtual) };
   const clientes = Array.from({ length: QUANTIDADE_DE_CLIENTES }, () => gerarCliente(aleatorio, contexto));
   const aleatorioDosQueVoltaram = criarAleatorio(SEMENTE + 2);
   clientes.push(...Array.from({ length: CLIENTES_QUE_VOLTARAM }, () => gerarCliente(aleatorioDosQueVoltaram, contexto, "voltou")));
   const outros = gerarOutrosClientesDaSuprens(criarAleatorio(SEMENTE + 1));
-  return { ...contexto, clientes, suprens: [...clientes.map(paraMix), ...outros] };
+  return { ...contexto, atualizadoEm, clientes, suprens: [...clientes.map(paraMix), ...outros] };
 }
 
 function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Perfil): ClienteFicticio {
@@ -378,7 +402,8 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
   return {
     ...resumirCliente(cliente),
     razaoSocial: cliente.razaoSocial,
-    primeiraCompra: cliente.primeiraCompra,
+    // Na carteira fictícia todo cliente já comprou um dia; o null fica para a foto de verdade.
+    clienteDesde: Number(cliente.primeiraCompra.slice(0, 4)),
     cicloDias: cliente.indicadores.cicloDias,
     mensal: cliente.mensal.slice(ULTIMO_FECHADO - 23),
     familias,

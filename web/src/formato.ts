@@ -1,3 +1,5 @@
+import { dataDoMomento, horaDoMomento } from "./calendario";
+
 const REAIS = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
@@ -11,6 +13,8 @@ const MESES_LONGOS = [
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ];
 const MENOS = "−";
+/** Em UTC porque a data já chega pronta: o fuso do aparelho não pode mudar o dia. */
+const DIA_POR_EXTENSO = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
 /** Valor em reais, sem centavos (regra aprovada no protótipo). */
 export function formatarReais(valor: number): string {
@@ -84,6 +88,12 @@ export function formatarMesPorExtenso(mesIso: string): string {
   return `${formatarNomeDoMes(mesIso)} de ${mesIso.slice(0, 4)}`;
 }
 
+/** "2026-10-09" → "Sexta-feira, 9 de outubro" */
+export function formatarDiaPorExtenso(dataIso: string): string {
+  const texto = DIA_POR_EXTENSO.format(paraDiaUtc(dataIso));
+  return `${texto.charAt(0).toUpperCase()}${texto.slice(1)}`;
+}
+
 /** Tempo desde uma data, em linguagem de conversa: "hoje", "há 12 dias", "há 4 meses". */
 export function formatarTempoDesde(dataIso: string, hojeIso: string): string {
   const dias = diasEntre(dataIso, hojeIso);
@@ -114,9 +124,14 @@ export function formatarPrazo(dataIso: string, hojeIso: string): string {
   return `em ${Math.round(dias / 30.4)} meses`;
 }
 
-/** Data e hora ("2026-10-07T15:10") em relação a hoje: "hoje, 15:10", "ontem, 09:05", "07/10 às 15:10". */
-export function formatarMomento(momentoIso: string, hojeIso: string): string {
-  const [data = "", hora = ""] = momentoIso.split("T");
+/**
+ * Data e hora ("2026-10-07T15:10") em relação ao relógio de Brasília, nunca à data da foto:
+ * "hoje, 15:10", "ontem, 09:05", "07/10 às 15:10".
+ */
+export function formatarMomento(momentoIso: string, relogioIso: string): string {
+  const data = dataDoMomento(momentoIso);
+  const hora = horaDoMomento(momentoIso);
+  const hojeIso = dataDoMomento(relogioIso);
   const dias = diasEntre(data, hojeIso);
   if (dias === 0) return `hoje, ${hora}`;
   if (dias === 1) return `ontem, ${hora}`;

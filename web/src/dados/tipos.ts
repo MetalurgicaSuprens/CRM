@@ -13,8 +13,16 @@ export type Mercado = "PRACA" | "MONTADORA" | "EXPORTACAO";
 export type Porte = "pequeno" | "medio" | "grande";
 
 export type SituacaoDosDados = {
+  /** Início da leitura do ERP que gerou a foto ("2026-10-09T07:02"). */
   atualizadoEm: string;
+  /** Data da foto: a referência das regras e das datas que vêm do ERP. */
   hoje: string;
+  /**
+   * Relógio do servidor em Brasília ("2026-10-09T09:15"). Vale para o "hoje" da barra, a entrega
+   * mínima, a data e a saudação do Início e os momentos que o próprio CRM grava. Com a foto
+   * atrasada, a data dele fica à frente de `hoje`.
+   */
+  relogio: string;
   representante: { codigo: string; nome: string };
 };
 
@@ -61,7 +69,7 @@ export type ProdutoComprado = {
 
 export type OportunidadeMix = {
   familia: string;
-  /** Parcela dos clientes do mesmo segmento que compram a família. */
+  /** Parcela dos clientes parecidos (mesmo mercado e faixa de porte; ver `grupoDoMix`) que compram a família. */
   penetracao: number;
 };
 
@@ -75,7 +83,8 @@ export type PedidoEmAberto = {
 
 export type FichaCliente = ClienteResumo & {
   razaoSocial: string;
-  primeiraCompra: string;
+  /** Só o ano da primeira compra (a data completa fica na LAN); null para quem nunca comprou. */
+  clienteDesde: number | null;
   /** Ciclo típico de compra em dias; null para cliente irregular. */
   cicloDias: number | null;
   /** Últimos 24 meses fechados, mais o mês corrente parcial. */
@@ -96,7 +105,10 @@ export type MesDoPainel = {
   /** null para meses que ainda não chegaram. */
   faturado: number | null;
   anoAnterior: number;
-  /** Só no mês corrente: pedidos em aberto com entrega até o fim do mês. */
+  /**
+   * Só no mês corrente, inclusive 0: pedidos em aberto com entrega até o fim do mês. null nos
+   * outros meses; é por ele que a tela reconhece o mês corrente.
+   */
   aFaturar: number | null;
 };
 
@@ -271,6 +283,8 @@ export type PedidoEnviado = {
 export type PedidoNoErp = PedidoEmAberto & { cliente: ClienteResumo };
 
 export type NotaFaturada = {
+  /** Série e número: o número sozinho se repete entre séries. Nenhuma tela mostra a série. */
+  id: string;
   numero: string;
   emissao: string;
   cliente: ClienteResumo;

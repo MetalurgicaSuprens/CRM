@@ -37,7 +37,7 @@ export function DetalheDoPedido() {
         descricao={
           <>
             Para <Link to={`/clientes/${pedido.cliente.codigo}`}>{pedido.cliente.nome}</Link> · enviado{" "}
-            {formatarMomento(pedido.enviadoEm, situacao.hoje)}
+            {formatarMomento(pedido.enviadoEm, situacao.relogio)}
           </>
         }
       />
@@ -49,7 +49,7 @@ export function DetalheDoPedido() {
       ) : null}
       <div className={estilos.grade}>
         <Cartao titulo="Andamento" icone={Route} subtitulo="Do envio pelo CRM até o faturamento">
-          <LinhaDoTempo pedido={pedido} hoje={situacao.hoje} />
+          <LinhaDoTempo pedido={pedido} relogio={situacao.relogio} />
         </Cartao>
         <Cartao titulo="Itens" icone={Package} subtitulo="Pelos preços da tabela do cliente no momento do envio">
           <TabelaResponsiva
@@ -106,7 +106,7 @@ function Totais({ pedido }: { pedido: PedidoEnviado }) {
   );
 }
 
-function LinhaDoTempo({ pedido, hoje }: { pedido: PedidoEnviado; hoje: string }) {
+function LinhaDoTempo({ pedido, relogio }: { pedido: PedidoEnviado; relogio: string }) {
   return (
     <ol className={estilos.linhaDoTempo}>
       {passosDoAndamento(pedido).map((passo) => (
@@ -117,7 +117,7 @@ function LinhaDoTempo({ pedido, hoje }: { pedido: PedidoEnviado; hoje: string })
               {ETAPAS[passo.etapa].rotulo}
               <span className="visualmente-oculto">{passo.estado === "feito" ? ", feito" : passo.estado === "atual" ? ", situação atual" : ", ainda não"}</span>
             </span>
-            {passo.em ? <span className={estilos.suave}>{formatarMomento(passo.em, hoje)}</span> : null}
+            {passo.em ? <span className={estilos.suave}>{formatarMomento(passo.em, relogio)}</span> : null}
             <DetalheDoPasso passo={passo} pedido={pedido} />
           </span>
         </li>

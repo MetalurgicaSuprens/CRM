@@ -4,6 +4,7 @@ import { ChartColumn, ClipboardList, Clock, Eye, EyeOff, House, LogOut, MapIcon,
 import { useValores } from "../contexto/valores";
 import { carregarSituacaoDosDados } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
+import { formatarMomento } from "../formato";
 import estilos from "./Layout.module.css";
 
 const NAVEGACAO = [
@@ -16,11 +17,16 @@ const NAVEGACAO = [
 
 export function Layout() {
   const { pathname } = useLocation();
-  const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
+  const { dados: situacao, recarregar } = useCarga("situacao", carregarSituacaoDosDados);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  // O Layout fica montado entre as telas: sem isto, o relógio e a hora da foto na barra param.
+  useEffect(() => {
+    recarregar();
+  }, [pathname, recarregar]);
 
   return (
     <div className={estilos.casca}>
@@ -59,7 +65,7 @@ export function Layout() {
             <Marca />
           </div>
           <span className={estilos.prototipo}>Protótipo · dados fictícios</span>
-          {situacao ? <Atualizacao atualizadoEm={situacao.atualizadoEm} hoje={situacao.hoje} /> : null}
+          {situacao ? <Atualizacao atualizadoEm={situacao.atualizadoEm} relogio={situacao.relogio} /> : null}
           <BotaoValores />
         </header>
         <main className={estilos.conteudo}>
@@ -96,13 +102,12 @@ function iniciais(nome: string): string {
   return `${primeiro.charAt(0)}${ultimo.charAt(0)}`.toUpperCase();
 }
 
-function Atualizacao({ atualizadoEm, hoje }: { atualizadoEm: string; hoje: string }) {
-  const [data, hora] = atualizadoEm.split("T");
-  const quando = data === hoje ? `hoje, ${hora}` : `${data?.split("-").reverse().join("/")} ${hora}`;
+/** Comparado com o relógio, não com a data da própria foto: a foto atrasada aparece como de ontem. */
+function Atualizacao({ atualizadoEm, relogio }: { atualizadoEm: string; relogio: string }) {
   return (
     <span className={estilos.atualizacao} title="Hora em que os dados foram copiados do ERP">
       <Clock size={14} aria-hidden="true" />
-      Dados de {quando}
+      Dados de {formatarMomento(atualizadoEm, relogio)}
     </span>
   );
 }

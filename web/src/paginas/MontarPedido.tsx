@@ -12,6 +12,7 @@ import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Voltar } from "../componentes/Voltar";
+import { dataDoMomento } from "../calendario";
 import {
   carregarCatalogo,
   carregarClientes,
@@ -54,15 +55,16 @@ function Montagem({ codigoCliente, inicial }: { codigoCliente: string; inicial: 
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   if (carregando || !situacao) return <Carregando />;
   if (!catalogo) return <Indisponivel texto="Cliente não encontrado na sua carteira." />;
-  return <Formulario catalogo={catalogo} inicial={inicial} hoje={situacao.hoje} />;
+  return <Formulario catalogo={catalogo} inicial={inicial} relogio={situacao.relogio} />;
 }
 
 // ---------------------------------------------------------------- formulário
 
 type Quantidades = Record<string, number>;
 
-function Formulario({ catalogo, inicial, hoje }: { catalogo: CatalogoDoCliente; inicial: Rascunho | null; hoje: string }) {
+function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoCliente; inicial: Rascunho | null; relogio: string }) {
   const navegar = useNavigate();
+  const hoje = dataDoMomento(relogio);
   const [quantidades, setQuantidades] = useState<Quantidades>(() =>
     Object.fromEntries((inicial?.itens ?? []).map((item) => [item.codigo, item.quantidade])),
   );
@@ -131,7 +133,7 @@ function Formulario({ catalogo, inicial, hoje }: { catalogo: CatalogoDoCliente; 
             />
             <p className={estilos.nota}>Preço da tabela do cliente, só para referência: o SGI recalcula quando recebe o pedido.</p>
             <p className={estilos.salvo} role="status">
-              {salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, hoje)}.` : "O rascunho é salvo sozinho enquanto você monta o pedido."}
+              {salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, relogio)}.` : "O rascunho é salvo sozinho enquanto você monta o pedido."}
             </p>
             {idDoRascunho ? (
               <button type="button" className={estilos.descartar} onClick={descartar}>

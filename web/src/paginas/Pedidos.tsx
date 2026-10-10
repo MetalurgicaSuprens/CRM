@@ -9,7 +9,7 @@ import { Filtros } from "../componentes/Filtros";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho } from "../dados/api";
-import type { NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Rascunho } from "../dados/tipos";
+import type { NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Rascunho, SituacaoDosDados } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarContagem, formatarData, formatarTempoDesde } from "../formato";
 import { DataRelativa, MomentoRelativo } from "../componentes/Quando";
@@ -52,23 +52,24 @@ export function Pedidos() {
         selecionado={aba}
         aoEscolher={(valor) => setParametros(valor === "enviados" ? {} : { aba: valor }, { replace: true })}
       />
-      <AbaEscolhida aba={aba} painel={painel} hoje={situacao.hoje} recarregar={recarregar} />
+      <AbaEscolhida aba={aba} painel={painel} situacao={situacao} recarregar={recarregar} />
     </div>
   );
 }
 
-type PropsDaAba = { aba: Aba; painel: PainelDePedidos; hoje: string; recarregar: () => void };
+type PropsDaAba = { aba: Aba; painel: PainelDePedidos; situacao: SituacaoDosDados; recarregar: () => void };
 
-function AbaEscolhida({ aba, painel, hoje, recarregar }: PropsDaAba) {
+/** O que o CRM grava se compara com o relógio; o que vem do ERP, com a data da foto. */
+function AbaEscolhida({ aba, painel, situacao, recarregar }: PropsDaAba) {
   switch (aba) {
     case "enviados":
-      return <Enviados pedidos={painel.enviados} hoje={hoje} />;
+      return <Enviados pedidos={painel.enviados} relogio={situacao.relogio} />;
     case "rascunhos":
-      return <Rascunhos rascunhos={painel.rascunhos} hoje={hoje} recarregar={recarregar} />;
+      return <Rascunhos rascunhos={painel.rascunhos} relogio={situacao.relogio} recarregar={recarregar} />;
     case "emAberto":
-      return <EmAberto pedidos={painel.emAberto} hoje={hoje} />;
+      return <EmAberto pedidos={painel.emAberto} hoje={situacao.hoje} />;
     case "faturados":
-      return <Faturados notas={painel.faturados} hoje={hoje} />;
+      return <Faturados notas={painel.faturados} hoje={situacao.hoje} />;
   }
 }
 
@@ -82,7 +83,7 @@ function CartaoDaAba({ aba, subtitulo, children }: { aba: Aba; subtitulo: string
   );
 }
 
-function Enviados({ pedidos, hoje }: { pedidos: PedidoEnviado[]; hoje: string }) {
+function Enviados({ pedidos, relogio }: { pedidos: PedidoEnviado[]; relogio: string }) {
   return (
     <CartaoDaAba aba="enviados" subtitulo="Do envio até o faturamento. A situação volta do ERP a cada atualização dos dados.">
       <TabelaResponsiva
@@ -94,7 +95,7 @@ function Enviados({ pedidos, hoje }: { pedidos: PedidoEnviado[]; hoje: string })
         ordemInicial={{ coluna: "Enviado", sentido: "decrescente" }}
         colunas={[
           { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
-          { titulo: "Enviado", ordenarPor: (pedido) => pedido.enviadoEm, celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} hoje={hoje} /> },
+          { titulo: "Enviado", ordenarPor: (pedido) => pedido.enviadoEm, celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} relogio={relogio} /> },
           { titulo: "Situação", largura: 10, ordenarPor: (pedido) => ETAPAS[pedido.etapa].rotulo, celula: (pedido) => <EtapaDoPedido etapa={pedido.etapa} /> },
           {
             titulo: "Total",
@@ -113,7 +114,7 @@ function Enviados({ pedidos, hoje }: { pedidos: PedidoEnviado[]; hoje: string })
   );
 }
 
-function Rascunhos({ rascunhos, hoje, recarregar }: { rascunhos: Rascunho[]; hoje: string; recarregar: () => void }) {
+function Rascunhos({ rascunhos, relogio, recarregar }: { rascunhos: Rascunho[]; relogio: string; recarregar: () => void }) {
   return (
     <CartaoDaAba aba="rascunhos" subtitulo="Pedidos começados e ainda não enviados. No protótipo, ficam só até recarregar a página.">
       <TabelaResponsiva
@@ -129,7 +130,7 @@ function Rascunhos({ rascunhos, hoje, recarregar }: { rascunhos: Rascunho[]; hoj
             celula: (rascunho) => <Identificacao titulo={rascunho.cliente.nome} detalhe={`${rascunho.cliente.cidade}/${rascunho.cliente.uf}`} />,
           },
           { titulo: "Produtos", ordenarPor: (rascunho) => rascunho.itens.length, celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
-          { titulo: "Atualizado", ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} hoje={hoje} /> },
+          { titulo: "Atualizado", ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} relogio={relogio} /> },
           { titulo: "Total estimado", numerica: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} /> },
           { titulo: "Ações", largura: 8.5, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
         ]}
@@ -186,7 +187,7 @@ function Faturados({ notas, hoje }: { notas: NotaFaturada[]; hoje: string }) {
       <TabelaResponsiva
         descricao="Notas faturadas nos últimos 45 dias"
         itens={notas}
-        chaveDe={(nota) => nota.numero}
+        chaveDe={(nota) => nota.id}
         linkDe={(nota) => `/clientes/${nota.cliente.codigo}`}
         vazio="Nenhuma nota nos últimos 45 dias."
         ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
