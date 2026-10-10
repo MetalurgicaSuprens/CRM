@@ -1,12 +1,12 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router";
 import { useLargura } from "../graficos/useLargura";
+import type { ColunaOrdenavel, Ordem } from "./ordenacao";
+import { TituloDaColuna } from "./TituloDaColuna";
+import { useOrdenacao } from "./useOrdenacao";
 import estilos from "./TabelaResponsiva.module.css";
 
-export type ColunaDaTabela<T> = {
-  titulo: string;
-  /** Números alinhados à direita. */
-  numerica?: boolean;
+export type ColunaDaTabela<T> = ColunaOrdenavel<T> & {
   /** Largura mínima, em rem. Quando a soma das mínimas não cabe, a tabela vira cartões. */
   largura?: number;
   celula: (item: T) => ReactNode;
@@ -22,6 +22,8 @@ type Props<T> = {
   /** A primeira coluna identifica a linha e, nos cartões, vira o título. */
   colunas: readonly [ColunaDaTabela<T>, ...ColunaDaTabela<T>[]];
   vazio: string;
+  /** A ordem ao abrir; sem ela, a da lista recebida, sem coluna marcada. */
+  ordemInicial?: Ordem;
 };
 
 const LARGURA_DA_IDENTIFICACAO_REM = 12;
@@ -39,8 +41,9 @@ export function TabelaResponsiva<T>({ itens, vazio, ...props }: Props<T>) {
   return <Tabela itens={itens} {...props} />;
 }
 
-function Tabela<T>({ descricao, itens, chaveDe, linkDe, colunas }: Omit<Props<T>, "vazio">) {
+function Tabela<T>({ descricao, itens, chaveDe, linkDe, colunas, ordemInicial }: Omit<Props<T>, "vazio">) {
   const { referencia, largura } = useLargura<HTMLElement>();
+  const ordenacao = useOrdenacao(itens, colunas, { inicial: ordemInicial });
   const [identificacao, ...demais] = colunas;
   const minimas = demais.map((coluna) => coluna.largura ?? LARGURA_PADRAO_REM);
   const emCartoes = largura > 0 && largura < larguraMinima(minimas);
@@ -51,16 +54,15 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, colunas }: Omit<Props<T>
       style={{ "--grade": gradeDasColunas(minimas) } as CSSProperties}
       aria-label={descricao}
     >
-      <div className={estilos.cabecalho} aria-hidden="true">
-        <span>{identificacao.titulo}</span>
-        {demais.map((coluna) => (
-          <span key={coluna.titulo} className={coluna.numerica ? estilos.numerica : undefined}>
-            {coluna.titulo}
+      <div className={estilos.cabecalho}>
+        {colunas.map((coluna) => (
+          <span key={coluna.titulo} className={classeDoTitulo(coluna)}>
+            <TituloDaColuna coluna={coluna} ordenacao={ordenacao} />
           </span>
         ))}
       </div>
       <ul>
-        {itens.map((item) => {
+        {ordenacao.ordenados.map((item) => {
           const conteudo = (
             <>
               <span className={estilos.identificacao}>{identificacao.celula(item)}</span>
@@ -88,6 +90,11 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, colunas }: Omit<Props<T>
       </ul>
     </section>
   );
+}
+
+/** Nos cartões, o cabeçalho vira uma linha só com os títulos que ordenam. */
+function classeDoTitulo<T>(coluna: ColunaDaTabela<T>): string | undefined {
+  return [coluna.numerica ? estilos.numerica : "", coluna.ordenarPor ? "" : estilos.semOrdem].filter(Boolean).join(" ") || undefined;
 }
 
 /** A identificação, mais larga, e as demais colunas, que crescem por igual a partir da mínima. */

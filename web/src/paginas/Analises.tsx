@@ -9,6 +9,7 @@ import { Selo } from "../componentes/Selo";
 import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
+import type { Ordem } from "../componentes/ordenacao";
 import { carregarAnalises, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import type {
@@ -63,11 +64,12 @@ function ListaEscolhida({ lista, analises, hoje }: { lista: TipoDeAnalise; anali
 
 function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
   const colunas: ColunaDaTabela<ClienteParado>[] = [
-    { titulo: "Última compra", celula: (item) => <DataRelativa data={item.cliente.ultimaCompra} hoje={hoje} /> },
-    { titulo: "Ciclo típico", celula: (item) => (item.cicloDias ? `${item.cicloDias} dias` : "irregular") },
+    { titulo: "Última compra", ordenarPor: (item) => item.cliente.ultimaCompra, celula: (item) => <DataRelativa data={item.cliente.ultimaCompra} hoje={hoje} /> },
+    { titulo: "Ciclo típico", ordenarPor: (item) => item.cicloDias, celula: (item) => (item.cicloDias ? `${item.cicloDias} dias` : "irregular") },
     {
       titulo: "Deixou de entrar",
       numerica: true,
+      ordenarPor: (item) => item.perdaMensal,
       celula: (item) => (
         <>
           <Valor valor={item.perdaMensal} comoPerda />
@@ -89,6 +91,7 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
         itens={itens}
         colunas={colunas}
         vazio="Nenhum cliente parou de comprar."
+        ordemInicial={{ coluna: "Deixou de entrar", sentido: "decrescente" }}
       />
     </CartaoDaAnalise>
   );
@@ -101,8 +104,8 @@ type PropsRitmo = {
 };
 
 const RITMOS = {
-  menos: { mudanca: "queda", vazio: "Nenhuma queda relevante no semestre." },
-  mais: { mudanca: "alta", vazio: "Nenhuma alta relevante no semestre." },
+  menos: { mudanca: "queda", vazio: "Nenhuma queda relevante no semestre.", sentidoInicial: "crescente" },
+  mais: { mudanca: "alta", vazio: "Nenhuma alta relevante no semestre.", sentidoInicial: "decrescente" },
 } as const;
 
 function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
@@ -110,11 +113,11 @@ function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
   const atual = formatarPeriodo(semestre.inicio, semestre.fim);
   const anterior = formatarPeriodo(somarMeses(semestre.inicio, -12), somarMeses(semestre.fim, -12));
   const colunas: ColunaDaTabela<ClienteComVariacao>[] = [
-    { titulo: anterior, numerica: true, celula: (item) => <Valor valor={item.semestreAnoAnterior} /> },
-    { titulo: atual, numerica: true, celula: (item) => <Valor valor={item.semestre} /> },
-    { titulo: "Diferença", numerica: true, celula: (item) => <Valor valor={diferenca(item)} comSinal /> },
-    { titulo: "Variação", numerica: true, celula: (item) => <Variacao razao={item.variacao} /> },
-    { titulo: "Em peças", numerica: true, celula: (item) => <Variacao razao={item.variacaoPecas} /> },
+    { titulo: anterior, numerica: true, ordenarPor: (item) => item.semestreAnoAnterior, celula: (item) => <Valor valor={item.semestreAnoAnterior} /> },
+    { titulo: atual, numerica: true, ordenarPor: (item) => item.semestre, celula: (item) => <Valor valor={item.semestre} /> },
+    { titulo: "Diferença", numerica: true, ordenarPor: diferenca, celula: (item) => <Valor valor={diferenca(item)} comSinal /> },
+    { titulo: "Variação", numerica: true, ordenarPor: (item) => item.variacao, celula: (item) => <Variacao razao={item.variacao} /> },
+    { titulo: "Em peças", numerica: true, ordenarPor: (item) => item.variacaoPecas, celula: (item) => <Variacao razao={item.variacaoPecas} /> },
   ];
   return (
     <CartaoDaAnalise
@@ -129,6 +132,7 @@ function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
         itens={itens}
         colunas={colunas}
         vazio={ritmo.vazio}
+        ordemInicial={{ coluna: "Diferença", sentido: ritmo.sentidoInicial }}
       />
       <p className={estilos.nota}>Em peças: a mesma comparação em quantidade, sem o efeito do reajuste de preço.</p>
     </CartaoDaAnalise>
@@ -138,9 +142,9 @@ function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
 function NovosEReativados({ itens, hoje }: { itens: ClienteNovoOuReativado[]; hoje: string }) {
   const reativados = itens.filter((item) => item.tipo === "reativado").length;
   const colunas: ColunaDaTabela<ClienteNovoOuReativado>[] = [
-    { titulo: "Tipo", celula: (item) => <TipoDeEntrada tipo={item.tipo} /> },
-    { titulo: "Desde", celula: (item) => <DataRelativa data={item.desde} hoje={hoje} /> },
-    { titulo: "Faturado desde então", numerica: true, celula: (item) => <Valor valor={item.faturadoDesde} /> },
+    { titulo: "Tipo", ordenarPor: (item) => item.tipo, celula: (item) => <TipoDeEntrada tipo={item.tipo} /> },
+    { titulo: "Desde", ordenarPor: (item) => item.desde, celula: (item) => <DataRelativa data={item.desde} hoje={hoje} /> },
+    { titulo: "Faturado desde então", numerica: true, ordenarPor: (item) => item.faturadoDesde, celula: (item) => <Valor valor={item.faturadoDesde} /> },
   ];
   return (
     <CartaoDaAnalise
@@ -156,6 +160,7 @@ function NovosEReativados({ itens, hoje }: { itens: ClienteNovoOuReativado[]; ho
         itens={itens}
         colunas={colunas}
         vazio="Nenhum cliente novo ou reativado nos últimos 12 meses."
+        ordemInicial={{ coluna: "Faturado desde então", sentido: "decrescente" }}
       />
     </CartaoDaAnalise>
   );
@@ -165,6 +170,7 @@ function Mix({ itens }: { itens: ClienteComMix[] }) {
   const colunas: ColunaDaTabela<ClienteComMix>[] = [
     {
       titulo: "Famílias a oferecer",
+      ordenarPor: (item) => item.oportunidades.length,
       celula: (item) => (
         <span className={estilos.familias}>
           {item.oportunidades.map((oportunidade) => (
@@ -177,28 +183,29 @@ function Mix({ itens }: { itens: ClienteComMix[] }) {
     },
     {
       titulo: "Comparado a",
-      celula: (item) =>
-        `${ROTULOS_DE_MERCADO[item.cliente.mercado]}${item.porte ? `, porte ${ROTULOS_DE_PORTE[item.porte]}` : ", mercado todo"}`,
+      ordenarPor: descreverComparacao,
+      celula: descreverComparacao,
     },
-    { titulo: "Faturado 12 meses", numerica: true, celula: (item) => <Valor valor={item.cliente.faturamento12m} /> },
+    { titulo: "Faturado 12 meses", numerica: true, ordenarPor: (item) => item.cliente.faturamento12m, celula: (item) => <Valor valor={item.cliente.faturamento12m} /> },
   ];
   return (
     <CartaoDaAnalise
       tipo="mix"
       subtitulo="Famílias que pelo menos metade dos clientes parecidos (mesmo mercado e porte, em toda a Suprens) comprou em 12 meses e que o cliente não compra há 24. O percentual é a parte dos parecidos que compra."
     >
-      <p className={estilos.resumo}>{formatarContagem(itens.length, "cliente tem", "clientes têm")} famílias a oferecer, dos maiores para os menores</p>
+      <p className={estilos.resumo}>{formatarContagem(itens.length, "cliente tem", "clientes têm")} famílias a oferecer</p>
       <TabelaDeClientes
         descricao="Clientes com oportunidades de mix"
         itens={itens}
         colunas={colunas}
         vazio="Todos os clientes já compram as famílias mais comuns entre os parecidos."
+        ordemInicial={{ coluna: "Faturado 12 meses", sentido: "decrescente" }}
       />
     </CartaoDaAnalise>
   );
 }
 
-type PropsDaTabela<T> = { descricao: string; itens: T[]; colunas: ColunaDaTabela<T>[]; vazio: string };
+type PropsDaTabela<T> = { descricao: string; itens: T[]; colunas: ColunaDaTabela<T>[]; vazio: string; ordemInicial: Ordem };
 
 /** Toda lista de análise começa pelo cliente, e a linha leva à ficha dele. */
 function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...props }: PropsDaTabela<T>) {
@@ -208,7 +215,7 @@ function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...pr
       chaveDe={(item) => item.cliente.codigo}
       linkDe={(item) => `/clientes/${item.cliente.codigo}`}
       colunas={[
-        { titulo: "Cliente", celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={`${item.cliente.cidade}/${item.cliente.uf}`} /> },
+        { titulo: "Cliente", ordenarPor: (item) => item.cliente.nome, celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={`${item.cliente.cidade}/${item.cliente.uf}`} /> },
         ...colunas,
       ]}
     />
@@ -217,6 +224,10 @@ function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...pr
 
 function TipoDeEntrada({ tipo }: { tipo: ClienteNovoOuReativado["tipo"] }) {
   return tipo === "reativado" ? <Selo rotulo="Reativado" icone={RotateCcw} tom="ok" /> : <Selo rotulo="Novo" icone={CirclePlus} tom="novo" />;
+}
+
+function descreverComparacao(item: ClienteComMix): string {
+  return `${ROTULOS_DE_MERCADO[item.cliente.mercado]}${item.porte ? `, porte ${ROTULOS_DE_PORTE[item.porte]}` : ", mercado todo"}`;
 }
 
 function diferenca(item: ClienteComVariacao): number {

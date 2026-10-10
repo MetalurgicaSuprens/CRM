@@ -5,8 +5,11 @@ import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Filtros, type Filtro } from "../componentes/Filtros";
 import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
+import type { ColunaOrdenavel, Ordem } from "../componentes/ordenacao";
+import { useOrdenacao } from "../componentes/useOrdenacao";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
 import type { ClienteResumo, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
@@ -26,26 +29,16 @@ const FILTROS: readonly Omit<Filtro<FiltroSituacao>, "quantidade">[] = [
   { ...SITUACOES.novo, valor: "novo", rotulo: "Novos" },
 ];
 
-const ORDENACOES = {
-  faturamento: {
-    rotulo: "Maior faturamento",
-    comparar: (a: ClienteResumo, b: ClienteResumo) => b.faturamento12m - a.faturamento12m,
-  },
-  queda: {
-    rotulo: "Maior queda",
-    comparar: (a: ClienteResumo, b: ClienteResumo) => (a.variacao12m ?? 0) - (b.variacao12m ?? 0),
-  },
-  semComprar: {
-    rotulo: "Mais tempo sem comprar",
-    comparar: (a: ClienteResumo, b: ClienteResumo) => (a.ultimaCompra ?? "").localeCompare(b.ultimaCompra ?? ""),
-  },
-  nome: {
-    rotulo: "Nome (A–Z)",
-    comparar: (a: ClienteResumo, b: ClienteResumo) => a.nome.localeCompare(b.nome, "pt-BR"),
-  },
-} as const;
+/** As colunas que ordenam a carteira. A tendência fica de fora: ela desenha a mesma variação. */
+const COLUNAS = {
+  cliente: { titulo: "Cliente", ordenarPor: (cliente) => cliente.nome },
+  situacao: { titulo: "Situação", ordenarPor: (cliente) => SITUACOES[cliente.situacao].rotulo },
+  ultimaCompra: { titulo: "Última compra", ordenarPor: (cliente) => cliente.ultimaCompra },
+  faturamento: { titulo: "Faturado 12 meses", numerica: true, ordenarPor: (cliente) => cliente.faturamento12m },
+  variacao: { titulo: "Variação", numerica: true, ordenarPor: (cliente) => cliente.variacao12m },
+} satisfies Record<string, ColunaOrdenavel<ClienteResumo>>;
 
-type Ordem = keyof typeof ORDENACOES;
+const MAIOR_FATURAMENTO: Ordem = { coluna: COLUNAS.faturamento.titulo, sentido: "decrescente" };
 
 export function Clientes() {
   const { dados: clientes } = useCarga("clientes", carregarClientes);
@@ -53,12 +46,12 @@ export function Clientes() {
   const [parametros, setParametros] = useSearchParams();
   const busca = parametros.get("busca") ?? "";
   const filtro = lerFiltro(parametros.get("situacao"));
-  const ordem = lerOrdem(parametros.get("ordem"));
 
-  const visiveis = useMemo(
-    () => (clientes ?? []).filter((c) => (filtro === "todas" || c.situacao === filtro) && correspondeABusca(c, busca)).sort(ORDENACOES[ordem].comparar),
-    [clientes, filtro, busca, ordem],
+  const filtrados = useMemo(
+    () => (clientes ?? []).filter((c) => (filtro === "todas" || c.situacao === filtro) && correspondeABusca(c, busca)),
+    [clientes, filtro, busca],
   );
+  const ordenacao = useOrdenacao(filtrados, Object.values(COLUNAS), { inicial: MAIOR_FATURAMENTO });
 
   if (!clientes || !situacao) return <Carregando />;
 
@@ -88,26 +81,26 @@ export function Clientes() {
           aoMudar={(valor) => alterar("busca", valor, "")}
           className={estilos.busca}
         />
-        <label className={estilos.ordem}>
-          <span>Ordenar</span>
-          <select value={ordem} onChange={(evento) => alterar("ordem", evento.target.value, "faturamento")}>
-            {Object.entries(ORDENACOES).map(([valor, { rotulo }]) => (
-              <option key={valor} value={valor}>
-                {rotulo}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
 
       <section className={estilos.tabela} aria-label="Carteira de clientes">
-        <div className={estilos.cabecalhoTabela} aria-hidden="true">
-          <span>Cliente</span>
-          <span>Situação</span>
-          <span>Última compra</span>
-          <span className={estilos.direita}>Faturado 12 meses</span>
-          <span className={estilos.direita}>Variação</span>
-          <span className={`${estilos.direita} ${estilos.tituloTendencia}`}>
+        <div className={estilos.cabecalhoTabela}>
+          <span>
+            <TituloDaColuna coluna={COLUNAS.cliente} ordenacao={ordenacao} />
+          </span>
+          <span>
+            <TituloDaColuna coluna={COLUNAS.situacao} ordenacao={ordenacao} />
+          </span>
+          <span>
+            <TituloDaColuna coluna={COLUNAS.ultimaCompra} ordenacao={ordenacao} />
+          </span>
+          <span className={estilos.direita}>
+            <TituloDaColuna coluna={COLUNAS.faturamento} ordenacao={ordenacao} />
+          </span>
+          <span className={estilos.direita}>
+            <TituloDaColuna coluna={COLUNAS.variacao} ordenacao={ordenacao} />
+          </span>
+          <span className={`${estilos.direita} ${estilos.tituloTendencia}`} aria-hidden="true">
             Tendência
             <span className={estilos.legendaTendencia}>
               <AmostraReferencia />
@@ -115,11 +108,11 @@ export function Clientes() {
             </span>
           </span>
         </div>
-        {visiveis.length === 0 ? (
+        {ordenacao.ordenados.length === 0 ? (
           <p className={estilos.vazio}>Nenhum cliente encontrado com esses filtros.</p>
         ) : (
           <ul>
-            {visiveis.map((cliente) => (
+            {ordenacao.ordenados.map((cliente) => (
               <li key={cliente.codigo}>
                 <LinhaCliente cliente={cliente} hoje={situacao.hoje} />
               </li>
@@ -163,10 +156,6 @@ function LinhaCliente({ cliente, hoje }: { cliente: ClienteResumo; hoje: string 
 
 function lerFiltro(valor: string | null): FiltroSituacao {
   return FILTROS.some((f) => f.valor === valor) ? (valor as FiltroSituacao) : "todas";
-}
-
-function lerOrdem(valor: string | null): Ordem {
-  return valor !== null && valor in ORDENACOES ? (valor as Ordem) : "faturamento";
 }
 
 function contar(clientes: ClienteResumo[], filtro: FiltroSituacao): number {

@@ -8,7 +8,7 @@ import { Cartao } from "../componentes/Cartao";
 import { Quantidade } from "../componentes/Quantidade";
 import { DataRelativa } from "../componentes/Quando";
 import { Segmentos } from "../componentes/Segmentos";
-import { SituacaoCliente } from "../componentes/SituacaoCliente";
+import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Voltar } from "../componentes/Voltar";
@@ -237,9 +237,9 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
         chaveDe={(produto) => produto.codigo}
         vazio={filtro === "comprados" ? "Nada entre os já comprados. Procure em Todos." : "Nenhum produto com essa busca."}
         colunas={[
-          { titulo: "Produto", celula: (produto) => <Identificacao titulo={produto.codigo} detalhe={descricaoDe(produto)} /> },
-          { titulo: "Embalagem", numerica: true, largura: 5.5, celula: (produto) => `${formatarNumero(produto.embalagem)} pç` },
-          { titulo: "Cento", numerica: true, largura: 5, celula: (produto) => <Valor valor={produto.precoCento} /> },
+          { titulo: "Produto", ordenarPor: (produto) => produto.codigo, celula: (produto) => <Identificacao titulo={produto.codigo} detalhe={descricaoDe(produto)} /> },
+          { titulo: "Embalagem", numerica: true, largura: 5.5, ordenarPor: (produto) => produto.embalagem, celula: (produto) => `${formatarNumero(produto.embalagem)} pç` },
+          { titulo: "Cento", numerica: true, largura: 5, ordenarPor: (produto) => produto.precoCento, celula: (produto) => <Valor valor={produto.precoCento} /> },
           {
             titulo: "Quantidade",
             numerica: true,
@@ -382,7 +382,7 @@ function EscolherCliente() {
         focarAoAbrir
         className={estilos.buscaDeCliente}
       />
-      <Cartao titulo="Clientes da carteira" icone={Users} subtitulo="Do maior faturamento para o menor">
+      <Cartao titulo="Clientes da carteira" icone={Users}>
         <TabelaResponsiva
           descricao="Clientes da carteira"
           itens={visiveis}
@@ -392,10 +392,11 @@ function EscolherCliente() {
           colunas={[
             {
               titulo: "Cliente",
+              ordenarPor: (cliente) => cliente.nome,
               celula: (cliente) => <Identificacao titulo={cliente.nome} detalhe={`${cliente.cidade}/${cliente.uf} · ${cliente.codigo}`} />,
             },
-            { titulo: "Situação", celula: (cliente) => <SituacaoCliente situacao={cliente.situacao} /> },
-            { titulo: "Última compra", celula: (cliente) => <DataRelativa data={cliente.ultimaCompra} hoje={situacao.hoje} /> },
+            { titulo: "Situação", ordenarPor: (cliente) => SITUACOES[cliente.situacao].rotulo, celula: (cliente) => <SituacaoCliente situacao={cliente.situacao} /> },
+            { titulo: "Última compra", ordenarPor: (cliente) => cliente.ultimaCompra, celula: (cliente) => <DataRelativa data={cliente.ultimaCompra} hoje={situacao.hoje} /> },
           ]}
         />
       </Cartao>

@@ -13,29 +13,6 @@
   gap: var(--esp-3);
 }
 
-.ordem {
-  display: flex;
-  align-items: center;
-  gap: var(--esp-2);
-  margin-left: auto;
-  font-size: var(--tam-pequeno);
-  color: var(--cor-texto-2);
-}
-
-.ordem select {
-  padding: 7px 10px;
-  border: 1px solid var(--cor-linha-forte);
-  border-radius: var(--raio-pequeno);
-  background: var(--cor-superficie);
-  box-shadow: var(--sombra-1);
-  color: var(--cor-texto);
-}
-
-.ordem select:focus-visible {
-  border-color: var(--cor-acento);
-  box-shadow: var(--foco-campo);
-}
-
 /* ------------------------------------------------ tabela (desktop) */
 
 .tabela {
@@ -156,11 +133,16 @@ li:last-child .linha {
 
 /* Abaixo disso as seis colunas não cabem: cada cliente vira um cartão */
 @container (max-width: 959px) {
-  .ordem {
-    margin-left: 0;
+  /* Sem colunas, os títulos que ordenam ficam lado a lado acima dos cartões */
+  .cabecalhoTabela {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-1) var(--esp-4);
+    padding: var(--esp-2) var(--esp-4);
+    white-space: normal;
   }
 
-  .cabecalhoTabela {
+  .tituloTendencia {
     display: none;
   }
 
@@ -226,6 +208,14 @@ li:last-child .linha {
     border: 0;
     border-radius: 0;
     overflow: visible;
+  }
+
+  /* Os títulos que ordenam viram uma barra própria, como os cartões */
+  .cabecalhoTabela {
+    margin-bottom: var(--esp-3);
+    border: 1px solid var(--cor-borda);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra-1);
   }
 
   .tabela ul {

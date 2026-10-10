@@ -4,7 +4,7 @@ import { ClipboardList, FilePen, FilePlus2, ReceiptText, Send, Trash, type Lucid
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
-import { EtapaDoPedido } from "../componentes/EtapaDoPedido";
+import { ETAPAS, EtapaDoPedido } from "../componentes/EtapaDoPedido";
 import { Filtros } from "../componentes/Filtros";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
@@ -91,13 +91,15 @@ function Enviados({ pedidos, hoje }: { pedidos: PedidoEnviado[]; hoje: string })
         chaveDe={(pedido) => pedido.numero}
         linkDe={(pedido) => `/pedidos/${pedido.numero}`}
         vazio="Nenhum pedido enviado pelo CRM ainda."
+        ordemInicial={{ coluna: "Enviado", sentido: "decrescente" }}
         colunas={[
-          { titulo: "Pedido", celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
-          { titulo: "Enviado", celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} hoje={hoje} /> },
-          { titulo: "Situação", largura: 10, celula: (pedido) => <EtapaDoPedido etapa={pedido.etapa} /> },
+          { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
+          { titulo: "Enviado", ordenarPor: (pedido) => pedido.enviadoEm, celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} hoje={hoje} /> },
+          { titulo: "Situação", largura: 10, ordenarPor: (pedido) => ETAPAS[pedido.etapa].rotulo, celula: (pedido) => <EtapaDoPedido etapa={pedido.etapa} /> },
           {
             titulo: "Total",
             numerica: true,
+            ordenarPor: (pedido) => pedido.totalSgi ?? pedido.totalEstimado,
             celula: (pedido) => (
               <>
                 <Valor valor={pedido.totalSgi ?? pedido.totalEstimado} />
@@ -119,14 +121,16 @@ function Rascunhos({ rascunhos, hoje, recarregar }: { rascunhos: Rascunho[]; hoj
         itens={rascunhos}
         chaveDe={(rascunho) => rascunho.id}
         vazio="Nenhum rascunho. Os pedidos começados e não enviados aparecem aqui."
+        ordemInicial={{ coluna: "Atualizado", sentido: "decrescente" }}
         colunas={[
           {
             titulo: "Cliente",
+            ordenarPor: (rascunho) => rascunho.cliente.nome,
             celula: (rascunho) => <Identificacao titulo={rascunho.cliente.nome} detalhe={`${rascunho.cliente.cidade}/${rascunho.cliente.uf}`} />,
           },
-          { titulo: "Produtos", celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
-          { titulo: "Atualizado", celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} hoje={hoje} /> },
-          { titulo: "Total estimado", numerica: true, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} /> },
+          { titulo: "Produtos", ordenarPor: (rascunho) => rascunho.itens.length, celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
+          { titulo: "Atualizado", ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} hoje={hoje} /> },
+          { titulo: "Total estimado", numerica: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} /> },
           { titulo: "Ações", largura: 8.5, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
         ]}
       />
@@ -155,7 +159,7 @@ function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
   return (
     <CartaoDaAba
       aba="emAberto"
-      subtitulo="Todos os pedidos da sua carteira ainda não faturados, pelo CRM ou não, da entrega mais próxima à mais distante."
+      subtitulo="Todos os pedidos da sua carteira ainda não faturados, pelo CRM ou não."
     >
       <TabelaResponsiva
         descricao="Pedidos em aberto no ERP"
@@ -163,12 +167,13 @@ function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
         chaveDe={(pedido) => pedido.numero}
         linkDe={(pedido) => `/clientes/${pedido.cliente.codigo}`}
         vazio="Nenhum pedido em aberto."
+        ordemInicial={{ coluna: "Entrega", sentido: "crescente" }}
         colunas={[
-          { titulo: "Pedido", celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
-          { titulo: "Emissão", celula: (pedido) => formatarData(pedido.emissao) },
-          { titulo: "Entrega", celula: (pedido) => <DataRelativa data={pedido.entrega} hoje={hoje} /> },
-          { titulo: "Itens", numerica: true, celula: (pedido) => pedido.itens },
-          { titulo: "Valor", numerica: true, celula: (pedido) => <Valor valor={pedido.valor} /> },
+          { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
+          { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
+          { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => <DataRelativa data={pedido.entrega} hoje={hoje} /> },
+          { titulo: "Itens", numerica: true, ordenarPor: (pedido) => pedido.itens, celula: (pedido) => pedido.itens },
+          { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} /> },
         ]}
       />
     </CartaoDaAba>
@@ -177,17 +182,18 @@ function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
 
 function Faturados({ notas, hoje }: { notas: NotaFaturada[]; hoje: string }) {
   return (
-    <CartaoDaAba aba="faturados" subtitulo="Notas dos últimos 45 dias, da mais recente à mais antiga.">
+    <CartaoDaAba aba="faturados" subtitulo="Notas dos últimos 45 dias.">
       <TabelaResponsiva
         descricao="Notas faturadas nos últimos 45 dias"
         itens={notas}
         chaveDe={(nota) => nota.numero}
         linkDe={(nota) => `/clientes/${nota.cliente.codigo}`}
         vazio="Nenhuma nota nos últimos 45 dias."
+        ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
         colunas={[
-          { titulo: "Nota", celula: (nota) => <Identificacao titulo={`NF ${nota.numero}`} detalhe={nota.cliente.nome} /> },
-          { titulo: "Emissão", celula: (nota) => <span title={formatarData(nota.emissao)}>{formatarTempoDesde(nota.emissao, hoje)}</span> },
-          { titulo: "Valor", numerica: true, celula: (nota) => <Valor valor={nota.valor} /> },
+          { titulo: "Nota", ordenarPor: (nota) => nota.numero, celula: (nota) => <Identificacao titulo={`NF ${nota.numero}`} detalhe={nota.cliente.nome} /> },
+          { titulo: "Emissão", ordenarPor: (nota) => nota.emissao, celula: (nota) => <span title={formatarData(nota.emissao)}>{formatarTempoDesde(nota.emissao, hoje)}</span> },
+          { titulo: "Valor", numerica: true, ordenarPor: (nota) => nota.valor, celula: (nota) => <Valor valor={nota.valor} /> },
         ]}
       />
     </CartaoDaAba>

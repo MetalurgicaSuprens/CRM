@@ -20,12 +20,15 @@ import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
 import { SituacaoCliente } from "../componentes/SituacaoCliente";
+import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { Voltar } from "../componentes/Voltar";
+import type { ColunaOrdenavel } from "../componentes/ordenacao";
+import { useOrdenacao } from "../componentes/useOrdenacao";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
-import type { FichaCliente as Ficha, Mercado, Porte } from "../dados/tipos";
+import type { FichaCliente as Ficha, Mercado, PedidoEmAberto, Porte, ProdutoComprado } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
@@ -174,22 +177,44 @@ function descreverParecidos(mercado: Mercado, porte: Porte | null): string {
   return `Parecidos: clientes ativos do mercado ${ROTULOS_DE_MERCADO[mercado]}${faixa}, em toda a Suprens.`;
 }
 
+const COLUNAS_DE_PRODUTOS = {
+  produto: { titulo: "Produto", ordenarPor: (produto) => produto.codigo },
+  familia: { titulo: "Família", ordenarPor: (produto) => produto.familia },
+  ultimaCompra: { titulo: "Última compra", ordenarPor: (produto) => produto.ultimaCompra },
+  pecas: { titulo: "Peças", numerica: true, ordenarPor: (produto) => produto.pecas },
+  valor: { titulo: "Valor", numerica: true, ordenarPor: (produto) => produto.valor },
+} satisfies Record<string, ColunaOrdenavel<ProdutoComprado>>;
+
 function TabelaProdutos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
+  const ordenacao = useOrdenacao(ficha.produtos, Object.values(COLUNAS_DE_PRODUTOS), {
+    inicial: { coluna: COLUNAS_DE_PRODUTOS.valor.titulo, sentido: "decrescente" },
+    parametro: "ordem-produtos",
+  });
   if (ficha.produtos.length === 0) return <p className={estilos.vazio}>Sem compras nos últimos 12 meses.</p>;
   return (
     <div className={estilos.rolagem}>
       <table className={estilos.tabela}>
         <thead>
           <tr>
-            <th scope="col">Produto</th>
-            <th scope="col" className={estilos.opcional}>Família</th>
-            <th scope="col" className={estilos.opcional}>Última compra</th>
-            <th scope="col" className={estilos.numero}>Peças</th>
-            <th scope="col" className={estilos.numero}>Valor</th>
+            <th scope="col">
+              <TituloDaColuna coluna={COLUNAS_DE_PRODUTOS.produto} ordenacao={ordenacao} />
+            </th>
+            <th scope="col" className={estilos.opcional}>
+              <TituloDaColuna coluna={COLUNAS_DE_PRODUTOS.familia} ordenacao={ordenacao} />
+            </th>
+            <th scope="col" className={estilos.opcional}>
+              <TituloDaColuna coluna={COLUNAS_DE_PRODUTOS.ultimaCompra} ordenacao={ordenacao} />
+            </th>
+            <th scope="col" className={estilos.numero}>
+              <TituloDaColuna coluna={COLUNAS_DE_PRODUTOS.pecas} ordenacao={ordenacao} />
+            </th>
+            <th scope="col" className={estilos.numero}>
+              <TituloDaColuna coluna={COLUNAS_DE_PRODUTOS.valor} ordenacao={ordenacao} />
+            </th>
           </tr>
         </thead>
         <tbody>
-          {ficha.produtos.map((produto) => (
+          {ordenacao.ordenados.map((produto) => (
             <tr key={produto.codigo}>
               <th scope="row">{produto.codigo}</th>
               <td className={estilos.opcional}>{produto.familia}</td>
@@ -206,22 +231,44 @@ function TabelaProdutos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
   );
 }
 
+const COLUNAS_DE_PEDIDOS = {
+  pedido: { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero },
+  emissao: { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao },
+  entrega: { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega },
+  itens: { titulo: "Itens", numerica: true, ordenarPor: (pedido) => pedido.itens },
+  valor: { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor },
+} satisfies Record<string, ColunaOrdenavel<PedidoEmAberto>>;
+
 function TabelaPedidos({ ficha }: { ficha: Ficha }) {
+  const ordenacao = useOrdenacao(ficha.pedidosEmAberto, Object.values(COLUNAS_DE_PEDIDOS), {
+    inicial: { coluna: COLUNAS_DE_PEDIDOS.entrega.titulo, sentido: "crescente" },
+    parametro: "ordem-pedidos",
+  });
   if (ficha.pedidosEmAberto.length === 0) return <p className={estilos.vazio}>Nenhum pedido em aberto.</p>;
   return (
     <div className={estilos.rolagem}>
       <table className={estilos.tabela}>
         <thead>
           <tr>
-            <th scope="col">Pedido</th>
-            <th scope="col" className={estilos.opcional}>Emissão</th>
-            <th scope="col">Entrega</th>
-            <th scope="col" className={estilos.numero}>Itens</th>
-            <th scope="col" className={estilos.numero}>Valor</th>
+            <th scope="col">
+              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.pedido} ordenacao={ordenacao} />
+            </th>
+            <th scope="col" className={estilos.opcional}>
+              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.emissao} ordenacao={ordenacao} />
+            </th>
+            <th scope="col">
+              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.entrega} ordenacao={ordenacao} />
+            </th>
+            <th scope="col" className={estilos.numero}>
+              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.itens} ordenacao={ordenacao} />
+            </th>
+            <th scope="col" className={estilos.numero}>
+              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.valor} ordenacao={ordenacao} />
+            </th>
           </tr>
         </thead>
         <tbody>
-          {ficha.pedidosEmAberto.map((pedido) => (
+          {ordenacao.ordenados.map((pedido) => (
             <tr key={pedido.numero}>
               <th scope="row">{pedido.numero}</th>
               <td className={estilos.opcional}>{formatarData(pedido.emissao)}</td>

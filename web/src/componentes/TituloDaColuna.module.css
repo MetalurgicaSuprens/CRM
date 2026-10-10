@@ -1,0 +1,31 @@
+/* Herda a letra do cabeçalho da tabela: só o ícone mostra que o título ordena */
+.titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+  transition: color var(--transicao);
+}
+
+.titulo:hover,
+.escolhido {
+  color: var(--cor-texto);
+}
+
+.icone {
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity var(--transicao);
+}
+
+.titulo:hover .icone,
+.escolhido .icone {
+  opacity: 1;
+}

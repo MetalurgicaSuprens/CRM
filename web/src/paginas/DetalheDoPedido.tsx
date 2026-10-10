@@ -58,10 +58,10 @@ export function DetalheDoPedido() {
             chaveDe={(item) => item.codigo}
             vazio="Pedido sem itens."
             colunas={[
-              { titulo: "Produto", celula: (item) => <Identificacao titulo={item.codigo} detalhe={`${item.familia} · ${item.medida}`} /> },
-              { titulo: "Peças", numerica: true, largura: 5, celula: (item) => formatarNumero(item.quantidade) },
-              { titulo: "Cento", numerica: true, largura: 5.5, celula: (item) => <Valor valor={item.precoCento} /> },
-              { titulo: "Valor", numerica: true, celula: (item) => <Valor valor={valorDaLinha(item)} /> },
+              { titulo: "Produto", ordenarPor: (item) => item.codigo, celula: (item) => <Identificacao titulo={item.codigo} detalhe={`${item.familia} · ${item.medida}`} /> },
+              { titulo: "Peças", numerica: true, largura: 5, ordenarPor: (item) => item.quantidade, celula: (item) => formatarNumero(item.quantidade) },
+              { titulo: "Cento", numerica: true, largura: 5.5, ordenarPor: (item) => item.precoCento, celula: (item) => <Valor valor={item.precoCento} /> },
+              { titulo: "Valor", numerica: true, ordenarPor: valorDaLinha, celula: (item) => <Valor valor={valorDaLinha(item)} /> },
             ]}
           />
           <Totais pedido={pedido} />

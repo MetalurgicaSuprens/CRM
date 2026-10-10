@@ -98,7 +98,15 @@ li:last-child .linha {
 
 /* ------------------------------------------------ cartões: o componente liga quando as colunas não cabem */
 
+/* Sem colunas, os títulos que ordenam ficam lado a lado acima dos cartões */
 .cartoes .cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1) var(--esp-4);
+  padding: var(--esp-2) var(--esp-3);
+}
+
+.cartoes .semOrdem {
   display: none;
 }
 
