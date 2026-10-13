@@ -22,7 +22,7 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
 - Decidido em 2026-10-09 (pergunta 22): pedidos são sempre só os do representante. O pedido é atribuído por `VEPM.VENDEDOR` e, sem ele, pelo dono atual do cliente (`VEND_1`), com a conta na LAN. O servidor nunca recebe vendedor do navegador.
 - Decidido em 2026-10-13 (pergunta 23): a aba Faturados mostra só as notas atribuídas aos códigos do login.
 - **Login com mais de um código** (decidido em 2026-10-13, pergunta 20).
-  - Cada pessoa tem o próprio login, e o admin liga a ele um ou mais códigos de representante. Exemplo do Lucas: a Star Vendas tem dois códigos e vê os dois, somados, no mesmo login. No banco, o 1118 e o 1119 têm o mesmo nome, MAURO.
+  - O admin liga ao usuário os códigos do representante, e o login puxa todos. Exemplo do Lucas: a Star Vendas tem dois códigos, porque um contrato novo tem outra comissão, e vê os dois no mesmo login. No banco, o 1118 e o 1119 têm o mesmo nome, MAURO.
   - A carteira do login é a soma das carteiras dos códigos. A visão do representante soma as vendas de todos eles.
   - A foto continua por código e não conhece os logins. O servidor lê as linhas com `representante` entre os códigos do login da sessão, que vêm do app.db.
   - Cliente que passa de um código para outro do mesmo login continua na carteira, sem nenhuma mudança na tela.
@@ -63,7 +63,7 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
 | Data da foto (`hoje`) | Base de "há 12 dias" e das datas relativas que vêm do ERP, em todas as telas | Data de referência das regras | `TO_CHAR(SYSDATE,'YYYY-MM-DD')` | extrator |
 | Relógio (`relogio`) | O "hoje" da barra, a entrega mínima, a data e a saudação do Início e os momentos que o CRM grava | Relógio do servidor em Brasília, a cada resposta | nenhuma | servidor |
 | Códigos do representante | "Representante 1401" ou "Representantes 1401 e 1402" no menu (Layout.tsx:53; formato.ts:110) | Vêm da sessão, nunca do navegador. Um login pode ter mais de um código | É o mesmo número em `CRVN.VENDEDOR`, `SGI5_TAB_FIN_VEN.FIN_VEN`, `CRCL.VEND_1`, `NFME.VENDEDOR` e `VEPM.VENDEDOR` (este a confirmar, pergunta 1) | app.db |
-| Nome | Nome e iniciais no menu (Layout.tsx:50-52) | Proposta: o nome da pessoa, cadastrado no Admin junto com o login (pergunta 20). Um login com dois códigos pode ter dois nomes na CRVN | nenhuma | app.db |
+| Nome | Nome e iniciais no menu (Layout.tsx:50-52) | Proposta: o nome do usuário, digitado no Admin ao criar o login (pergunta 20) | nenhuma | app.db |
 | Ocultar valores | "R$ ••••" (valores.tsx:11) | Começa oculto em toda sessão e não é lembrado | nenhuma | navegador |
 | Sair | Link do menu (Layout.tsx:54) | Na F3 vira POST, revoga a sessão e manda `Clear-Site-Data` (plano.md:146) | nenhuma | app.db |
 
@@ -94,7 +94,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Acumulado do ano anterior | "vs 2025" | Janeiro até o mês anterior inteiros, mais o mesmo dia útil do mês corrente | (foto) | servidor |
 | Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:121-126) | Contagem e soma dos pedidos em aberto atribuídos ao representante | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
 | Gráfico mensal | Barras do ano, comparação com o ano anterior e "A faturar no mês" (BarrasMensais.tsx:154-160) | Mês sem dado ainda é nulo. O ano anterior usa o mês inteiro | NFME, NFDE, VEPD | extrator; a faturar: servidor |
-| Saudação | "Boa tarde, Carlos" (Inicio.tsx:28) | Primeiro nome da pessoa do login; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | nenhuma (proposta da pergunta 20) | nome: app.db; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:182-188) |
+| Saudação | "Boa tarde, Carlos" (Inicio.tsx:28) | Primeiro nome do usuário; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | nenhuma (proposta da pergunta 20) | nome: app.db; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:182-188) |
 
 **Destaques (visão do cliente, sobre a carteira)**
 
@@ -508,7 +508,7 @@ O plano prevê representantes, convites, chaves, auditoria e situação das carg
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Logins | Lista, criar e desativar; ligar e desligar códigos | Um login por pessoa, com nome e um ou mais códigos escolhidos entre os autorizados da foto | (foto: representante) | app.db |
+| Usuários | Lista, criar e desativar; ligar e desligar códigos | O usuário tem nome e os códigos escolhidos entre os autorizados da foto; o login puxa todos | (foto: representante) | app.db |
 | Convites | Gerar, validade e uso | Uso único, 24 a 48 h | nenhuma | app.db |
 | Chaves | Por provedor (Google, Apple, Windows) e revogar | plano.md:140 e 150 | nenhuma | app.db |
 | Auditoria | Eventos | plano.md:152-156 | nenhuma | app.db |
@@ -795,9 +795,8 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 20. **Representantes.**
     - Entram só `FIN_TIP='REPRESENTANTE'` ou também 'VENDEDOR'?
     - A lista de autorizados fica num arquivo na LAN, mantido pelo Lucas?
-    - Decidido em 2026-10-13: um login por pessoa, com um ou mais códigos, e as telas somam todos (ver "Dois escopos"). A rota de admin que liga o login aos códigos é a exceção à regra 4 do CLAUDE.md (ver Admin).
-    - Proposta: o mesmo código pode estar em mais de um login, quando a representação tem mais de uma pessoa.
-    - Proposta: o nome do login é o da pessoa, digitado no Admin. O `CRVN.NOME` é o da representação ("BATISTELI & CIA. LTDA."), e dois códigos do mesmo login podem ter nomes diferentes.
+    - Decidido em 2026-10-13: o usuário de login puxa todos os códigos ligados a ele, e as telas somam todos (ver "Dois escopos"). Os dois códigos da mesma representação existem porque cada contrato tem a sua comissão. A rota de admin que liga o usuário aos códigos é a exceção à regra 4 do CLAUDE.md (ver Admin).
+    - Proposta: o nome do usuário é digitado no Admin ao criar o login. O `CRVN.NOME` é o da representação ("BATISTELI & CIA. LTDA.").
 21. **Hora do dado.** `atualizadoEm` é a hora da última conferência do ERP ou a da última mudança (plano.md:305)? Vale o SYSDATE do Oracle no início da leitura?
 22. **Escopo dos pedidos.** Decidido em 2026-10-09: pedidos sempre só os do representante. Pedidos em aberto e projeção usam a visão do representante no Início, em Pedidos e na Ficha: `VEPM.VENDEDOR` e, sem ele, o dono atual do cliente (`VEND_1`), com a conta na LAN.
 23. **Faturados.**

@@ -126,9 +126,9 @@ Publicação:
 ## Login e sessão
 
 **Convite**
-- O admin cria um login para cada pessoa, liga a ele um ou mais códigos de representante e gera um convite de uso único, válido por 24–48 h.
-  - Exemplo: a Star Vendas tem dois códigos e vê os dois, somados, no mesmo login (decisão do Lucas em 2026-10-13).
-  - Proposta: o mesmo código pode estar em mais de um login, quando a representação tem mais de uma pessoa. Cada uma tem a própria chave e a própria auditoria, e quem sai perde só o próprio acesso.
+- O admin cria o usuário do representante, liga a ele os códigos do ERP e gera um convite de uso único, válido por 24–48 h.
+  - O login puxa todos os códigos ligados a ele, e as telas mostram tudo somado (decisão do Lucas em 2026-10-13).
+  - Exemplo: a Star Vendas tem dois códigos, porque um contrato novo tem outra comissão, e vê os dois no mesmo login.
 - O token vai depois do `#` da URL, para não aparecer em logs.
 - Ele só é consumido depois que a chave é criada (as prévias de link do WhatsApp abrem o endereço sozinhas).
 - Se o link for aberto no navegador interno do WhatsApp, a tela orienta a abrir no Chrome ou no Safari.
