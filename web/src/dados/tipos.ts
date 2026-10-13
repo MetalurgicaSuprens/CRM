@@ -4,6 +4,7 @@
  * Datas são texto ISO ("2026-10-07") e meses "2026-10".
  */
 
+import type { Projecao } from "dominio/projecao";
 import type { Mercado, OportunidadeMix, Porte, Situacao } from "dominio/tipos";
 
 export type { Mercado, OportunidadeMix, Porte, Situacao };
@@ -169,7 +170,10 @@ export type PainelInicio = {
     mes: string;
     faturado: number;
     anoAnteriorMesmoDiaUtil: number;
+    /** Pedidos em carteira com entrega até o fim do mês. */
     aFaturarNoMes: number;
+    /** Faturado mais o ritmo dos últimos 6 meses nos dias úteis que faltam (dominio/projecao.ts). */
+    projecao: Projecao;
     diaUtil: number;
     diasUteis: number;
   };

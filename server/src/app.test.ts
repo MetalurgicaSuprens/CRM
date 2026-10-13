@@ -75,6 +75,8 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
     const painel = await app.inject({ method: "GET", url: "/api/painel" });
     expect(painel.json().pedidosEmAberto).toEqual({ quantidade: 2, valor: 8_000 });
+    // Faturado de outubro (1.000) mais o ritmo de A (1.000 por dia útil) nos 13 dias úteis que faltam.
+    expect(painel.json().mesAtual.projecao).toEqual({ valor: 14_000, base: "ritmo" });
     const pedidos = await app.inject({ method: "GET", url: "/api/pedidos" });
     expect(pedidos.json().emAberto.map((pedido: { numero: string }) => pedido.numero)).toEqual(["100001"]);
   });

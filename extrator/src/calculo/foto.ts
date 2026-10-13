@@ -35,6 +35,7 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
       faturado: mes.faturado,
       ano_anterior: mes.anoAnterior,
       ano_anterior_ate_dia_util: mes.anoAnteriorAteDiaUtil,
+      ritmo_por_dia_util: mes.ritmoPorDiaUtil,
     })),
     pedido_aberto: dados.pedidos
       .filter((pedido) => isAutorizado(pedido.representante))

@@ -4,7 +4,7 @@
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
  */
 
-export const VERSAO_DO_ESQUEMA = 1;
+export const VERSAO_DO_ESQUEMA = 2;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -115,6 +115,7 @@ CREATE TABLE painel_mes (
   faturado REAL,
   ano_anterior REAL NOT NULL,
   ano_anterior_ate_dia_util REAL,
+  ritmo_por_dia_util REAL,
   PRIMARY KEY (representante, mes)
 ) STRICT;
 
@@ -196,6 +197,8 @@ export type Foto = {
     faturado: number | null;
     ano_anterior: number;
     ano_anterior_ate_dia_util: number | null;
+    /** Só no mês corrente: faturado por dia útil nos últimos 6 meses fechados (dominio/projecao.ts). */
+    ritmo_por_dia_util: number | null;
   }[];
   pedido_aberto: {
     pedido: string;

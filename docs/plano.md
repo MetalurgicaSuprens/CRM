@@ -191,7 +191,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 
 ## Telas
 
-1. **Início** (tela grande): mês até hoje contra o mesmo dia útil do ano anterior, projeção (faturado + pedidos em aberto com entrega no mês), acumulado do ano e os destaques das análises.
+1. **Início** (tela grande): mês até hoje contra o mesmo dia útil do ano anterior, projeção (faturado + o ritmo dos últimos 6 meses fechados, por dia útil, nos dias úteis que faltam; os pedidos em aberto com entrega no mês são o piso; decisão do Lucas em 2026-10-13), acumulado do ano e os destaques das análises.
 2. **Clientes** (celular primeiro): carteira com busca e filtros. Mostra dias desde a última compra, faturamento em 12 meses com a variação, tendência e situação.
 3. **Ficha do cliente** (celular primeiro): evolução mensal, famílias, produtos, ciclo de compra, pedidos em aberto e oportunidades de mix.
 4. **Análises:** parou de comprar, comprando menos, comprando mais, novos e reativados, mix.

@@ -72,7 +72,7 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
   - O relógio vale para:
     - o rótulo "hoje" da barra;
     - a data mínima de entrega (MontarPedido.tsx:67 e 116; pedido.ts:70-80);
-    - o dia por extenso e a saudação do Início (Inicio.tsx:28-29 e 213-224);
+    - o dia por extenso e a saudação do Início (Inicio.tsx:29-30 e 219-230);
     - todo momento gravado no app.db: "Enviado" e "Atualizado" em Pedidos, "Rascunho salvo" e o cabeçalho e o Andamento do Detalhe (formato.ts:127-139).
 - A CRVN tem uma linha por gerente e supervisor (PK em ABC71-CR.md:5475). Por isso o nome é agrupado por VENDEDOR.
 - O SGI só lê a CRVN na empresa 20210001 (`untDmVenPvd.dfm:499-503`). Sem esse filtro, o nome pode vir de outra EMP_FIL.
@@ -86,23 +86,23 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Faturado no mês | "Faturado em outubro" (Inicio.tsx:104-119) | RF do mês até hoje, atribuída ao representante | NFME, NFDE, `NFME.VENDEDOR`, CRCLH | extrator |
-| Mesmo dia útil do ano anterior | "+82% vs R$ 172 mil até o 7º dia útil de out/25", com a base à mostra (Inicio.tsx:109-118) | RF atribuída no mesmo mês do ano anterior, até o Nº dia útil | o mesmo, mais `SGI5_TAB_DP_CALEND` | extrator |
-| Dia útil e dias úteis | "8º de 22 dias úteis" (Inicio.tsx:213-216) | Dias com `NVL(TRIM(CAL_DUT_COM),'SIM') <> 'NAO'`, como o SGI (`untFunMat.pas:676`): de 1º até hoje e no mês todo | `SGI5_TAB_DP_CALEND` | extrator |
-| Projeção | "Projeção de outubro", com "X a faturar" e "faltam X para igualar out/25" (Inicio.tsx:120-130 e 181-203) | Faturado mais o valor em aberto do representante com entrega até o fim do mês. A segunda linha compara a projeção com o mesmo mês inteiro do ano anterior; acima dele, mostra "X acima de out/25" | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
+| Faturado no mês | "Faturado em outubro" (Inicio.tsx:105-120) | RF do mês até hoje, atribuída ao representante | NFME, NFDE, `NFME.VENDEDOR`, CRCLH | extrator |
+| Mesmo dia útil do ano anterior | "+82% vs R$ 172 mil até o 7º dia útil de out/25", com a base à mostra (Inicio.tsx:110-119) | RF atribuída no mesmo mês do ano anterior, até o Nº dia útil | o mesmo, mais `SGI5_TAB_DP_CALEND` | extrator |
+| Dia útil e dias úteis | "8º de 22 dias úteis" (Inicio.tsx:219-222) | Dias com `NVL(TRIM(CAL_DUT_COM),'SIM') <> 'NAO'`, como o SGI (`untFunMat.pas:676`): de 1º até hoje e no mês todo | `SGI5_TAB_DP_CALEND` | extrator |
+| Projeção | "Projeção de outubro", com "no ritmo dos últimos 6 meses" (ou "pelos pedidos em carteira para o mês") e "faltam X para igualar out/25" (Inicio.tsx:121-131 e 182-209) | Decidido em 2026-10-13: faturado do mês mais o ritmo dos últimos 6 meses fechados (faturado por dia útil) nos dias úteis que faltam. A carteira com entrega no mês é o piso: se passar do que o ritmo prevê, vale ela (`dominio/projecao.ts`). A segunda linha compara a projeção com o mesmo mês inteiro do ano anterior; acima dele, mostra "X acima de out/25" | NFME, NFDE e `SGI5_TAB_DP_CALEND` para o ritmo; VEPM, VEPD para a carteira | ritmo: extrator; projeção: servidor, somando os códigos do login |
 | Acumulado do ano | "Acumulado de 2026" | Soma dos meses do ano corrente | (foto) | servidor |
 | Acumulado do ano anterior | "vs 2025" | Janeiro até o mês anterior inteiros, mais o mesmo dia útil do mês corrente | (foto) | servidor |
-| Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:137-142) | Contagem e soma dos pedidos em aberto atribuídos ao representante | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
+| Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:138-143) | Contagem e soma dos pedidos em aberto atribuídos ao representante | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
 | Gráfico mensal | Barras do ano, comparação com o ano anterior e "A faturar no mês" (BarrasMensais.tsx:156-170) | Mês sem dado ainda é nulo. O ano anterior usa o mês inteiro; na dica do mês corrente, ele aparece como "2025, mês inteiro" (BarrasMensais.tsx:214-240) | NFME, NFDE, VEPD | extrator; a faturar: servidor |
-| Saudação | "Boa tarde, Carlos" (Inicio.tsx:28) | Primeiro nome do usuário; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | nenhuma (proposta da pergunta 20) | nome: app.db; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:218-224) |
+| Saudação | "Boa tarde, Carlos" (Inicio.tsx:29) | Primeiro nome do usuário; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | nenhuma (proposta da pergunta 20) | nome: app.db; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:224-230) |
 
 **Destaques (visão do cliente, sobre a carteira)**
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Atenção na carteira | Quantidade e total de Pararam, Comprando menos, Comprando mais e Novos (Inicio.tsx:152-179) | Soma de todos os clientes da lista, não só dos 5 mostrados | listas das Análises | servidor |
-| Cartão "Pararam de comprar" | 5 primeiros: nome, cidade/UF, "última compra há X" e o valor por mês, com link para a ficha (Inicio.tsx:43-62) | Ordem da análise | listas das Análises e `cliente` | servidor |
-| Cartão "Comprando menos" | 5 primeiros: nome, cidade/UF, variação e diferença, com link para a ficha (Inicio.tsx:63-82) | Ordem da análise | listas das Análises e `cliente` | servidor |
+| Atenção na carteira | Quantidade e total de Pararam, Comprando menos, Comprando mais e Novos (Inicio.tsx:153-180) | Soma de todos os clientes da lista, não só dos 5 mostrados | listas das Análises | servidor |
+| Cartão "Pararam de comprar" | 5 primeiros: nome, cidade/UF, "última compra há X" e o valor por mês, com link para a ficha (Inicio.tsx:44-63) | Ordem da análise | listas das Análises e `cliente` | servidor |
+| Cartão "Comprando menos" | 5 primeiros: nome, cidade/UF, variação e diferença, com link para a ficha (Inicio.tsx:64-83) | Ordem da análise | listas das Análises e `cliente` | servidor |
 
 - **Atribuição (plano.md:219).**
   - Vale o vendedor da nota (`NFME.VENDEDOR`).
@@ -118,7 +118,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - No gráfico, o mês corrente é o único com `aFaturar` como número, inclusive 0; nos outros ele é nulo (tipos.ts:108-112). O fictício manda 0 quando não há nada a faturar (ficticio.ts:505).
   - Corrigido em 2026-10-09: antes a tela pedia `aFaturar` diferente de zero, e com 0 a faturar o mês parcial passava por fechado. Agora ela testa `aFaturar != null` (BarrasMensais.tsx:22-25). O teste é frouxo de propósito, porque a Ficha usa o mesmo gráfico sem mandar `aFaturar`.
 - **Escopo dos pedidos em aberto e da projeção (decidido em 2026-10-09, pergunta 22).**
-  - Visão do representante, como os outros indicadores do Início (plano.md:207). A projeção soma o faturado com os pedidos dele (plano.md:194).
+  - Visão do representante, como os outros indicadores do Início (plano.md:207). A carteira dele é o piso da projeção (plano.md:194).
   - Atribuição: `VEPM.VENDEDOR`; se vier nulo ou 0, o dono do cliente pelo `VEND_1` atual. O extrator faz a conta na LAN e grava o representante em cada linha de `pedido_aberto`.
   - O servidor soma `pedido_aberto` só pelo representante da sessão. Nenhuma rota recebe vendedor do navegador.
   - A mesma regra vale para a aba "Em aberto no ERP" e para a Ficha. Com um escopo só, o total do Início bate com a aba.
@@ -552,7 +552,7 @@ Convenções:
 | `analise_ritmo` | Cliente comprando menos ou mais; PK `cliente` | `cliente`, `direcao`, `semestre`, `semestre_ano_anterior`, `variacao`, `variacao_pecas`, `ordem` | Análises, Início |
 | `analise_novo` | Cliente novo ou reativado; PK `cliente` | `cliente`, `tipo`, `desde`, `faturado_desde`, `ordem` | Análises, Início |
 | `analise_mix` | Cliente da lista de mix; PK `cliente` | `cliente`, `ordem` | Análises |
-| `painel_mes` | Representante × mês do ano corrente; PK (`representante`, `mes`) | `representante`, `mes`, `faturado`, `ano_anterior`, `ano_anterior_ate_dia_util` | Início |
+| `painel_mes` | Representante × mês do ano corrente; PK (`representante`, `mes`) | `representante`, `mes`, `faturado`, `ano_anterior`, `ano_anterior_ate_dia_util`, `ritmo_por_dia_util` | Início |
 | `pedido_aberto` | Pedido do Omega com saldo, atribuído a um representante autorizado; PK `pedido` | `pedido`, `representante`, `cliente`, `emissao`, `entrega`, `itens`, `valor`, `valor_entrega_no_mes` | Pedidos, Ficha, Início |
 | `nota` | Nota de venda da janela da aba Faturados (45 dias, a confirmar), atribuída a um representante autorizado (pergunta 23); uma linha por nota; PK (`nota`, `serie`) | `nota`, `serie`, `representante`, `cliente`, `emissao`, `valor` | Pedidos |
 | `pedido_crm` | Pedido enviado pelo CRM que a LAN já tratou; PK `numero_crm` | `numero_crm`, `etapa`, `numero_sgi`, `total_sgi`, `motivo_recusa`, `motivo_produto` | Pedidos, Detalhe |
@@ -568,7 +568,7 @@ Colunas que pedem nota:
 - `ficha_produto`: o extrator já faz o corte dos 8. Peças, valor e última compra dos outros produtos não aparecem em nenhuma tela e ficam na LAN.
 - `catalogo.ja_comprou`: 0 ou 1, calculado pelo extrator na janela da pergunta 28. É o que o Montar pedido usa (`ProdutoDoCatalogo.jaComprou`, tipos.ts:194; MontarPedido.tsx:212).
 - `catalogo.embalagem`: fica no catálogo porque a fonte pode ser por tabela (`TP2_MVE`). Se for por produto (`EAN_QTD`), passa para `produto`.
-- `painel_mes.faturado`: nulo nos meses que ainda não chegaram. `ano_anterior_ate_dia_util` só tem valor no mês corrente.
+- `painel_mes.faturado`: nulo nos meses que ainda não chegaram. `ano_anterior_ate_dia_util` e `ritmo_por_dia_util` (faturado por dia útil nos 6 meses fechados, base da projeção) só têm valor no mês corrente.
 - `pedido_aberto.representante`: atribuído na LAN, `VEPM.VENDEDOR` ou, se vier nulo ou 0, o `VEND_1` atual do cliente. `VEPM.VENDEDOR` não vai para a foto.
 - `nota.representante`: atribuído na LAN pela regra do faturamento (plano.md:219). `NFME.VENDEDOR` e o CRCLH não vão para a foto.
 - `pedido_aberto.cliente` e `nota.cliente`: o id opaco quando o cliente é da carteira do representante atribuído; nulo nos outros casos, com a conta na LAN. A linha com cliente nulo mostra "Cliente de outra carteira" (proposta, pergunta 33).
@@ -593,7 +593,7 @@ O que o servidor calcula sobre a foto (leituras com escopo e somas simples):
   - clientes do Montar pedido por `faturamento_12m` decrescente (MontarPedido.tsx:385-401);
   - famílias da Ficha por valor decrescente (FichaCliente.tsx:66-70);
   - famílias sugeridas do mix pela coluna `ordem` de `cliente_mix` (FichaCliente.tsx:159-168);
-  - os 5 primeiros de cada cartão do Início, na ordem da análise (Inicio.tsx:46 e 66);
+  - os 5 primeiros de cada cartão do Início, na ordem da análise (Inicio.tsx:47 e 67);
 - as demais tabelas o navegador ordena pelo título das colunas, com a ordem de abertura na própria tela (Clientes.tsx:41 e 54; Analises.tsx:94, 135, 163 e 202; Pedidos.tsx:95, 125, 171 e 193; FichaCliente.tsx:189-192 e 243-246). Empate mantém a ordem recebida (componentes/ordenacao.ts:22-23).
 - total estimado do rascunho, na leitura; e o do envio, que fica congelado no app.db.
 
@@ -728,7 +728,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extrator gera a foto, e a API mostra com ela o Início, Clientes, Ficha, Análises e as abas "Em aberto no ERP" e "Faturados" de Pedidos. Tudo roda só neste computador, com o login de teste, porque o login de verdade é da F3 (README.md, "Como rodar"). Catálogo, rascunhos e envio ainda não usam os dados reais.
 
-- **Esquema implementado (versão 1):** as tabelas acima, menos `catalogo`, `pedido_crm` e `pedido_crm_etapa`. Faltam também `cliente.tabela_preco`, `cliente.municipio_ibge` e `produto.medida`, que chegam com o catálogo e o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
+- **Esquema implementado (versão 2, com o ritmo da projeção):** as tabelas acima, menos `catalogo`, `pedido_crm` e `pedido_crm_etapa`. Faltam também `cliente.tabela_preco`, `cliente.municipio_ibge` e `produto.medida`, que chegam com o catálogo e o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
 - **Conferência com o RELCUS001.** O faturado por representante e mês bate com a `SGI5_TAB_CUS_REP_FAT` nos códigos 1401 e 1402, em todos os meses de 2025 e 2026, com duas exceções:
   - junho de 2025: R$ 2.567,02 estão no 1402 no RELCUS001 e no 1401 pelo vendedor da nota. A soma dos dois códigos bate;
   - o mês corrente, porque a tabela do RELCUS001 ainda não tinha o dia.
@@ -739,6 +739,11 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
   - todo pedido em aberto com o vendedor igual ao dono atual do cliente;
   - o calendário vai de 2025-01-01 a 2027-06-29 (pergunta 2);
   - as notas vêm em CT, com 4 itens em PC (pergunta 3).
+- **Projeção (decidida em 2026-10-13).** O Lucas propôs faturado + média do faturado × dias úteis que faltam. A simulação com 20 representantes, de jan/25 a set/26, comparou as formas de projetar com o que cada mês fechou. Erro típico:
+  - com a média do próprio mês: 59% nos 3 primeiros dias úteis, 33% do 4º ao 7º, 20% do 8º ao 12º, 10% do 13º ao 17º e 5% depois;
+  - com a média dos últimos 6 meses: 17%, 15%, 13%, 9% e 5%. A de 12 meses ficou igual, e as de 1 e 3 meses e a do mesmo mês do ano anterior, um pouco piores;
+  - só o faturado, piso do método antigo: 94%, 75%, 52%, 27% e 8%.
+  - Ficou a média dos últimos 6 meses, com a carteira do mês como piso. Para a Star Vendas, em 13/10: R$ 622 mil, contra R$ 367 mil do método antigo e R$ 897 mil pela média do próprio mês.
 - **Decisões desta entrega, a confirmar com o Lucas:**
   - carteira: cliente com `VEND_1` de um autorizado e nota de venda nos últimos 36 meses (pergunta 18);
   - atribuição: o vendedor da nota e, sem ele, o dono atual. O CRCLH entra quando aparecer nota sem vendedor;

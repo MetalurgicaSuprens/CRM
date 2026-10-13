@@ -1,10 +1,13 @@
+import { somarMeses } from "dominio/datas";
+import { MESES_DO_RITMO } from "dominio/projecao";
 import type { VendaDoDia } from "../erp/tipos.ts";
-import { corteDoMesmoDiaUtil, diaUtilDoMes, type Calendario } from "./calendario.ts";
+import { corteDoMesmoDiaUtil, diaUtilDoMes, diasUteisDoMes, type Calendario } from "./calendario.ts";
 import type { Referencia } from "./referencia.ts";
 
 /*
  * Indicadores do Início na visão do representante: faturado de cada mês do ano corrente, o mesmo
- * mês do ano anterior e, no mês corrente, o ano anterior até o mesmo dia útil.
+ * mês do ano anterior e, no mês corrente, o ano anterior até o mesmo dia útil e o ritmo dos
+ * últimos 6 meses, base da projeção (dominio/projecao.ts).
  */
 
 export type MesDoPainel = {
@@ -15,6 +18,8 @@ export type MesDoPainel = {
   anoAnterior: number;
   /** Só no mês corrente. */
   anoAnteriorAteDiaUtil: number | null;
+  /** Só no mês corrente: faturado por dia útil nos últimos 6 meses fechados. */
+  ritmoPorDiaUtil: number | null;
 };
 
 export function montarPainel(
@@ -36,6 +41,7 @@ export function montarPainel(
         faturado: mes > referencia.mesAtual ? null : somarDoMes(doRepresentante, mes),
         anoAnterior: somarDoMes(doRepresentante, mesAnterior),
         anoAnteriorAteDiaUtil: mes === referencia.mesAtual ? ateOMesmoDiaUtil(doRepresentante, mesAnterior, referencia, calendario) : null,
+        ritmoPorDiaUtil: mes === referencia.mesAtual ? ritmoDosUltimosMeses(doRepresentante, referencia.mesAtual, calendario) : null,
       };
     });
   });
@@ -44,6 +50,14 @@ export function montarPainel(
 function ateOMesmoDiaUtil(vendas: readonly VendaDoDia[], mes: string, referencia: Referencia, calendario: Calendario): number {
   const corte = corteDoMesmoDiaUtil(mes, diaUtilDoMes(referencia.hoje, calendario), calendario);
   return somar(vendas.filter((venda) => venda.dia.startsWith(mes) && (corte === null || venda.dia < corte)));
+}
+
+/** Faturado por dia útil nos 6 meses fechados antes do corrente. */
+function ritmoDosUltimosMeses(vendas: readonly VendaDoDia[], mesAtual: string, calendario: Calendario): number {
+  const meses = Array.from({ length: MESES_DO_RITMO }, (_, i) => somarMeses(mesAtual, -(i + 1)));
+  const diasUteis = meses.reduce((soma, mes) => soma + diasUteisDoMes(mes, calendario), 0);
+  const faturado = meses.reduce((soma, mes) => soma + somarDoMes(vendas, mes), 0);
+  return diasUteis > 0 ? faturado / diasUteis : 0;
 }
 
 function somarDoMes(vendas: readonly VendaDoDia[], mes: string): number {

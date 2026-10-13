@@ -58,6 +58,7 @@ function painel(representante: string): Foto["painel_mes"] {
     faturado: i < 10 ? 1_000 : null,
     ano_anterior: 900,
     ano_anterior_ate_dia_util: i === 9 ? 400 : null,
+    ritmo_por_dia_util: i === 9 ? 1_000 : null,
   }));
 }
 

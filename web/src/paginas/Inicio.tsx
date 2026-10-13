@@ -10,6 +10,7 @@ import { ListaClientes } from "../componentes/ListaClientes";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { dataDoMomento, horaDoMomento } from "dominio/datas";
+import { MESES_DO_RITMO, type BaseDaProjecao } from "dominio/projecao";
 import { carregarPainel, carregarSituacaoDosDados } from "../dados/api";
 import type { GrupoDestaque, PainelInicio } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
@@ -98,7 +99,7 @@ function Indicadores({ painel }: { painel: PainelInicio }) {
   const { mesAtual, ano, pedidosEmAberto } = painel;
   const nomeDoMes = formatarNomeDoMes(mesAtual.mes);
   const mesDoAnoAnterior = formatarMesAno(`${anoDe(painel) - 1}${mesAtual.mes.slice(4)}`);
-  const projecao = mesAtual.faturado + mesAtual.aFaturarNoMes;
+  const projecao = mesAtual.projecao.valor;
   return (
     <div className={estilos.indicadores}>
       <Indicador
@@ -123,7 +124,7 @@ function Indicadores({ painel }: { painel: PainelInicio }) {
         valor={<Valor valor={projecao} compacto />}
         detalhe={
           <>
-            com <Valor valor={mesAtual.aFaturarNoMes} compacto /> a faturar
+            {BASE_DA_PROJECAO[mesAtual.projecao.base]}
             <DistanciaDoAnoAnterior projecao={projecao} mesInteiro={mesInteiroDoAnoAnterior(painel)} mes={mesDoAnoAnterior} />
           </>
         }
@@ -177,6 +178,11 @@ function AtencaoNaCarteira({ destaques }: { destaques: PainelInicio["destaques"]
     </Cartao>
   );
 }
+
+const BASE_DA_PROJECAO: Record<BaseDaProjecao, string> = {
+  ritmo: `no ritmo dos últimos ${MESES_DO_RITMO} meses`,
+  carteira: "pelos pedidos em carteira para o mês",
+};
 
 /** Quanto a projeção ainda precisa para igualar o mesmo mês, inteiro, do ano anterior. */
 function DistanciaDoAnoAnterior({ projecao, mesInteiro, mes }: { projecao: number; mesInteiro: number; mes: string }) {

@@ -14,6 +14,7 @@ import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
 import { analisarCliente, classificarSituacao, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
 import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
 import { evolucao12m, variacao12m } from "dominio/indicadores";
+import { MESES_DO_RITMO, projetarMes } from "dominio/projecao";
 import { sugerirMix, type ClienteNoMix } from "dominio/mix";
 import type {
   Analises,
@@ -461,12 +462,19 @@ function montarPainel(dados: Carteira): PainelInicio {
   const pedidos = dados.clientes.flatMap((c) => c.pedidos);
   const fimDoMes = `${dados.mesAtual}-${String(ultimoDiaDoMes(dados.mesAtual)).padStart(2, "0")}`;
   const aFaturarNoMes = somar(pedidos.filter((p) => p.entrega <= fimDoMes).map((p) => p.valor));
+  const faturado = somarMes(dados, MESES_FECHADOS);
   return {
     mesAtual: {
       mes: dados.mesAtual,
-      faturado: somarMes(dados, MESES_FECHADOS),
+      faturado,
       anoAnteriorMesmoDiaUtil: Math.round(somarMes(dados, MESES_FECHADOS - 12) * fracaoDoMes),
       aFaturarNoMes,
+      projecao: projetarMes({
+        faturado,
+        ritmoPorDiaUtil: ritmoDosUltimosMeses(dados),
+        diasUteisRestantes: dados.diasUteis - dados.diaUtil,
+        aFaturarNoMes,
+      }),
       diaUtil: dados.diaUtil,
       diasUteis: dados.diasUteis,
     },
@@ -475,6 +483,14 @@ function montarPainel(dados: Carteira): PainelInicio {
     mensal: mesesDoAno(dados, aFaturarNoMes),
     destaques: destaquesDasAnalises(montarAnalises(dados)),
   };
+}
+
+/** Faturado da carteira por dia útil (segunda a sexta) nos 6 meses fechados. */
+function ritmoDosUltimosMeses(dados: Carteira): number {
+  const indices = Array.from({ length: MESES_DO_RITMO }, (_, i) => MESES_FECHADOS - 1 - i);
+  const faturado = somar(indices.map((indice) => somarMes(dados, indice)));
+  const diasUteis = somar(indices.map((indice) => diasUteisDoMes(somarMeses(dados.mesAtual, indice - MESES_FECHADOS))));
+  return faturado / diasUteis;
 }
 
 function acumuladoDoAno(dados: Carteira, fracaoDoMes: number) {

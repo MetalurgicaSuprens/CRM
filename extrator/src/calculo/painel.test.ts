@@ -28,6 +28,12 @@ describe("montarPainel", () => {
     expect(mes("11")?.anoAnterior).toBe(0);
   });
 
+  it("dá no mês corrente o faturado por dia útil dos 6 meses fechados, base da projeção", () => {
+    // De abril a setembro de 2026 há 131 dias úteis (só segunda a sexta neste calendário); o 1401 faturou 500.
+    expect(mes("10")?.ritmoPorDiaUtil).toBeCloseTo(500 / 131);
+    expect(mes("09")?.ritmoPorDiaUtil).toBeNull();
+  });
+
   it("compara o mês corrente com o ano anterior até o mesmo dia útil", () => {
     expect(mes("10")?.anoAnterior).toBe(4_500);
     expect(mes("10")?.anoAnteriorAteDiaUtil).toBe(500);

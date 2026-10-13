@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { projetarMes } from "dominio/projecao";
 import type { PainelInicio } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { destaquesDasAnalises, lerAnalises } from "./analises.ts";
@@ -16,7 +17,7 @@ export function lerPainel(db: DatabaseSync, sessao: Sessao): PainelInicio {
   const meses = lerLinhas(
     db,
     `SELECT mes, SUM(faturado) AS faturado, SUM(ano_anterior) AS ano_anterior,
-            SUM(ano_anterior_ate_dia_util) AS ate_dia_util
+            SUM(ano_anterior_ate_dia_util) AS ate_dia_util, SUM(ritmo_por_dia_util) AS ritmo
        FROM painel_mes WHERE representante IN (${marcas}) GROUP BY mes ORDER BY mes`,
     codigos,
   );
@@ -30,14 +31,22 @@ export function lerPainel(db: DatabaseSync, sessao: Sessao): PainelInicio {
   const corrente = meses.find((mes) => texto(mes, "mes") === mesAtual) ?? {};
   const anteriores = meses.filter((mes) => texto(mes, "mes") < mesAtual);
   const somar = (linhas: typeof meses, coluna: string) => linhas.reduce((soma, linha) => soma + numero(linha, coluna), 0);
+  const diaUtil = numero(foto, "dia_util");
+  const diasUteis = numero(foto, "dias_uteis");
   return {
     mesAtual: {
       mes: mesAtual,
       faturado: numero(corrente, "faturado"),
       anoAnteriorMesmoDiaUtil: numero(corrente, "ate_dia_util"),
       aFaturarNoMes,
-      diaUtil: numero(foto, "dia_util"),
-      diasUteis: numero(foto, "dias_uteis"),
+      projecao: projetarMes({
+        faturado: numero(corrente, "faturado"),
+        ritmoPorDiaUtil: numero(corrente, "ritmo"),
+        diasUteisRestantes: diasUteis - diaUtil,
+        aFaturarNoMes,
+      }),
+      diaUtil,
+      diasUteis,
     },
     ano: {
       acumulado: somar(anteriores, "faturado") + numero(corrente, "faturado"),
