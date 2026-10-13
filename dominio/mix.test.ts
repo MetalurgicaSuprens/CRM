@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Mercado } from "./tipos";
-import { sugerirMix, type ClienteNoMix } from "./mix";
+import type { Mercado } from "./tipos.ts";
+import { sugerirMix, type ClienteNoMix } from "./mix.ts";
 
 function cliente(codigo: string, faturamento12m: number, familias: string[] = [], mercado: Mercado = "PRACA"): ClienteNoMix {
   return { codigo, mercado, faturamento12m, familias12m: new Set(familias), familias24m: new Set(familias) };

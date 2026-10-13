@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  analisarCliente,
   classificarSituacao,
   entradaRecente,
   mudancaDeRitmo,
   parouDeComprar,
   perdaMensal,
   type HistoricoDoCliente,
-} from "./analises";
+} from "./analises.ts";
 
 const HOJE = "2026-10-08";
 
@@ -113,5 +114,29 @@ describe("entradaRecente", () => {
 
   it("não marca quem compra sem interrupção", () => {
     expect(entradaRecente(historico({ compras: ["2026-07-01", "2026-08-01", "2026-09-01"] }), HOJE)).toBeNull();
+  });
+});
+
+describe("analisarCliente", () => {
+  it("põe quem parou só na lista dos que pararam", () => {
+    const analise = analisarCliente(historico({ compras: ["2026-05-01"], cicloDias: 30 }), HOJE);
+    expect(analise.situacao).toBe("parado");
+    expect(analise.parada).toEqual({ diasSemComprar: 160, perdaMensal: 1_000 });
+    expect(analise).toMatchObject({ ritmo: null, entrada: null, isAtivo: false });
+  });
+
+  it("põe em comprando menos só quem está em risco", () => {
+    const caindo = historico({ mensal: semestres({ valor: 1_000, pecas: 500 }, { valor: 600, pecas: 300 }) });
+    expect(analisarCliente(caindo, HOJE).ritmo?.direcao).toBe("menos");
+    const novoCaindo = { ...caindo, primeiraCompra: "2026-01-10" };
+    expect(analisarCliente(novoCaindo, HOJE)).toMatchObject({ situacao: "novo", ritmo: null });
+  });
+
+  it("tira o cliente novo de comprando mais, mas o mantém entre os novos", () => {
+    const subindo = historico({
+      primeiraCompra: "2026-01-10",
+      mensal: semestres({ valor: 1_000, pecas: 500 }, { valor: 1_600, pecas: 800 }),
+    });
+    expect(analisarCliente(subindo, HOJE)).toMatchObject({ situacao: "novo", ritmo: null, entrada: { tipo: "novo" } });
   });
 });

@@ -12,7 +12,7 @@ import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Voltar } from "../componentes/Voltar";
-import { dataDoMomento } from "../calendario";
+import { dataDoMomento } from "dominio/datas";
 import {
   carregarCatalogo,
   carregarClientes,

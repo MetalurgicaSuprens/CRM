@@ -44,6 +44,16 @@ export function somarDias(dataIso: string, quantidade: number): string {
   return `${data.getUTCFullYear()}-${doisDigitos(data.getUTCMonth() + 1)}-${doisDigitos(data.getUTCDate())}`;
 }
 
+export function diasEntre(deIso: string, ateIso: string): number {
+  return Math.round((paraDiaUtc(ateIso) - paraDiaUtc(deIso)) / 86_400_000);
+}
+
+/** Sábado ou domingo. Os feriados vêm do calendário do ERP, que só o extrator lê. */
+export function isFimDeSemana(dataIso: string): boolean {
+  const diaDaSemana = new Date(paraDiaUtc(dataIso)).getUTCDay();
+  return diaDaSemana === 0 || diaDaSemana === 6;
+}
+
 /** Dias úteis (segunda a sexta) do mês. Feriados ficam para a foto do ERP. */
 export function diasUteisDoMes(mesIso: string): number {
   return diasUteisAte(`${mesIso}-${doisDigitos(ultimoDiaDoMes(mesIso))}`);
@@ -51,11 +61,11 @@ export function diasUteisDoMes(mesIso: string): number {
 
 /** Dias úteis do mês até a data, inclusive. */
 export function diasUteisAte(dataIso: string): number {
-  const [ano, mes, dia] = dataIso.split("-").map(Number);
+  const mes = mesDe(dataIso);
+  const ultimo = Number(dataIso.slice(8, 10));
   let total = 0;
-  for (let d = 1; d <= (dia ?? 0); d++) {
-    const diaDaSemana = new Date(Date.UTC(ano ?? 1970, (mes ?? 1) - 1, d)).getUTCDay();
-    if (diaDaSemana !== 0 && diaDaSemana !== 6) total++;
+  for (let dia = 1; dia <= ultimo; dia++) {
+    if (!isFimDeSemana(`${mes}-${doisDigitos(dia)}`)) total++;
   }
   return total;
 }
@@ -63,6 +73,12 @@ export function diasUteisAte(dataIso: string): number {
 export function ultimoDiaDoMes(mesIso: string): number {
   const [ano, mes] = mesIso.split("-").map(Number);
   return new Date(Date.UTC(ano ?? 1970, mes ?? 1, 0)).getUTCDate();
+}
+
+/** Meia-noite da data em UTC, em milissegundos: a data de calendário sem o fuso do aparelho. */
+export function paraDiaUtc(dataIso: string): number {
+  const [ano, mes, dia] = dataIso.split("-").map(Number);
+  return Date.UTC(ano ?? 1970, (mes ?? 1) - 1, dia ?? 1);
 }
 
 function doisDigitos(valor: number): string {

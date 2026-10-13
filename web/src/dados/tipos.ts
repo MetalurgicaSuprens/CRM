@@ -1,16 +1,12 @@
 /*
- * O que cada tela consome. Na F1 vem de dados fictícios (ficticio.ts);
- * a partir da F3, da API, com estes mesmos formatos.
+ * O que cada tela consome, venha dos dados fictícios (ficticio.ts) ou do servidor (fonteDoServidor.ts),
+ * sempre com estes mesmos formatos.
  * Datas são texto ISO ("2026-10-07") e meses "2026-10".
  */
 
-/** "inativo": 24 meses ou mais sem comprar. */
-export type Situacao = "ativo" | "em_risco" | "parado" | "novo" | "inativo";
+import type { Mercado, OportunidadeMix, Porte, Situacao } from "dominio/tipos";
 
-export type Mercado = "PRACA" | "MONTADORA" | "EXPORTACAO";
-
-/** Tercil do faturado em 12 meses dentro do mercado. */
-export type Porte = "pequeno" | "medio" | "grande";
+export type { Mercado, OportunidadeMix, Porte, Situacao };
 
 export type SituacaoDosDados = {
   /** Início da leitura do ERP que gerou a foto ("2026-10-09T07:02"). */
@@ -57,7 +53,6 @@ export type ClienteResumo = {
 export type FaturamentoMensal = {
   mes: string;
   valor: number;
-  pecas: number;
 };
 
 export type FamiliaComprada = {
@@ -72,12 +67,6 @@ export type ProdutoComprado = {
   pecas: number;
   valor: number;
   ultimaCompra: string;
-};
-
-export type OportunidadeMix = {
-  familia: string;
-  /** Parcela dos clientes parecidos (mesmo mercado e faixa de porte; ver `grupoDoMix`) que compram a família. */
-  penetracao: number;
 };
 
 export type PedidoEmAberto = {

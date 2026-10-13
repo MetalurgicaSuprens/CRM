@@ -1,4 +1,4 @@
-import type { Mercado, OportunidadeMix, Porte } from "./tipos";
+import type { Mercado, OportunidadeMix, Porte } from "./tipos.ts";
 
 /** O que a regra de mix precisa saber de cada cliente da Suprens. */
 export type ClienteNoMix = {

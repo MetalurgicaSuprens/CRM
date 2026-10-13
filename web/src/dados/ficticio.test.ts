@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dataDoMomento } from "../calendario";
+import { dataDoMomento } from "dominio/datas";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, painelFicticio, situacaoDosDadosFicticia } from "./ficticio";
 
 // Contrato que o extrator (F2) também precisa cumprir: tendência, faturado e variação contam a mesma história.

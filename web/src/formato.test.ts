@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  diasEntre,
   formatarCodigoDoCliente,
   formatarCodigosDoRepresentante,
   formatarCompacto,
@@ -108,11 +107,6 @@ describe("datas", () => {
   it("formata sem deslocar o dia por fuso", () => {
     expect(formatarData("2026-10-07")).toBe("07/10/2026");
     expect(formatarMesAno("2025-01")).toBe("jan/25");
-  });
-
-  it("conta dias entre datas de calendário", () => {
-    expect(diasEntre("2026-09-30", "2026-10-07")).toBe(7);
-    expect(diasEntre("2025-10-07", "2026-10-07")).toBe(365);
   });
 
   it("descreve o tempo desde a última compra", () => {

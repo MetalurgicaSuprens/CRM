@@ -9,7 +9,7 @@ import { Indicador } from "../componentes/Indicador";
 import { ListaClientes } from "../componentes/ListaClientes";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
-import { dataDoMomento, horaDoMomento } from "../calendario";
+import { dataDoMomento, horaDoMomento } from "dominio/datas";
 import { carregarPainel, carregarSituacaoDosDados } from "../dados/api";
 import type { GrupoDestaque, PainelInicio } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";

@@ -1,4 +1,4 @@
-import { dataDoMomento, horaDoMomento } from "./calendario";
+import { dataDoMomento, diasEntre, horaDoMomento, paraDiaUtc } from "dominio/datas";
 
 const REAIS = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -149,13 +149,4 @@ export function formatarMomento(momentoIso: string, relogioIso: string): string 
   if (dias === 1) return `ontem, ${hora}`;
   const diaEMes = formatarData(data).slice(0, 5);
   return data.slice(0, 4) === hojeIso.slice(0, 4) ? `${diaEMes} às ${hora}` : `${formatarData(data)} às ${hora}`;
-}
-
-export function diasEntre(deIso: string, ateIso: string): number {
-  return Math.round((paraDiaUtc(ateIso) - paraDiaUtc(deIso)) / 86_400_000);
-}
-
-function paraDiaUtc(dataIso: string): number {
-  const [ano, mes, dia] = dataIso.split("-").map(Number);
-  return Date.UTC(ano ?? 1970, (mes ?? 1) - 1, dia ?? 1);
 }

@@ -1,5 +1,6 @@
 import {
   dataDoMomento,
+  diasEntre,
   diasUteisAte,
   diasUteisDoMes,
   mesDe,
@@ -7,20 +8,13 @@ import {
   somarDias,
   somarMeses,
   ultimoDiaDoMes,
-} from "../calendario";
-import { diasEntre } from "../formato";
+} from "dominio/datas";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
-import {
-  classificarSituacao,
-  diasSemComprar,
-  entradaRecente,
-  mudancaDeRitmo,
-  parouDeComprar,
-  perdaMensal,
-  type HistoricoDoCliente,
-} from "./analises";
-import { sugerirMix, type ClienteNoMix } from "./mix";
+import { analisarCliente, classificarSituacao, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
+import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
+import { evolucao12m, variacao12m } from "dominio/indicadores";
+import { sugerirMix, type ClienteNoMix } from "dominio/mix";
 import type {
   Analises,
   ClienteResumo,
@@ -91,6 +85,8 @@ const PERFIS: readonly (readonly [Perfil, number])[] = [
 
 type Contexto = { hoje: string; mesAtual: string; diaUtil: number; diasUteis: number };
 
+type MesFicticio = FaturamentoMensal & { pecas: number };
+
 type ClienteFicticio = {
   codigo: string;
   codigoErp: string | null;
@@ -101,7 +97,7 @@ type ClienteFicticio = {
   mercado: Mercado;
   precoMedioPeca: number;
   pesosFamilias: Map<string, number>;
-  mensal: FaturamentoMensal[];
+  mensal: MesFicticio[];
   datasCompra: string[];
   primeiraCompra: string;
   pedidos: PedidoEmAberto[];
@@ -111,7 +107,6 @@ type ClienteFicticio = {
 type Indicadores = {
   ultimaCompra: string | null;
   faturamento12m: number;
-  faturamento12mAnterior: number;
   cicloDias: number | null;
   situacao: Situacao;
 };
@@ -281,7 +276,7 @@ function gerarHistorico(
   const mesesDeVida = aleatorio.inteiro(3, 10);
   // Só quem voltou sorteia a pausa: a sequência dos outros perfis não muda.
   const pausa = perfil === "voltou" ? { mesesDesdeAVolta: aleatorio.inteiro(2, 9), duracao: aleatorio.inteiro(13, 18) } : null;
-  const mensal: FaturamentoMensal[] = [];
+  const mensal: MesFicticio[] = [];
   const datasCompra: string[] = [];
   for (let indice = 0; indice <= MESES_FECHADOS; indice++) {
     const mesesAtras = MESES_FECHADOS - indice;
@@ -357,35 +352,23 @@ function dataAntiga(aleatorio: Aleatorio): string {
 type BaseDoCliente = Pick<ClienteFicticio, "mensal" | "datasCompra" | "primeiraCompra" | "pedidos">;
 
 function calcularIndicadores(cliente: BaseDoCliente, contexto: Contexto): Indicadores {
-  const historico = historicoParaAnalise(cliente);
+  const historico = historicoParaAnalise(cliente, contexto.hoje);
   return {
     ultimaCompra: cliente.datasCompra.at(-1) ?? null,
     faturamento12m: somarValores(cliente.mensal, ULTIMO_FECHADO - 11, ULTIMO_FECHADO),
-    faturamento12mAnterior: somarValores(cliente.mensal, ULTIMO_FECHADO - 23, ULTIMO_FECHADO - 12),
     cicloDias: historico.cicloDias,
     situacao: classificarSituacao(historico, contexto.hoje),
   };
 }
 
-function historicoParaAnalise(cliente: BaseDoCliente): HistoricoDoCliente {
+function historicoParaAnalise(cliente: BaseDoCliente, hoje: string): HistoricoDoCliente {
   return {
     mensal: cliente.mensal.slice(0, MESES_FECHADOS),
     compras: cliente.datasCompra,
     primeiraCompra: cliente.primeiraCompra,
-    cicloDias: cicloTipico(cliente.mensal),
+    cicloDias: cicloTipico(comprasDasNotas(cliente.datasCompra), hoje),
     temPedidoEmAberto: cliente.pedidos.length > 0,
   };
-}
-
-/** Mediana dos intervalos entre compras em 24 meses, entre 30 e 180 dias; null com menos de 4 compras. */
-function cicloTipico(mensal: FaturamentoMensal[]): number | null {
-  const mesesComCompra = mensal
-    .map((mes, indice) => ({ indice, valor: mes.valor }))
-    .filter(({ indice, valor }) => indice > ULTIMO_FECHADO - 24 && indice <= ULTIMO_FECHADO && valor > 0)
-    .map(({ indice }) => indice);
-  if (mesesComCompra.length < 4) return null;
-  const intervalos = mesesComCompra.slice(1).map((indice, i) => (indice - (mesesComCompra[i] ?? indice)) * 30.4);
-  return Math.min(180, Math.max(30, Math.round(mediana(intervalos))));
 }
 
 
@@ -393,6 +376,7 @@ function cicloTipico(mensal: FaturamentoMensal[]): number | null {
 
 function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
   const { indicadores } = cliente;
+  const evolucao = evolucao12m(cliente.mensal.slice(0, MESES_FECHADOS).map((mes) => mes.valor));
   return {
     codigo: cliente.codigo,
     codigoErp: cliente.codigoErp,
@@ -403,14 +387,8 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
     situacao: indicadores.situacao,
     ultimaCompra: indicadores.ultimaCompra,
     faturamento12m: indicadores.faturamento12m,
-    variacao12m:
-      indicadores.faturamento12mAnterior >= 2_000
-        ? indicadores.faturamento12m / indicadores.faturamento12mAnterior - 1
-        : null,
-    evolucao12m: Array.from({ length: 13 }, (_, i) => {
-      const fim = ULTIMO_FECHADO - 12 + i;
-      return somarValores(cliente.mensal, fim - 11, fim);
-    }),
+    variacao12m: variacao12m(evolucao),
+    evolucao12m: evolucao,
   };
 }
 
@@ -424,7 +402,7 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     // Na carteira fictícia todo cliente já comprou um dia; o null fica para a foto de verdade.
     clienteDesde: Number(cliente.primeiraCompra.slice(0, 4)),
     cicloDias: cliente.indicadores.cicloDias,
-    mensal: cliente.mensal.slice(ULTIMO_FECHADO - 23),
+    mensal: cliente.mensal.slice(ULTIMO_FECHADO - 23).map(({ mes, valor }) => ({ mes, valor })),
     familias,
     produtos: produtosDoCliente(cliente, familias),
     oportunidades: mix?.oportunidades ?? [],
@@ -528,51 +506,36 @@ function mesesDoAno(dados: Carteira, aFaturarNoMes: number): PainelInicio["mensa
 
 /** As listas das análises; o Início mostra os primeiros de cada uma, com as mesmas contas. */
 function montarAnalises(dados: Carteira): Analises {
-  const linhas = dados.clientes.map((cliente) => ({
-    cliente,
-    historico: historicoParaAnalise(cliente),
-    resumo: resumirCliente(cliente),
-    situacao: cliente.indicadores.situacao,
-  }));
-  const ativos = linhas.filter(({ situacao }) => situacao !== "parado" && situacao !== "inativo");
-  const comRitmo = ativos.flatMap((linha) => {
-    const ritmo = mudancaDeRitmo(linha.historico);
-    return ritmo ? [{ ...linha, ritmo }] : [];
+  const linhas = dados.clientes.map((cliente) => {
+    const historico = historicoParaAnalise(cliente, dados.hoje);
+    return { cliente, historico, resumo: resumirCliente(cliente), analise: analisarCliente(historico, dados.hoje) };
   });
-  const comVariacao = ({ resumo, ritmo }: (typeof comRitmo)[number]) => ({
-    cliente: resumo,
+  const comVariacao = (cliente: ClienteResumo, ritmo: MudancaDeRitmo) => ({
+    cliente,
     semestre: ritmo.semestre,
     semestreAnoAnterior: ritmo.semestreAnoAnterior,
     variacao: ritmo.variacao,
     variacaoPecas: ritmo.variacaoPecas,
   });
+  const comRitmo = (direcao: MudancaDeRitmo["direcao"]) =>
+    linhas.flatMap(({ analise, resumo }) => (analise.ritmo?.direcao === direcao ? [comVariacao(resumo, analise.ritmo)] : []));
   const diferenca = (item: { semestre: number; semestreAnoAnterior: number }) => item.semestre - item.semestreAnoAnterior;
   return {
     semestre: { inicio: somarMeses(dados.mesAtual, -6), fim: somarMeses(dados.mesAtual, -1) },
     pararam: linhas
-      .filter(({ historico }) => parouDeComprar(historico, dados.hoje))
-      .map(({ historico, resumo }) => ({
-        cliente: resumo,
-        diasSemComprar: diasSemComprar(historico, dados.hoje) ?? 0,
-        cicloDias: historico.cicloDias,
-        perdaMensal: perdaMensal(historico),
-      }))
+      .flatMap(({ analise, historico, resumo }) =>
+        analise.parada ? [{ cliente: resumo, ...analise.parada, cicloDias: historico.cicloDias }] : [],
+      )
       .sort((a, b) => b.perdaMensal - a.perdaMensal),
-    menos: comRitmo
-      .filter(({ ritmo, situacao }) => ritmo.direcao === "menos" && situacao === "em_risco")
-      .map(comVariacao)
-      .sort((a, b) => diferenca(a) - diferenca(b)),
-    mais: comRitmo
-      .filter(({ ritmo, situacao }) => ritmo.direcao === "mais" && situacao !== "novo")
-      .map(comVariacao)
-      .sort((a, b) => diferenca(b) - diferenca(a)),
-    novos: ativos
-      .flatMap(({ cliente, historico, resumo }) => {
-        const entrada = entradaRecente(historico, dados.hoje);
-        return entrada ? [{ cliente: resumo, ...entrada, faturadoDesde: faturadoDesde(cliente, entrada.desde) }] : [];
-      })
+    menos: comRitmo("menos").sort((a, b) => diferenca(a) - diferenca(b)),
+    mais: comRitmo("mais").sort((a, b) => diferenca(b) - diferenca(a)),
+    novos: linhas
+      .flatMap(({ analise, cliente, resumo }) =>
+        analise.entrada ? [{ cliente: resumo, ...analise.entrada, faturadoDesde: faturadoDesde(cliente, analise.entrada.desde) }] : [],
+      )
       .sort((a, b) => b.faturadoDesde - a.faturadoDesde),
-    mix: ativos
+    mix: linhas
+      .filter(({ analise }) => analise.isAtivo)
       .flatMap(({ cliente, resumo }) => {
         const mix = sugerirMix(paraMix(cliente), dados.suprens);
         return mix && mix.oportunidades.length > 0 ? [{ cliente: resumo, porte: mix.porte, oportunidades: mix.oportunidades }] : [];
@@ -615,17 +578,10 @@ function somarMes(dados: Carteira, indice: number): number {
   return somar(dados.clientes.map((c) => c.mensal[indice]?.valor ?? 0));
 }
 
-function somarValores(mensal: FaturamentoMensal[], inicio: number, fim: number): number {
+function somarValores(mensal: MesFicticio[], inicio: number, fim: number): number {
   return somar(mensal.slice(Math.max(0, inicio), fim + 1).map((mes) => mes.valor));
 }
 
 function somar(valores: number[]): number {
   return valores.reduce((soma, valor) => soma + valor, 0);
-}
-
-function mediana(valores: number[]): number {
-  const ordenados = [...valores].sort((a, b) => a - b);
-  const meio = Math.floor(ordenados.length / 2);
-  const centro = ordenados[meio] ?? 0;
-  return ordenados.length % 2 ? centro : ((ordenados[meio - 1] ?? centro) + centro) / 2;
 }

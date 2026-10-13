@@ -6,6 +6,7 @@
     "node": ">=24 <25"
   },
   "workspaces": [
+    "dominio",
     "web"
   ],
   "scripts": {

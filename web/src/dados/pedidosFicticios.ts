@@ -1,4 +1,4 @@
-import { momentoEmBrasilia } from "../calendario";
+import { momentoEmBrasilia } from "dominio/datas";
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";

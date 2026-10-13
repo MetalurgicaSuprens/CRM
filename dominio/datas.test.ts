@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   dataDoMomento,
+  diasEntre,
   diasUteisAte,
   diasUteisDoMes,
   horaDoMomento,
@@ -8,7 +9,7 @@ import {
   somarDias,
   somarMeses,
   ultimoDiaDoMes,
-} from "./calendario";
+} from "./datas.ts";
 
 describe("relógio de Brasília", () => {
   // Um aparelho em outro fuso: esta máquina já está em Brasília e não pegaria o erro.
@@ -48,6 +49,11 @@ describe("calendário", () => {
   it("conta dias úteis de segunda a sexta", () => {
     expect(diasUteisDoMes("2026-10")).toBe(22);
     expect(diasUteisAte("2026-10-07")).toBe(5);
+  });
+
+  it("conta dias entre datas de calendário", () => {
+    expect(diasEntre("2026-09-30", "2026-10-07")).toBe(7);
+    expect(diasEntre("2025-10-07", "2026-10-07")).toBe(365);
   });
 
   it("sabe o último dia de fevereiro", () => {

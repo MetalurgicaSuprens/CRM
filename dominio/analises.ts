@@ -1,9 +1,9 @@
-import { diasEntre } from "../formato";
-import type { Situacao } from "./tipos";
+import { diasEntre } from "./datas.ts";
+import type { Situacao } from "./tipos.ts";
 
 /*
- * Regras das análises (docs/plano.md, "Regras de negócio"). Na F1 alimentam os dados fictícios;
- * na F2 o extrator calcula o mesmo com os dados do ERP.
+ * Regras das análises (docs/plano.md, "Regras de negócio"). O extrator as aplica aos dados do
+ * ERP; o protótipo, aos fictícios.
  */
 
 /** O que as análises precisam saber de cada cliente. */
@@ -29,6 +29,19 @@ export type MudancaDeRitmo = {
 
 export type EntradaRecente = { tipo: "novo" | "reativado"; desde: string };
 
+/** A situação do cliente e as listas das análises em que ele entra. */
+export type AnaliseDoCliente = {
+  situacao: Situacao;
+  /** "Pararam de comprar". */
+  parada: { diasSemComprar: number; perdaMensal: number } | null;
+  /** "Comprando menos" (só quem está em risco) ou "Comprando mais" (menos o cliente novo). */
+  ritmo: MudancaDeRitmo | null;
+  /** "Novos e reativados". */
+  entrada: EntradaRecente | null;
+  /** Fora de parado e inativo: pode receber sugestão de mix. */
+  isAtivo: boolean;
+};
+
 const DIAS_PARA_INATIVO = 730;
 const DIAS_DE_CLIENTE_NOVO = 365;
 const INTERVALO_PARA_REATIVADO = 365;
@@ -37,6 +50,26 @@ const DIFERENCA_MINIMA = 2_000;
 const VARIACAO_MINIMA = 0.2;
 /** No protótipo, cada mês com compra conta como uma compra. */
 const COMPRAS_MINIMAS = 3;
+
+export function analisarCliente(cliente: HistoricoDoCliente, hoje: string): AnaliseDoCliente {
+  const situacao = classificarSituacao(cliente, hoje);
+  const isAtivo = situacao !== "parado" && situacao !== "inativo";
+  return {
+    situacao,
+    parada: parouDeComprar(cliente, hoje)
+      ? { diasSemComprar: diasSemComprar(cliente, hoje) ?? 0, perdaMensal: perdaMensal(cliente) }
+      : null,
+    ritmo: isAtivo ? ritmoDasListas(mudancaDeRitmo(cliente), situacao) : null,
+    entrada: isAtivo ? entradaRecente(cliente, hoje) : null,
+    isAtivo,
+  };
+}
+
+function ritmoDasListas(ritmo: MudancaDeRitmo | null, situacao: Situacao): MudancaDeRitmo | null {
+  if (ritmo?.direcao === "menos") return situacao === "em_risco" ? ritmo : null;
+  if (ritmo?.direcao === "mais") return situacao === "novo" ? null : ritmo;
+  return null;
+}
 
 export function classificarSituacao(cliente: HistoricoDoCliente, hoje: string): Situacao {
   const dias = diasSemComprar(cliente, hoje);

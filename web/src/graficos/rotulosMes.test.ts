@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { somarMeses } from "../calendario";
+import { somarMeses } from "dominio/datas";
 import { rotularMeses } from "./rotulosMes";
 
 const vinteECincoMeses = Array.from({ length: 25 }, (_, i) => somarMeses("2024-10", i));

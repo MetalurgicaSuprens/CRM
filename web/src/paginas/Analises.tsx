@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router";
 import { CirclePlus, RotateCcw } from "lucide-react";
-import { somarMeses } from "../calendario";
+import { somarMeses } from "dominio/datas";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Filtros } from "../componentes/Filtros";
 import { ANALISES, CartaoDaAnalise, type TipoDeAnalise } from "../componentes/IdentidadeDaAnalise";
