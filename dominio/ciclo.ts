@@ -24,15 +24,16 @@ export function comprasDasNotas(datasDasNotas: readonly string[]): string[] {
 }
 
 /**
- * Mediana dos dias entre as compras dos últimos 24 meses. null (cliente irregular) com menos de
- * 4 compras ou com a mediana fora de 30 a 180 dias.
+ * Mediana dos dias entre as compras dos últimos 24 meses, com 30 dias no mínimo: quem compra mais
+ * de uma vez por mês fica com 30. null (cliente irregular) com menos de 4 compras ou com a mediana
+ * acima de 180 dias.
  */
 export function cicloTipico(compras: readonly string[], hoje: string): number | null {
   const recentes = compras.filter((data) => diasEntre(data, hoje) <= DIAS_DA_JANELA_DO_CICLO);
   if (recentes.length < COMPRAS_PARA_O_CICLO) return null;
   const intervalos = recentes.slice(1).map((data, i) => diasEntre(recentes[i] ?? data, data));
   const ciclo = Math.round(mediana(intervalos));
-  return ciclo >= CICLO_MINIMO && ciclo <= CICLO_MAXIMO ? ciclo : null;
+  return ciclo > CICLO_MAXIMO ? null : Math.max(CICLO_MINIMO, ciclo);
 }
 
 function mediana(valores: readonly number[]): number {

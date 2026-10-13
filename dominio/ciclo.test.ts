@@ -22,8 +22,11 @@ describe("cicloTipico", () => {
     expect(cicloTipico(["2023-01-10", "2026-07-01", "2026-08-01", "2026-09-01"], HOJE)).toBeNull();
   });
 
-  it("é nulo fora de 30 a 180 dias: o cliente é irregular", () => {
-    expect(cicloTipico(["2026-08-01", "2026-08-12", "2026-08-23", "2026-09-03"], HOJE)).toBeNull();
+  it("fica em 30 dias para quem compra mais de uma vez por mês", () => {
+    expect(cicloTipico(["2026-08-01", "2026-08-12", "2026-08-23", "2026-09-03"], HOJE)).toBe(30);
+  });
+
+  it("é nulo acima de 180 dias: o cliente é irregular", () => {
     expect(cicloTipico(["2024-11-01", "2025-06-01", "2026-01-01", "2026-08-01"], HOJE)).toBeNull();
   });
 });

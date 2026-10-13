@@ -1,0 +1,87 @@
+import fs from "node:fs";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { criarApp } from "./app.ts";
+import { criarFotoAtual, type FotoAtual } from "./foto/fotoAtual.ts";
+import { CLIENTE_DE_A, CLIENTE_DE_B, MARCAS_DE_B, gravarFotoDeTeste } from "./fotoDeTeste.ts";
+import { sessaoDeTeste, type FonteDeSessao } from "./sessao.ts";
+
+const LOGIN_DE_A = sessaoDeTeste("Teste A", ["1401"]);
+const SEM_LOGIN: FonteDeSessao = () => null;
+
+let pasta: string;
+let foto: FotoAtual;
+
+beforeAll(() => {
+  pasta = gravarFotoDeTeste();
+  foto = criarFotoAtual(pasta);
+});
+
+afterAll(() => {
+  foto.fechar();
+  fs.rmSync(pasta, { recursive: true, force: true });
+});
+
+describe("acesso declarado", () => {
+  it("não sobe com uma rota que não declara config.acesso", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    await expect(async () => {
+      app.get("/api/sem-acesso", () => "nada");
+      await app.ready();
+    }).rejects.toThrow(/config.acesso/);
+  });
+
+  it("responde 401 às rotas de representante sem sessão", async () => {
+    const app = criarApp({ foto, sessaoDe: SEM_LOGIN });
+    for (const { metodo, url } of app.rotasRegistradas.filter((rota) => rota.metodo === "GET")) {
+      const resposta = await app.inject({ method: metodo, url: url.replace(":codigo", CLIENTE_DE_A) });
+      expect(resposta.statusCode, url).toBe(401);
+    }
+  });
+
+  it("não dá a sessão de teste a quem chega com outro endereço, como pelo Apache", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const resposta = await app.inject({ method: "GET", url: "/api/clientes", headers: { host: "crm.suprens.com.br" } });
+    expect(resposta.statusCode).toBe(401);
+  });
+});
+
+describe("escopo: o login A nunca vê os dados de B", () => {
+  it("percorre todas as rotas: ficha de B dá 404 e nenhuma lista traz B", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    await app.ready();
+    const rotas = app.rotasRegistradas.filter((rota) => rota.metodo === "GET");
+    expect(rotas.length).toBeGreaterThan(0);
+    for (const { url } of rotas) {
+      const resposta = await app.inject({ method: "GET", url: url.replace(":codigo", CLIENTE_DE_B) });
+      if (url.includes(":codigo")) {
+        expect(resposta.statusCode, url).toBe(404);
+        continue;
+      }
+      expect(resposta.statusCode, url).toBe(200);
+      for (const marca of MARCAS_DE_B) expect(resposta.body, `${url} mostrou ${marca}`).not.toContain(marca);
+    }
+  });
+
+  it("mostra a A a própria carteira e a ficha do cliente dele", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const clientes = await app.inject({ method: "GET", url: "/api/clientes" });
+    expect(clientes.json()).toHaveLength(1);
+    const ficha = await app.inject({ method: "GET", url: `/api/clientes/${CLIENTE_DE_A}` });
+    expect(ficha.statusCode).toBe(200);
+    expect(ficha.json()).toMatchObject({ nome: "CLIENTE DE A", codigoErp: "123456780001", pedidosEmAberto: [{ numero: "100001" }] });
+  });
+
+  it("conta no Início o pedido do A para cliente de outra carteira, sem listá-lo", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const painel = await app.inject({ method: "GET", url: "/api/painel" });
+    expect(painel.json().pedidosEmAberto).toEqual({ quantidade: 2, valor: 8_000 });
+    const pedidos = await app.inject({ method: "GET", url: "/api/pedidos" });
+    expect(pedidos.json().emAberto.map((pedido: { numero: string }) => pedido.numero)).toEqual(["100001"]);
+  });
+
+  it("recusa o código de cliente fora do formato do id", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const resposta = await app.inject({ method: "GET", url: "/api/clientes/591328580003" });
+    expect(resposta.statusCode).toBe(400);
+  });
+});

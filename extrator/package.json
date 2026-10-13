@@ -1,0 +1,15 @@
+{
+  "name": "extrator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "foto": "node src/principal.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dominio": "0.0.0",
+    "oracledb": "6.10.0"
+  }
+}
