@@ -1,11 +1,12 @@
+import type { ReactNode } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
 import { formatarVariacao } from "../formato";
 import estilos from "./Variacao.module.css";
 
 type Props = {
   razao: number | null;
-  /** Período de comparação, ex.: "vs 2025". */
-  referencia?: string;
+  /** Com o que se compara, ex.: "vs 2025". */
+  referencia?: ReactNode;
 };
 
 const LIMITE_ESTAVEL = 0.005;

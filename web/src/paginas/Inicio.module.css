@@ -27,6 +27,10 @@
   color: var(--cor-texto-suave);
 }
 
+.linhaDoDetalhe {
+  display: block;
+}
+
 .verTodos {
   display: inline-flex;
   align-items: center;

@@ -97,6 +97,8 @@ function VerTodos({ lista, quantidade }: { lista: keyof PainelInicio["destaques"
 function Indicadores({ painel }: { painel: PainelInicio }) {
   const { mesAtual, ano, pedidosEmAberto } = painel;
   const nomeDoMes = formatarNomeDoMes(mesAtual.mes);
+  const mesDoAnoAnterior = formatarMesAno(`${anoDe(painel) - 1}${mesAtual.mes.slice(4)}`);
+  const projecao = mesAtual.faturado + mesAtual.aFaturarNoMes;
   return (
     <div className={estilos.indicadores}>
       <Indicador
@@ -104,15 +106,25 @@ function Indicadores({ painel }: { painel: PainelInicio }) {
         rotulo={`Faturado em ${nomeDoMes}`}
         icone={ReceiptText}
         valor={<Valor valor={mesAtual.faturado} compacto />}
-        detalhe={<Variacao razao={razao(mesAtual.faturado, mesAtual.anoAnteriorMesmoDiaUtil)} referencia={`vs ${formatarMesAno(`${anoDe(painel) - 1}${mesAtual.mes.slice(4)}`)}, mesmo dia útil`} />}
+        detalhe={
+          <Variacao
+            razao={razao(mesAtual.faturado, mesAtual.anoAnteriorMesmoDiaUtil)}
+            referencia={
+              <>
+                vs <Valor valor={mesAtual.anoAnteriorMesmoDiaUtil} compacto /> até o {mesAtual.diaUtil}º dia útil de {mesDoAnoAnterior}
+              </>
+            }
+          />
+        }
       />
       <Indicador
         rotulo={`Projeção de ${nomeDoMes}`}
         icone={Gauge}
-        valor={<Valor valor={mesAtual.faturado + mesAtual.aFaturarNoMes} compacto />}
+        valor={<Valor valor={projecao} compacto />}
         detalhe={
           <>
             com <Valor valor={mesAtual.aFaturarNoMes} compacto /> a faturar
+            <DistanciaDoAnoAnterior projecao={projecao} mesInteiro={mesInteiroDoAnoAnterior(painel)} mes={mesDoAnoAnterior} />
           </>
         }
       />
@@ -164,6 +176,30 @@ function AtencaoNaCarteira({ destaques }: { destaques: PainelInicio["destaques"]
       </ul>
     </Cartao>
   );
+}
+
+/** Quanto a projeção ainda precisa para igualar o mesmo mês, inteiro, do ano anterior. */
+function DistanciaDoAnoAnterior({ projecao, mesInteiro, mes }: { projecao: number; mesInteiro: number; mes: string }) {
+  if (mesInteiro <= 0) return null;
+  const falta = mesInteiro - projecao;
+  return (
+    <span className={estilos.linhaDoDetalhe}>
+      {falta > 0 ? (
+        <>
+          faltam <Valor valor={falta} compacto /> para igualar {mes}
+        </>
+      ) : (
+        <>
+          <Valor valor={-falta} compacto /> acima de {mes}
+        </>
+      )}
+    </span>
+  );
+}
+
+/** No gráfico, o ano anterior do mês corrente é o mês inteiro. */
+function mesInteiroDoAnoAnterior(painel: PainelInicio): number {
+  return painel.mensal.find((mes) => mes.mes === painel.mesAtual.mes)?.anoAnterior ?? 0;
 }
 
 function razao(atual: number, anterior: number): number | null {

@@ -223,7 +223,11 @@ function Dica({ barra, rotulos, centro, larguraDesenho }: PropsDica) {
         ) : null}
         {isMesCorrente(barra) ? <LinhaDica chave={estilos.chaveAFaturar} valor={barra.aFaturar} rotulo={rotulos.aFaturar ?? "A faturar"} /> : null}
         {barra.comparacao != null && rotulos.comparacao ? (
-          <LinhaDica chave={estilos.chaveComparacao} valor={barra.comparacao} rotulo={rotulos.comparacao} />
+          <LinhaDica
+            chave={estilos.chaveComparacao}
+            valor={barra.comparacao}
+            rotulo={isMesCorrente(barra) ? `${rotulos.comparacao}, mês inteiro` : rotulos.comparacao}
+          />
         ) : null}
       </div>
       {fechado && barra.comparacao ? (

@@ -72,7 +72,7 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
   - O relógio vale para:
     - o rótulo "hoje" da barra;
     - a data mínima de entrega (MontarPedido.tsx:67 e 116; pedido.ts:70-80);
-    - o dia por extenso e a saudação do Início (Inicio.tsx:28-29 e 177-188);
+    - o dia por extenso e a saudação do Início (Inicio.tsx:28-29 e 213-224);
     - todo momento gravado no app.db: "Enviado" e "Atualizado" em Pedidos, "Rascunho salvo" e o cabeçalho e o Andamento do Detalhe (formato.ts:127-139).
 - A CRVN tem uma linha por gerente e supervisor (PK em ABC71-CR.md:5475). Por isso o nome é agrupado por VENDEDOR.
 - O SGI só lê a CRVN na empresa 20210001 (`untDmVenPvd.dfm:499-503`). Sem esse filtro, o nome pode vir de outra EMP_FIL.
@@ -86,30 +86,30 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Faturado no mês | "Faturado em outubro" (Inicio.tsx:98-104) | RF do mês até hoje, atribuída ao representante | NFME, NFDE, `NFME.VENDEDOR`, CRCLH | extrator |
-| Mesmo dia útil do ano anterior | "vs out/2025, mesmo dia útil" | RF atribuída no mesmo mês do ano anterior, até o Nº dia útil | o mesmo, mais `SGI5_TAB_DP_CALEND` | extrator |
-| Dia útil e dias úteis | "8º de 22 dias úteis" (Inicio.tsx:173-176) | Dias com `NVL(TRIM(CAL_DUT_COM),'SIM') <> 'NAO'`, como o SGI (`untFunMat.pas:676`): de 1º até hoje e no mês todo | `SGI5_TAB_DP_CALEND` | extrator |
-| Projeção | "Projeção de outubro", com "X a faturar" (Inicio.tsx:105-114) | Faturado mais o valor em aberto do representante com entrega até o fim do mês | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
+| Faturado no mês | "Faturado em outubro" (Inicio.tsx:104-119) | RF do mês até hoje, atribuída ao representante | NFME, NFDE, `NFME.VENDEDOR`, CRCLH | extrator |
+| Mesmo dia útil do ano anterior | "+82% vs R$ 172 mil até o 7º dia útil de out/25", com a base à mostra (Inicio.tsx:109-118) | RF atribuída no mesmo mês do ano anterior, até o Nº dia útil | o mesmo, mais `SGI5_TAB_DP_CALEND` | extrator |
+| Dia útil e dias úteis | "8º de 22 dias úteis" (Inicio.tsx:213-216) | Dias com `NVL(TRIM(CAL_DUT_COM),'SIM') <> 'NAO'`, como o SGI (`untFunMat.pas:676`): de 1º até hoje e no mês todo | `SGI5_TAB_DP_CALEND` | extrator |
+| Projeção | "Projeção de outubro", com "X a faturar" e "faltam X para igualar out/25" (Inicio.tsx:120-130 e 181-203) | Faturado mais o valor em aberto do representante com entrega até o fim do mês. A segunda linha compara a projeção com o mesmo mês inteiro do ano anterior; acima dele, mostra "X acima de out/25" | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
 | Acumulado do ano | "Acumulado de 2026" | Soma dos meses do ano corrente | (foto) | servidor |
 | Acumulado do ano anterior | "vs 2025" | Janeiro até o mês anterior inteiros, mais o mesmo dia útil do mês corrente | (foto) | servidor |
-| Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:121-126) | Contagem e soma dos pedidos em aberto atribuídos ao representante | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
-| Gráfico mensal | Barras do ano, comparação com o ano anterior e "A faturar no mês" (BarrasMensais.tsx:154-160) | Mês sem dado ainda é nulo. O ano anterior usa o mês inteiro | NFME, NFDE, VEPD | extrator; a faturar: servidor |
-| Saudação | "Boa tarde, Carlos" (Inicio.tsx:28) | Primeiro nome do usuário; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | nenhuma (proposta da pergunta 20) | nome: app.db; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:182-188) |
+| Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:137-142) | Contagem e soma dos pedidos em aberto atribuídos ao representante | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
+| Gráfico mensal | Barras do ano, comparação com o ano anterior e "A faturar no mês" (BarrasMensais.tsx:156-170) | Mês sem dado ainda é nulo. O ano anterior usa o mês inteiro; na dica do mês corrente, ele aparece como "2025, mês inteiro" (BarrasMensais.tsx:214-240) | NFME, NFDE, VEPD | extrator; a faturar: servidor |
+| Saudação | "Boa tarde, Carlos" (Inicio.tsx:28) | Primeiro nome do usuário; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | nenhuma (proposta da pergunta 20) | nome: app.db; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:218-224) |
 
 **Destaques (visão do cliente, sobre a carteira)**
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Atenção na carteira | Quantidade e total de Pararam, Comprando menos, Comprando mais e Novos (Inicio.tsx:136-163) | Soma de todos os clientes da lista, não só dos 5 mostrados | listas das Análises | servidor |
-| Cartão "Pararam de comprar" | 5 primeiros: nome, cidade/UF, "última compra há X" e o valor por mês, com link para a ficha (Inicio.tsx:39-58) | Ordem da análise | listas das Análises e `cliente` | servidor |
-| Cartão "Comprando menos" | 5 primeiros: nome, cidade/UF, variação e diferença, com link para a ficha (Inicio.tsx:59-78) | Ordem da análise | listas das Análises e `cliente` | servidor |
+| Atenção na carteira | Quantidade e total de Pararam, Comprando menos, Comprando mais e Novos (Inicio.tsx:152-179) | Soma de todos os clientes da lista, não só dos 5 mostrados | listas das Análises | servidor |
+| Cartão "Pararam de comprar" | 5 primeiros: nome, cidade/UF, "última compra há X" e o valor por mês, com link para a ficha (Inicio.tsx:43-62) | Ordem da análise | listas das Análises e `cliente` | servidor |
+| Cartão "Comprando menos" | 5 primeiros: nome, cidade/UF, variação e diferença, com link para a ficha (Inicio.tsx:63-82) | Ordem da análise | listas das Análises e `cliente` | servidor |
 
 - **Atribuição (plano.md:219).**
   - Vale o vendedor da nota (`NFME.VENDEDOR`).
   - Se ele vier nulo ou 0, vale o dono do cliente na data da nota, pelas trocas de `VEND_1` no CRCLH.
   - Antes da primeira troca, vale o "de" dela. Sem trocas, vale o `VEND_1` atual.
   - O extrator aplica a regra na LAN. Para os indicadores, grava as somas por representante e mês (`painel_mes`). Para a aba Faturados, grava só o representante já atribuído de cada nota (`nota.representante`, pergunta 23). Nada do CRCLH vai para a foto (plano.md:35).
-- **Mesmo dia útil (proposta a confirmar).** Com N = dia útil de hoje, soma-se o mesmo mês do ano anterior até antes do (N+1)º dia útil. Assim entram as notas de sábado ou de feriado logo depois do Nº. Se o mês do ano anterior tiver menos de N dias úteis, entra o mês inteiro. O fictício faz só uma proporção (ficticio.ts:446) e não serve de regra.
+- **Mesmo dia útil (proposta a confirmar).** Em 2026-10-13, o Lucas estranhou o "+82%" ao lado dos R$ 610 mil de out/25 no gráfico: a base (R$ 172 mil até o 7º dia útil) não aparecia. Desde então o cartão mostra a base, e a dica do gráfico diz "mês inteiro". Com N = dia útil de hoje, soma-se o mesmo mês do ano anterior até antes do (N+1)º dia útil. Assim entram as notas de sábado ou de feriado logo depois do Nº. Se o mês do ano anterior tiver menos de N dias úteis, entra o mês inteiro. O fictício faz só uma proporção (ficticio.ts:446) e não serve de regra.
 - **A faturar no mês.**
   - Entram os itens com saldo e `VEPD.DT_ENTREGA` até o último dia do mês, inclusive os vencidos.
   - Conta a entrega de cada item, como no protótipo (CRM-prototipo/REGRAS.md:52). O fictício usa a entrega do pedido inteiro.
