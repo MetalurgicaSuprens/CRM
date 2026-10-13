@@ -70,6 +70,9 @@ const NOMES = [
   "Pioneira", "Campo Belo", "Vitória", "Estrela", "Mirante", "Nova Era", "Colina", "Jacarandá", "Itapuã",
 ];
 const SUFIXOS = ["Ltda", "Comércio Ltda", "Distribuição Ltda", "S.A.", "Indústria e Comércio Ltda"];
+/** Como no ERP, há pessoas físicas na carteira, todas do mercado praça. */
+const PESSOAS_FISICAS = ["Rogério Tavares", "Sandra Moreira", "Valter Nunes"];
+const CLIENTES_DA_PRACA_ENTRE_PESSOAS_FISICAS = 15;
 const CIDADES: readonly (readonly [string, string])[] = [
   ["Ribeirão Preto", "SP"], ["Campinas", "SP"], ["Piracicaba", "SP"], ["Bauru", "SP"], ["Franca", "SP"],
   ["Sorocaba", "SP"], ["São José do Rio Preto", "SP"], ["Londrina", "PR"], ["Maringá", "PR"],
@@ -90,6 +93,7 @@ type Contexto = { hoje: string; mesAtual: string; diaUtil: number; diasUteis: nu
 
 type ClienteFicticio = {
   codigo: string;
+  codigoErp: string | null;
   nome: string;
   razaoSocial: string;
   cidade: string;
@@ -197,7 +201,8 @@ function gerarCarteira(atualizadoEm: string): Carteira {
   const aleatorioDosQueVoltaram = criarAleatorio(SEMENTE + 2);
   clientes.push(...Array.from({ length: CLIENTES_QUE_VOLTARAM }, () => gerarCliente(aleatorioDosQueVoltaram, contexto, "voltou")));
   const outros = gerarOutrosClientesDaSuprens(criarAleatorio(SEMENTE + 1));
-  return { ...contexto, atualizadoEm, clientes, suprens: [...clientes.map(paraMix), ...outros] };
+  const carteira = comPessoasFisicas(clientes);
+  return { ...contexto, atualizadoEm, clientes: carteira, suprens: [...carteira.map(paraMix), ...outros] };
 }
 
 function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Perfil): ClienteFicticio {
@@ -212,6 +217,7 @@ function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Per
   const codigo = `${aleatorio.inteiro(10_000_000, 99_999_999)}000${aleatorio.inteiro(1, 3)}`;
   const base = {
     codigo,
+    codigoErp: codigo,
     nome,
     razaoSocial: `${nome} ${aleatorio.escolher(SUFIXOS)}`,
     cidade,
@@ -225,6 +231,18 @@ function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Per
     pedidos: perfil === "parou" ? [] : gerarPedidos(aleatorio, porteMensal, contexto),
   };
   return { ...base, indicadores: calcularIndicadores(base, contexto) };
+}
+
+/** Troca algumas empresas da praça por pessoas físicas: nome de gente e nenhum código do ERP. */
+function comPessoasFisicas(clientes: ClienteFicticio[]): ClienteFicticio[] {
+  const daPraca = clientes.filter((cliente) => cliente.mercado === "PRACA");
+  const nomes = new Map(
+    PESSOAS_FISICAS.map((nome, i) => [daPraca[(i + 1) * CLIENTES_DA_PRACA_ENTRE_PESSOAS_FISICAS], nome]),
+  );
+  return clientes.map((cliente) => {
+    const nome = nomes.get(cliente);
+    return nome ? { ...cliente, nome, razaoSocial: nome, codigoErp: null } : cliente;
+  });
 }
 
 function gerarOutrosClientesDaSuprens(aleatorio: Aleatorio): ClienteNoMix[] {
@@ -377,6 +395,7 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
   const { indicadores } = cliente;
   return {
     codigo: cliente.codigo,
+    codigoErp: cliente.codigoErp,
     nome: cliente.nome,
     cidade: cliente.cidade,
     uf: cliente.uf,

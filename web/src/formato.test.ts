@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   diasEntre,
+  formatarCodigoDoCliente,
   formatarCodigosDoRepresentante,
   formatarCompacto,
   formatarContagem,
@@ -131,5 +132,15 @@ describe("formatarCodigosDoRepresentante", () => {
   it("junta os códigos do mesmo login com vírgula e 'e'", () => {
     expect(formatarCodigosDoRepresentante(["1118", "1119"])).toBe("Representantes 1118 e 1119");
     expect(formatarCodigosDoRepresentante(["1118", "1119", "1120"])).toBe("Representantes 1118, 1119 e 1120");
+  });
+});
+
+describe("formatarCodigoDoCliente", () => {
+  it("mostra o código do ERP da empresa", () => {
+    expect(formatarCodigoDoCliente("123456780001")).toBe("123456780001");
+  });
+
+  it("mostra a pessoa física sem código, porque o código dela no ERP é o CPF", () => {
+    expect(formatarCodigoDoCliente(null)).toBe("Pessoa física");
   });
 });

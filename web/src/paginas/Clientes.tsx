@@ -13,7 +13,7 @@ import { useOrdenacao } from "../componentes/useOrdenacao";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
 import type { ClienteResumo, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarData, formatarTempoDesde, normalizarParaBusca } from "../formato";
+import { formatarCodigoDoCliente, formatarData, formatarTempoDesde, normalizarParaBusca } from "../formato";
 import { AmostraReferencia, Sparkline } from "../graficos/Sparkline";
 import { Carregando } from "./Carregando";
 import estilos from "./Clientes.module.css";
@@ -130,7 +130,7 @@ function LinhaCliente({ cliente, hoje }: { cliente: ClienteResumo; hoje: string 
       <span className={estilos.identificacao}>
         <span className={estilos.nome}>{cliente.nome}</span>
         <span className={estilos.local}>
-          {cliente.cidade}/{cliente.uf} · {cliente.codigo}
+          {cliente.cidade}/{cliente.uf} · {formatarCodigoDoCliente(cliente.codigoErp)}
         </span>
       </span>
       <span className={estilos.situacao}>
@@ -165,5 +165,5 @@ function contar(clientes: ClienteResumo[], filtro: FiltroSituacao): number {
 function correspondeABusca(cliente: ClienteResumo, busca: string): boolean {
   const termo = normalizarParaBusca(busca.trim());
   if (!termo) return true;
-  return [cliente.nome, cliente.codigo, cliente.cidade].some((campo) => normalizarParaBusca(campo).includes(termo));
+  return [cliente.nome, cliente.codigoErp ?? "", cliente.cidade].some((campo) => normalizarParaBusca(campo).includes(termo));
 }

@@ -30,7 +30,7 @@ import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import type { FichaCliente as Ficha, Mercado, PedidoEmAberto, Porte, ProdutoComprado } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
+import { formatarCodigoDoCliente, formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
 import { BarrasMensais } from "../graficos/BarrasMensais";
 import { Carregando } from "./Carregando";
@@ -49,7 +49,7 @@ export function FichaCliente() {
         antes={<Voltar para="/clientes" rotulo="Clientes" />}
         titulo={ficha.nome}
         selo={<SituacaoCliente situacao={ficha.situacao} tamanho="grande" />}
-        descricao={ficha.razaoSocial}
+        descricao={ficha.razaoSocial === ficha.nome ? undefined : ficha.razaoSocial}
         aoLado={<DadosDoCliente ficha={ficha} />}
         acoes={<NovoPedido codigo={ficha.codigo} />}
       />
@@ -98,7 +98,7 @@ function DadosDoCliente({ ficha }: { ficha: Ficha }) {
     <dl className={estilos.dados}>
       <Dado icone={MapPin} rotulo="Cidade" valor={`${ficha.cidade}/${ficha.uf}`} />
       <Dado icone={Store} rotulo="Mercado" valor={ROTULOS_DE_MERCADO[ficha.mercado]} />
-      <Dado icone={Hash} rotulo="Código" valor={ficha.codigo} />
+      <Dado icone={Hash} rotulo="Código" valor={formatarCodigoDoCliente(ficha.codigoErp)} />
       <Dado icone={Handshake} rotulo="Cliente desde" valor={ficha.clienteDesde === null ? "—" : String(ficha.clienteDesde)} />
     </dl>
   );

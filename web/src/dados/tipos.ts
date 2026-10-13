@@ -31,7 +31,10 @@ export type SituacaoDosDados = {
 };
 
 export type ClienteResumo = {
+  /** Identificador do cliente no CRM: endereço da ficha e rascunhos. Não aparece na tela. */
   codigo: string;
+  /** Código do cliente no ERP, para mostrar e buscar. Nulo na pessoa física, em que ele é o CPF. */
+  codigoErp: string | null;
   nome: string;
   cidade: string;
   uf: string;

@@ -54,3 +54,16 @@ describe("contrato das outras telas", () => {
     }
   });
 });
+
+describe("pessoa física na carteira", () => {
+  const pessoasFisicas = clientesFicticios().filter((cliente) => cliente.codigoErp === null);
+
+  it("existe, como no ERP, e é sempre do mercado praça", () => {
+    expect(pessoasFisicas.length).toBeGreaterThan(0);
+    for (const cliente of pessoasFisicas) expect(cliente.mercado).toBe("PRACA");
+  });
+
+  it("não leva o código do ERP para a ficha, porque nele está o CPF", () => {
+    for (const cliente of pessoasFisicas) expect(fichaFicticia(cliente.codigo)?.codigoErp).toBeNull();
+  });
+});

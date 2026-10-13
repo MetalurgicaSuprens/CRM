@@ -112,6 +112,11 @@ export function formatarCodigosDoRepresentante(codigos: string[]): string {
   return `${rotulo} ${LISTA.format(codigos)}`;
 }
 
+/** O código do ERP do cliente. A pessoa física aparece sem ele, porque lá o código é o CPF. */
+export function formatarCodigoDoCliente(codigoErp: string | null): string {
+  return codigoErp ?? "Pessoa física";
+}
+
 /** "1 cliente", "9 clientes". */
 export function formatarContagem(quantidade: number, singular: string, plural: string): string {
   return `${formatarNumero(quantidade)} ${quantidade === 1 ? singular : plural}`;
