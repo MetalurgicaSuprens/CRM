@@ -6,6 +6,7 @@ import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { ETAPAS, EtapaDoPedido } from "../componentes/EtapaDoPedido";
 import { Filtros } from "../componentes/Filtros";
+import type { TomDoSelo } from "../componentes/Selo";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho } from "../dados/api";
@@ -18,12 +19,12 @@ import estilos from "./Pedidos.module.css";
 
 type Aba = keyof PainelDePedidos;
 
-/** Nome e ícone de cada aba: os mesmos no filtro e no cartão da lista. */
-const ABAS: Record<Aba, { rotulo: string; icone: LucideIcon }> = {
-  enviados: { rotulo: "Enviados pelo CRM", icone: Send },
-  rascunhos: { rotulo: "Rascunhos", icone: FilePen },
-  emAberto: { rotulo: "Em aberto no ERP", icone: ClipboardList },
-  faturados: { rotulo: "Faturados", icone: ReceiptText },
+/** Nome, ícone e tom de cada aba: os mesmos no filtro e no cartão da lista. */
+const ABAS: Record<Aba, { rotulo: string; icone: LucideIcon; tom: TomDoSelo }> = {
+  enviados: { rotulo: "Enviados pelo CRM", icone: Send, tom: "neutro" },
+  rascunhos: { rotulo: "Rascunhos", icone: FilePen, tom: "rascunho" },
+  emAberto: { rotulo: "Em aberto no ERP", icone: ClipboardList, tom: "pendente" },
+  faturados: { rotulo: "Faturados", icone: ReceiptText, tom: "ok" },
 };
 
 const ORDEM_DAS_ABAS: readonly Aba[] = ["enviados", "rascunhos", "emAberto", "faturados"];
@@ -73,11 +74,11 @@ function AbaEscolhida({ aba, painel, situacao, recarregar }: PropsDaAba) {
   }
 }
 
-/** O cartão de cada lista leva o nome e o ícone da aba. */
+/** O cartão de cada lista leva o nome, o ícone e o tom da aba. */
 function CartaoDaAba({ aba, subtitulo, children }: { aba: Aba; subtitulo: string; children: ReactNode }) {
-  const { rotulo, icone } = ABAS[aba];
+  const { rotulo, icone, tom } = ABAS[aba];
   return (
-    <Cartao titulo={rotulo} icone={icone} subtitulo={subtitulo}>
+    <Cartao titulo={rotulo} icone={icone} tom={tom === "neutro" ? undefined : tom} subtitulo={subtitulo}>
       {children}
     </Cartao>
   );

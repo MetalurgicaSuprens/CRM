@@ -1,8 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import estilos from "./Selo.module.css";
 
-/** "novo" é o tom do cliente que acabou de chegar; os demais seguem a situação (bom, atenção, crítico, sem situação). */
-export type TomDoSelo = "ok" | "alerta" | "critico" | "neutro" | "novo";
+/**
+ * Os primeiros seguem a situação (bom, atenção, crítico, sem situação); "novo" é o cliente que acabou
+ * de chegar; "rascunho" e "pendente" são o pedido ainda não enviado e o que está em aberto no ERP.
+ */
+export type TomDoSelo = "ok" | "alerta" | "critico" | "neutro" | "novo" | "rascunho" | "pendente";
 
 type Props = {
   rotulo: string;

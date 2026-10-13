@@ -60,6 +60,16 @@
   color: var(--cor-novo);
 }
 
+.rascunho {
+  background: linear-gradient(135deg, var(--cor-rascunho-fundo), color-mix(in srgb, var(--cor-rascunho-fundo) 82%, var(--cor-rascunho)));
+  color: var(--cor-rascunho);
+}
+
+.pendente {
+  background: linear-gradient(135deg, var(--cor-pendente-fundo), color-mix(in srgb, var(--cor-pendente-fundo) 82%, var(--cor-pendente)));
+  color: var(--cor-pendente);
+}
+
 .titulos {
   display: flex;
   flex-direction: column;

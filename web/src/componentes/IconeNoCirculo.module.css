@@ -38,6 +38,16 @@
   background: linear-gradient(135deg, var(--cor-novo-fundo), color-mix(in srgb, var(--cor-novo-fundo) 82%, var(--cor-novo)));
 }
 
+.rascunho {
+  color: var(--cor-rascunho);
+  background: linear-gradient(135deg, var(--cor-rascunho-fundo), color-mix(in srgb, var(--cor-rascunho-fundo) 82%, var(--cor-rascunho)));
+}
+
+.pendente {
+  color: var(--cor-pendente);
+  background: linear-gradient(135deg, var(--cor-pendente-fundo), color-mix(in srgb, var(--cor-pendente-fundo) 82%, var(--cor-pendente)));
+}
+
 /* Sem situação: o grafite da interface sobre cinza, como nos títulos dos cartões */
 .neutro {
   color: var(--cor-acento);

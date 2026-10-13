@@ -67,6 +67,13 @@
   --cor-novo: #6a4fb6;
   --cor-novo-fundo: #eeeafa;
 
+  /* Etapas em Pedidos, a pedido do Lucas: o rascunho em cinza, sem o peso do preto de "Enviados" (ícone branco por cima: 5,3:1) */
+  --cor-rascunho: #6b6b69;
+  --cor-rascunho-fundo: #efefed;
+  /* Em aberto no ERP: o âmbar que o alerta tinha antes do amarelo (marca alerta-mostarda); 5,5:1 sobre o fundo */
+  --cor-pendente: #7f5600;
+  --cor-pendente-fundo: #f5ecd8;
+
   --fonte-texto: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --fonte-titulo: "Oswald", "IBM Plex Sans", system-ui, sans-serif;
 

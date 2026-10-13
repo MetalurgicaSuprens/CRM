@@ -62,6 +62,16 @@
   --tom-fundo: var(--cor-novo-fundo);
 }
 
+.rascunho {
+  --tom: var(--cor-rascunho);
+  --tom-fundo: var(--cor-rascunho-fundo);
+}
+
+.pendente {
+  --tom: var(--cor-pendente);
+  --tom-fundo: var(--cor-pendente-fundo);
+}
+
 .neutro {
   --tom: var(--cor-acento);
   --tom-fundo: var(--cor-acento-fundo);

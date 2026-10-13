@@ -39,3 +39,13 @@
   color: var(--cor-novo);
   background: var(--cor-novo-fundo);
 }
+
+.rascunho {
+  color: var(--cor-rascunho);
+  background: var(--cor-rascunho-fundo);
+}
+
+.pendente {
+  color: var(--cor-pendente);
+  background: var(--cor-pendente-fundo);
+}
