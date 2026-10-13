@@ -53,7 +53,7 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
   - valor `NFDE.VLR_TOTAL − NVL(NFDE.Z_FRANCA_DESC,0)`, com o desconto do item e não o do cabeçalho;
   - peças com CT ×100.
   - Fonte: `Gestao/server/src/producao/foto/moduloVendasEntradas.ts:13, 25-26 e 32-43` e `moduloVendasClientes.ts:25-36`.
-- **Código do cliente** é o código do ERP que a tela mostra, só de empresa (`codigoErp`). O identificador interno do cliente, no endereço da ficha e nos rascunhos, é outro: o id opaco proposto em Clientes.
+- **Código do cliente** é o código do ERP que a tela mostra, só de empresa (`codigoErp`). O identificador interno do cliente, no endereço da ficha e nos rascunhos, é outro: o id opaco (decidido em 2026-10-13, ver Clientes).
 
 ## 1. Barra superior (todas as telas)
 
@@ -136,7 +136,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 |---|---|---|---|---|
 | Carteira | "N clientes na carteira" (Clientes.tsx:67) | Clientes com `VEND_1` igual ao código da sessão (decidido em 2026-10-09) | `CRCL.EMP_FIL`, `CLIENTE`, `VEND_1` | extrator |
 | Código | "Ribeirão Preto/SP · 123456780001" ou "Bauru/SP · Pessoa física" (Clientes.tsx:133; formato.ts:116) e busca | Empresa: o código do ERP. Pessoa física: nenhum, porque o código dela é o CPF (decisão do Lucas em 2026-10-13) | `CRCL.CLIENTE`, só com `FIS_JURID = 'J'` | extrator |
-| Identificador | URL `/clientes/:codigo`, rascunhos e pedidos | Proposta: id opaco para todos os clientes; nunca aparece na tela | nenhuma; gerado na LAN | extrator |
+| Identificador | URL `/clientes/:codigo`, rascunhos e pedidos | Id opaco para todos os clientes (decidido em 2026-10-13); nunca aparece na tela | nenhuma; gerado na LAN | extrator |
 | Nome | Título da linha, busca, ordem A–Z | Fantasia; se vazio, razão social; razão completa quando o fantasia vem cortado | `CRCL.NOM_FANTAS`, `RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
 | Cidade e UF | "Ribeirão Preto/SP" | Nome do IBGE pelo código de `RESERVADO7` (a confirmar); sem ele, `TRIM(CIDADE)`. Exterior: "EX" | `CRCL.CIDADE`, `ESTADO`, `RESERVADO7` | extrator |
 | Situação | Selo e filtros com contagem (Clientes.tsx:24-30, 69-74 e 136-138) | Ver Análises | NFME, NFDE, VEPM, VEPD | extrator |
@@ -157,8 +157,8 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 - **Código do cliente (decisão do Lucas em 2026-10-13).**
   - Na empresa, `CRCL.CLIENTE` é a raiz do CNPJ em 8 dígitos mais a filial em 4 (OracleDB/docs/licoes.md:97). Os dígitos verificadores se calculam a partir dos 12, então mostrar o código é mostrar o CNPJ. O CNPJ é público, e o Lucas decidiu mostrá-lo (CLAUDE.md, regra 3; plano.md:20).
   - Na pessoa física, o código é o CPF. Em 193 dos 196 clientes com vendedor, `CRCL.CLIENTE` são os 9 primeiros dígitos do CPF, "00" e os 2 dígitos verificadores (contagem de 2026-10-13, sem exibir dados). Ele nunca sai da LAN, e a tela mostra "Pessoa física".
-  - O endereço da ficha também não pode levar o CPF. Proposta, para todos os clientes:
-    - o extrator gera um id opaco, estável entre fotos: um HMAC de EMP_FIL + CLIENTE com uma chave que só existe na LAN, ou um sequencial com a tabela de correspondência na LAN;
+  - O endereço da ficha também não pode levar o CPF. Decidido em 2026-10-13 (opção A), para todos os clientes, empresa ou pessoa física:
+    - o extrator gera um id opaco, estável entre fotos: um HMAC de EMP_FIL + CLIENTE com uma chave que só existe na LAN. Não precisa de tabela de correspondência: a LAN recalcula o id dos clientes da carteira;
     - ele precisa ser estável porque rascunhos e pedidos no app.db o guardam;
     - a LAN converte de volta para `CRCL.CLIENTE` só ao montar o arquivo do SGI (`PV1_CLI`);
     - mesmo opaco, o código que chega do navegador (URL ou rascunho) é entrada hostil: fora da carteira da sessão, a resposta é 404.
@@ -772,7 +772,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 17. **Código do cliente.**
     - Decidido em 2026-10-13: a tela mostra o código do ERP da empresa, porque o CNPJ é público. Na pessoa física, mostra "Pessoa física", porque o código dela é o CPF (ver Clientes).
-    - Aprovar o id opaco gerado na LAN para o endereço da ficha, os rascunhos e a auditoria (HMAC com chave só na LAN, ou sequencial com correspondência na LAN).
+    - Decidido em 2026-10-13 (opção A): id opaco para todos os clientes, no endereço da ficha, nos rascunhos e na auditoria. É um HMAC com chave que só existe na LAN.
 18. **Carteira.**
     - Decidido em 2026-10-09: vale `CRCL.VEND_1`, o campo vendedor do cliente, igual ao código da sessão. Segue em aberto o filtro `EMP_FIL = 20210001`, que o SGI não usa.
     - Decidido em 2026-10-13: a pessoa física fica no CRM, com o nome e sem o código do ERP, que é o CPF. A tela Representantes - Clientes e a exportação do SGI para os representantes levam só `FIS_JURID='J'` (`Representantes - Clientes {REPCLI}/untDmVenRepCli.dfm:626-631`; `Representantes - Atualicacao Base Dados {REPABD}/untDmRepAbd.dfm:159-164`).
