@@ -112,6 +112,8 @@
 .codigoUsuario {
   font-size: var(--tam-pequeno);
   color: var(--cor-texto-suave);
+  /* Com dois ou mais códigos a linha quebra: os números ficam juntos, e não "e" no fim da linha. */
+  text-wrap: balance;
 }
 
 .sair {

@@ -23,7 +23,11 @@ export type SituacaoDosDados = {
    * atrasada, a data dele fica à frente de `hoje`.
    */
   relogio: string;
-  representante: { codigo: string; nome: string };
+  /**
+   * O login da sessão. Ele pode ter mais de um código de representante (a mesma representação com
+   * dois números), e as telas somam todos.
+   */
+  representante: { nome: string; codigos: string[] };
 };
 
 export type ClienteResumo = {

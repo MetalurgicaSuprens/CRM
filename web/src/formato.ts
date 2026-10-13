@@ -13,6 +13,7 @@ const MESES_LONGOS = [
   "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ];
 const MENOS = "−";
+const LISTA = new Intl.ListFormat("pt-BR", { type: "conjunction" });
 /** Em UTC porque a data já chega pronta: o fuso do aparelho não pode mudar o dia. */
 const DIA_POR_EXTENSO = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
@@ -103,6 +104,12 @@ export function formatarTempoDesde(dataIso: string, hojeIso: string): string {
   if (dias < 365) return `há ${Math.round(dias / 30.4)} meses`;
   const anos = Math.floor(dias / 365);
   return anos === 1 ? "há mais de 1 ano" : `há mais de ${anos} anos`;
+}
+
+/** "Representante 1401", "Representantes 1118 e 1119". */
+export function formatarCodigosDoRepresentante(codigos: string[]): string {
+  const rotulo = codigos.length === 1 ? "Representante" : "Representantes";
+  return `${rotulo} ${LISTA.format(codigos)}`;
 }
 
 /** "1 cliente", "9 clientes". */

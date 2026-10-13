@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   diasEntre,
+  formatarCodigosDoRepresentante,
   formatarCompacto,
   formatarContagem,
   formatarData,
@@ -119,5 +120,16 @@ describe("datas", () => {
     expect(formatarTempoDesde("2026-09-25", "2026-10-07")).toBe("há 12 dias");
     expect(formatarTempoDesde("2026-06-07", "2026-10-07")).toBe("há 4 meses");
     expect(formatarTempoDesde("2024-09-01", "2026-10-07")).toBe("há mais de 2 anos");
+  });
+});
+
+describe("formatarCodigosDoRepresentante", () => {
+  it("usa o singular com um código só", () => {
+    expect(formatarCodigosDoRepresentante(["1401"])).toBe("Representante 1401");
+  });
+
+  it("junta os códigos do mesmo login com vírgula e 'e'", () => {
+    expect(formatarCodigosDoRepresentante(["1118", "1119"])).toBe("Representantes 1118 e 1119");
+    expect(formatarCodigosDoRepresentante(["1118", "1119", "1120"])).toBe("Representantes 1118, 1119 e 1120");
   });
 });

@@ -4,7 +4,7 @@ import { ChartColumn, ClipboardList, Clock, Eye, EyeOff, House, LogOut, MapIcon,
 import { useValores } from "../contexto/valores";
 import { carregarSituacaoDosDados } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
-import { formatarMomento } from "../formato";
+import { formatarCodigosDoRepresentante, formatarMomento } from "../formato";
 import estilos from "./Layout.module.css";
 
 const NAVEGACAO = [
@@ -50,7 +50,7 @@ export function Layout() {
               {iniciais(situacao.representante.nome)}
             </span>
             <p className={estilos.nomeUsuario}>{situacao.representante.nome}</p>
-            <p className={estilos.codigoUsuario}>Representante {situacao.representante.codigo}</p>
+            <p className={estilos.codigoUsuario}>{formatarCodigosDoRepresentante(situacao.representante.codigos)}</p>
             <Link to="/entrar?motivo=saiu" className={estilos.sair}>
               <LogOut size={15} aria-hidden="true" />
               Sair

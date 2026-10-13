@@ -58,7 +58,7 @@ const PRIMEIRO_NUMERO_DE_NOTA = 180_000;
 /** A foto fictícia começa a ser lida 14 minutos antes da primeira consulta. */
 const ATRASO_DA_FOTO_MS = 14 * 60_000;
 
-const REPRESENTANTE = { codigo: "1401", nome: "Carlos Andrade" };
+const REPRESENTANTE = { nome: "Carlos Andrade", codigos: ["1401", "1402"] };
 
 const RAMOS = [
   "Auto Peças", "Distribuidora", "Comercial", "Mangueiras", "Hidráulica", "Agropeças", "Implementos",
