@@ -22,8 +22,10 @@ O sistema fica exposto na internet e guarda dados comerciais da Suprens. Na dúv
    - Nunca extrair: contatos, telefones, e-mails, endereços, CPF/CNPJ, restrição financeira, dados bancários, senhas.
 4. **Escopo seguro por padrão.**
    - Toda rota declara `config.acesso` (`publico`, `representante` ou `admin`).
-   - O representante vem sempre da sessão. Nenhuma rota aceita código de representante ou de tabela de preço vindo do navegador.
-   - Rota nova entra no teste que confere que o representante A recebe 404 nos dados de B.
+   - Os códigos do representante vêm sempre da sessão. Um login pode ter mais de um código, e as telas somam todos.
+   - Nenhuma rota `publico` ou `representante` aceita código de representante ou de tabela de preço vindo do navegador.
+   - Única exceção: a rota de admin que liga o login aos códigos. Ela só existe na API de admin (só LAN), confere o código contra a lista de autorizados da foto e grava auditoria.
+   - Rota nova entra no teste que confere que o login A recebe 404 nos dados dos códigos de B.
 5. **Entrada é hostil.**
    - Valide na borda com o schema do Fastify (`additionalProperties: false`).
    - Pedido só chega ao ERP pela LAN, revalidado no Oracle, e nasce bloqueado no SGI.

@@ -38,8 +38,9 @@ Requisitos:
    - todo pedido nasce **bloqueado** e passa pelas aprovações humanas, inclusive o de montadora.
 5. **Escopo seguro por padrão:**
    - toda rota declara `acesso` (`publico`, `representante` ou `admin`) e o servidor não sobe se alguma rota não declarar;
-   - nenhuma rota aceita código de representante ou de tabela vindo do navegador;
-   - um teste percorre todas as rotas e confirma que o representante A recebe 404 em tudo o que é de B.
+   - os códigos do representante vêm sempre da sessão. Um login pode ter mais de um código, e as telas somam todos (decisão do Lucas em 2026-10-13);
+   - nenhuma rota `publico` ou `representante` aceita código de representante ou de tabela vindo do navegador. A única exceção é a rota de admin que liga o login aos códigos: só existe na API de admin (só LAN), confere o código contra a lista de autorizados da foto e grava auditoria;
+   - um teste percorre todas as rotas e confirma que o login A recebe 404 em tudo o que é dos códigos de B.
 6. **Defesa em camadas, revisada pelo checklist OWASP ASVS 5.0 nível 2.** Rede isolada → Apache → API → serviço systemd confinado.
 
 ## Arquitetura
@@ -125,7 +126,9 @@ Publicação:
 ## Login e sessão
 
 **Convite**
-- O admin cria o representante e gera um convite de uso único, válido por 24–48 h.
+- O admin cria um login para cada pessoa, liga a ele um ou mais códigos de representante e gera um convite de uso único, válido por 24–48 h.
+  - Exemplo: a Star Vendas tem dois códigos e vê os dois, somados, no mesmo login (decisão do Lucas em 2026-10-13).
+  - Proposta: o mesmo código pode estar em mais de um login, quando a representação tem mais de uma pessoa. Cada uma tem a própria chave e a própria auditoria, e quem sai perde só o próprio acesso.
 - O token vai depois do `#` da URL, para não aparecer em logs.
 - Ele só é consumido depois que a chave é criada (as prévias de link do WhatsApp abrem o endereço sozinhas).
 - Se o link for aberto no navegador interno do WhatsApp, a tela orienta a abrir no Chrome ou no Safari.
@@ -167,7 +170,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 **Na LAN, antes de gravar na pasta do SGI**, a rotina do extrator:
 - só aceita arquivos com nome no padrão, até 64 KB, com limite de quantidade por execução e por representante por dia;
 - valida o schema estrito: limites de tamanho, conjunto de caracteres permitido e datas válidas pelas regras do SGI;
-- **revalida no Oracle** que o representante está ativo, que o cliente é dele e não está suspenso (pelo status do SGI, `NVL(CLI3_STA,'ATIVO')`, sem ler `CRCL.SUSPENSO` nem a restrição financeira; decisão do Lucas em 2026-10-09), que cada produto é vendável e tem preço, e que as quantidades estão dentro dos limites;
+- **revalida no Oracle** que o representante está ativo, que o cliente é de um dos códigos do login e não está suspenso (pelo status do SGI, `NVL(CLI3_STA,'ATIVO')`, sem ler `CRCL.SUSPENSO` nem a restrição financeira; decisão do Lucas em 2026-10-09), que cada produto é vendável e tem preço, e que as quantidades estão dentro dos limites. O pedido vai para o SGI com o código dono do cliente (`VEND_1`), escolhido na LAN e nunca pelo navegador;
 - manda pedidos acima de um valor-teto para revisão manual;
 - monta o arquivo do SGI **só com os campos validados**, gravando `.tmp` e depois renomeando;
 - mantém um registro de idempotência e uma quarentena;
@@ -201,7 +204,8 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 
 **Dois escopos, sempre explícitos**
 - **Visão do cliente** (o histórico completo do cliente, de qualquer representante): Clientes, Ficha, Análises e Mapa.
-- **Visão do representante** (só as vendas atribuídas a ele): os indicadores do Início e os pedidos em aberto, no Início, em Pedidos e na Ficha. O pedido é atribuído por `VEPM.VENDEDOR` e, sem ele, pelo dono atual do cliente (`VEND_1`), com a conta na LAN (decisão do Lucas em 2026-10-09).
+- **Visão do representante** (só as vendas atribuídas aos códigos do login, somadas): os indicadores do Início, os pedidos em aberto, no Início, em Pedidos e na Ficha, e as notas da aba Faturados. O pedido é atribuído por `VEPM.VENDEDOR` e, sem ele, pelo dono atual do cliente (`VEND_1`), com a conta na LAN (decisão do Lucas em 2026-10-09). A nota segue a regra da Atribuição (decisão do Lucas em 2026-10-13).
+- A carteira do login é a soma das carteiras dos seus códigos.
 - Isso evita que um cliente transferido apareça como "novo" ou "parado" para o novo representante.
 
 ## Regras de negócio (validadas com o Lucas na fase de análises)
@@ -330,7 +334,8 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - significado de `ATIVO-DB`;
   - escolha da tabela quando o cliente tem principal e secundária;
   - metas (tabela `SGI5_TAB_VEN_MT1` ou meta calculada);
-  - como identificar o cliente nas telas sem CPF/CNPJ: `CRCL.CLIENTE` é a raiz do CNPJ mais a filial (no cliente pessoa física, pode embutir parte do CPF; a contagem de 2026-10-09 achou 196 pessoas físicas com vendedor, 46 com venda em 24 meses), e o protótipo mostra esse código em Clientes e na ficha.
+  - como identificar o cliente nas telas sem CPF/CNPJ: `CRCL.CLIENTE` é a raiz do CNPJ mais a filial (no cliente pessoa física, pode embutir parte do CPF), e o protótipo mostra esse código em Clientes e na ficha;
+  - se a pessoa física entra no CRM. O Lucas tende a deixar fora. Em 2026-10-13, 46 pessoas físicas tinham venda em 24 meses: R$ 826 mil (0,34% do faturamento; R$ 451 mil nos últimos 12 meses), em notas de valor parecido com as de empresa e dos mesmos produtos, com 11 representantes. Ver `docs/dados-por-tela.md`, pergunta 18.
 
 ## Verificação
 
