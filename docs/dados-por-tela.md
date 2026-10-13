@@ -53,7 +53,7 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
   - valor `NFDE.VLR_TOTAL − NVL(NFDE.Z_FRANCA_DESC,0)`, com o desconto do item e não o do cabeçalho;
   - peças com CT ×100.
   - Fonte: `Gestao/server/src/producao/foto/moduloVendasEntradas.ts:13, 25-26 e 32-43` e `moduloVendasClientes.ts:25-36`.
-- **Código do cliente** é o identificador opaco proposto em Clientes. Hoje o protótipo usa `CRCL.CLIENTE`, que é o CNPJ sem os dígitos verificadores.
+- **Código do cliente** é o código do ERP que a tela mostra, só de empresa (`codigoErp`). O identificador interno do cliente, no endereço da ficha e nos rascunhos, é outro: o id opaco proposto em Clientes.
 
 ## 1. Barra superior (todas as telas)
 
@@ -135,7 +135,8 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
 | Carteira | "N clientes na carteira" (Clientes.tsx:67) | Clientes com `VEND_1` igual ao código da sessão (decidido em 2026-10-09) | `CRCL.EMP_FIL`, `CLIENTE`, `VEND_1` | extrator |
-| Código | "Ribeirão Preto/SP · 123456780001", busca e URL `/clientes/:codigo` | Proposta: id opaco | `CRCL.CLIENTE`, só na LAN | extrator |
+| Código | "Ribeirão Preto/SP · 123456780001" ou "Bauru/SP · Pessoa física" (Clientes.tsx:133; formato.ts:116) e busca | Empresa: o código do ERP. Pessoa física: nenhum, porque o código dela é o CPF (decisão do Lucas em 2026-10-13) | `CRCL.CLIENTE`, só com `FIS_JURID = 'J'` | extrator |
+| Identificador | URL `/clientes/:codigo`, rascunhos e pedidos | Proposta: id opaco para todos os clientes; nunca aparece na tela | nenhuma; gerado na LAN | extrator |
 | Nome | Título da linha, busca, ordem A–Z | Fantasia; se vazio, razão social; razão completa quando o fantasia vem cortado | `CRCL.NOM_FANTAS`, `RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
 | Cidade e UF | "Ribeirão Preto/SP" | Nome do IBGE pelo código de `RESERVADO7` (a confirmar); sem ele, `TRIM(CIDADE)`. Exterior: "EX" | `CRCL.CIDADE`, `ESTADO`, `RESERVADO7` | extrator |
 | Situação | Selo e filtros com contagem (Clientes.tsx:24-30, 69-74 e 136-138) | Ver Análises | NFME, NFDE, VEPM, VEPD | extrator |
@@ -151,11 +152,12 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - A tela Representantes - Clientes do SGI usa `VEND_1` de representante com `FIN_STA = 'ATIVO'` e `TRIM(FIS_JURID) = 'J'`, sem filtro de EMP_FIL (`Representantes - Clientes {REPCLI}/untDmVenRepCli.dfm:626-631`). A exportação para os representantes usa o mesmo filtro (`untDmRepAbd.dfm:159-164`). Incluir pessoa física diverge do SGI.
   - Há pessoa física com vendedor. A contagem de 2026-10-09 no banco, só de quantidades e sem dado pessoal, achou 196 clientes com `FIS_JURID = 'F'` e vendedor, 46 deles com venda nos últimos 24 meses. Pessoa jurídica com vendedor: 17.602, das quais 3.469 com venda em 24 meses. Segue em aberto se a pessoa física entra, junto com o código do cliente (perguntas 17 e 18).
   - O cliente transferido aparece só para o dono atual, com todo o histórico.
-  - Ficam em aberto as exclusões: pessoa física, `CLI3_STA` inativo, `TIPO_CAD` diferente de 'C' e cliente sem compra há anos.
-- **Código do cliente.**
-  - `CRCL.CLIENTE` é a raiz do CNPJ em 8 dígitos mais a filial em 4 (OracleDB/docs/licoes.md:97).
-  - Os dígitos verificadores se calculam a partir dos 12, então mostrar o código é mostrar o CNPJ. Isso fere a regra 3 do CLAUDE.md e o plano.md:20, e já é pendência (plano.md:337).
-  - Proposta:
+  - A pessoa física fica na carteira, com o nome e sem o código do ERP (decisão do Lucas em 2026-10-13). O SGI faz diferente: tira a pessoa física da tela e da exportação para os representantes.
+  - Ficam em aberto as exclusões: `CLI3_STA` inativo, `TIPO_CAD` diferente de 'C' e cliente sem compra há anos.
+- **Código do cliente (decisão do Lucas em 2026-10-13).**
+  - Na empresa, `CRCL.CLIENTE` é a raiz do CNPJ em 8 dígitos mais a filial em 4 (OracleDB/docs/licoes.md:97). Os dígitos verificadores se calculam a partir dos 12, então mostrar o código é mostrar o CNPJ. O CNPJ é público, e o Lucas decidiu mostrá-lo (CLAUDE.md, regra 3; plano.md:20).
+  - Na pessoa física, o código é o CPF. Em 193 dos 196 clientes com vendedor, `CRCL.CLIENTE` são os 9 primeiros dígitos do CPF, "00" e os 2 dígitos verificadores (contagem de 2026-10-13, sem exibir dados). Ele nunca sai da LAN, e a tela mostra "Pessoa física".
+  - O endereço da ficha também não pode levar o CPF. Proposta, para todos os clientes:
     - o extrator gera um id opaco, estável entre fotos: um HMAC de EMP_FIL + CLIENTE com uma chave que só existe na LAN, ou um sequencial com a tabela de correspondência na LAN;
     - ele precisa ser estável porque rascunhos e pedidos no app.db o guardam;
     - a LAN converte de volta para `CRCL.CLIENTE` só ao montar o arquivo do SGI (`PV1_CLI`);
@@ -180,8 +182,8 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
 | Nome e situação | Título e selo (FichaCliente.tsx:50-51) | Como em Clientes | (ver Clientes) | extrator |
-| Razão social | Linha abaixo do nome (FichaCliente.tsx:52) | `RAZ_SOCIAL` + `COMPLEM_RZ` | `CRCL.RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
-| Cidade, Mercado e Código | Cartões (FichaCliente.tsx:99-101) | Mercado: M = montadora, E = exportação, o resto é praça | `CRCL.TIPO_CLI` | extrator |
+| Razão social | Linha abaixo do nome, que some quando é igual a ele, como na pessoa física (FichaCliente.tsx:52) | `RAZ_SOCIAL` + `COMPLEM_RZ` | `CRCL.RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
+| Cidade, Mercado e Código | Cartões (FichaCliente.tsx:99-101) | Mercado: M = montadora, E = exportação, o resto é praça. Código: como em Clientes, "Pessoa física" sem número | `CRCL.TIPO_CLI`; código: `CRCL.CLIENTE` só de empresa | extrator |
 | Cliente desde | Só o ano (FichaCliente.tsx:102) | Ano da primeira nota válida da história; nulo se nunca comprou | `MIN(NFME.DT_EMISSAO)` com a RF | extrator; vai só o ano |
 | Faturado em 12 meses | Indicador, com "vs 12 meses anteriores" | Como em Clientes | NFME, NFDE | extrator |
 | Última compra | Indicador | Como em Clientes | NFME | extrator |
@@ -394,7 +396,7 @@ Regras:
   - A tela carrega as quantidades de todos os itens do rascunho (MontarPedido.tsx:66-67), mostra só os que estão no catálogo (MontarPedido.tsx:74) e reenvia todos em cada salvamento automático (MontarPedido.tsx:172-174).
   - Com a validação "produto no catálogo do cliente", o servidor recusaria o rascunho inteiro em todo salvamento.
   - A aba Rascunhos conta esse item em "N produtos" (Pedidos.tsx:132), e o total estimado não tem preço para ele (pergunta 33).
-- **URL do catálogo.** O catálogo é pedido pelo código do cliente na URL (`/pedidos/novo?cliente=`). Com o id opaco, a query string deixa de levar o CNPJ.
+- **URL do catálogo.** O catálogo é pedido pelo código do cliente na URL (`/pedidos/novo?cliente=`). Com o id opaco, a query string deixa de levar o CNPJ e, na pessoa física, o CPF.
 - **Quantidade.** A única conversão é peças ÷ 100 = CT (pedido.ts:8-9 e 23-25). Ela acontece na LAN, ao montar o arquivo do SGI.
 - **Entrega.**
   - Na carga atual, a data do arquivo (`CGA_DEN` → `DET_DEN`) vai para o `PV2_DEN` de cada item (`untDmVenPvd.dfm:6163-6164`; `untVenPvd_PvdIncluirCarga.pas:770-778`). O `PV1_DEN` recebe a data do dia (`untDmVenPvd.dfm:6013-6014`; `untVenPvd_PvdIncluirCarga.pas:685-688 e 704`).
@@ -529,7 +531,7 @@ O plano prevê representantes, convites, chaves, auditoria e situação das carg
 
 Convenções:
 - **Datas:** texto ISO ('AAAA-MM-DD'), meses 'AAAA-MM' e momentos 'AAAA-MM-DDTHH:MM', todos gerados por `TO_CHAR` no Oracle (plano.md:67).
-- **Cliente:** `cliente` é sempre o id opaco. `CRCL.CLIENTE`, a raiz do CNPJ e o histórico de vendedores não aparecem em nenhuma tabela.
+- **Cliente:** `cliente` é sempre o id opaco. `CRCL.CLIENTE` só aparece em `cliente.codigo_erp`, e só de empresa. O histórico de vendedores não aparece em nenhuma tabela.
 - **Produto:** sempre o código com TRIM (`TRIM(NFDE.C_PROD)`, `TRIM(VIEW_PAC)`, `TRIM(PAC_COD)`, `TRIM(ESTQ.C_PROD)`). `NFDE.C_PROD` é CHAR(14) (omega/ABC71-NF.md:2833). Sem TRIM, a junção do "já comprou" falha. O Gestao lê `TRIM(D.C_PROD)` (moduloVendasEntradas.ts:48), e o SGI liga a view ao ESTQ com TRIM nos dois lados (`untVenPvd_PosPac.dfm:551-552`).
 - **Escopo:** toda leitura do servidor parte de `cliente.representante`, `painel_mes.representante`, `pedido_aberto.representante` ou `nota.representante`, entre os códigos do login da sessão. Tabela sem a coluna `representante` só é lida por junção com `cliente`. O nome do cliente de um pedido ou de uma nota vem só de `cliente` com um dos códigos da sessão.
 - **Pedido CRM:** `pedido_crm` e `pedido_crm_etapa` não têm cliente nem representante. O servidor só os lê pelo `numero_crm` de um pedido do usuário da sessão no app.db. Número CRM de outro login, ou inexistente, responde 404 (plano.md:43). Como o número é sequencial (CRM-00106, CRM-00107…), a rota `/pedidos/:numero` (App.tsx:28) entra no teste de escopo da F3.
@@ -539,7 +541,7 @@ Convenções:
 |---|---|---|---|
 | `foto` | Uma linha | `versao_esquema`, `gerada_em`, `data_ref`, `mes_atual`, `dia_util`, `dias_uteis`, `semestre_inicio`, `semestre_fim` | todas, Admin |
 | `representante` | Representante autorizado; PK `codigo` | `codigo`, `nome` (o da CRVN, para o Admin escolher os códigos) | Admin |
-| `cliente` | Cliente (filial) da carteira de um autorizado; PK `cliente` | `cliente`, `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (só na F6) | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
+| `cliente` | Cliente (filial) da carteira de um autorizado; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (só na F6) | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
 | `cliente_mes` | Cliente × mês (24 fechados + o corrente); PK (`cliente`, `mes`) | `cliente`, `mes`, `valor` | Ficha |
 | `cliente_familia` | Cliente × família nos 12 meses fechados; PK (`cliente`, `familia`) | `cliente`, `familia`, `valor`, `participacao` | Ficha |
 | `ficha_produto` | Cliente × produto, só os 8 maiores em valor nos 12 meses fechados; PK (`cliente`, `produto`) | `cliente`, `produto`, `pecas_12m`, `valor_12m`, `ultima_compra` | Ficha |
@@ -671,7 +673,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 | Objeto | Colunas | Para quê | Citação |
 |---|---|---|---|
-| `ABC71.SGI5_TAB_CUS_REP_FAT` | CUS_CLI, CUS_DFA, CUS_TMO, CUS_QTF, CUS_VLF, CUS_VEN, CUS_CLI_MER | Totais do RELCUS001, inclusive por representante e por mercado (plano.md:279 e 344) | sgi/ABC71-SGI5-TAB_CUS.md:635-691 (687, 691); SGI12CodigoFonte/Diretoria {DIR}/Custos {CUS}/untDirCus_RelRepresSin.dfm:2933-2956 |
+| `ABC71.SGI5_TAB_CUS_REP_FAT` | CUS_CLI, CUS_DFA, CUS_TMO, CUS_QTF, CUS_VLF, CUS_VEN, CUS_CLI_MER | Totais do RELCUS001, inclusive por representante e por mercado (plano.md:279 e 342) | sgi/ABC71-SGI5-TAB_CUS.md:635-691 (687, 691); SGI12CodigoFonte/Diretoria {DIR}/Custos {CUS}/untDirCus_RelRepresSin.dfm:2933-2956 |
 | `ABC71.SGI5_VIEW_M_NFME_ULT_CPA_CLI` | VIEW_CLI, VIEW_DMO, VIEW_STA, VIEW_VEN | Última compra e situação que o CRM interno do SGI já calcula | sgi/ABC71-SGI5-VIEW_M.md:100-120; SGI12CodigoFonte/Vendas - CRM {CRM}/Clientes {CLI}/untDmCrmCli.dfm:21 e 107-108 |
 | `ABC71.SGI5_TAB_VEN_TP2` | TP2_COD, TP2_PRO, TP2_CMO, TP2_CMO_FOR, TP2_STA, TP2_LMI, TP2_MVE, TP2_IPR | Base da view de preço: part number repetido, valores de status, múltiplo, lote e o indicador de produto na tabela impressa. Se `TP2_IPR` virar filtro (pergunta 29), a TP2 passa para a lista do extrator | sgi/ABC71-SGI5-TAB_VEN.md:2721-2764 (PK 2729; IPR 2759); untDmVenPvd.dfm:6443 |
 | `ABC71.TPMU` | EMPRESA, COD_CIDADE, NOME_CIDADE, ESTADO | Conferir o código de `RESERVADO7` (pergunta 5). O nome não serve, porque é CHAR(20) | omega/ABC71-TP.md:3048-3067; SGI12CodigoFonte/Contabilidade {CONT}/Geracao GNRE {GNRE}/untDmContGnre.dfm:420-424 |
@@ -680,10 +682,10 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 ## O que nunca entra na foto
 
-- **CNPJ, CPF e o que os revela:**
+- **CPF, CNPJ e o que os revela** (o `CRCL.CLIENTE` de empresa é a exceção, em `cliente.codigo_erp`):
   - `CRCL.CGC_CPF`, `DIG_CGC_CPF`, `PESS_FIS_COD`;
   - `NFME.CGC`, `SGI5_TAB_FIN_VEN.FIN_CNP`, `CRVN.CGC_CPF`;
-  - `CRCL.CLIENTE`, `NFME.FORNEC`, `VEPM.CLIENTE`, `PV1_CLI` e `VIEW_CLI` em claro;
+  - `CRCL.CLIENTE` de pessoa física, que é o CPF; `NFME.FORNEC`, `VEPM.CLIENTE`, `PV1_CLI` e `VIEW_CLI` em claro;
   - a raiz do CNPJ.
 - **Endereço e contato:**
   - `CRCL.ENDERECO`, `NUMERO`, `NUMERO_ALFA`, `COMPL_END`, `CEP`, `BAIRRO`, `CONTATO`, `DDD`, `TELEFONE_1`, `TELEFONE_2`, `TELEFAX`;
@@ -730,7 +732,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
    - Qual é o formato real de `CRCLH.HISTORICO` para `CAMPO='VEND_1'`? O protótipo supõe "de: X para: Y", e quem grava é o Omega.
    - Quantas notas de venda vêm com `NFME.VENDEDOR` nulo ou 0?
    - Quantos pedidos em aberto vêm com `VEPM.VENDEDOR` nulo, 0 ou diferente do `VEND_1` atual do cliente? Isso confirma que `VEPM.VENDEDOR` usa o mesmo código do representante e mede o pedido de cliente de outra carteira (ver Pedidos).
-   - Ler em DBA_SOURCE como `SGI5_IUD_CUS_REP_FAT_V2` preenche `CUS_VEN`. Se ela usar o `VEND_1` atual para todo o histórico, o total por representante não bate com a regra do plano (plano.md:219 e 344). Qual dos dois vence?
+   - Ler em DBA_SOURCE como `SGI5_IUD_CUS_REP_FAT_V2` preenche `CUS_VEN`. Se ela usar o `VEND_1` atual para todo o histórico, o total por representante não bate com a regra do plano (plano.md:219 e 342). Qual dos dois vence?
 2. **Calendário.** Período coberto por `SGI5_TAB_DP_CALEND` (790 linhas): todo dia tem linha? O ano anterior inteiro está lá? Os feriados do ano seguinte são cadastrados com antecedência?
 3. **Unidades e tipos.** Quais são as unidades reais das notas e dos pedidos além de CT e PC? O Gestao faz CT ×100 e o resto ×1; o RELCUS001 faz ×100 sempre (custos-faturamento.md:23-24). Listar também os tipos de movimento (plano.md:280).
 4. **EMP_FIL.** Quantas empresas têm notas e pedidos de venda? Hoje o código do cliente leva só `CLIENTE`.
@@ -769,20 +771,19 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 **Decidir com o Lucas**
 
 17. **Código do cliente.**
-    - Aprovar o id opaco gerado na LAN (HMAC com chave só na LAN, ou sequencial com correspondência na LAN).
-    - O que mostrar no cartão "Código" da Ficha e na busca por código?
-    - Hoje os representantes conhecem o cliente pelo código do ERP? (plano.md:337)
+    - Decidido em 2026-10-13: a tela mostra o código do ERP da empresa, porque o CNPJ é público. Na pessoa física, mostra "Pessoa física", porque o código dela é o CPF (ver Clientes).
+    - Aprovar o id opaco gerado na LAN para o endereço da ficha, os rascunhos e a auditoria (HMAC com chave só na LAN, ou sequencial com correspondência na LAN).
 18. **Carteira.**
     - Decidido em 2026-10-09: vale `CRCL.VEND_1`, o campo vendedor do cliente, igual ao código da sessão. Segue em aberto o filtro `EMP_FIL = 20210001`, que o SGI não usa.
-    - Entra pessoa física? A tela Representantes - Clientes e a exportação do SGI para os representantes levam só `FIS_JURID='J'` (`Representantes - Clientes {REPCLI}/untDmVenRepCli.dfm:626-631`; `Representantes - Atualicacao Base Dados {REPABD}/untDmRepAbd.dfm:159-164`).
-      - O Lucas achava que não havia. A contagem de 2026-10-09 achou 196 pessoas físicas com vendedor, 46 com venda em 24 meses, contra 17.602 pessoas jurídicas com vendedor, 3.469 com venda em 24 meses (ver Clientes).
-      - Segue em aberto, junto com a pergunta 17: na pessoa física, `CRCL.CLIENTE` pode embutir parte do CPF, e o nome é dado pessoal.
-      - O Lucas tende a deixar a pessoa física fora. Levantamento de 2026-10-13, nos últimos 24 meses e pela RF:
+    - Decidido em 2026-10-13: a pessoa física fica no CRM, com o nome e sem o código do ERP, que é o CPF. A tela Representantes - Clientes e a exportação do SGI para os representantes levam só `FIS_JURID='J'` (`Representantes - Clientes {REPCLI}/untDmVenRepCli.dfm:626-631`; `Representantes - Atualicacao Base Dados {REPABD}/untDmRepAbd.dfm:159-164`).
+      - A contagem de 2026-10-09 achou 196 pessoas físicas com vendedor, 46 com venda em 24 meses, contra 17.602 pessoas jurídicas com vendedor, 3.469 com venda em 24 meses (ver Clientes).
+      - O nome da pessoa física é dado pessoal: fica restrito à carteira e nunca vai para log.
+      - Levantamento de 2026-10-13, nos últimos 24 meses e pela RF:
         - 46 pessoas físicas, 320 notas, R$ 826 mil: 0,34% do faturamento. Nos últimos 12 meses, R$ 451 mil;
         - mediana de R$ 2.073 por nota, contra R$ 2.581 das empresas. Todas são do mercado praça, compram PRESIL, MICRO e FLEXIL e estão com 11 representantes;
         - as maiores compram quase todo mês: a primeira tem 52 notas e R$ 111 mil; a terceira, 62 notas;
-        - as maiores fatias por representante: 4,8% das vendas do 1125, 2,7% do 1213, 2,4% do 1120 e 1,8% do 1302.
-      - Se ficar fora, some de Clientes, Ficha, Análises, Mapa e Montar pedido. Proposta: a venda continua nos totais do Início, para o total por representante bater com o RELCUS001 (plano.md:344), e a nota de Faturados aparece como "Pessoa física", sem nome nem link.
+        - as maiores fatias por representante: 4,8% das vendas do 1125, 2,7% do 1213, 2,4% do 1120 e 1,8% do 1302;
+        - cada nota tem o próprio pedido no SGI: 320 notas e 320 pedidos.
     - Saem `CLI3_STA` inativo, `TIPO_CAD` diferente de 'C' e cliente sem compra há N anos?
     - `VEND_2` e `VEND_3` têm uso?
 19. **Grupos por raiz de CNPJ (plano.md:244).**

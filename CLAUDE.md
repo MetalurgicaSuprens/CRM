@@ -19,7 +19,8 @@ O sistema fica exposto na internet e guarda dados comerciais da Suprens. Na dúv
    - Não leia nem imprima valores de `.env`, só os nomes das chaves.
 3. **Minimização de dados.**
    - Só entra na foto o campo que alguma tela usa.
-   - Nunca extrair: contatos, telefones, e-mails, endereços, CPF/CNPJ, restrição financeira, dados bancários, senhas.
+   - Nunca extrair: contatos, telefones, e-mails, endereços, CPF, restrição financeira, dados bancários, senhas.
+   - O código do cliente no ERP só sai da LAN quando é de empresa: ele contém o CNPJ, que é público. Na pessoa física ele é o CPF, e a tela mostra "Pessoa física".
 4. **Escopo seguro por padrão.**
    - Toda rota declara `config.acesso` (`publico`, `representante` ou `admin`).
    - Os códigos do representante vêm sempre da sessão. Um login pode ter mais de um código, e as telas somam todos.

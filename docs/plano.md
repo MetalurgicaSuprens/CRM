@@ -17,7 +17,7 @@ Requisitos:
 
 **Decisões já tomadas com o Lucas**
 - Login por chave de acesso (passkey), desbloqueada pelo bloqueio de tela do aparelho: digital, rosto, PIN ou padrão. No notebook sem biometria, o PIN do Windows Hello ou o celular via QR code.
-- Sem contatos de cliente, CPF ou CNPJ no CRM.
+- Sem contatos de cliente nem CPF no CRM. O CNPJ da empresa, que é público, aparece como o código do ERP. A pessoa física entra no CRM sem código à mostra, porque o código dela no ERP é o CPF (decisão do Lucas em 2026-10-13).
 - O protótipo fica arquivado só para consulta das regras do ERP: sem dados e sem histórico do git. O mapa sai de lá.
 - O repositório vai para a conta **SUPRENS** do GitHub. O `Godcrack93/CRM` será apagado.
 - Não haverá perfil "vê tudo"; isso vai para o sistema interno.
@@ -333,9 +333,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - cadastro de representantes (`SGI5_TAB_FIN_VEN`: tipo e situação);
   - significado de `ATIVO-DB`;
   - escolha da tabela quando o cliente tem principal e secundária;
-  - metas (tabela `SGI5_TAB_VEN_MT1` ou meta calculada);
-  - como identificar o cliente nas telas sem CPF/CNPJ: `CRCL.CLIENTE` é a raiz do CNPJ mais a filial (no cliente pessoa física, pode embutir parte do CPF), e o protótipo mostra esse código em Clientes e na ficha;
-  - se a pessoa física entra no CRM. O Lucas tende a deixar fora. Em 2026-10-13, 46 pessoas físicas tinham venda em 24 meses: R$ 826 mil (0,34% do faturamento; R$ 451 mil nos últimos 12 meses), em notas de valor parecido com as de empresa e dos mesmos produtos, com 11 representantes. Ver `docs/dados-por-tela.md`, pergunta 18.
+  - metas (tabela `SGI5_TAB_VEN_MT1` ou meta calculada).
 
 ## Verificação
 
