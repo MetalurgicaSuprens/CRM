@@ -724,6 +724,32 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
   - metas (`SGI5_TAB_VEN_MT1`);
   - `CRCL.SEGMENTO`, até Vendas classificar o ramo (plano.md:329-331).
 
+## O que a F2 já faz (2026-10-13)
+
+Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extrator gera a foto, e a API mostra com ela o Início, Clientes, Ficha, Análises e as abas "Em aberto no ERP" e "Faturados" de Pedidos. Tudo roda só neste computador, com o login de teste, porque o login de verdade é da F3 (README.md, "Como rodar"). Catálogo, rascunhos e envio ainda não usam os dados reais.
+
+- **Esquema implementado (versão 1):** as tabelas acima, menos `catalogo`, `pedido_crm` e `pedido_crm_etapa`. Faltam também `cliente.tabela_preco`, `cliente.municipio_ibge` e `produto.medida`, que chegam com o catálogo e o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
+- **Conferência com o RELCUS001.** O faturado por representante e mês bate com a `SGI5_TAB_CUS_REP_FAT` nos códigos 1401 e 1402, em todos os meses de 2025 e 2026, com duas exceções:
+  - junho de 2025: R$ 2.567,02 estão no 1402 no RELCUS001 e no 1401 pelo vendedor da nota. A soma dos dois códigos bate;
+  - o mês corrente, porque a tabela do RELCUS001 ainda não tinha o dia.
+  - Na Suprens inteira, a maioria dos meses bate ao centavo. Alguns diferem em até R$ 19 mil, a investigar.
+- **Contagens no banco** (2026-10-13, só números):
+  - uma empresa só (EMP_FIL 20210001) no CRCL, nas notas e nos pedidos (pergunta 4);
+  - nenhuma nota de venda dos últimos 36 meses sem vendedor (pergunta 1);
+  - todo pedido em aberto com o vendedor igual ao dono atual do cliente;
+  - o calendário vai de 2025-01-01 a 2027-06-29 (pergunta 2);
+  - as notas vêm em CT, com 4 itens em PC (pergunta 3).
+- **Decisões desta entrega, a confirmar com o Lucas:**
+  - carteira: cliente com `VEND_1` de um autorizado e nota de venda nos últimos 36 meses (pergunta 18);
+  - atribuição: o vendedor da nota e, sem ele, o dono atual. O CRCLH entra quando aparecer nota sem vendedor;
+  - compra (pergunta 25): junta as notas até 7 dias depois da primeira, sem encadear;
+  - ciclo: abaixo de 30 dias vira 30; acima de 180, o cliente é irregular. Com a regra do plano ("fora de 30 a 180, irregular"), o maior cliente da Star Vendas, que compra várias vezes por mês, aparecia como irregular;
+  - entrega do pedido em aberto: a mais próxima entre os itens com saldo;
+  - valor em aberto: a conta proposta em Pedidos, ainda sem conferir com a tela do SGI (pergunta 13);
+  - `pedido_aberto.cliente` e `nota.cliente`: o id quando o cliente está na carteira de qualquer autorizado. O servidor só mostra o nome quando o cliente é da carteira do login. O pedido do login para cliente de outra carteira conta no Início e não aparece na lista (pergunta 33);
+  - nome e cidade como estão no ERP, em maiúsculas e sem acento, até o IBGE da F6.
+- **Ainda não feito:** grupos por raiz de CNPJ, status `CLI3_STA`, catálogo e preços, a troca da foto por SFTP com manifesto e os esquemas de resposta da API.
+
 ## Perguntas para a F2
 
 **Conferir nos dados (F2)**
