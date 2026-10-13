@@ -51,10 +51,10 @@ function ContinuarRascunho({ id }: { id: string }) {
 }
 
 function Montagem({ codigoCliente, inicial }: { codigoCliente: string; inicial: Rascunho | null }) {
-  const { dados: catalogo, carregando } = useCarga(`catalogo:${codigoCliente}`, () => carregarCatalogo(codigoCliente));
+  const { dados: catalogo, carregando, erro } = useCarga(`catalogo:${codigoCliente}`, () => carregarCatalogo(codigoCliente));
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   if (carregando || !situacao) return <Carregando />;
-  if (!catalogo) return <Indisponivel texto="Cliente não encontrado na sua carteira." />;
+  if (!catalogo) return <Indisponivel texto={erro?.message ?? "Cliente não encontrado na sua carteira."} />;
   return <Formulario catalogo={catalogo} inicial={inicial} relogio={situacao.relogio} />;
 }
 

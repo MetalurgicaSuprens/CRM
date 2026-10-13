@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { ChartColumn, ClipboardList, Clock, Eye, EyeOff, House, LogOut, MapIcon, Users } from "lucide-react";
 import { useValores } from "../contexto/valores";
-import { carregarSituacaoDosDados } from "../dados/api";
+import { carregarSituacaoDosDados, isDadosReais } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigosDoRepresentante, formatarMomento } from "../formato";
 import estilos from "./Layout.module.css";
@@ -64,7 +64,7 @@ export function Layout() {
           <div className={estilos.marcaCelular}>
             <Marca />
           </div>
-          <span className={estilos.prototipo}>Protótipo · dados fictícios</span>
+          <span className={estilos.prototipo}>{isDadosReais ? "Dados reais do ERP · só neste computador" : "Protótipo · dados fictícios"}</span>
           {situacao ? <Atualizacao atualizadoEm={situacao.atualizadoEm} relogio={situacao.relogio} /> : null}
           <BotaoValores />
         </header>

@@ -4,7 +4,34 @@
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--workspace", "web"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "web"
+      ],
+      "port": 5175
+    },
+    {
+      "name": "servidor",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--workspace",
+        "server"
+      ],
+      "port": 5176
+    },
+    {
+      "name": "web-real",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:real",
+        "--workspace",
+        "web"
+      ],
       "port": 5175
     }
   ]

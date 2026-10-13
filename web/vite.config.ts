@@ -12,5 +12,7 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5175,
     strictPort: true,
+    // Modo "real": a API do servidor (server/), também só nesta máquina.
+    proxy: { "/api": "http://127.0.0.1:5176" },
   },
 });
