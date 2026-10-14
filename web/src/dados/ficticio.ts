@@ -11,6 +11,7 @@ import {
 } from "dominio/datas";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
+import { PECAS_POR_CENTO } from "./pedido";
 import { analisarCliente, classificarSituacao, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
 import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
 import { evolucao12m, variacao12m } from "dominio/indicadores";
@@ -23,6 +24,8 @@ import type {
   FaturamentoMensal,
   FichaCliente,
   GrupoDestaque,
+  ItemDoErp,
+  ItemEmAberto,
   Mercado,
   NotaFaturada,
   PainelInicio,
@@ -50,6 +53,8 @@ const ULTIMO_FECHADO = MESES_FECHADOS - 1;
 const DESTAQUES_POR_GRUPO = 5;
 const SERIE_DAS_NOTAS = "1";
 const PRIMEIRO_NUMERO_DE_NOTA = 180_000;
+/** Entrega dos outros itens do pedido, em dias depois da mais próxima. */
+const DIAS_A_MAIS_NA_ENTREGA = [0, 0, 7, 14, 21];
 /** A foto fictícia começa a ser lida 14 minutos antes da primeira consulta. */
 const ATRASO_DA_FOTO_MS = 14 * 60_000;
 
@@ -156,7 +161,13 @@ export function analisesFicticias(): Analises {
 /** Pedidos em aberto no ERP de todos os clientes da carteira, do mais próximo da entrega ao mais longe. */
 export function pedidosNoErpFicticios(): PedidoNoErp[] {
   return carteira()
-    .clientes.flatMap((cliente) => cliente.pedidos.map((pedido) => ({ ...pedido, cliente: resumirCliente(cliente) })))
+    .clientes.flatMap((cliente) =>
+      cliente.pedidos.map((pedido) => ({
+        ...pedido,
+        cliente: resumirCliente(cliente),
+        itensEmAberto: itensDoPedido(pedido, cliente.pesosFamilias),
+      })),
+    )
     .sort((a, b) => a.entrega.localeCompare(b.entrega));
 }
 
@@ -176,14 +187,54 @@ export function notasFaturadasFicticias(): NotaFaturada[] {
           emissao: data,
           cliente: resumirCliente(cliente),
           valor: cliente.mensal.find((mes) => mes.mes === data.slice(0, 7))?.valor ?? 0,
+          familias: cliente.pesosFamilias,
         })),
     )
     .sort((a, b) => a.emissao.localeCompare(b.emissao))
-    .map((nota) => {
+    .map(({ familias, ...nota }) => {
       numero += aleatorio.inteiro(1, 40);
-      return { id: `${SERIE_DAS_NOTAS}-${numero}`, numero: String(numero), ...nota };
+      return { id: `${SERIE_DAS_NOTAS}-${numero}`, numero: String(numero), ...nota, ...detalheDaNota(numero, nota.valor, familias) };
     })
     .reverse();
+}
+
+/*
+ * Os itens de cada pedido e de cada nota saem de um sorteio só deles, com a semente do número:
+ * assim os clientes, os pedidos e as notas da carteira continuam os mesmos.
+ */
+
+/** O primeiro item tem a entrega do pedido, a mais próxima. */
+function itensDoPedido(pedido: PedidoEmAberto, familias: ReadonlyMap<string, number>): ItemEmAberto[] {
+  const aleatorio = criarAleatorio(Number(pedido.numero));
+  return sortearItens(aleatorio, pedido.valor, pedido.itens, familias).map((item, i) => ({
+    ...item,
+    entrega: i === 0 ? pedido.entrega : somarDias(pedido.entrega, aleatorio.escolher(DIAS_A_MAIS_NA_ENTREGA)),
+  }));
+}
+
+function detalheDaNota(numero: number, valor: number, familias: ReadonlyMap<string, number>): Pick<NotaFaturada, "pedidos" | "itens"> {
+  const aleatorio = criarAleatorio(numero);
+  return {
+    pedidos: [String(aleatorio.inteiro(1_700_000, 1_850_000))],
+    itens: sortearItens(aleatorio, valor, aleatorio.inteiro(2, 12), familias),
+  };
+}
+
+/** Itens que somam o valor, com produtos das famílias que o cliente compra, em embalagens fechadas. */
+function sortearItens(aleatorio: Aleatorio, valor: number, quantidade: number, familias: ReadonlyMap<string, number>): ItemDoErp[] {
+  const sorteados = catalogoFicticio()
+    .filter((produto) => familias.has(produto.familia))
+    .map((produto) => ({ produto, ordem: aleatorio.proximo(), peso: aleatorio.entre(0.5, 2) }))
+    .sort((a, b) => a.ordem - b.ordem)
+    .slice(0, quantidade);
+  const somaDosPesos = somar(sorteados.map(({ peso }) => peso));
+  let restante = valor;
+  return sorteados.map(({ produto, peso }, i) => {
+    const valorDoItem = i === sorteados.length - 1 ? restante : Math.round((valor * peso) / somaDosPesos);
+    restante -= valorDoItem;
+    const embalagens = Math.max(1, Math.round((valorDoItem / produto.precoBase) * (PECAS_POR_CENTO / produto.embalagem)));
+    return { ordem: i + 1, codigo: produto.codigo, familia: produto.familia, pecas: embalagens * produto.embalagem, valor: valorDoItem };
+  });
 }
 
 // ---------------------------------------------------------------- geração

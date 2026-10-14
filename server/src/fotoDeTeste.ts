@@ -6,14 +6,14 @@ import { ESQUEMA, VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
 
 /*
  * Foto pequena para os testes do servidor: o representante A (1401) e o B (9999), cada um com um
- * cliente, análises, pedido e nota. Os textos de B são únicos, para o teste achá-los em qualquer
- * resposta.
+ * cliente, análises, pedido e nota, com os itens. Os textos de B são únicos, para o teste achá-los
+ * em qualquer resposta.
  */
 
 export const CLIENTE_DE_A = "aaaaaaaaaaaaaaa1";
 export const CLIENTE_DE_B = "bbbbbbbbbbbbbbb1";
 /** O que nunca pode aparecer para o login de A. */
-export const MARCAS_DE_B = [CLIENTE_DE_B, "CLIENTE SO DE B", "999001", "888001"];
+export const MARCAS_DE_B = [CLIENTE_DE_B, "CLIENTE SO DE B", "999001", "888001", "PRODUTO-SO-DE-B", "999002"];
 
 function cliente(id: string, representante: string, nome: string): Foto["cliente"][number] {
   return {
@@ -81,7 +81,11 @@ export function montarFotoDeTeste(): Foto {
       { codigo: "9999", nome: "OUTRA REPRESENTACAO" },
     ],
     cliente: [cliente(CLIENTE_DE_A, "1401", "CLIENTE DE A"), cliente(CLIENTE_DE_B, "9999", "CLIENTE SO DE B")],
-    produto: [{ produto: "F-100", familia: "FLEXIL" }],
+    produto: [
+      { produto: "F-100", familia: "FLEXIL" },
+      { produto: "P-200", familia: "PRESIL" },
+      { produto: "PRODUTO-SO-DE-B", familia: "FLEXIL" },
+    ],
     cliente_mes: [...a.cliente_mes, ...b.cliente_mes],
     cliente_familia: [...a.cliente_familia, ...b.cliente_familia],
     ficha_produto: [...a.ficha_produto, ...b.ficha_produto],
@@ -97,9 +101,19 @@ export function montarFotoDeTeste(): Foto {
       // Pedido do A para um cliente que hoje é de B: conta para A, sem mostrar o cliente.
       { pedido: "777001", representante: "1401", cliente: CLIENTE_DE_B, emissao: "2026-10-02", entrega: "2026-11-05", itens: 1, valor: 3_000, valor_entrega_no_mes: 0 },
     ],
+    pedido_aberto_item: [
+      { pedido: "100001", ordem: 1, produto: "F-100", pecas: 1_000, entrega: "2026-10-20", valor: 3_000 },
+      { pedido: "100001", ordem: 2, produto: "P-200", pecas: 500, entrega: "2026-10-27", valor: 2_000 },
+      { pedido: "999001", ordem: 1, produto: "PRODUTO-SO-DE-B", pecas: 700, entrega: "2026-10-21", valor: 7_000 },
+      { pedido: "777001", ordem: 1, produto: "F-100", pecas: 300, entrega: "2026-11-05", valor: 3_000 },
+    ],
     nota: [
-      { nota: "100002", serie: "1", representante: "1401", cliente: CLIENTE_DE_A, emissao: "2026-10-05", valor: 1_000 },
-      { nota: "888001", serie: "1", representante: "9999", cliente: CLIENTE_DE_B, emissao: "2026-10-06", valor: 2_000 },
+      { nota: "100002", serie: "1", representante: "1401", cliente: CLIENTE_DE_A, emissao: "2026-10-05", valor: 1_000, pedidos: '["100001"]' },
+      { nota: "888001", serie: "1", representante: "9999", cliente: CLIENTE_DE_B, emissao: "2026-10-06", valor: 2_000, pedidos: '["999002"]' },
+    ],
+    nota_item: [
+      { nota: "100002", serie: "1", ordem: 1, produto: "F-100", pecas: 100, valor: 1_000 },
+      { nota: "888001", serie: "1", ordem: 1, produto: "PRODUTO-SO-DE-B", pecas: 200, valor: 2_000 },
     ],
   };
 }

@@ -280,7 +280,25 @@ export type PedidoEnviado = {
   historico: { etapa: EtapaDoPedido; em: string }[];
 };
 
-export type PedidoNoErp = PedidoEmAberto & { cliente: ClienteResumo };
+/** Uma linha de pedido ou de nota do ERP: produto, quantidade e valor. */
+export type ItemDoErp = {
+  /** Posição no pedido ou na nota: o mesmo produto pode vir em duas linhas. Não aparece na tela. */
+  ordem: number;
+  codigo: string;
+  familia: string;
+  pecas: number;
+  /** Sem IPI; no pedido, o saldo × preço com os descontos. */
+  valor: number;
+};
+
+/** Item com saldo de um pedido do ERP: o que ainda falta faturar. */
+export type ItemEmAberto = ItemDoErp & { entrega: string };
+
+export type PedidoNoErp = PedidoEmAberto & {
+  cliente: ClienteResumo;
+  /** O que a linha mostra ao abrir: os itens com saldo, na ordem do pedido. */
+  itensEmAberto: ItemEmAberto[];
+};
 
 export type NotaFaturada = {
   /** Série e número: o número sozinho se repete entre séries. Nenhuma tela mostra a série. */
@@ -289,6 +307,10 @@ export type NotaFaturada = {
   emissao: string;
   cliente: ClienteResumo;
   valor: number;
+  /** Os pedidos do ERP de onde a nota saiu; vazio na nota sem pedido. */
+  pedidos: string[];
+  /** O que a linha mostra ao abrir, na ordem da nota. */
+  itens: ItemDoErp[];
 };
 
 export type PainelDePedidos = {

@@ -8,8 +8,16 @@ export const TIPOS_DE_VENDA = "310, 315, 316, 317, 320, 325, 326";
 /** Valor do item da nota sem o desconto da Zona Franca, como o RELCUS001. Alias D = NFDE. */
 export const VALOR_DO_ITEM = "(D.VLR_TOTAL - NVL(D.Z_FRANCA_DESC, 0))";
 
-/** Peças do item: a nota vem em cento (CT), que vira ×100, ou em peça. Alias D = NFDE. */
-export const PECAS_DO_ITEM = "(D.QTDE * CASE TRIM(D.UNIDADE) WHEN 'CT' THEN 100 ELSE 1 END)";
+/**
+ * A única conversão de unidade do extrator: a quantidade do item vem em cento (CT), que vira ×100,
+ * ou em peça. Alias D = NFDE ou VEPD, que têm a mesma coluna UNIDADE.
+ */
+export function emPecas(quantidade: string): string {
+  return `(${quantidade} * CASE TRIM(D.UNIDADE) WHEN 'CT' THEN 100 ELSE 1 END)`;
+}
+
+/** Peças do item da nota. Alias D = NFDE. */
+export const PECAS_DO_ITEM = emPecas("D.QTDE");
 
 /** Itens das notas com o cabeçalho, pela chave inteira. Aliases D = NFDE e M = NFME. */
 export const ITENS_DAS_NOTAS = `
@@ -30,7 +38,7 @@ export function representanteDaVenda(vendedor: string): string {
   return `NVL(NULLIF(${vendedor}, 0), C.VEND_1)`;
 }
 
-/** Família do produto do item: o grupo de custo de nível 2. Aliases D = NFDE, P e G novos. */
+/** Família do produto do item: o grupo de custo de nível 2. Aliases D = NFDE ou VEPD, P e G novos. */
 export const FAMILIA_DO_ITEM = `
   LEFT JOIN ABC71.SGI5_TAB_ENG_PAC P ON TRIM(P.PAC_COD) = TRIM(D.C_PROD)
   LEFT JOIN ABC71.SGI5_TAB_CUS_V3_GRP G ON G.GRP_GRP = P.PAC_GRC`;

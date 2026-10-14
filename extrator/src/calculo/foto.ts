@@ -3,8 +3,9 @@ import { VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
 import type { ClienteDaCarteira, DadosDoErp } from "../erp/tipos.ts";
 import { idDoCliente } from "../idDoCliente.ts";
 import { diaUtilDoMes, diasUteisDoMes } from "./calendario.ts";
-import { montarClientes } from "./clientes.ts";
+import { SEM_FAMILIA, montarClientes } from "./clientes.ts";
 import { montarPainel } from "./painel.ts";
+import { montarPedidos } from "./pedidos.ts";
 import type { Referencia } from "./referencia.ts";
 
 /**
@@ -15,7 +16,8 @@ import type { Referencia } from "./referencia.ts";
 export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizados: string[], chaveDoId: Buffer): Foto {
   const idDe = (cliente: ClienteDaCarteira) => idDoCliente(chaveDoId, cliente.empresa, cliente.cliente);
   const idPorChave = new Map(dados.carteira.map((cliente) => [cliente.chave, idDe(cliente)]));
-  const isAutorizado = (representante: string) => autorizados.includes(representante);
+  const pedidos = dados.pedidos.filter((pedido) => autorizados.includes(pedido.representante));
+  const clientes = montarClientes(dados, referencia, idDe);
   return {
     foto: {
       versao_esquema: VERSAO_DO_ESQUEMA,
@@ -28,7 +30,8 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
       semestre_fim: somarMeses(referencia.mesAtual, -1),
     },
     representante: autorizados.map((codigo) => ({ codigo, nome: dados.representantes.get(codigo) ?? "" })),
-    ...montarClientes(dados, referencia, idDe),
+    ...clientes,
+    produto: juntarProdutos(clientes.produto, [...pedidos, ...dados.notas].flatMap((documento) => documento.itens)),
     painel_mes: montarPainel(dados.vendasDoDia, autorizados, referencia, dados.diasUteis).map((mes) => ({
       representante: mes.representante,
       mes: mes.mes,
@@ -37,25 +40,15 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
       ano_anterior_ate_dia_util: mes.anoAnteriorAteDiaUtil,
       ritmo_por_dia_util: mes.ritmoPorDiaUtil,
     })),
-    pedido_aberto: dados.pedidos
-      .filter((pedido) => isAutorizado(pedido.representante))
-      .map((pedido) => ({
-        pedido: pedido.pedido,
-        representante: pedido.representante,
-        cliente: idPorChave.get(pedido.chave) ?? null,
-        emissao: pedido.emissao,
-        entrega: pedido.entrega,
-        itens: pedido.itens,
-        valor: pedido.valor,
-        valor_entrega_no_mes: pedido.valorEntregaNoMes,
-      })),
-    nota: dados.notas.map((nota) => ({
-      nota: nota.nota,
-      serie: nota.serie,
-      representante: nota.representante,
-      cliente: idPorChave.get(nota.chave) ?? null,
-      emissao: nota.emissao,
-      valor: nota.valor,
-    })),
+    ...montarPedidos({ pedidos, notas: dados.notas }, referencia, (chave) => idPorChave.get(chave) ?? null),
   };
+}
+
+/** A família de cada produto que aparece na ficha, num pedido em aberto ou numa nota, uma vez só. */
+function juntarProdutos(daFicha: Foto["produto"], dosItens: readonly { produto: string; familia: string | null }[]): Foto["produto"] {
+  const familias = new Map(daFicha.map(({ produto, familia }) => [produto, familia]));
+  for (const { produto, familia } of dosItens) {
+    if (!familias.has(produto)) familias.set(produto, familia ?? SEM_FAMILIA);
+  }
+  return [...familias].map(([produto, familia]) => ({ produto, familia }));
 }

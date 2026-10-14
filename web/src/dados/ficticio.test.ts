@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { dataDoMomento } from "dominio/datas";
-import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, painelFicticio, situacaoDosDadosFicticia } from "./ficticio";
+import {
+  clientesFicticios,
+  fichaFicticia,
+  notasFaturadasFicticias,
+  painelFicticio,
+  pedidosNoErpFicticios,
+  situacaoDosDadosFicticia,
+} from "./ficticio";
 
 // Contrato que o extrator (F2) também precisa cumprir: tendência, faturado e variação contam a mesma história.
 describe("evolução do faturado em 12 meses, na lista de clientes", () => {
@@ -46,6 +53,23 @@ describe("contrato das outras telas", () => {
     expect(new Set(notas.map((nota) => nota.id)).size).toBe(notas.length);
   });
 
+  it("abre cada pedido em aberto nos itens com saldo, que somam o valor dele e começam pela entrega dele", () => {
+    const pedidos = pedidosNoErpFicticios();
+    expect(pedidos.length).toBeGreaterThan(0);
+    for (const pedido of pedidos) {
+      expect(pedido.itensEmAberto).toHaveLength(pedido.itens);
+      expect(somarValores(pedido.itensEmAberto)).toBe(pedido.valor);
+      expect(pedido.itensEmAberto.map((item) => item.entrega).sort()[0]).toBe(pedido.entrega);
+    }
+  });
+
+  it("abre cada nota nos itens dela, que somam o valor da nota", () => {
+    for (const nota of notasFaturadasFicticias()) {
+      expect(nota.itens.length).toBeGreaterThan(0);
+      expect(somarValores(nota.itens)).toBe(nota.valor);
+    }
+  });
+
   it("mostra na ficha só o ano da primeira compra, que não passa do ano da última", () => {
     for (const cliente of clientesFicticios()) {
       const ficha = fichaFicticia(cliente.codigo);
@@ -67,3 +91,7 @@ describe("pessoa física na carteira", () => {
     for (const cliente of pessoasFisicas) expect(fichaFicticia(cliente.codigo)?.codigoErp).toBeNull();
   });
 });
+
+function somarValores(itens: readonly { valor: number }[]): number {
+  return itens.reduce((soma, item) => soma + item.valor, 0);
+}

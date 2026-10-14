@@ -31,7 +31,7 @@ export async function lerDadosDoErp(
     datasDeCompra: await etapa("datas de compra", () => lerDatasDeCompra(oracle, referencia, autorizados)),
     familias: await etapa("famílias da Suprens", () => lerFamiliasDaSuprens(oracle, referencia)),
     produtos: await etapa("produtos", () => lerProdutosMaisComprados(oracle, referencia, autorizados)),
-    pedidos: await etapa("pedidos em aberto", () => lerPedidosEmAberto(oracle, referencia)),
+    pedidos: await etapa("pedidos em aberto", () => lerPedidosEmAberto(oracle)),
     notas: await etapa("notas recentes", () => lerNotasRecentes(oracle, referencia, autorizados)),
     vendasDoDia: await etapa("vendas por dia", () => lerVendasPorDia(oracle, referencia, autorizados)),
     diasUteis: await etapa("calendário", () => lerCalendario(oracle, referencia)),

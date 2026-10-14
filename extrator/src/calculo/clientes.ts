@@ -12,7 +12,7 @@ import { MESES_FECHADOS, type Referencia } from "./referencia.ts";
  * módulo dominio (as mesmas do protótipo).
  */
 
-const SEM_FAMILIA = "SEM FAMÍLIA";
+export const SEM_FAMILIA = "SEM FAMÍLIA";
 /** A Ficha mostra 24 meses fechados e o corrente. */
 const MESES_DA_FICHA = 25;
 

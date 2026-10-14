@@ -4,7 +4,7 @@
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
  */
 
-export const VERSAO_DO_ESQUEMA = 2;
+export const VERSAO_DO_ESQUEMA = 3;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -131,6 +131,16 @@ CREATE TABLE pedido_aberto (
 ) STRICT;
 CREATE INDEX pedido_aberto_representante ON pedido_aberto (representante);
 
+CREATE TABLE pedido_aberto_item (
+  pedido TEXT NOT NULL,
+  ordem INTEGER NOT NULL,
+  produto TEXT NOT NULL,
+  pecas REAL NOT NULL,
+  entrega TEXT NOT NULL,
+  valor REAL NOT NULL,
+  PRIMARY KEY (pedido, ordem)
+) STRICT;
+
 CREATE TABLE nota (
   nota TEXT NOT NULL,
   serie TEXT NOT NULL,
@@ -138,9 +148,20 @@ CREATE TABLE nota (
   cliente TEXT,
   emissao TEXT NOT NULL,
   valor REAL NOT NULL,
+  pedidos TEXT NOT NULL,
   PRIMARY KEY (nota, serie)
 ) STRICT;
 CREATE INDEX nota_representante ON nota (representante);
+
+CREATE TABLE nota_item (
+  nota TEXT NOT NULL,
+  serie TEXT NOT NULL,
+  ordem INTEGER NOT NULL,
+  produto TEXT NOT NULL,
+  pecas REAL NOT NULL,
+  valor REAL NOT NULL,
+  PRIMARY KEY (nota, serie, ordem)
+) STRICT;
 `;
 
 /** O conteúdo da foto, tabela a tabela: o nome de cada campo é o nome da tabela e das colunas. */
@@ -210,5 +231,18 @@ export type Foto = {
     valor: number;
     valor_entrega_no_mes: number;
   }[];
-  nota: { nota: string; serie: string; representante: string; cliente: string | null; emissao: string; valor: number }[];
+  /** Os itens com saldo de cada pedido, na ordem do pedido; o mesmo produto pode vir em duas entregas. */
+  pedido_aberto_item: { pedido: string; ordem: number; produto: string; pecas: number; entrega: string; valor: number }[];
+  nota: {
+    nota: string;
+    serie: string;
+    representante: string;
+    cliente: string | null;
+    emissao: string;
+    valor: number;
+    /** Lista em JSON dos pedidos do ERP de onde a nota saiu. */
+    pedidos: string;
+  }[];
+  /** Os itens de cada nota, na ordem da nota. */
+  nota_item: { nota: string; serie: string; ordem: number; produto: string; pecas: number; valor: number }[];
 };

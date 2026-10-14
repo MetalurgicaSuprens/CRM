@@ -81,6 +81,18 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     expect(pedidos.json().emAberto.map((pedido: { numero: string }) => pedido.numero)).toEqual(["100001"]);
   });
 
+  it("traz os itens de cada pedido e de cada nota de A, para a linha abrir na própria lista", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const { emAberto, faturados } = (await app.inject({ method: "GET", url: "/api/pedidos" })).json();
+    expect(emAberto[0].itensEmAberto).toEqual([
+      { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 1_000, entrega: "2026-10-20", valor: 3_000 },
+      { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 500, entrega: "2026-10-27", valor: 2_000 },
+    ]);
+    expect(faturados).toMatchObject([
+      { numero: "100002", pedidos: ["100001"], itens: [{ ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 100, valor: 1_000 }] },
+    ]);
+  });
+
   it("recusa o código de cliente fora do formato do id", async () => {
     const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
     const resposta = await app.inject({ method: "GET", url: "/api/clientes/591328580003" });

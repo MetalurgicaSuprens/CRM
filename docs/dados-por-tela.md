@@ -533,7 +533,7 @@ Convenções:
 - **Datas:** texto ISO ('AAAA-MM-DD'), meses 'AAAA-MM' e momentos 'AAAA-MM-DDTHH:MM', todos gerados por `TO_CHAR` no Oracle (plano.md:67).
 - **Cliente:** `cliente` é sempre o id opaco. `CRCL.CLIENTE` só aparece em `cliente.codigo_erp`, e só de empresa. O histórico de vendedores não aparece em nenhuma tabela.
 - **Produto:** sempre o código com TRIM (`TRIM(NFDE.C_PROD)`, `TRIM(VIEW_PAC)`, `TRIM(PAC_COD)`, `TRIM(ESTQ.C_PROD)`). `NFDE.C_PROD` é CHAR(14) (omega/ABC71-NF.md:2833). Sem TRIM, a junção do "já comprou" falha. O Gestao lê `TRIM(D.C_PROD)` (moduloVendasEntradas.ts:48), e o SGI liga a view ao ESTQ com TRIM nos dois lados (`untVenPvd_PosPac.dfm:551-552`).
-- **Escopo:** toda leitura do servidor parte de `cliente.representante`, `painel_mes.representante`, `pedido_aberto.representante` ou `nota.representante`, entre os códigos do login da sessão. Tabela sem a coluna `representante` só é lida por junção com `cliente`. O nome do cliente de um pedido ou de uma nota vem só de `cliente` com um dos códigos da sessão.
+- **Escopo:** toda leitura do servidor parte de `cliente.representante`, `painel_mes.representante`, `pedido_aberto.representante` ou `nota.representante`, entre os códigos do login da sessão. Tabela sem a coluna `representante` só é lida por junção com `cliente` ou, nos itens, com o pedido ou a nota de onde vêm (`pedido_aberto_item` com `pedido_aberto`, `nota_item` com `nota`). O nome do cliente de um pedido ou de uma nota vem só de `cliente` com um dos códigos da sessão.
 - **Pedido CRM:** `pedido_crm` e `pedido_crm_etapa` não têm cliente nem representante. O servidor só os lê pelo `numero_crm` de um pedido do usuário da sessão no app.db. Número CRM de outro login, ou inexistente, responde 404 (plano.md:43). Como o número é sequencial (CRM-00106, CRM-00107…), a rota `/pedidos/:numero` (App.tsx:28) entra no teste de escopo da F3.
 - **Valores:** R$ com centavos. O arredondamento é da tela.
 
@@ -546,7 +546,7 @@ Convenções:
 | `cliente_familia` | Cliente × família nos 12 meses fechados; PK (`cliente`, `familia`) | `cliente`, `familia`, `valor`, `participacao` | Ficha |
 | `ficha_produto` | Cliente × produto, só os 8 maiores em valor nos 12 meses fechados; PK (`cliente`, `produto`) | `cliente`, `produto`, `pecas_12m`, `valor_12m`, `ultima_compra` | Ficha |
 | `cliente_mix` | Cliente × família sugerida; PK (`cliente`, `familia`) | `cliente`, `familia`, `penetracao`, `ordem` | Ficha, Análises |
-| `produto` | Produto que aparece em `catalogo` ou `ficha_produto`; PK `produto` | `produto`, `familia`, `medida` | Ficha, Montar pedido, Detalhe (cópia no envio) |
+| `produto` | Produto que aparece em `catalogo`, `ficha_produto`, `pedido_aberto_item` ou `nota_item`; PK `produto` | `produto`, `familia`, `medida` | Ficha, Pedidos, Montar pedido, Detalhe (cópia no envio) |
 | `catalogo` | Cliente × produto vendável na tabela do cliente; PK (`cliente`, `produto`) | `cliente`, `produto`, `codigo_no_cliente`, `preco_cento`, `embalagem`, `ja_comprou` | Montar pedido; validação do rascunho e do envio |
 | `analise_parado` | Cliente que parou de comprar; PK `cliente` | `cliente`, `perda_mensal`, `ordem` | Análises, Início |
 | `analise_ritmo` | Cliente comprando menos ou mais; PK `cliente` | `cliente`, `direcao`, `semestre`, `semestre_ano_anterior`, `variacao`, `variacao_pecas`, `ordem` | Análises, Início |
@@ -554,7 +554,9 @@ Convenções:
 | `analise_mix` | Cliente da lista de mix; PK `cliente` | `cliente`, `ordem` | Análises |
 | `painel_mes` | Representante × mês do ano corrente; PK (`representante`, `mes`) | `representante`, `mes`, `faturado`, `ano_anterior`, `ano_anterior_ate_dia_util`, `ritmo_por_dia_util` | Início |
 | `pedido_aberto` | Pedido do Omega com saldo, atribuído a um representante autorizado; PK `pedido` | `pedido`, `representante`, `cliente`, `emissao`, `entrega`, `itens`, `valor`, `valor_entrega_no_mes` | Pedidos, Ficha, Início |
-| `nota` | Nota de venda da janela da aba Faturados (45 dias, a confirmar), atribuída a um representante autorizado (pergunta 23); uma linha por nota; PK (`nota`, `serie`) | `nota`, `serie`, `representante`, `cliente`, `emissao`, `valor` | Pedidos |
+| `pedido_aberto_item` | Item com saldo de um pedido de `pedido_aberto`, na ordem do pedido; PK (`pedido`, `ordem`) | `pedido`, `ordem`, `produto`, `pecas`, `entrega`, `valor` | Pedidos |
+| `nota` | Nota de venda da janela da aba Faturados (45 dias, a confirmar), atribuída a um representante autorizado (pergunta 23); uma linha por nota; PK (`nota`, `serie`) | `nota`, `serie`, `representante`, `cliente`, `emissao`, `valor`, `pedidos` | Pedidos |
+| `nota_item` | Item de uma nota de `nota`, na ordem da nota; PK (`nota`, `serie`, `ordem`) | `nota`, `serie`, `ordem`, `produto`, `pecas`, `valor` | Pedidos |
 | `pedido_crm` | Pedido enviado pelo CRM que a LAN já tratou; PK `numero_crm` | `numero_crm`, `etapa`, `numero_sgi`, `total_sgi`, `motivo_recusa`, `motivo_produto` | Pedidos, Detalhe |
 | `pedido_crm_etapa` | Pedido CRM × etapa alcançada; PK (`numero_crm`, `etapa`) | `numero_crm`, `etapa`, `em` | Detalhe |
 
@@ -574,6 +576,9 @@ Colunas que pedem nota:
 - `pedido_aberto.cliente` e `nota.cliente`: o id opaco quando o cliente é da carteira do representante atribuído; nulo nos outros casos, com a conta na LAN. A linha com cliente nulo mostra "Cliente de outra carteira" (proposta, pergunta 33).
 - `pedido_aberto.pedido`: o número do Omega. Se houver mais de uma EMP_FIL com pedidos, a chave inclui a empresa.
 - `pedido_aberto.valor_entrega_no_mes`: parte do valor com entrega até o fim do mês corrente, inclusive os vencidos.
+- `pedido_aberto_item`: uma linha por item do VEPD com saldo. `pecas` é o saldo em peças (CT ×100), `valor` é a conta de "Valor em aberto" (ver Pedidos) e `entrega` é a do item. `ordem` é a posição no pedido, pela `VEPD.SEQUENCIA`: o mesmo produto pode vir em duas linhas, com entregas diferentes. A soma dos itens é o `valor` do pedido, a contagem é `itens`, e a menor entrega é a `entrega` dele (extrator/src/calculo/pedidos.ts).
+- `nota_item`: uma linha por item do NFDE, com as peças (CT ×100) e o valor da RF. `ordem` é a posição na nota, por tipo de movimento e `LINHA`. A soma dos itens é o `valor` da nota.
+- `nota.pedidos`: lista em JSON dos `NFME.NRO_PEDIDO` da nota, sem repetir e sem o 0, como a Consulta Pedidos Venda do SGI liga a nota ao pedido (ver Detalhe do pedido).
 - `nota`: o valor soma todas as linhas NFME/NFDE da nota, inclusive de tipos de movimento diferentes. Nenhuma tela mostra `serie`: ela serve só de chave. Se houver mais de uma EMP_FIL com notas de venda, a chave inclui a empresa.
 - `pedido_crm`: não tem representante. O dono vem do app.db, pelo número CRM.
 - `pedido_crm.numero_sgi`: serve também como número no ERP (ver Perguntas).
@@ -641,11 +646,11 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 | `ABC71.CRCL` | EMP_FIL, CLIENTE, TIPO_CAD, NOM_FANTAS, RAZ_SOCIAL, COMPLEM_RZ, CIDADE, ESTADO, TIPO_CLI, FIS_JURID, VEND_1; RESERVADO7 só se a pergunta 5 confirmar o código IBGE; COD_PAIS só se a pergunta 5 decidir mostrar o país | Identidade, mercado, carteira, raiz para os grupos (calculada na LAN), nome da cidade e município | omega/ABC71-CR.md:965-1141 (PK 973; 981-988, 995-996, 1005, 1019, 1052, 1079, 1088); OracleDB/docs/licoes.md:97-101 | sim |
 | `ABC71.CRCLH` | EMP_FIL, CLIENTE, SEQ_HIST, DT_HIST, CAMPO, HISTORICO | Dono do cliente na data da nota sem vendedor. Só na LAN | omega/ABC71-CR.md:1279-1300; pista em CRM-prototipo/server/src/repHistorico.ts:7-41 | sim; formato de HISTORICO a confirmar |
 | `ABC71.CRVN` | EMP_FIL, VENDEDOR, NOME, NOME_CONH | Nome do representante, com `EMP_FIL = 20210001` | omega/ABC71-CR.md:5467-5488; untDmVenPvd.dfm:499-503 e 4976-5006 | sim |
-| `ABC71.NFME` | EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO, ID_CANCEL, DT_EMISSAO, VENDEDOR, NRO_PEDIDO | Cabeçalho da nota: cliente, data, cancelamento, vendedor (atribuição), número da NF e pedido da nota (datas de faturado do pedido CRM) | omega/ABC71-NF.md:6647-6739 (PK 6655; 6663-6667, 6674, 6678, 6694, 6739); Gestao/server/src/producao/foto/moduloVendasEntradas.ts:13 e 32-43; `Vendas {VEN}/Consulta Pedidos Venda {CONPVE}/untDmVenConPve_ConPve.dfm:527-528 e 1257-1261` | sim |
-| `ABC71.NFDE` | EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO, C_PROD, UNIDADE, QTDE, VLR_TOTAL, Z_FRANCA_DESC | Valor, peças e produto de cada item | omega/ABC71-NF.md:2804-2884 (PK 2812; 2833, 2836, 2840, 2849, 2884); Gestao/server/src/producao/foto/moduloVendasClientes.ts:25-36 | sim |
+| `ABC71.NFME` | EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO, ID_CANCEL, DT_EMISSAO, VENDEDOR, NRO_PEDIDO | Cabeçalho da nota: cliente, data, cancelamento, vendedor (atribuição), número da NF e pedido da nota (pedido de origem na aba Faturados e datas de faturado do pedido CRM) | omega/ABC71-NF.md:6647-6739 (PK 6655; 6663-6667, 6674, 6678, 6694, 6739); Gestao/server/src/producao/foto/moduloVendasEntradas.ts:13 e 32-43; `Vendas {VEN}/Consulta Pedidos Venda {CONPVE}/untDmVenConPve_ConPve.dfm:527-528 e 1257-1261` | sim |
+| `ABC71.NFDE` | EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO, LINHA, C_PROD, UNIDADE, QTDE, VLR_TOTAL, Z_FRANCA_DESC | Valor, peças e produto de cada item, inclusive os itens da nota na aba Faturados | omega/ABC71-NF.md:2804-2884 (PK 2812; 2833, 2836, 2840, 2849, 2884); Gestao/server/src/producao/foto/moduloVendasClientes.ts:25-36 | sim |
 | `ABC71.ESTQ` | C_PROD, GRUPO, QT_ALT_OBR | Produto ativo no Omega; família pela regra do Gestao (conferência). O PA tem uma linha por C_PROD (produto-acabado.md:9), apesar da PK com EMP_FIL, ESTAB e DEPOSITO | omega/ABC71-ES.md:335-378 (PK 343; 354, 355, 378); untVenPvd_PosPac.dfm:555-557 | sim |
 | `ABC71.VEPM` | EMP_FIL, NUMERO, CLIENTE, DT_PED, BLOQUEADO, DT_ENTREGA, Z_FRANCA_DESC, VENDEDOR; LIVRE só se a ligação pelo número CRM se confirmar | Pedido em aberto e sua atribuição ao representante (conta na LAN), etapa "no ERP", alíquota da Zona Franca no tipo 315 | omega/ABC71-VE.md:8041-8138 (PK 8049; 8057-8060, 8076, 8083, 8097, 8137, 8138); Gestao/server/src/pcp/emAberto.ts:58-72; SGI12CodigoFonte/Recebimento {REC}/Carga Pedido Venda e NF {CPV}/untDmRecCpv_Cpv.dfm:915-931 | sim; LIVRE a confirmar |
-| `ABC71.VEPD` | EMP_FIL, NUMERO, SEQUENCIA, TIPO_MOVTO, DT_ENTREGA, SALDO, VLR_UNIT, PORC_DESC, PORC_DESC2, PORC_DESC_CPAG, PORC_DESC_CLI | Saldo, entrega, contagem de itens e valor em aberto | omega/ABC71-VE.md:6774-6868 (PK 6782; 6790-6792, 6797, 6799, 6808, 6812-6813, 6866-6868); Gestao/server/src/pcp/emAberto.ts:58-72 | sim |
+| `ABC71.VEPD` | EMP_FIL, NUMERO, SEQUENCIA, C_PROD, UNIDADE, TIPO_MOVTO, DT_ENTREGA, SALDO, VLR_UNIT, PORC_DESC, PORC_DESC2, PORC_DESC_CPAG, PORC_DESC_CLI | Saldo, entrega, contagem de itens e valor em aberto, e os itens com saldo que a aba Em aberto mostra | omega/ABC71-VE.md:6774-6868 (PK 6782; 6790-6792, 6797, 6799, 6808, 6812-6813, 6866-6868); Gestao/server/src/pcp/emAberto.ts:58-72 | sim |
 | `ABC71.VEPM_SGI5_LOG` | LOG_NPE, LOG_DTA | Data do cancelamento (candidata) | omega/ABC71-VE.md:8417-8436 | sim; uso a confirmar |
 | `ABC71.TGPA` | EMPRESA, FILIAL, COD_PAIS, NOME_PAIS, só se a pergunta 5 decidir mostrar o país | Nome do país do cliente do exterior | omega/ABC71-TG.md:437-455 | sim; uso a confirmar |
 
@@ -728,7 +733,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extrator gera a foto, e a API mostra com ela o Início, Clientes, Ficha, Análises e as abas "Em aberto no ERP" e "Faturados" de Pedidos. Tudo roda só neste computador, com o login de teste, porque o login de verdade é da F3 (README.md, "Como rodar"). Catálogo, rascunhos e envio ainda não usam os dados reais.
 
-- **Esquema implementado (versão 2, com o ritmo da projeção):** as tabelas acima, menos `catalogo`, `pedido_crm` e `pedido_crm_etapa`. Faltam também `cliente.tabela_preco`, `cliente.municipio_ibge` e `produto.medida`, que chegam com o catálogo e o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
+- **Esquema implementado (versão 3, com os itens dos pedidos em aberto e das notas):** as tabelas acima, menos `catalogo`, `pedido_crm` e `pedido_crm_etapa`. Faltam também `cliente.tabela_preco`, `cliente.municipio_ibge` e `produto.medida`, que chegam com o catálogo e o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
 - **Conferência com o RELCUS001.** O faturado por representante e mês bate com a `SGI5_TAB_CUS_REP_FAT` nos códigos 1401 e 1402, em todos os meses de 2025 e 2026, com duas exceções:
   - junho de 2025: R$ 2.567,02 estão no 1402 no RELCUS001 e no 1401 pelo vendedor da nota. A soma dos dois códigos bate;
   - o mês corrente, porque a tabela do RELCUS001 ainda não tinha o dia.
@@ -753,6 +758,12 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
   - valor em aberto: a conta proposta em Pedidos, ainda sem conferir com a tela do SGI (pergunta 13);
   - `pedido_aberto.cliente` e `nota.cliente`: o id quando o cliente está na carteira de qualquer autorizado. O servidor só mostra o nome quando o cliente é da carteira do login. O pedido do login para cliente de outra carteira conta no Início e não aparece na lista (pergunta 33);
   - nome e cidade como estão no ERP, em maiúsculas e sem acento, até o IBGE da F6.
+- **Itens em Pedidos (2026-10-14).** A linha da aba Pedidos abre os detalhes na própria lista, e a foto passou a levar os itens (`pedido_aberto_item`, `nota_item`) e o pedido de origem da nota (`nota.pedidos`).
+  - O extrator lê os pedidos em aberto e as notas item a item. A entrega, o valor e a parte do mês de cada pedido passaram do SQL para `extrator/src/calculo/pedidos.ts`, com teste.
+  - Conferido em 14/10: os 3 pedidos e as 66 notas da Star Vendas saíram iguais aos da foto da versão 2, com diferença de 1e-11 real, da soma feita no Node.
+  - Nos dados: o Omega guarda no pedido o item já faturado, com saldo 0. Em 41 dos pedidos com saldo, algum item já foi faturado, mas só 2 itens estão faturados em parte. A aba mostra só os itens com saldo, que são o valor em aberto.
+  - Cada nota dos últimos 45 dias tem um pedido de origem. Não há produto repetido num pedido ou numa nota da Star Vendas, mas a foto aceita, porque o pedido programado pode ter o mesmo produto em duas entregas.
+  - A resposta de `/api/pedidos` da Star Vendas foi a 137 KB sem compressão, quase toda dos 1.188 itens das notas.
 - **Ainda não feito:** grupos por raiz de CNPJ, status `CLI3_STA`, catálogo e preços, a troca da foto por SFTP com manifesto e os esquemas de resposta da API.
 
 ## Perguntas para a F2

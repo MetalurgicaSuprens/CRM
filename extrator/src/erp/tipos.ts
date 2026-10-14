@@ -51,6 +51,18 @@ export type ProdutoDoCliente = {
   ultimaCompra: string;
 };
 
+/** Item com saldo de um pedido do Omega. */
+export type ItemEmAbertoNoErp = {
+  produto: string;
+  /** null para o produto sem grupo de custo. */
+  familia: string | null;
+  /** O saldo, em peças. */
+  pecas: number;
+  entrega: string;
+  /** Saldo × preço, com os descontos do item e a Zona Franca do pedido. */
+  valor: number;
+};
+
 /** Pedido do Omega com saldo, de qualquer representante. */
 export type PedidoEmAbertoNoErp = {
   pedido: string;
@@ -58,12 +70,18 @@ export type PedidoEmAbertoNoErp = {
   /** VEPM.VENDEDOR e, sem ele, o dono atual do cliente. */
   representante: string;
   emissao: string;
-  /** A entrega mais próxima entre os itens com saldo. */
-  entrega: string;
-  itens: number;
+  /** Os itens com saldo, na ordem do pedido: sempre pelo menos um. */
+  itens: ItemEmAbertoNoErp[];
+};
+
+/** Item de uma nota de venda. */
+export type ItemDaNota = {
+  produto: string;
+  /** null para o produto sem grupo de custo. */
+  familia: string | null;
+  pecas: number;
+  /** O valor da RF: sem IPI e sem o desconto da Zona Franca. */
   valor: number;
-  /** Parte do valor com entrega até o fim do mês corrente, inclusive a atrasada. */
-  valorEntregaNoMes: number;
 };
 
 /** Nota de venda dos últimos 45 dias de um representante autorizado. */
@@ -73,7 +91,10 @@ export type NotaRecente = {
   chave: string;
   representante: string;
   emissao: string;
-  valor: number;
+  /** Os pedidos do Omega de onde a nota saiu (NFME.NRO_PEDIDO), sem repetir. */
+  pedidos: string[];
+  /** Na ordem da nota: sempre pelo menos um. */
+  itens: ItemDaNota[];
 };
 
 /** Faturado de cada representante autorizado por dia, desde 1º de janeiro do ano anterior. */
