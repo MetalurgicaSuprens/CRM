@@ -1,0 +1,4 @@
+/* Cada período fica inteiro numa linha: "abr–set/26" não quebra no traço */
+.periodo {
+  white-space: nowrap;
+}

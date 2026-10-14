@@ -1,4 +1,4 @@
-import { diasEntre } from "./datas.ts";
+import { diasEntre, somarMeses } from "./datas.ts";
 import type { Situacao } from "./tipos.ts";
 
 /*
@@ -105,9 +105,16 @@ export function perdaMensal(cliente: HistoricoDoCliente): number {
   return Math.round(somar(doze.map((mes) => mes.valor)) / 12);
 }
 
+/** Os 6 meses fechados que "comprando menos ou mais" compara: do 6º antes do mês corrente ao mês passado. */
+export function semestreDoRitmo(mesAtual: string): { inicio: string; fim: string } {
+  return { inicio: somarMeses(mesAtual, -6), fim: somarMeses(mesAtual, -1) };
+}
+
 /**
  * Comprando menos ou mais: últimos 6 meses fechados contra os mesmos 6 do ano anterior. Exige base
- * de R$ 3 mil, 3 compras nos dois períodos, variação de 20% e diferença de R$ 2 mil.
+ * de R$ 3 mil, 3 compras nos dois períodos, variação de 20% e diferença de R$ 2 mil. A queda ainda
+ * precisa continuar no último trimestre (decidido pelo Lucas em 2026-10-14): quem já voltou a
+ * comprar como no ano anterior não fica em risco por uma pausa que passou.
  */
 export function mudancaDeRitmo(cliente: HistoricoDoCliente): MudancaDeRitmo | null {
   const total = cliente.mensal.length;
@@ -119,6 +126,7 @@ export function mudancaDeRitmo(cliente: HistoricoDoCliente): MudancaDeRitmo | nu
   if (semestreAnoAnterior < BASE_MINIMA_DO_SEMESTRE || compras < COMPRAS_MINIMAS) return null;
   const variacao = semestre / semestreAnoAnterior - 1;
   if (Math.abs(variacao) < VARIACAO_MINIMA || Math.abs(semestre - semestreAnoAnterior) < DIFERENCA_MINIMA) return null;
+  if (variacao < 0 && !continuaCaindo(cliente)) return null;
   const pecas = somar(atual.map((mes) => mes.pecas));
   const pecasAnoAnterior = somar(anterior.map((mes) => mes.pecas));
   return {
@@ -128,6 +136,14 @@ export function mudancaDeRitmo(cliente: HistoricoDoCliente): MudancaDeRitmo | nu
     variacao,
     variacaoPecas: pecasAnoAnterior > 0 ? pecas / pecasAnoAnterior - 1 : null,
   };
+}
+
+/** Os 3 últimos meses fechados abaixo dos mesmos 3 do ano anterior. */
+function continuaCaindo(cliente: HistoricoDoCliente): boolean {
+  const total = cliente.mensal.length;
+  const trimestre = somar(cliente.mensal.slice(total - 3).map((mes) => mes.valor));
+  const trimestreAnoAnterior = somar(cliente.mensal.slice(total - 15, total - 12).map((mes) => mes.valor));
+  return trimestre < trimestreAnoAnterior;
 }
 
 /**

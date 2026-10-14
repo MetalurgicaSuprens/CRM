@@ -6,6 +6,7 @@ import {
   mudancaDeRitmo,
   parouDeComprar,
   perdaMensal,
+  semestreDoRitmo,
   type HistoricoDoCliente,
 } from "./analises.ts";
 
@@ -61,6 +62,13 @@ describe("perdaMensal", () => {
   });
 });
 
+describe("semestreDoRitmo", () => {
+  it("vai do 6º mês antes do corrente até o mês passado, virando o ano se precisar", () => {
+    expect(semestreDoRitmo("2026-10")).toEqual({ inicio: "2026-04", fim: "2026-09" });
+    expect(semestreDoRitmo("2026-03")).toEqual({ inicio: "2025-09", fim: "2026-02" });
+  });
+});
+
 describe("mudancaDeRitmo", () => {
   it("compara os últimos 6 meses fechados com os mesmos 6 do ano anterior", () => {
     const ritmo = mudancaDeRitmo(historico({ mensal: semestres({ valor: 1_000, pecas: 500 }, { valor: 600, pecas: 300 }) }));
@@ -96,6 +104,27 @@ describe("mudancaDeRitmo", () => {
   it("deixa em risco quem está comprando menos", () => {
     const caindo = historico({ mensal: semestres({ valor: 1_000, pecas: 500 }, { valor: 600, pecas: 300 }) });
     expect(classificarSituacao(caindo, HOJE)).toBe("em_risco");
+  });
+
+  it("não deixa em risco quem já voltou: a queda do semestre tem de continuar no último trimestre", () => {
+    // Três meses sem comprar no começo do semestre (-50%), e o último trimestre igual ao do ano anterior.
+    const mensal = semestres({ valor: 1_000, pecas: 500 }, { valor: 1_000, pecas: 500 });
+    for (const i of [18, 19, 20]) mensal[i] = { valor: 0, pecas: 0 };
+    const voltou = historico({ mensal });
+    expect(mudancaDeRitmo(voltou)).toBeNull();
+    expect(classificarSituacao(voltou, HOJE)).toBe("ativo");
+  });
+
+  it("mantém em risco quem voltou a comprar, mas ainda abaixo do último trimestre do ano anterior", () => {
+    const mensal = semestres({ valor: 2_000, pecas: 1_000 }, { valor: 2_000, pecas: 1_000 });
+    for (const i of [21, 22, 23]) mensal[i] = { valor: 500, pecas: 250 };
+    expect(classificarSituacao(historico({ mensal }), HOJE)).toBe("em_risco");
+  });
+
+  it("não exige o trimestre para comprando mais", () => {
+    const mensal = semestres({ valor: 1_000, pecas: 500 }, { valor: 3_000, pecas: 1_500 });
+    for (const i of [21, 22, 23]) mensal[i] = { valor: 500, pecas: 250 };
+    expect(mudancaDeRitmo(historico({ mensal }))?.direcao).toBe("mais");
   });
 });
 

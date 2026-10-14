@@ -44,9 +44,13 @@ export function numeroOuNulo(linha: Linha, coluna: string): number | null {
   return valor === null || valor === undefined ? null : Number(valor);
 }
 
-/** Colunas de `cliente` (alias c) que formam o ClienteResumo. */
+/**
+ * Colunas de `cliente` (alias c) que formam o ClienteResumo. A queda do semestre só existe em
+ * `analise_ritmo` para quem está em risco: o extrator grava "menos" só nesse caso.
+ */
 export const COLUNAS_DO_RESUMO = `c.cliente, c.codigo_erp, c.nome, c.cidade, c.uf, c.mercado, c.situacao, c.ultima_compra,
-  c.faturamento_12m, c.variacao_12m, c.evolucao_12m`;
+  c.faturamento_12m, c.variacao_12m, c.evolucao_12m,
+  (SELECT r.variacao FROM analise_ritmo r WHERE r.cliente = c.cliente AND r.direcao = 'menos') AS queda_no_semestre`;
 
 export function resumoDoCliente(linha: Linha): ClienteResumo {
   return {
@@ -61,5 +65,6 @@ export function resumoDoCliente(linha: Linha): ClienteResumo {
     faturamento12m: numero(linha, "faturamento_12m"),
     variacao12m: numeroOuNulo(linha, "variacao_12m"),
     evolucao12m: JSON.parse(texto(linha, "evolucao_12m")) as number[],
+    quedaNoSemestre: numeroOuNulo(linha, "queda_no_semestre"),
   };
 }

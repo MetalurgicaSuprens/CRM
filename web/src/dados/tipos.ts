@@ -9,11 +9,16 @@ import type { Mercado, OportunidadeMix, Porte, Situacao } from "dominio/tipos";
 
 export type { Mercado, OportunidadeMix, Porte, Situacao };
 
+/** Meses "2026-04" a "2026-09": os 6 fechados que as análises de ritmo comparam com os mesmos do ano anterior. */
+export type Semestre = { inicio: string; fim: string };
+
 export type SituacaoDosDados = {
   /** Início da leitura do ERP que gerou a foto ("2026-10-09T07:02"). */
   atualizadoEm: string;
   /** Data da foto: a referência das regras e das datas que vêm do ERP. */
   hoje: string;
+  /** O semestre de "comprando menos" e "comprando mais", que explica o selo "Em risco". */
+  semestre: Semestre;
   /**
    * Relógio do servidor em Brasília ("2026-10-09T09:15"). Vale para o "hoje" da barra, a entrega
    * mínima, a data e a saudação do Início e os momentos que o próprio CRM grava. Com a foto
@@ -42,6 +47,11 @@ export type ClienteResumo = {
   faturamento12m: number;
   /** Variação contra os 12 meses anteriores; null quando a base é pequena demais. */
   variacao12m: number | null;
+  /**
+   * Só no cliente em risco: a variação do semestre contra o mesmo do ano anterior, que o pôs em
+   * risco (ver Análises, "Comprando menos"). Ela pode ser negativa com `variacao12m` positiva.
+   */
+  quedaNoSemestre: number | null;
   /**
    * O faturado em 12 meses recalculado no fim de cada mês fechado, de um ano atrás até o último
    * (13 pontos, do mais antigo ao mais recente). O primeiro é a base da variação e o último é
@@ -157,7 +167,7 @@ export type ClienteComMix = {
 /** As listas da tela de análises, já ordenadas pela regra de cada uma. */
 export type Analises = {
   /** Meses de "comprando menos/mais": os 6 últimos fechados e os mesmos do ano anterior. */
-  semestre: { inicio: string; fim: string };
+  semestre: Semestre;
   pararam: ClienteParado[];
   menos: ClienteComVariacao[];
   mais: ClienteComVariacao[];

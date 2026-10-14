@@ -12,7 +12,7 @@ import {
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
 import { PECAS_POR_CENTO } from "./pedido";
-import { analisarCliente, classificarSituacao, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
+import { analisarCliente, semestreDoRitmo, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
 import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
 import { evolucao12m, variacao12m } from "dominio/indicadores";
 import { MESES_DO_RITMO, projetarMes } from "dominio/projecao";
@@ -115,6 +115,8 @@ type Indicadores = {
   faturamento12m: number;
   cicloDias: number | null;
   situacao: Situacao;
+  /** Só no cliente em risco: a variação do semestre que o pôs em risco. */
+  quedaNoSemestre: number | null;
 };
 
 type Carteira = Contexto & {
@@ -134,8 +136,8 @@ function carteira(): Carteira {
 }
 
 export function situacaoDosDadosFicticia(agora = new Date()): SituacaoDosDados {
-  const { atualizadoEm, hoje } = carteira();
-  return { atualizadoEm, hoje, relogio: momentoEmBrasilia(agora), representante: REPRESENTANTE };
+  const { atualizadoEm, hoje, mesAtual } = carteira();
+  return { atualizadoEm, hoje, semestre: semestreDoRitmo(mesAtual), relogio: momentoEmBrasilia(agora), representante: REPRESENTANTE };
 }
 
 export function clientesFicticios(): ClienteResumo[] {
@@ -405,11 +407,13 @@ type BaseDoCliente = Pick<ClienteFicticio, "mensal" | "datasCompra" | "primeiraC
 
 function calcularIndicadores(cliente: BaseDoCliente, contexto: Contexto): Indicadores {
   const historico = historicoParaAnalise(cliente, contexto.hoje);
+  const { situacao, ritmo } = analisarCliente(historico, contexto.hoje);
   return {
     ultimaCompra: cliente.datasCompra.at(-1) ?? null,
     faturamento12m: somarValores(cliente.mensal, ULTIMO_FECHADO - 11, ULTIMO_FECHADO),
     cicloDias: historico.cicloDias,
-    situacao: classificarSituacao(historico, contexto.hoje),
+    situacao,
+    quedaNoSemestre: ritmo?.direcao === "menos" ? ritmo.variacao : null,
   };
 }
 
@@ -441,6 +445,7 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
     faturamento12m: indicadores.faturamento12m,
     variacao12m: variacao12m(evolucao),
     evolucao12m: evolucao,
+    quedaNoSemestre: indicadores.quedaNoSemestre,
   };
 }
 
@@ -588,7 +593,7 @@ function montarAnalises(dados: Carteira): Analises {
     linhas.flatMap(({ analise, resumo }) => (analise.ritmo?.direcao === direcao ? [comVariacao(resumo, analise.ritmo)] : []));
   const diferenca = (item: { semestre: number; semestreAnoAnterior: number }) => item.semestre - item.semestreAnoAnterior;
   return {
-    semestre: { inicio: somarMeses(dados.mesAtual, -6), fim: somarMeses(dados.mesAtual, -1) },
+    semestre: semestreDoRitmo(dados.mesAtual),
     pararam: linhas
       .flatMap(({ analise, historico, resumo }) =>
         analise.parada ? [{ cliente: resumo, ...analise.parada, cicloDias: historico.cicloDias }] : [],

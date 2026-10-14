@@ -91,6 +91,16 @@ li:last-child .linha {
   white-space: nowrap;
 }
 
+/* O selo e, no cliente em risco, o motivo embaixo dele */
+.situacao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--tam-legenda);
+}
+
 .ultimaCompra {
   font-size: var(--tam-pequeno);
   color: var(--cor-texto-2);
@@ -165,10 +175,19 @@ li:last-child .linha {
     grid-area: identificacao;
   }
 
+  /* O motivo do risco quebra em linhas curtas embaixo do selo, para não espremer o nome */
   .situacao {
     grid-area: situacao;
     justify-self: end;
     align-self: start;
+    align-items: flex-end;
+    max-width: 7.5rem;
+    text-align: right;
+  }
+
+  /* O percentual do motivo (a Variacao, último item da célula) também encosta à direita */
+  .situacao > :last-child {
+    justify-content: flex-end;
   }
 
   .faturamento {

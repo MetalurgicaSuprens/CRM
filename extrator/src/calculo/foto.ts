@@ -1,4 +1,4 @@
-import { somarMeses } from "dominio/datas";
+import { semestreDoRitmo } from "dominio/analises";
 import { VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
 import type { ClienteDaCarteira, DadosDoErp } from "../erp/tipos.ts";
 import { idDoCliente } from "../idDoCliente.ts";
@@ -18,6 +18,7 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
   const idPorChave = new Map(dados.carteira.map((cliente) => [cliente.chave, idDe(cliente)]));
   const pedidos = dados.pedidos.filter((pedido) => autorizados.includes(pedido.representante));
   const clientes = montarClientes(dados, referencia, idDe);
+  const semestre = semestreDoRitmo(referencia.mesAtual);
   return {
     foto: {
       versao_esquema: VERSAO_DO_ESQUEMA,
@@ -26,8 +27,8 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
       mes_atual: referencia.mesAtual,
       dia_util: diaUtilDoMes(referencia.hoje, dados.diasUteis),
       dias_uteis: diasUteisDoMes(referencia.mesAtual, dados.diasUteis),
-      semestre_inicio: somarMeses(referencia.mesAtual, -6),
-      semestre_fim: somarMeses(referencia.mesAtual, -1),
+      semestre_inicio: semestre.inicio,
+      semestre_fim: semestre.fim,
     },
     representante: autorizados.map((codigo) => ({ codigo, nome: dados.representantes.get(codigo) ?? "" })),
     ...clientes,

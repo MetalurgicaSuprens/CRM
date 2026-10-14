@@ -4,14 +4,14 @@ import { Users } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Filtros, type Filtro } from "../componentes/Filtros";
-import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { MotivoDoRisco, SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import type { ColunaOrdenavel, Ordem } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
-import type { ClienteResumo, Situacao } from "../dados/tipos";
+import type { ClienteResumo, Semestre, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigoDoCliente, formatarData, formatarTempoDesde, normalizarParaBusca } from "../formato";
 import { AmostraReferencia, Sparkline } from "../graficos/Sparkline";
@@ -114,7 +114,7 @@ export function Clientes() {
           <ul>
             {ordenacao.ordenados.map((cliente) => (
               <li key={cliente.codigo}>
-                <LinhaCliente cliente={cliente} hoje={situacao.hoje} />
+                <LinhaCliente cliente={cliente} hoje={situacao.hoje} semestre={situacao.semestre} />
               </li>
             ))}
           </ul>
@@ -124,7 +124,7 @@ export function Clientes() {
   );
 }
 
-function LinhaCliente({ cliente, hoje }: { cliente: ClienteResumo; hoje: string }) {
+function LinhaCliente({ cliente, hoje, semestre }: { cliente: ClienteResumo; hoje: string; semestre: Semestre }) {
   return (
     <Link to={`/clientes/${cliente.codigo}`} className={estilos.linha}>
       <span className={estilos.identificacao}>
@@ -135,6 +135,7 @@ function LinhaCliente({ cliente, hoje }: { cliente: ClienteResumo; hoje: string 
       </span>
       <span className={estilos.situacao}>
         <SituacaoCliente situacao={cliente.situacao} />
+        <MotivoDoRisco queda={cliente.quedaNoSemestre} semestre={semestre} />
       </span>
       <span className={estilos.ultimaCompra} title={cliente.ultimaCompra ? formatarData(cliente.ultimaCompra) : undefined}>
         <span className={estilos.rotuloCelular}>Última compra </span>

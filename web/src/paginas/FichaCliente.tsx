@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import {
   Boxes,
@@ -19,7 +20,7 @@ import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
-import { SituacaoCliente } from "../componentes/SituacaoCliente";
+import { MotivoDoRisco, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
@@ -28,7 +29,7 @@ import type { ColunaOrdenavel } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
-import type { FichaCliente as Ficha, Mercado, PedidoEmAberto, Porte, ProdutoComprado } from "../dados/tipos";
+import type { FichaCliente as Ficha, Mercado, PedidoEmAberto, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigoDoCliente, formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
@@ -49,7 +50,7 @@ export function FichaCliente() {
         antes={<Voltar para="/clientes" rotulo="Clientes" />}
         titulo={ficha.nome}
         selo={<SituacaoCliente situacao={ficha.situacao} tamanho="grande" />}
-        descricao={ficha.razaoSocial === ficha.nome ? undefined : ficha.razaoSocial}
+        descricao={descricaoDaFicha(ficha, situacao.semestre)}
         aoLado={<DadosDoCliente ficha={ficha} />}
         acoes={<NovoPedido codigo={ficha.codigo} />}
       />
@@ -113,6 +114,21 @@ function Dado({ icone: Icone, rotulo, valor }: { icone: LucideIcon; rotulo: stri
       </dt>
       <dd className={estilos.valorDado}>{valor}</dd>
     </div>
+  );
+}
+
+/**
+ * Embaixo do nome: a razão social, quando é outra, e o motivo do selo "Em risco". O motivo não vai
+ * ao lado do selo porque alargaria a linha do título, que empurraria o cadastro ao lado.
+ */
+function descricaoDaFicha(ficha: Ficha, semestre: Semestre): ReactNode {
+  const razaoSocial = ficha.razaoSocial === ficha.nome ? null : ficha.razaoSocial;
+  if (!razaoSocial && ficha.quedaNoSemestre === null) return undefined;
+  return (
+    <span className={estilos.descricao}>
+      {razaoSocial ? <span>{razaoSocial}</span> : null}
+      <MotivoDoRisco queda={ficha.quedaNoSemestre} semestre={semestre} />
+    </span>
   );
 }
 

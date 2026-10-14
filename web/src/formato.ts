@@ -1,4 +1,5 @@
-import { dataDoMomento, diasEntre, horaDoMomento, paraDiaUtc } from "dominio/datas";
+import { dataDoMomento, diasEntre, horaDoMomento, paraDiaUtc, somarMeses } from "dominio/datas";
+import type { Semestre } from "./dados/tipos";
 
 const REAIS = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -77,6 +78,14 @@ export function formatarMesAno(mesIso: string): string {
 export function formatarPeriodo(inicioIso: string, fimIso: string): string {
   const inicio = inicioIso.slice(0, 4) === fimIso.slice(0, 4) ? formatarMesCurto(inicioIso) : formatarMesAno(inicioIso);
   return `${inicio}–${formatarMesAno(fimIso)}`;
+}
+
+/** O semestre das análises de ritmo e o mesmo do ano anterior: "abr–set/26" e "abr–set/25". */
+export function formatarSemestres(semestre: Semestre): { atual: string; anterior: string } {
+  return {
+    atual: formatarPeriodo(semestre.inicio, semestre.fim),
+    anterior: formatarPeriodo(somarMeses(semestre.inicio, -12), somarMeses(semestre.fim, -12)),
+  };
 }
 
 /** "2026-03" → "março" */

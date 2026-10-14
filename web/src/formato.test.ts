@@ -11,6 +11,7 @@ import {
   formatarPedidosDaNota,
   formatarPeriodo,
   formatarPrazo,
+  formatarSemestres,
   formatarReais,
   formatarReaisCompacto,
   formatarTempoDesde,
@@ -127,6 +128,16 @@ describe("formatarCodigosDoRepresentante", () => {
   it("junta os códigos do mesmo login com vírgula e 'e'", () => {
     expect(formatarCodigosDoRepresentante(["1118", "1119"])).toBe("Representantes 1118 e 1119");
     expect(formatarCodigosDoRepresentante(["1118", "1119", "1120"])).toBe("Representantes 1118, 1119 e 1120");
+  });
+});
+
+describe("formatarSemestres", () => {
+  it("dá o semestre das análises e o mesmo do ano anterior", () => {
+    expect(formatarSemestres({ inicio: "2026-04", fim: "2026-09" })).toEqual({ atual: "abr–set/26", anterior: "abr–set/25" });
+  });
+
+  it("põe o ano nos dois meses quando o semestre vira o ano", () => {
+    expect(formatarSemestres({ inicio: "2025-11", fim: "2026-04" })).toEqual({ atual: "nov/25–abr/26", anterior: "nov/24–abr/25" });
   });
 });
 

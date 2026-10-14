@@ -93,6 +93,14 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     ]);
   });
 
+  it("explica o selo em risco com a queda do semestre da foto", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const situacao = (await app.inject({ method: "GET", url: "/api/situacao" })).json();
+    expect(situacao.semestre).toEqual({ inicio: "2026-04", fim: "2026-09" });
+    const [cliente] = (await app.inject({ method: "GET", url: "/api/clientes" })).json();
+    expect(cliente.quedaNoSemestre).toBe(-0.5);
+  });
+
   it("recusa o código de cliente fora do formato do id", async () => {
     const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
     const resposta = await app.inject({ method: "GET", url: "/api/clientes/591328580003" });

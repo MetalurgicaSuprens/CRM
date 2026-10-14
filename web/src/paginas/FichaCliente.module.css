@@ -6,6 +6,14 @@
   gap: var(--esp-5);
 }
 
+/* Embaixo do nome: a razão social e, no cliente em risco, o motivo do selo */
+.descricao {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .novoPedido {
   gap: 10px;
   height: var(--altura-cartao-cadastro);
