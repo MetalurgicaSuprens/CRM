@@ -34,6 +34,11 @@ export function valorDaLinha(linha: Pick<LinhaDoPedido, "quantidade" | "precoCen
   return pecasEmCentos(linha.quantidade) * linha.precoCento;
 }
 
+/** O preço do cento que o item do ERP pagou: o caminho de volta de valorDaLinha. Sem peças, 0. */
+export function precoDoCento(item: { pecas: number; valor: number }): number {
+  return item.pecas > 0 ? item.valor / pecasEmCentos(item.pecas) : 0;
+}
+
 export function totalDoPedido(linhas: readonly LinhaDoPedido[]): number {
   return linhas.reduce((total, linha) => total + valorDaLinha(linha), 0);
 }

@@ -1,4 +1,8 @@
-/* --grade vem do componente: cada coluna com a sua largura mínima */
+/*
+ * --grade vem do componente: cada coluna com a sua largura mínima. Uma tabela pode ficar dentro da
+ * linha aberta de outra (os itens de um pedido); por isso as regras que dependem do modo ou da
+ * posição da linha usam ">" e não alcançam a tabela de dentro.
+ */
 .cabecalho,
 .linha {
   display: grid;
@@ -41,7 +45,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-li:last-child .linha {
+li:last-child > .linha {
   border-bottom: 0;
 }
 
@@ -96,36 +100,100 @@ li:last-child .linha {
   font-size: var(--tam-pequeno);
 }
 
+/* ------------------------------------------------ linha que abre os detalhes na própria lista */
+
+.linhaQueAbre {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--cor-linha);
+  background: none;
+  text-align: left;
+}
+
+.seta {
+  justify-self: end;
+  color: var(--cor-texto-suave);
+  transition: transform var(--transicao);
+}
+
+/* Aberta, a linha e os detalhes formam um bloco só, num cinza bem claro */
+.aberta {
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+}
+
+.aberta > .linhaQueAbre {
+  border-bottom-color: transparent;
+}
+
+.aberta > .linhaQueAbre > .seta {
+  transform: rotate(180deg);
+  color: var(--cor-texto);
+}
+
+.detalheDaLinha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  padding: 0 var(--esp-3) var(--esp-4);
+  border-bottom: 1px solid var(--cor-linha);
+}
+
+li:last-child > .detalheDaLinha {
+  border-bottom: 0;
+}
+
+/*
+ * O cabeçalho da tabela de dentro gruda no mesmo lugar e cobre o da lista enquanto os itens
+ * passam; depois deles, o da lista volta.
+ */
+.detalheDaLinha .cabecalho {
+  background: var(--cor-superficie-2);
+}
+
 /* ------------------------------------------------ cartões: o componente liga quando as colunas não cabem */
 
 /* Sem colunas, os títulos que ordenam ficam lado a lado acima dos cartões */
-.cartoes .cabecalho {
+.cartoes > .cabecalho {
   display: flex;
   flex-wrap: wrap;
   gap: var(--esp-1) var(--esp-4);
   padding: var(--esp-2) var(--esp-3);
 }
 
-.cartoes .semOrdem {
+.cartoes > .cabecalho > .semOrdem {
   display: none;
 }
 
-.cartoes .linha {
+.cartoes > ul > li > .linha {
+  position: relative;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--esp-2) var(--esp-4);
   padding: var(--esp-3);
 }
 
-.cartoes .identificacao {
+.cartoes > ul > li > .linha > .identificacao {
   grid-column: 1 / -1;
 }
 
-.cartoes .numerica {
+/* No cartão, a seta fica no canto, ao lado do título */
+.cartoes > ul > li > .linhaQueAbre > .identificacao {
+  padding-right: var(--esp-6);
+}
+
+.cartoes > ul > li > .linhaQueAbre > .seta {
+  position: absolute;
+  top: var(--esp-3);
+  right: var(--esp-3);
+}
+
+.cartoes > .cabecalho > .numerica,
+.cartoes > ul > li > .linha > .numerica {
   align-items: flex-start;
   text-align: left;
 }
 
-.cartoes .rotuloDoCartao {
+.cartoes > ul > li > .linha > .celula > .rotuloDoCartao {
   display: block;
   font-size: var(--tam-legenda);
   color: var(--cor-texto-suave);

@@ -1,5 +1,6 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router";
+import { ChevronDown } from "lucide-react";
 import { useLargura } from "../graficos/useLargura";
 import type { ColunaOrdenavel, Ordem } from "./ordenacao";
 import { TituloDaColuna } from "./TituloDaColuna";
@@ -12,13 +13,19 @@ export type ColunaDaTabela<T> = ColunaOrdenavel<T> & {
   celula: (item: T) => ReactNode;
 };
 
-type Props<T> = {
+/**
+ * O toque na linha leva a outra tela (linkDe) ou abre os detalhes logo abaixo dela, na própria
+ * lista (detalheDe). Sem nenhum dos dois, a linha não faz nada e pode ter botões.
+ */
+type ToqueNaLinha<T> =
+  | { linkDe?: (item: T) => string; detalheDe?: undefined }
+  | { detalheDe: (item: T) => ReactNode; linkDe?: undefined };
+
+type Props<T> = ToqueNaLinha<T> & {
   /** Nome da tabela para leitores de tela. */
   descricao: string;
   itens: readonly T[];
   chaveDe: (item: T) => string;
-  /** Para onde a linha leva; sem ele, a linha não é link (e pode ter botões). */
-  linkDe?: (item: T) => string;
   /** A primeira coluna identifica a linha e, nos cartões, vira o título. */
   colunas: readonly [ColunaDaTabela<T>, ...ColunaDaTabela<T>[]];
   vazio: string;
@@ -28,6 +35,8 @@ type Props<T> = {
 
 const LARGURA_DA_IDENTIFICACAO_REM = 12;
 const LARGURA_PADRAO_REM = 6.5;
+/** A coluna da seta, no fim da linha que abre: não cresce com a sobra. */
+const COLUNA_DA_SETA: ColunaDaGrade = { minima: 1.25, cresce: false };
 /** Iguais ao CSS: o espaço entre as colunas (--esp-4) e o recuo das duas pontas (--esp-3 cada). */
 const ESPACO_ENTRE_COLUNAS_PX = 16;
 const RECUO_DAS_PONTAS_PX = 24;
@@ -41,17 +50,31 @@ export function TabelaResponsiva<T>({ itens, vazio, ...props }: Props<T>) {
   return <Tabela itens={itens} {...props} />;
 }
 
-function Tabela<T>({ descricao, itens, chaveDe, linkDe, colunas, ordemInicial }: Omit<Props<T>, "vazio">) {
+function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, ordemInicial }: Omit<Props<T>, "vazio">) {
   const { referencia, largura } = useLargura<HTMLElement>();
   const ordenacao = useOrdenacao(itens, colunas, { inicial: ordemInicial });
   const [identificacao, ...demais] = colunas;
-  const minimas = demais.map((coluna) => coluna.largura ?? LARGURA_PADRAO_REM);
-  const emCartoes = largura > 0 && largura < larguraMinima(minimas);
+  const grade: ColunaDaGrade[] = [
+    ...demais.map((coluna) => ({ minima: coluna.largura ?? LARGURA_PADRAO_REM, cresce: true })),
+    ...(detalheDe ? [COLUNA_DA_SETA] : []),
+  ];
+  const emCartoes = largura > 0 && largura < larguraMinima(grade);
+  const conteudoDe = (item: T) => (
+    <>
+      <span className={estilos.identificacao}>{identificacao.celula(item)}</span>
+      {demais.map((coluna) => (
+        <span key={coluna.titulo} className={coluna.numerica ? `${estilos.celula} ${estilos.numerica}` : estilos.celula}>
+          <span className={estilos.rotuloDoCartao}>{coluna.titulo}</span>
+          {coluna.celula(item)}
+        </span>
+      ))}
+    </>
+  );
   return (
     <section
       ref={referencia}
       className={emCartoes ? `${estilos.tabela} ${estilos.cartoes}` : estilos.tabela}
-      style={{ "--grade": gradeDasColunas(minimas) } as CSSProperties}
+      style={{ "--grade": gradeDasColunas(grade) } as CSSProperties}
       aria-label={descricao}
     >
       <div className={estilos.cabecalho}>
@@ -60,35 +83,56 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, colunas, ordemInicial }:
             <TituloDaColuna coluna={coluna} ordenacao={ordenacao} />
           </span>
         ))}
+        {detalheDe ? <span className={estilos.semOrdem} aria-hidden="true" /> : null}
       </div>
       <ul>
-        {ordenacao.ordenados.map((item) => {
-          const conteudo = (
-            <>
-              <span className={estilos.identificacao}>{identificacao.celula(item)}</span>
-              {demais.map((coluna) => (
-                <span key={coluna.titulo} className={coluna.numerica ? `${estilos.celula} ${estilos.numerica}` : estilos.celula}>
-                  <span className={estilos.rotuloDoCartao}>{coluna.titulo}</span>
-                  {coluna.celula(item)}
-                </span>
-              ))}
-            </>
-          );
-          const destino = linkDe?.(item);
-          return (
+        {ordenacao.ordenados.map((item) =>
+          detalheDe ? (
+            <LinhaQueAbre key={chaveDe(item)} detalhe={() => detalheDe(item)}>
+              {conteudoDe(item)}
+            </LinhaQueAbre>
+          ) : (
             <li key={chaveDe(item)}>
-              {destino ? (
-                <Link to={destino} className={`${estilos.linha} ${estilos.link}`}>
-                  {conteudo}
-                </Link>
-              ) : (
-                <div className={estilos.linha}>{conteudo}</div>
-              )}
+              <LinhaSemDetalhe destino={linkDe?.(item)}>{conteudoDe(item)}</LinhaSemDetalhe>
             </li>
-          );
-        })}
+          ),
+        )}
       </ul>
     </section>
+  );
+}
+
+function LinhaSemDetalhe({ destino, children }: { destino: string | undefined; children: ReactNode }) {
+  if (!destino) return <div className={estilos.linha}>{children}</div>;
+  return (
+    <Link to={destino} className={`${estilos.linha} ${estilos.link}`}>
+      {children}
+    </Link>
+  );
+}
+
+/** Abre e fecha os detalhes logo abaixo da linha; eles só são montados quando ela está aberta. */
+function LinhaQueAbre({ detalhe, children }: { detalhe: () => ReactNode; children: ReactNode }) {
+  const [isAberta, setAberta] = useState(false);
+  const idDoDetalhe = useId();
+  return (
+    <li className={isAberta ? estilos.aberta : undefined}>
+      <button
+        type="button"
+        className={`${estilos.linha} ${estilos.link} ${estilos.linhaQueAbre}`}
+        aria-expanded={isAberta}
+        aria-controls={isAberta ? idDoDetalhe : undefined}
+        onClick={() => setAberta((aberta) => !aberta)}
+      >
+        {children}
+        <ChevronDown size={18} className={estilos.seta} aria-hidden="true" />
+      </button>
+      {isAberta ? (
+        <div id={idDoDetalhe} className={estilos.detalheDaLinha}>
+          {detalhe()}
+        </div>
+      ) : null}
+    </li>
   );
 }
 
@@ -97,15 +141,19 @@ function classeDoTitulo<T>(coluna: ColunaDaTabela<T>): string | undefined {
   return [coluna.numerica ? estilos.numerica : "", coluna.ordenarPor ? "" : estilos.semOrdem].filter(Boolean).join(" ") || undefined;
 }
 
+/** Cada coluna depois da identificação: a largura mínima, em rem, e se cresce com a sobra. */
+type ColunaDaGrade = { minima: number; cresce: boolean };
+
 /** A identificação, mais larga, e as demais colunas, que crescem por igual a partir da mínima. */
-function gradeDasColunas(minimas: number[]): string {
-  return [`minmax(${LARGURA_DA_IDENTIFICACAO_REM}rem, 2.2fr)`, ...minimas.map((rem) => `minmax(${rem}rem, 1fr)`)].join(" ");
+function gradeDasColunas(grade: ColunaDaGrade[]): string {
+  const demais = grade.map(({ minima, cresce }) => (cresce ? `minmax(${minima}rem, 1fr)` : `${minima}rem`));
+  return [`minmax(${LARGURA_DA_IDENTIFICACAO_REM}rem, 2.2fr)`, ...demais].join(" ");
 }
 
 /** Abaixo desta largura, em px, as colunas não cabem lado a lado. */
-function larguraMinima(minimas: number[]): number {
-  const colunasEmRem = LARGURA_DA_IDENTIFICACAO_REM + minimas.reduce((soma, rem) => soma + rem, 0);
-  return colunasEmRem * pixelsPorRem() + minimas.length * ESPACO_ENTRE_COLUNAS_PX + RECUO_DAS_PONTAS_PX;
+function larguraMinima(grade: ColunaDaGrade[]): number {
+  const colunasEmRem = LARGURA_DA_IDENTIFICACAO_REM + grade.reduce((soma, { minima }) => soma + minima, 0);
+  return colunasEmRem * pixelsPorRem() + grade.length * ESPACO_ENTRE_COLUNAS_PX + RECUO_DAS_PONTAS_PX;
 }
 
 /** O rem segue o tamanho de letra escolhido no navegador. */

@@ -3,6 +3,7 @@ import {
   ajustarAEmbalagem,
   passosDoAndamento,
   pecasEmCentos,
+  precoDoCento,
   problemasDoPedido,
   totalDoPedido,
   valorDaLinha,
@@ -18,6 +19,16 @@ function linha(parcial: Partial<LinhaDoPedido> = {}): LinhaDoPedido {
 describe("pecasEmCentos", () => {
   it("converte peças em CT, o cento do ERP", () => {
     expect(pecasEmCentos(250)).toBe(2.5);
+  });
+});
+
+describe("precoDoCento", () => {
+  it("divide o valor do item do ERP pelos centos dele", () => {
+    expect(precoDoCento({ pecas: 2_500, valor: 2_375 })).toBe(95);
+  });
+
+  it("dá 0 ao item sem peças, em vez de dividir por zero", () => {
+    expect(precoDoCento({ pecas: 0, valor: 100 })).toBe(0);
   });
 });
 

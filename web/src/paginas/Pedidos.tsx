@@ -15,6 +15,7 @@ import { useCarga } from "../dados/useCarga";
 import { formatarContagem, formatarData, formatarTempoDesde } from "../formato";
 import { DataRelativa, MomentoRelativo } from "../componentes/Quando";
 import { Carregando } from "./Carregando";
+import { DetalheDaNota, DetalheDoEnviado, DetalheDoPedidoNoErp } from "./DetalhesDosPedidos";
 import estilos from "./Pedidos.module.css";
 
 type Aba = keyof PainelDePedidos;
@@ -91,7 +92,7 @@ function Enviados({ pedidos, relogio }: { pedidos: PedidoEnviado[]; relogio: str
         descricao="Pedidos enviados pelo CRM"
         itens={pedidos}
         chaveDe={(pedido) => pedido.numero}
-        linkDe={(pedido) => `/pedidos/${pedido.numero}`}
+        detalheDe={(pedido) => <DetalheDoEnviado pedido={pedido} relogio={relogio} />}
         vazio="Nenhum pedido enviado pelo CRM ainda."
         ordemInicial={{ coluna: "Enviado", sentido: "decrescente" }}
         colunas={[
@@ -167,7 +168,7 @@ function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
         descricao="Pedidos em aberto no ERP"
         itens={pedidos}
         chaveDe={(pedido) => pedido.numero}
-        linkDe={(pedido) => `/clientes/${pedido.cliente.codigo}`}
+        detalheDe={(pedido) => <DetalheDoPedidoNoErp pedido={pedido} hoje={hoje} />}
         vazio="Nenhum pedido em aberto."
         ordemInicial={{ coluna: "Entrega", sentido: "crescente" }}
         colunas={[
@@ -189,7 +190,7 @@ function Faturados({ notas, hoje }: { notas: NotaFaturada[]; hoje: string }) {
         descricao="Notas faturadas nos últimos 45 dias"
         itens={notas}
         chaveDe={(nota) => nota.id}
-        linkDe={(nota) => `/clientes/${nota.cliente.codigo}`}
+        detalheDe={(nota) => <DetalheDaNota nota={nota} />}
         vazio="Nenhuma nota nos últimos 45 dias."
         ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
         colunas={[

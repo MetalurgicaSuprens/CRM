@@ -8,6 +8,7 @@ import {
   formatarDiaPorExtenso,
   formatarMesAno,
   formatarMomento,
+  formatarPedidosDaNota,
   formatarPeriodo,
   formatarPrazo,
   formatarReais,
@@ -126,6 +127,13 @@ describe("formatarCodigosDoRepresentante", () => {
   it("junta os códigos do mesmo login com vírgula e 'e'", () => {
     expect(formatarCodigosDoRepresentante(["1118", "1119"])).toBe("Representantes 1118 e 1119");
     expect(formatarCodigosDoRepresentante(["1118", "1119", "1120"])).toBe("Representantes 1118, 1119 e 1120");
+  });
+});
+
+describe("formatarPedidosDaNota", () => {
+  it("usa o singular com um pedido só e junta vários com vírgula e 'e'", () => {
+    expect(formatarPedidosDaNota(["1801234"])).toBe("Pedido 1801234");
+    expect(formatarPedidosDaNota(["1801234", "1801240"])).toBe("Pedidos 1801234 e 1801240");
   });
 });
 

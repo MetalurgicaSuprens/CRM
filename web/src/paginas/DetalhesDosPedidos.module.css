@@ -1,0 +1,60 @@
+/* O andamento ao lado dos itens; um embaixo do outro quando os detalhes ficam estreitos */
+.enviado {
+  container-type: inline-size;
+}
+
+.partes {
+  display: grid;
+  grid-template-columns: minmax(15rem, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: var(--esp-4) var(--esp-6);
+}
+
+.parte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  min-width: 0;
+}
+
+/* Como os títulos das colunas da tabela */
+.tituloDaParte {
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-2);
+}
+
+/* O pedido de origem à esquerda e a ficha do cliente à direita, mesmo sozinha */
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-4);
+  font-size: var(--tam-pequeno);
+}
+
+.origem {
+  color: var(--cor-texto-2);
+}
+
+.ficha {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--cor-texto-2);
+  white-space: nowrap;
+}
+
+.ficha:hover {
+  color: var(--cor-texto);
+}
+
+@container (max-width: 720px) {
+  .partes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

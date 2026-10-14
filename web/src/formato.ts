@@ -108,8 +108,16 @@ export function formatarTempoDesde(dataIso: string, hojeIso: string): string {
 
 /** "Representante 1401", "Representantes 1118 e 1119". */
 export function formatarCodigosDoRepresentante(codigos: string[]): string {
-  const rotulo = codigos.length === 1 ? "Representante" : "Representantes";
-  return `${rotulo} ${LISTA.format(codigos)}`;
+  return comRotulo(codigos, "Representante", "Representantes");
+}
+
+/** Os pedidos do ERP de onde a nota saiu: "Pedido 1801234", "Pedidos 1801234 e 1801240". */
+export function formatarPedidosDaNota(pedidos: string[]): string {
+  return comRotulo(pedidos, "Pedido", "Pedidos");
+}
+
+function comRotulo(itens: string[], singular: string, plural: string): string {
+  return `${itens.length === 1 ? singular : plural} ${LISTA.format(itens)}`;
 }
 
 /** O código do ERP do cliente. A pessoa física aparece sem ele, porque lá o código é o CPF. */
