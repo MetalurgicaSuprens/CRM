@@ -256,15 +256,15 @@ Regras:
   - até 730 dias (dominio/analises.ts:88-98; plano.md:222-225).
 - **Pedido em aberto que impede "parado":** `VEPD.SALDO > 0` nos tipos de venda, com `VEPM` não bloqueado. É a regra da carteira do Gestao (`Gestao/server/src/pcp/emAberto.ts:58-71`). Proposta, a confirmar (pergunta 26): conta qualquer pedido em aberto do cliente, de qualquer representante, porque Análises é visão do cliente e a conta é da LAN. Falta decidir se contam o pedido ainda no SGI e o pedido enviado pelo CRM.
 - **Perda mensal:** soma dos 12 meses até o mês da última compra, inclusive, ÷ 12 e arredondada (dominio/analises.ts:100-106).
-- **Comprando menos e mais** (dominio/analises.ts:108-147; plano.md:228-232):
+- **Comprando menos e mais** (dominio/analises.ts:108-148; plano.md:228-232):
   - base de R$ 3 mil no semestre do ano anterior;
   - pelo menos 3 compras nos dois períodos;
   - variação de 20% ou mais e diferença de R$ 2 mil ou mais;
-  - na queda, os 3 últimos meses fechados também abaixo dos mesmos 3 do ano anterior (decidido pelo Lucas em 2026-10-14). A Nova Caminhões, da Star Vendas, estava em risco por −23% de abr a set/26, depois de maio e junho sem comprar, mas já tinha voltado: +30% de jul a set e +17% em 12 meses. Na foto de 14/10, os clientes em risco da Star Vendas passaram de 13 para 9. A alta não tem essa exigência.
+  - a mudança tem de continuar nos 3 últimos meses fechados, contra os mesmos 3 do ano anterior: abaixo deles na queda, acima na alta (decidido pelo Lucas em 2026-10-14, a queda primeiro e a alta logo depois). A Nova Caminhões, da Star Vendas, estava em risco por −23% de abr a set/26, depois de maio e junho sem comprar, mas já tinha voltado: +30% de jul a set e +17% em 12 meses. Na foto de 14/10, a Star Vendas passou de 13 para 9 clientes comprando menos (em risco) e de 20 para 14 comprando mais.
   - Listas só no fictício (`ficticio.ts:573-580`); a ordem de abertura é a da tela (Analises.tsx:106-109 e 136):
     - "menos" é quem está em risco, ordenado pela diferença mais negativa;
     - "mais" é quem está fora de parado, inativo e novo, ordenado pela maior diferença. O plano não diz que "mais" exclui o cliente novo (plano.md:228-232): confirmar com o Lucas.
-- **Novo e reativado** (dominio/analises.ts:149-162; plano.md:234):
+- **Novo e reativado** (dominio/analises.ts:150-163; plano.md:234):
   - novo: primeira compra há até 365 dias;
   - reativado: alguma compra dos últimos 365 dias veio depois de 365 dias ou mais sem comprar;
   - só entram clientes fora de parado e inativo (`ficticio.ts:549 e 581-586`).

@@ -121,10 +121,10 @@ describe("mudancaDeRitmo", () => {
     expect(classificarSituacao(historico({ mensal }), HOJE)).toBe("em_risco");
   });
 
-  it("não exige o trimestre para comprando mais", () => {
+  it("também exige o trimestre na alta: quem comprou muito no começo do semestre e já caiu não entra em comprando mais", () => {
     const mensal = semestres({ valor: 1_000, pecas: 500 }, { valor: 3_000, pecas: 1_500 });
     for (const i of [21, 22, 23]) mensal[i] = { valor: 500, pecas: 250 };
-    expect(mudancaDeRitmo(historico({ mensal }))?.direcao).toBe("mais");
+    expect(mudancaDeRitmo(historico({ mensal }))).toBeNull();
   });
 });
 

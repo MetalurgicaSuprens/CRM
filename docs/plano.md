@@ -225,11 +225,11 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
   - depois de 24 meses sem compra, vai para "inativo";
   - ordenado pela média mensal dos 12 meses anteriores à última compra.
 - **Comprando menos / mais:**
-  - últimos 6 meses fechados contra os mesmos 6 meses do ano anterior;
+  - últimos 6 meses fechados contra os mesmos 6 meses do ano anterior; a queda ou a alta tem de continuar nos 3 últimos meses fechados, contra os mesmos 3 do ano anterior, para não marcar uma pausa ou um pico que já passou (decisão do Lucas em 2026-10-14);
   - exige base de R$ 3 mil no semestre do ano anterior e pelo menos 3 compras nos dois períodos;
   - variação a partir de 20% e diferença de pelo menos R$ 2 mil;
   - mostra a variação em peças ao lado da variação em R$ (reajuste de preço infla o R$);
-  - "Em risco" (situação do cliente) é quem está comprando menos e não está parado nem é novo. Na queda, os 3 últimos meses fechados também precisam estar abaixo dos mesmos 3 do ano anterior: quem já voltou a comprar não fica em risco por uma pausa que passou (decisão do Lucas em 2026-10-14).
+  - "Em risco" (situação do cliente) é quem está comprando menos e não está parado nem é novo.
 - **Alerta rápido de queda** (regra que o Lucas usou no protótipo): para clientes com compra em pelo menos 8 dos últimos 12 meses, o mês fechado abaixo de 70% da média dos 3 meses anteriores, por dia útil.
 - **Novo:** primeira compra da história nos últimos 12 meses. **Reativado:** voltou a comprar nos últimos 12 meses depois de 12 meses ou mais sem comprar.
 - As regras acima estão em `dominio/analises.ts`, com testes, e valem igual para o extrator e para os dados fictícios.

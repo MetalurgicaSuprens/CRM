@@ -111,8 +111,8 @@ const RITMOS = {
 function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
   const ritmo = RITMOS[direcao];
   const { atual, anterior } = formatarSemestres(semestre);
-  // A queda precisa continuar no último trimestre (dominio/analises.ts); a alta, não.
-  const trimestre = direcao === "menos" ? ` A queda precisa continuar em ${formatarPeriodo(somarMeses(semestre.fim, -2), semestre.fim)}.` : "";
+  // A queda ou a alta precisa continuar nos 3 últimos meses do semestre (dominio/analises.ts).
+  const trimestre = formatarPeriodo(somarMeses(semestre.fim, -2), semestre.fim);
   const colunas: ColunaDaTabela<ClienteComVariacao>[] = [
     { titulo: anterior, numerica: true, ordenarPor: (item) => item.semestreAnoAnterior, celula: (item) => <Valor valor={item.semestreAnoAnterior} /> },
     { titulo: atual, numerica: true, ordenarPor: (item) => item.semestre, celula: (item) => <Valor valor={item.semestre} /> },
@@ -123,7 +123,7 @@ function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
   return (
     <CartaoDaAnalise
       tipo={direcao}
-      subtitulo={`${atual} contra ${anterior}: ${ritmo.mudanca} de 20% ou mais e de pelo menos R$ 2 mil, com 3 compras ou mais nos dois períodos.${trimestre}`}
+      subtitulo={`${atual} contra ${anterior}: ${ritmo.mudanca} de 20% ou mais e de pelo menos R$ 2 mil, com 3 compras ou mais nos dois períodos. A ${ritmo.mudanca} precisa continuar em ${trimestre}.`}
     >
       <p className={estilos.resumo}>
         {formatarContagem(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map(diferenca))} compacto comSinal /> em {atual}
