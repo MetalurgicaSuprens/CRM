@@ -71,7 +71,7 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
   - A data da foto vale para as regras do extrator e para as datas que vêm do ERP.
   - O relógio vale para:
     - o rótulo "hoje" da barra;
-    - a data mínima de entrega (MontarPedido.tsx:69 e 118; pedido.ts:75-85);
+    - a data mínima de entrega (MontarPedido.tsx:69 e 124; pedido.ts:75-85);
     - o dia por extenso e a saudação do Início (Inicio.tsx:29-30 e 219-230);
     - todo momento gravado no app.db: "Enviado" e "Atualizado" em Pedidos, "Rascunho salvo" e o cabeçalho e o Andamento do Detalhe (formato.ts:144-156).
 - A CRVN tem uma linha por gerente e supervisor (PK em ABC71-CR.md:5475). Por isso o nome é agrupado por VENDEDOR.
@@ -333,7 +333,7 @@ Regras:
 
 - **Detalhes na própria lista (pedido do Lucas, 2026-10-14).**
   - Nas abas Enviados, Em aberto e Faturados, tocar na linha abre os detalhes logo abaixo dela, sem sair da lista. Tocar de novo fecha, e mais de uma linha pode ficar aberta (componentes/TabelaResponsiva.tsx:114-137).
-  - Antes, a linha de Enviados levava ao Detalhe do pedido, e as de Em aberto e Faturados, à ficha do cliente. O Detalhe do pedido continua como a tela que abre depois do envio (MontarPedido.tsx:87).
+  - Antes, a linha de Enviados levava ao Detalhe do pedido, e as de Em aberto e Faturados, à ficha do cliente. O Detalhe do pedido continua como a tela que abre depois do envio (MontarPedido.tsx:89).
   - Rascunhos não abre: a linha tem os botões Continuar e Descartar, e Continuar já mostra o rascunho inteiro.
   - A aba Em aberto mostra só os itens com saldo, que formam o valor em aberto. O item já faturado fica no pedido do Omega com saldo 0 e não aparece.
 - **Pedido em aberto.**
@@ -360,26 +360,26 @@ Regras:
   - Escopo (pergunta 23, decidido em 2026-10-13): só as notas atribuídas aos códigos do login, pela regra da Atribuição do Início (`NFME.VENDEDOR`; se vier nulo ou 0, o dono do cliente na data). É a mesma visão dos indicadores de faturamento, e a conta é da LAN.
   - O fictício ainda usa a carteira.
   - No Oracle, a nota é única por (EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO) (omega/ABC71-NF.md:6655). A foto leva uma linha por nota (N_FISCAL, SERIE), com o valor somado de todas as linhas dela, inclusive de tipos de movimento diferentes. Se houver mais de uma EMP_FIL com notas de venda (pergunta 4), a chave inclui a empresa.
-  - Nenhuma tela mostra a série. Corrigido em 2026-10-09: a lista usava só o número como chave, e duas notas de mesmo número em séries diferentes colidiam. Agora `NotaFaturada` tem um `id`, série e número (tipos.ts:315-317), que a lista usa como chave (Pedidos.tsx:192).
+  - Nenhuma tela mostra a série. Corrigido em 2026-10-09: a lista usava só o número como chave, e duas notas de mesmo número em séries diferentes colidiam. Agora `NotaFaturada` tem um `id`, série e número (tipos.ts:319-321), que a lista usa como chave (Pedidos.tsx:192).
 - **Rascunho ou pedido enviado de outro login:** responde 404 (plano.md:43).
 
 ## 7. Montar pedido
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Escolha do cliente | Nome, código do ERP (ou "Pessoa física"), cidade, situação com o selo "Negativo" e última compra. Escolher o cliente negativo abre o aviso para falar com a equipe de vendas, e não o catálogo (MontarPedido.tsx:58 e 422-429). Até 2026-10-14, a escolha mostrava e buscava pelo id do cliente, que não deve aparecer na tela. Abre na ordem recebida, sem coluna marcada, e o representante reordena por Cliente, Situação e Última compra (MontarPedido.tsx:387-414) | Clientes da carteira | (ver Clientes) | extrator; ordem de abertura: servidor, por `faturamento_12m` decrescente; busca e reordenação: navegador (MontarPedido.tsx:373-375 e 396-415) |
-| Cliente do pedido | Nome e cidade/UF no cabeçalho e no diálogo de envio (MontarPedido.tsx:98 e 153) | Cliente da carteira, pelo código da URL ou do rascunho | (ver Clientes) | extrator |
-| Tabela de preço | O nome da tabela no cabeçalho e em "Preços da …" (MontarPedido.tsx:98 e 111). O fictício junta o mercado ao nome ("Tabela 23 · Praça", pedidosFicticios.ts:39); a tela real mostra só `cliente.tabela_preco` | Uma por cliente, escolhida pelo extrator, nunca pelo navegador | `SGI5_TAB_VEN_CLI.CLI_TAB` e `CLI_STA`; `SGI5_TAB_VEN_TP1.TP1_NOM` | extrator |
-| Catálogo | Abas "Já comprados" e "Todos", com contagem | Só produto vendável e com preço para o cliente | view de preço líquido, ESTQ, view de produto sem árvore | extrator |
+| Escolha do cliente | Nome, código do ERP (ou "Pessoa física"), cidade, situação com o selo "Negativo" e última compra. Escolher o cliente negativo abre o aviso para falar com a equipe de vendas, e não o catálogo (MontarPedido.tsx:58 e 431-438). Até 2026-10-14, a escolha mostrava e buscava pelo id do cliente, que não deve aparecer na tela. Abre na ordem recebida, sem coluna marcada, e o representante reordena por Cliente, Situação e Última compra (MontarPedido.tsx:396-423) | Clientes da carteira | (ver Clientes) | extrator; ordem de abertura: servidor, por `faturamento_12m` decrescente; busca e reordenação: navegador (MontarPedido.tsx:382-384 e 405-424) |
+| Cliente do pedido | Nome e cidade/UF no cabeçalho e no diálogo de envio (MontarPedido.tsx:104 e 159) | Cliente da carteira, pelo código da URL ou do rascunho | (ver Clientes) | extrator |
+| Tabela de preço | O nome da tabela no cabeçalho e em "Preços da …" (MontarPedido.tsx:104 e 117). O fictício junta o mercado ao nome ("Tabela 23 · Praça", pedidosFicticios.ts:39); a tela real mostra só `cliente.tabela_preco` | Uma por cliente, escolhida pelo extrator, nunca pelo navegador: a principal; sem ela, a que não é secundária. Só em real; na montadora, só a ativa (extrator/src/calculo/catalogo.ts). Na Star Vendas, em 14/10: "PADRAO - FEV" para 177 clientes e "MITSUBISHI CATA" para 1 | `SGI5_TAB_VEN_CLI.CLI_TAB` e `CLI_STA`; `SGI5_TAB_VEN_TP1.TP1_NOM`, `TP1_MOE`, `TP1_STA` | extrator |
+| Catálogo | Abas "Já comprados" e "Todos", com contagem | Só produto vendável e com preço para o cliente. Clientes com a mesma tabela e os mesmos descontos dividem uma lista de preços: em 14/10, 50 listas para os 178 clientes da Star Vendas | view de preço líquido, ESTQ, view de produto sem árvore | extrator; servidor, por `/api/clientes/:codigo/catalogo`, só de cliente do login e nunca do negativo (409) |
 | Código do produto | Título da linha | `TRIM(VIEW_PAC)` | `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI.VIEW_PAC` | extrator |
 | Família | Descrição e busca | Mesma regra da Ficha | `PAC_GRC` → `GRP_DES` | extrator |
-| Medida | "8–12 mm" na descrição e na busca | Faixa de aperto em mm | `PAC_DMI_MM`, `PAC_DMA_MM` (a confirmar) | extrator |
-| Código no cliente | "no cliente: X" na descrição e na busca | Part number formatado; sem ele, o part number; '0' vira nulo | `VIEW_PNU_FOR`, `VIEW_PNU` | extrator |
-| Embalagem | "100 pç" e o passo do campo de quantidade | Peças por embalagem | a confirmar: `EAN_QTD`, `VIEW_MVE` ou `TR1_QPE` | extrator |
-| Cento | Preço do cento, só referência | Preço líquido do cliente por CT, sem IPI | `VIEW_VLR_LIQ` | extrator |
-| Já comprou | Separa as abas | Produto comprado pelo cliente na janela (12 ou 24 meses) | `TRIM(NFDE.C_PROD)` com a RF | extrator (`catalogo.ja_comprou`) |
+| Medida | "14–22 mm" na descrição e na busca | Faixa de aperto em mm; sem as duas pontas, nenhuma (kits, molas). Em 14/10, 470 dos 692 produtos do catálogo tinham | `PAC_DMI_MM`, `PAC_DMA_MM` | extrator |
+| Part number | "part number X" na descrição e na busca | Part number formatado; sem ele, o part number; '0' vira nulo. Na tabela da montadora é o código dela; na tabela padrão, a referência do fabricante do veículo (143 dos 742 produtos). Até 2026-10-14 a tela dizia "no cliente: X" | `VIEW_PNU_FOR`, `VIEW_PNU` | extrator |
+| Embalagem | "100 pç" e o passo do campo de quantidade | Peças por embalagem: a quantidade do EAN do produto. Em 14/10, cada produto do catálogo tinha um EAN só (100, 50, 20, 500…); o múltiplo e o lote mínimo da tabela vinham vazios. Sem EAN, qualquer quantidade | `SGI5_TAB_ENG_EAN.EAN_QTD`, pelo `EAN_COD` | extrator |
+| Cento | Preço do cento, só referência | Decidido pelo Lucas em 2026-10-14: o preço da tabela do cliente com o desconto do modelo do produto e, sem ele, com o desconto padrão do cliente. É a conta da view do SGI: `TP2_PVE × DES_IND ÷ 100`, com o desconto de `SGI5_TAB_VEN_CLI2` (cliente × `PAC_MOD`) no lugar do `CLI_DES` quando existe. Em 14/10, a conta refeita pelas tabelas deu o mesmo preço nos 122.142 pares de cliente e produto. Sem IPI | `VIEW_VLR_LIQ` | extrator |
+| Já comprou | Separa as abas | Produto da lista do cliente que ele comprou nos últimos 24 meses, com o mês corrente (proposta, pergunta 28) | `TRIM(NFDE.C_PROD)` com a RF | extrator (`produto_comprado`) |
 | Quantidade | Peças, de embalagem em embalagem | Múltiplo da embalagem | nenhuma | app.db |
-| Valor do item | Ao lado da quantidade (MontarPedido.tsx:278) | Peças ÷ 100 × cento | (foto) | navegador |
+| Valor do item | Ao lado da quantidade (MontarPedido.tsx:287) | Peças ÷ 100 × cento | (foto) | navegador |
 | Entrega desejada | Data com mínimo hoje | Não antes de hoje, pelo relógio de Brasília | vira `PV2_DEN` de cada item (no arquivo, `CGA_DEN`) | app.db |
 | Observação | "Observação (n/300)" | Até 300 caracteres, conjunto permitido, CP1252 | vira `PV1_OBS` | app.db |
 | Total estimado | Barra e fechamento | Σ peças ÷ 100 × cento | (foto) | navegador; ao salvar e enviar: servidor |
@@ -397,15 +397,15 @@ Regras:
   - A tela de item grava a unidade 'CT' com `VIEW_VLR_LIQ` como valor líquido e de venda (`untVenPvd_ItensMov.pas:139-149`).
   - O preço já tem o desconto do cliente e não tem IPI. O SGI aplica o IPI à parte (`untVenPvd_ItensMov.pas:181-185`).
 - **Tabela.** Proposta: a linha com `CLI_STA = 'PRINCIPAL'`. O SGI ignora `CLI_STA` e deixa o usuário escolher quando há mais de uma (`untVenPvd_PvdIncluir.pas:1167-1176`). Pendência do plano.md:335.
-- **Part number.** A PK da `SGI5_TAB_VEN_TP2` inclui o part number (TP2_COD, TP2_PRO, TP2_CMO). O mesmo produto pode aparecer mais de uma vez na tabela, mas o CRM indexa só pelo código (MontarPedido.tsx:239).
-- **O navegador nunca manda preço, tabela nem representante.** `RascunhoParaSalvar` tem só id, código do cliente, itens, entrega e observação (tipos.ts:223-229). O servidor confere:
+- **Part number.** A PK da `SGI5_TAB_VEN_TP2` inclui o part number (TP2_COD, TP2_PRO, TP2_CMO). O mesmo produto pode aparecer mais de uma vez na tabela, mas o CRM indexa só pelo código (MontarPedido.tsx:248).
+- **O navegador nunca manda preço, tabela nem representante.** `RascunhoParaSalvar` tem só id, código do cliente, itens, entrega e observação (tipos.ts:227-233). O servidor confere:
   - cliente na carteira;
   - produto no catálogo do cliente;
   - quantidade inteira, positiva e múltipla da embalagem;
   - limite de itens;
   - schema estrito.
 - **Rascunho com produto que saiu do catálogo** (deixou de ser vendável ou perdeu o preço entre duas fotos).
-  - A tela carrega as quantidades de todos os itens do rascunho (MontarPedido.tsx:68-69), mostra só os que estão no catálogo (MontarPedido.tsx:76) e reenvia todos em cada salvamento automático (MontarPedido.tsx:174-176).
+  - A tela carrega as quantidades de todos os itens do rascunho (MontarPedido.tsx:68-69), mostra só os que estão no catálogo (MontarPedido.tsx:77) e reenvia todos em cada salvamento automático (MontarPedido.tsx:181-183).
   - Com a validação "produto no catálogo do cliente", o servidor recusaria o rascunho inteiro em todo salvamento.
   - A aba Rascunhos conta esse item em "N produtos" (Pedidos.tsx:134), e o total estimado não tem preço para ele (pergunta 33).
 - **URL do catálogo.** O catálogo é pedido pelo código do cliente na URL (`/pedidos/novo?cliente=`). Com o id opaco, a query string deixa de levar o CNPJ e, na pessoa física, o CPF.
@@ -418,7 +418,7 @@ Regras:
 
 ## 8. Detalhe do pedido
 
-Abre depois do envio (MontarPedido.tsx:87). Na aba Enviados, o mesmo andamento e os mesmos itens aparecem ao tocar na linha (componentes/PedidoEnviado.tsx).
+Abre depois do envio (MontarPedido.tsx:89). Na aba Enviados, o mesmo andamento e os mesmos itens aparecem ao tocar na linha (componentes/PedidoEnviado.tsx).
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
@@ -560,8 +560,9 @@ Convenções:
 | `cliente_familia` | Cliente × família nos 12 meses fechados; PK (`cliente`, `familia`) | `cliente`, `familia`, `valor`, `participacao` | Ficha |
 | `ficha_produto` | Cliente × produto, só os 8 maiores em valor nos 12 meses fechados; PK (`cliente`, `produto`) | `cliente`, `produto`, `pecas_12m`, `valor_12m`, `ultima_compra` | Ficha |
 | `cliente_mix` | Cliente × família sugerida; PK (`cliente`, `familia`) | `cliente`, `familia`, `penetracao`, `ordem` | Ficha, Análises |
-| `produto` | Produto que aparece em `catalogo`, `ficha_produto`, `pedido_aberto_item` ou `nota_item`; PK `produto` | `produto`, `familia`, `medida` | Ficha, Pedidos, Montar pedido, Detalhe (cópia no envio) |
-| `catalogo` | Cliente × produto vendável na tabela do cliente; PK (`cliente`, `produto`) | `cliente`, `produto`, `codigo_no_cliente`, `preco_cento`, `embalagem`, `ja_comprou` | Montar pedido; validação do rascunho e do envio |
+| `produto` | Produto que aparece em `lista_de_precos`, `ficha_produto`, `pedido_aberto_item` ou `nota_item`; PK `produto` | `produto`, `familia`, `medida`, `embalagem` | Ficha, Pedidos, Montar pedido, Detalhe (cópia no envio) |
+| `lista_de_precos` | Lista × produto vendável: clientes com a mesma tabela e os mesmos descontos dividem uma lista; PK (`lista`, `produto`) | `lista`, `produto`, `preco_cento`, `part_number` | Montar pedido; validação do rascunho e do envio |
+| `produto_comprado` | Cliente × produto da lista dele comprado nos últimos 24 meses; PK (`cliente`, `produto`) | `cliente`, `produto` | Montar pedido |
 | `analise_parado` | Cliente que parou de comprar; PK `cliente` | `cliente`, `perda_mensal`, `ordem` | Análises, Início |
 | `analise_ritmo` | Cliente comprando menos ou mais; PK `cliente` | `cliente`, `direcao`, `semestre`, `semestre_ano_anterior`, `variacao`, `variacao_pecas`, `ordem` | Análises, Início |
 | `analise_novo` | Cliente novo ou reativado; PK `cliente` | `cliente`, `tipo`, `desde`, `faturado_desde`, `ordem` | Análises, Início |
@@ -581,10 +582,10 @@ Colunas que pedem nota:
 - `cliente.negativo`: 1 no cliente fora de ATIVO no SGI e 0 nos outros. O status em si (INATIVO ou SUBSTITUIDO) fica na LAN.
 - `cliente.cliente_desde`: só o ano (inteiro), que é o que a Ficha mostra (`FichaCliente.clienteDesde`). A data completa fica na LAN. Nulo quando o cliente nunca comprou, e então o cartão "Cliente desde" mostra "—".
 - `cliente.uf`: `ESTADO`. Para o cliente do exterior, "EX", até a pergunta 5 decidir sobre o país.
-- `cliente.tabela_preco`: nome da tabela (`TP1_NOM`, ou `TP1_COD` na falta).
+- `cliente.tabela_preco` e `cliente.lista_de_precos`: o nome da tabela escolhida (`TP1_NOM`, ou `TP1_COD` na falta) e a lista dela. Nulos no cliente sem tabela usável, que fica sem catálogo.
 - `ficha_produto`: o extrator já faz o corte dos 8. Peças, valor e última compra dos outros produtos não aparecem em nenhuma tela e ficam na LAN.
-- `catalogo.ja_comprou`: 0 ou 1, calculado pelo extrator na janela da pergunta 28. É o que o Montar pedido usa (`ProdutoDoCatalogo.jaComprou`, tipos.ts:206; MontarPedido.tsx:214).
-- `catalogo.embalagem`: fica no catálogo porque a fonte pode ser por tabela (`TP2_MVE`). Se for por produto (`EAN_QTD`), passa para `produto`.
+- `produto_comprado`: só os produtos da lista do cliente, na janela da pergunta 28. É o que o Montar pedido usa (`ProdutoDoCatalogo.jaComprou`, tipos.ts:222; MontarPedido.tsx:225).
+- `produto.embalagem` e `produto.medida`: só nos produtos de alguma lista. A embalagem é por produto (`EAN_QTD`), e não por tabela: o `TP2_MVE` vem vazio.
 - `painel_mes.faturado`: nulo nos meses que ainda não chegaram. `ano_anterior_ate_dia_util` e `ritmo_por_dia_util` (faturado por dia útil nos 6 meses fechados, base da projeção) só têm valor no mês corrente.
 - `pedido_aberto.representante`: atribuído na LAN, `VEPM.VENDEDOR` ou, se vier nulo ou 0, o `VEND_1` atual do cliente. `VEPM.VENDEDOR` não vai para a foto.
 - `nota.representante`: atribuído na LAN pela regra do faturamento (plano.md:219). `NFME.VENDEDOR` e o CRCLH não vão para a foto.
@@ -610,14 +611,14 @@ O que o servidor calcula sobre a foto (leituras com escopo e somas simples):
   - a faturar no mês, soma de `valor_entrega_no_mes` dos mesmos pedidos, que também vai para a barra do mês corrente no gráfico;
   - destaques: contagem, soma e os 5 primeiros de cada lista;
 - a ordem das listas que a tela mostra como recebe:
-  - clientes do Montar pedido por `faturamento_12m` decrescente (MontarPedido.tsx:387-414);
+  - clientes do Montar pedido por `faturamento_12m` decrescente (MontarPedido.tsx:396-423);
   - famílias da Ficha por valor decrescente (FichaCliente.tsx:75-79);
   - famílias sugeridas do mix pela coluna `ordem` de `cliente_mix` (FichaCliente.tsx:197-206);
   - os 5 primeiros de cada cartão do Início, na ordem da análise (Inicio.tsx:47 e 67);
 - as demais tabelas o navegador ordena pelo título das colunas, com a ordem de abertura na própria tela (Clientes.tsx:41 e 54; Analises.tsx:94, 136, 164 e 203; Pedidos.tsx:97, 127, 173 e 195; FichaCliente.tsx:227-230 e 281-284). Empate mantém a ordem recebida (componentes/ordenacao.ts:22-23).
 - total estimado do rascunho, na leitura; e o do envio, que fica congelado no app.db.
 
-A tabela `catalogo` (cliente × produto) é a maior. O volume dela define o tamanho da foto e é medido na F2.
+A `lista_de_precos` é a maior tabela da foto. Medido em 14/10, na Star Vendas: 33.626 linhas (50 listas), contra os 122.142 pares de cliente e produto que um catálogo por cliente teria; a foto foi de 0,8 MB para 2,8 MB.
 
 ## O que fica no app.db
 
@@ -677,16 +678,16 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 | `ABC71.SGI5_TAB_VEN_CLI3` | CLI3_CLI, CLI3_STA; CLI3_GRP só se servir para grupos. `CLI3_RFI` não é lido (pergunta 16) | Status cadastral (carteira, aceite de pedido, revalidação na LAN, bloqueio de montadora): `NVL(CLI3_STA,'ATIVO')`, como o SGI (decidido em 2026-10-09), por LEFT JOIN em `CLI3_CLI = CRCL.CLIENTE`; cliente sem linha conta como ativo | sgi/ABC71-SGI5-TAB_VEN.md:162-198 (STA 188; GRP 198); untDmVenPvd.dfm:2572-2573 e 2657-2658; untVenPvd_PvdIncluir.pas:1007-1008 | sim |
 | `ABC71.SGI5_TAB_VEN_CLI` | CLI_COD, CLI_TAB, CLI_STA | Tabela de preço do cliente | sgi/ABC71-SGI5-TAB_VEN.md:61-92 (PK 69; 77, 78, 91); untDmVenPvd.dfm:2642-2673 | sim |
 | `ABC71.SGI5_TAB_VEN_TP1` | TP1_COD, TP1_NOM, TP1_STA, TP1_MOE | Nome, tabela obsoleta e moeda | sgi/ABC71-SGI5-TAB_VEN.md:2687-2719 (2702, 2703, 2715, 2719) | sim |
-| `ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI` | VIEW_CLI, VIEW_TAB, VIEW_PAC, VIEW_PNU, VIEW_PNU_FOR, VIEW_STA, VIEW_VLR_LIQ; VIEW_MVE só se for a fonte da embalagem | Preço do cento, part number, filtro de vendável | untVenPvd_PosPac.dfm:443-557; untDmVenPvd.dfm:3080-3114 e 6440-6458; Relatorios {REL}/untVenRel_RelTabelaPrecoLiquido.dfm:614 e 668; plano.md:322 | não (fora do catálogo); colunas do fonte do SGI, a confirmar na F2 em DBA_VIEWS; abre com o `LUCAS_RO` desde 2026-10-09 (plano.md:322) |
+| `ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI` | VIEW_CLI, VIEW_TAB, VIEW_PAC, VIEW_PNU_FOR, VIEW_STA, VIEW_VLR_LIQ | Preço do cento (a tabela com o desconto do modelo ou o padrão; texto lido em DBA_VIEWS em 2026-10-14), part number e filtro de vendável. A view junta `SGI5_TAB_VEN_CLI`, `TP2`, `CLI2` (desconto por modelo), `DES` (índice do desconto), `ENG_PAC`, `CRCL` e `ESTQ`: a conta do extrator precisa de SELECT nela e no que ela lê | untVenPvd_PosPac.dfm:443-557; untDmVenPvd.dfm:3080-3114 e 6440-6458; Relatorios {REL}/untVenRel_RelTabelaPrecoLiquido.dfm:614 e 668; plano.md:322 | sim, em 2026-10-14 |
 | `ABC71.SGI5_VIEW_ENG_PAC_SEM_ARVORE` | VIEW_PAC | Tirar do catálogo, e recusar na LAN, o produto sem árvore | untDmVenPvd.dfm:3249-3251; untVenPvd_PvdIncluirItens.pas:432-443; OracleDB/docs/modulos/pedidos-venda.md:47 | não (fora do catálogo); colunas do fonte do SGI, a confirmar na F2 em DBA_VIEWS |
-| `ABC71.SGI5_TAB_ENG_PAC` | PAC_COD, PAC_GRC, PAC_DMI_MM, PAC_DMA_MM | Família (grupo de custo) e medida | sgi/ABC71-SGI5-TAB_ENG.md:3346-3383 (PK 3354; 3363, 3377, 3382, 3383); OracleDB/docs/modulos/familias.md:15 | sim; medida a confirmar |
+| `ABC71.SGI5_TAB_ENG_PAC` | PAC_COD, PAC_GRC, PAC_DMI_MM, PAC_DMA_MM | Família (grupo de custo) e medida | sgi/ABC71-SGI5-TAB_ENG.md:3346-3383 (PK 3354; 3363, 3377, 3382, 3383); OracleDB/docs/modulos/familias.md:15 | sim; medida conferida em 2026-10-14 (470 dos 692 produtos do catálogo têm as duas pontas) |
 | `ABC71.SGI5_TAB_CUS_V3_GRP` | GRP_GRP, GRP_DES, GRP_NIV | Nome da família (nível 2) | sgi/ABC71-SGI5-TAB_CUS.md:1357-1375; OracleDB/docs/modulos/familias.md:9-34 | sim |
 | `ABC71.SGI5_TAB_DP_CALEND` | CAL_DTA, CAL_DUT_COM | Dia útil, dias úteis e o corte do mesmo dia útil | sgi/ABC71-SGI5-TAB_DP.md:72-90; SGI12CodigoFonte/Aplicativo/untFunMat.pas:636-679 | sim; cobertura a confirmar |
 | `ABC71.SGI5_TAB_VEN_PV1_V2` | PV1_NPE, PV1_DCA, PV1_STA, PV1_LR1, PV1_DLB_CTR, PV1_DLB_VD1, PV1_DLB_CON, PV1_DLB_CRE, PV1_DLB_VD2, PV1_DLB_BPV, PV1_DCO, PV1_DUA; PV1_CLI só se o pedido do SGI ainda não exportado impedir "parado" | Etapas e datas do pedido CRM; as datas de liberação conferem a de aprovado | sgi/ABC71-SGI5-TAB_VEN.md:1379-1441 (PK 1387; 1394-1396, 1404, 1421, 1425-1433, 1435, 1438, 1441); OracleDB/docs/modulos/pedidos-venda.md:9-19 | sim; LR1 como número CRM a confirmar |
 | `ABC71.SGI5_TAB_VEN_PV2_V2` | PV2_NPE, PV2_QTD, PV2_VLR_VEN | Total no SGI, sem IPI | sgi/ABC71-SGI5-TAB_VEN.md:1748-1779 (1764, 1774, 1779); untDmVenPvd.dfm:111-140 | sim |
 | `ABC71.SGI5_VIEW_VEPM_STA_FAT` | VIEW_NPE, VIEW_STA_FAT | Faturado parcial e faturado | untDmVenPvd.dfm:448-449 e 535-536; untVenPvd_Pvd.dfm:374-379; fora do catálogo (OracleDB/docs/lacunas.md:28) | não (fora do catálogo); colunas do fonte do SGI, a confirmar na F2 em DBA_VIEWS |
-| `ABC71.SGI5_TAB_ENG_EAN` | EAN_COD, EAN_QTD, EAN_PPR | Candidata à embalagem (pede-se só a escolhida) | sgi/ABC71-SGI5-TAB_ENG.md:1276-1297 (PK 1284; 1293, 1295, 1297) | sim; uso a confirmar |
-| `ABC71.SGI5_TAB_ENG_TR1` | TR1_PNE, TR1_CCL, TR1_QPE | Candidata à embalagem para montadora (pede-se só a escolhida) | sgi/ABC71-SGI5-TAB_ENG.md:5321-5352 (5337, 5338, 5352); untVenPvd_PosPac.dfm:522-525 | sim; uso a confirmar |
+| `ABC71.SGI5_TAB_ENG_EAN` | EAN_COD, EAN_QTD | Embalagem do produto, em peças: em 14/10, um EAN por produto do catálogo | sgi/ABC71-SGI5-TAB_ENG.md:1276-1297 (PK 1284; 1293, 1295, 1297) | sim; `EAN_PPR` vem nulo e não é lido |
+| `ABC71.SGI5_TAB_ENG_TR1` | não é lido | Era candidata à embalagem para montadora; o EAN cobre o catálogo (2026-10-14) | sgi/ABC71-SGI5-TAB_ENG.md:5321-5352 (5337, 5338, 5352); untVenPvd_PosPac.dfm:522-525 | sim |
 | `ABC71.SGI5_VIEW_DIR_CME_DIA_ULT_COT` | VIEW_MOE, VIEW_CAM, VIEW_DCO | Câmbio do dia, só se tabelas fora de REAL entrarem no CRM | untDmVenPvd.dfm:2586-2589 e 2675; untVenPvd_ItensMov.pas:145-158 | não (fora do catálogo); colunas do fonte do SGI, a confirmar na F2 em DBA_VIEWS |
 
 **Só para conferência na F2** (com o `LUCAS_RO`, sem grant para o extrator)
@@ -748,7 +749,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extrator gera a foto, e a API mostra com ela o Início, Clientes, Ficha, Análises e as abas "Em aberto no ERP" e "Faturados" de Pedidos. Tudo roda só neste computador, com o login de teste, porque o login de verdade é da F3 (README.md, "Como rodar"). Catálogo, rascunhos e envio ainda não usam os dados reais.
 
-- **Esquema implementado (versão 3, com os itens dos pedidos em aberto e das notas):** as tabelas acima, menos `catalogo`, `pedido_crm` e `pedido_crm_etapa`. Faltam também `cliente.tabela_preco`, `cliente.municipio_ibge` e `produto.medida`, que chegam com o catálogo e o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
+- **Esquema implementado (versão 5, com o cliente negativo e o catálogo):** as tabelas acima, menos `pedido_crm` e `pedido_crm_etapa`. Falta também `cliente.municipio_ibge`, que chega com o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
 - **Conferência com o RELCUS001.** O faturado por representante e mês bate com a `SGI5_TAB_CUS_REP_FAT` nos códigos 1401 e 1402, em todos os meses de 2025 e 2026, com duas exceções:
   - junho de 2025: R$ 2.567,02 estão no 1402 no RELCUS001 e no 1401 pelo vendedor da nota. A soma dos dois códigos bate;
   - o mês corrente, porque a tabela do RELCUS001 ainda não tinha o dia.
@@ -780,7 +781,10 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
   - Cada nota dos últimos 45 dias tem um pedido de origem. Não há produto repetido num pedido ou numa nota da Star Vendas, mas a foto aceita, porque o pedido programado pode ter o mesmo produto em duas entregas.
   - A resposta de `/api/pedidos` da Star Vendas foi a 137 KB sem compressão, quase toda dos 1.188 itens das notas.
 - **Cliente negativo (2026-10-14).** O cliente fora de ATIVO no SGI aparece com o selo "Negativo" em Clientes, na Ficha e na escolha do cliente do pedido, e o "Novo pedido" mostra o aviso para falar com a equipe de vendas da Suprens (pergunta 16).
-- **Ainda não feito:** grupos por raiz de CNPJ, catálogo e preços, a troca da foto por SFTP com manifesto e os esquemas de resposta da API.
+- **Catálogo com preços (2026-10-14).** O Novo pedido mostra, com os dados reais, o catálogo do cliente: a tabela dele, o preço do cento pela regra do Lucas (tabela + desconto do modelo ou padrão), família, medida, embalagem e part number, e as abas "Já comprados" e "Todos". O extrator lê o catálogo em 2 s.
+  - A propor ao Lucas: a embalagem do EAN como passo da quantidade, como no protótipo; "já comprou" em 24 meses; montadora só com tabela ativa e só tabela em real, como o SGI.
+  - O rascunho e o envio ainda não gravam com os dados reais (F3 e F5): a tela agora mostra o motivo, em vez de falhar calada.
+- **Ainda não feito:** grupos por raiz de CNPJ, a troca da foto por SFTP com manifesto e os esquemas de resposta da API.
 
 ## Perguntas para a F2
 
@@ -806,13 +810,15 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
    - O que mostrar para os 41 PA sem grupo (familias.md:38) e para item vendido fora do grupo 30?
 8. **Medida.** `PAC_DMI_MM` e `PAC_DMA_MM` estão preenchidos e fazem sentido em todas as famílias (MOLA, BORRACHA, LAMINADOS)? A alternativa é o diâmetro nominal ou o tamanho do código (`SGI5_FNC_ENG_PAC_TAM_COD`).
 9. **Embalagem.** Qual é a fonte da embalagem de venda: `EAN_QTD` do EAN padrão, `VIEW_MVE` ou `TR1_QPE`? Em peça ou em CT? Qual o valor quando vier vazio? O CRM bloqueia quantidade fora do múltiplo; o SGI não valida.
-10. **View de preço.**
+    - Respondido no banco em 2026-10-14: o `VIEW_MVE` (e o lote mínimo `VIEW_LMI`) vêm vazios em todas as linhas da Star Vendas, e o EAN não tem padrão marcado (`EAN_PPR` nulo), mas cada produto do catálogo tem um EAN só, com a quantidade em peças. O CRM usa o `EAN_QTD`; sem EAN, qualquer quantidade. Falta o Lucas confirmar o bloqueio do múltiplo.
+10. **View de preço.** Respondido em 2026-10-14: o texto da view (DBA_VIEWS) é a regra que o Lucas definiu, e a conta refeita pelas tabelas dá o mesmo preço. `VIEW_TAB`, `VIEW_PAC` e `VIEW_PNU` são `CLI_TAB`, `TP2_PRO` e `TP2_CMO`. A leitura agrupada da carteira da Star Vendas leva 1,5 s.
     - A view já abre com o `LUCAS_RO` (plano.md:322). Ler o texto dela em DBA_VIEWS.
     - Confirmar no texto que `VIEW_TAB`, `VIEW_PAC` e `VIEW_PNU` correspondem a `TP2_COD`, `TP2_PRO` e `TP2_CMO`.
     - Comparar uma linha com uma nota recente do mesmo cliente e produto (`VLR_TOTAL ÷ QTDE` em CT).
     - Ler também o texto da `SGI5_VIEW_ENG_PAC_SEM_ARVORE`. Com o `READ ANY TABLE`, as views do ABC71 abrem (OracleDB/docs/lacunas.md:7).
     - Medir o volume da view só para os clientes dos autorizados, na tabela escolhida.
 11. **Part number.** Quantos grupos (`VIEW_CLI`, `VIEW_TAB`, `VIEW_PAC`) têm mais de uma linha? Se houver, o catálogo passa a ter chave código + part number, ou o extrator escolhe um?
+    - Respondido em 2026-10-14: 6.372 pares da Star Vendas têm mais de uma linha (part number ou depósito do ESTQ), sempre com o mesmo preço. O extrator fica com o menor part number.
 12. **Pedido CRM.**
     - Ler em DBA_VIEWS a `SGI5_VIEW_VEPM_STA_FAT`.
     - ~~Medir quantas notas de venda vêm com `NFME.NRO_PEDIDO` nulo ou 0.~~ Medido em 2026-10-14: das 61.075 linhas NFME de venda dos últimos 36 meses, só 1 veio sem pedido (2025). Outras 731 apontam para um número que não está no VEPM; falta saber se é pedido apagado ou número que recomeçou depois de 2.999.999. A ligação nota → pedido já está no fonte do SGI (ver Detalhe do pedido) e já aparece na aba Faturados.
@@ -896,7 +902,7 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
 31. **Motivo da recusa.** Fechar a lista de códigos e frases, escrita pelo importador e pela validação da LAN. Quais códigos são por item e levam o código do produto (`motivo_produto`)?
 32. **Valor em aberto.** O pedido antecipado bloqueado (condição de pagamento 1000, `untRecCpv_Cpv.pas:344-373`) entra no valor em aberto? A coluna "Itens" conta só as linhas com saldo? A "Entrega" mostra a próxima entrega com saldo ou a entrega do cabeçalho?
 33. **Rascunho de cliente que saiu da carteira.** Some, fica bloqueado para envio ou continua visível? O pedido já enviado continua visível para quem enviou?
-    - E o rascunho com produto que saiu do catálogo do cliente? O servidor tira o item na leitura e avisa o representante, ou bloqueia só o envio? Hoje a tela esconde o item (MontarPedido.tsx:76), mas o reenvia em todo salvamento (MontarPedido.tsx:174-176), e a validação recusaria o rascunho inteiro.
+    - E o rascunho com produto que saiu do catálogo do cliente? O servidor tira o item na leitura e avisa o representante, ou bloqueia só o envio? Hoje a tela esconde o item (MontarPedido.tsx:77), mas o reenvia em todo salvamento (MontarPedido.tsx:181-183), e a validação recusaria o rascunho inteiro.
     - Como esse item entra em "N produtos" e no total estimado da aba Rascunhos?
     - E o pedido em aberto ou a nota atribuídos ao representante de cliente que hoje é de outra carteira? Proposta: a linha aparece sem o nome, com "Cliente de outra carteira", e sem link para a ficha (ver Pedidos).
 34. **Mapa.** Decidido em 2026-10-09: saem as classes "atendida" e "carteira de outros". O mapa mostra só a carteira do representante (plano.md:199).

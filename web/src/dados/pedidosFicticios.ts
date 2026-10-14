@@ -46,7 +46,7 @@ export function catalogoDoClienteFicticio(codigoCliente: string): CatalogoDoClie
         medida: produto.medida,
         embalagem: produto.embalagem,
         precoCento: Math.round(produto.precoBase * fatorDaTabela),
-        codigoNoCliente: jaComprou && aleatorio.chance(0.6) ? `${sigla}-${aleatorio.inteiro(1_000, 9_999)}` : null,
+        partNumber: jaComprou && aleatorio.chance(0.6) ? `${sigla}-${aleatorio.inteiro(1_000, 9_999)}` : null,
         jaComprou,
       };
     }),

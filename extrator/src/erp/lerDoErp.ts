@@ -2,6 +2,7 @@ import { montarReferencia, type Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
 import { lerCalendario, lerMomentoDoOracle, lerNomesDosRepresentantes } from "./cadastros.ts";
 import { lerCarteira, lerDatasDeCompra, lerVendasPorMes } from "./carteira.ts";
+import { lerPrecos, lerProdutosDasTabelas, lerProdutosJaComprados, lerTabelasDosClientes } from "./catalogo.ts";
 import { lerNotasRecentes, lerVendasPorDia } from "./faturamento.ts";
 import { lerFamiliasDaSuprens, lerProdutosMaisComprados } from "./familias.ts";
 import { lerPedidosEmAberto } from "./pedidos.ts";
@@ -23,6 +24,7 @@ export async function lerDadosDoErp(
     progresso(`${nome}: ${((Date.now() - inicio) / 1000).toFixed(1)} s`);
     return resultado;
   };
+  const tabelas = await etapa("tabelas de preço", () => lerTabelasDosClientes(oracle, referencia, autorizados));
   const dados: DadosDoErp = {
     geradaEm,
     representantes: await etapa("representantes", () => lerNomesDosRepresentantes(oracle, autorizados)),
@@ -35,6 +37,12 @@ export async function lerDadosDoErp(
     notas: await etapa("notas recentes", () => lerNotasRecentes(oracle, referencia, autorizados)),
     vendasDoDia: await etapa("vendas por dia", () => lerVendasPorDia(oracle, referencia, autorizados)),
     diasUteis: await etapa("calendário", () => lerCalendario(oracle, referencia)),
+    tabelas,
+    precos: await etapa("preços", () => lerPrecos(oracle, referencia, autorizados)),
+    produtosDasTabelas: await etapa("produtos das tabelas", () =>
+      lerProdutosDasTabelas(oracle, [...new Set(tabelas.map((tabela) => tabela.tabela))]),
+    ),
+    jaComprados: await etapa("produtos já comprados", () => lerProdutosJaComprados(oracle, referencia, autorizados)),
   };
   return { referencia, dados };
 }

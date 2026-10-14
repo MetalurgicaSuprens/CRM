@@ -208,13 +208,17 @@ export type PainelInicio = {
 export type ProdutoDoCatalogo = {
   codigo: string;
   familia: string;
-  medida: string;
+  /** Faixa de aperto ("14–22 mm"); null nas famílias sem ela, como kits e molas. */
+  medida: string | null;
   /** Peças por embalagem: o pedido anda de embalagem em embalagem. */
   embalagem: number;
-  /** Preço do cento (100 peças) na tabela do cliente; só referência, o SGI recalcula. */
+  /**
+   * Preço do cento (100 peças): a tabela do cliente com o desconto do modelo do produto ou, sem ele,
+   * o desconto padrão do cliente. Só referência: o SGI recalcula.
+   */
   precoCento: number;
-  /** Código que o próprio cliente usa para o produto, quando ele tem. */
-  codigoNoCliente: string | null;
+  /** O part number da tabela de preço: o código da montadora, ou do cliente, para o produto. */
+  partNumber: string | null;
   jaComprou: boolean;
 };
 
@@ -268,7 +272,7 @@ export type EtapaDoPedido =
 
 export type ItemEnviado = ItemDoPedido & {
   familia: string;
-  medida: string;
+  medida: string | null;
   precoCento: number;
 };
 

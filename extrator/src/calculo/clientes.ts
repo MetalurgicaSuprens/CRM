@@ -4,15 +4,17 @@ import type { Foto } from "dominio/esquemaDaFoto";
 import { evolucao12m, variacao12m } from "dominio/indicadores";
 import { sugerirMix, type ClienteNoMix, type SugestaoDeMix } from "dominio/mix";
 import type { ClienteDaCarteira, DadosDoErp, DatasDeCompra, FamiliaDoCliente, VendaDoMes } from "../erp/tipos.ts";
+import { agruparPor } from "./agrupar.ts";
+import { montarCatalogo, type TabelaEListaDoCliente } from "./catalogo.ts";
 import { nomeDoCliente } from "./nomeDoCliente.ts";
+import { SEM_FAMILIA, juntarProdutos } from "./produtos.ts";
 import { MESES_FECHADOS, type Referencia } from "./referencia.ts";
 
 /*
- * As tabelas dos clientes da carteira: cadastro, indicadores, ficha e análises, com as regras do
- * módulo dominio (as mesmas do protótipo).
+ * As tabelas dos clientes da carteira: cadastro, indicadores, ficha, análises e catálogo, com as
+ * regras do módulo dominio (as mesmas do protótipo).
  */
 
-export const SEM_FAMILIA = "SEM FAMÍLIA";
 /** A Ficha mostra 24 meses fechados e o corrente. */
 const MESES_DA_FICHA = 25;
 
@@ -22,6 +24,8 @@ export type TabelasDosClientes = Pick<
   | "cliente_mes"
   | "cliente_familia"
   | "produto"
+  | "lista_de_precos"
+  | "produto_comprado"
   | "ficha_produto"
   | "cliente_mix"
   | "analise_parado"
@@ -62,13 +66,14 @@ export function montarClientes(
   });
   const idPorChave = new Map(analisados.map(({ id, cliente }) => [cliente.chave, id]));
   const produtosDaFicha = dados.produtos.filter((produto) => idPorChave.has(produto.chave));
+  const catalogo = montarCatalogo(analisados, dados);
   return {
-    cliente: analisados.map(linhaDoCliente),
+    cliente: analisados.map((analisado) => linhaDoCliente(analisado, catalogo.porCliente.get(analisado.id))),
     cliente_mes: analisados.flatMap(({ id, mensal }) => mensal.slice(-MESES_DA_FICHA).map(({ mes, valor }) => ({ cliente: id, mes, valor }))),
     cliente_familia: analisados.flatMap(({ id, cliente }) => familiasDaFicha(id, familias.get(cliente.chave) ?? [])),
-    produto: [...new Map(produtosDaFicha.map((produto) => [produto.produto, produto.familia ?? SEM_FAMILIA])).entries()].map(
-      ([produto, familia]) => ({ produto, familia }),
-    ),
+    produto: juntarProdutos(catalogo.produtos, produtosDaFicha),
+    lista_de_precos: catalogo.lista_de_precos,
+    produto_comprado: catalogo.produto_comprado,
     ficha_produto: produtosDaFicha.map((produto) => ({
       cliente: idPorChave.get(produto.chave) ?? "",
       produto: produto.produto,
@@ -104,7 +109,10 @@ function analisar(datas: DatasDeCompra, vendas: VendaDoMes[], temPedidoEmAberto:
   };
 }
 
-function linhaDoCliente({ id, cliente, historico, analise, evolucao, mix }: ClienteAnalisado): Foto["cliente"][number] {
+function linhaDoCliente(
+  { id, cliente, historico, analise, evolucao, mix }: ClienteAnalisado,
+  catalogo: TabelaEListaDoCliente | undefined,
+): Foto["cliente"][number] {
   return {
     cliente: id,
     codigo_erp: cliente.isPessoaFisica ? null : String(cliente.cliente),
@@ -123,6 +131,8 @@ function linhaDoCliente({ id, cliente, historico, analise, evolucao, mix }: Clie
     variacao_12m: variacao12m(evolucao),
     evolucao_12m: JSON.stringify(evolucao),
     grupo_mix: mix ? (mix.porte ?? "mercado") : null,
+    tabela_preco: catalogo?.tabela ?? null,
+    lista_de_precos: catalogo?.lista ?? null,
   };
 }
 
@@ -219,14 +229,4 @@ function populacaoDoMix(familias: FamiliaDoCliente[]): { todos: ClienteNoMix[]; 
 /** Cliente da carteira sem nota nos 24 meses fechados. */
 function semComprasNoMix(cliente: ClienteDaCarteira): ClienteNoMix {
   return { codigo: cliente.chave, mercado: cliente.mercado, faturamento12m: 0, familias12m: new Set(), familias24m: new Set() };
-}
-
-function agruparPor<T>(itens: readonly T[], chave: (item: T) => string): Map<string, T[]> {
-  const grupos = new Map<string, T[]>();
-  for (const item of itens) {
-    const grupo = grupos.get(chave(item));
-    if (grupo) grupo.push(item);
-    else grupos.set(chave(item), [item]);
-  }
-  return grupos;
 }

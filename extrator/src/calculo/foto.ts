@@ -3,9 +3,10 @@ import { VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
 import type { ClienteDaCarteira, DadosDoErp } from "../erp/tipos.ts";
 import { idDoCliente } from "../idDoCliente.ts";
 import { diaUtilDoMes, diasUteisDoMes } from "./calendario.ts";
-import { SEM_FAMILIA, montarClientes } from "./clientes.ts";
+import { montarClientes } from "./clientes.ts";
 import { montarPainel } from "./painel.ts";
 import { montarPedidos } from "./pedidos.ts";
+import { juntarProdutos } from "./produtos.ts";
 import type { Referencia } from "./referencia.ts";
 
 /**
@@ -43,13 +44,4 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
     })),
     ...montarPedidos({ pedidos, notas: dados.notas }, referencia, (chave) => idPorChave.get(chave) ?? null),
   };
-}
-
-/** A família de cada produto que aparece na ficha, num pedido em aberto ou numa nota, uma vez só. */
-function juntarProdutos(daFicha: Foto["produto"], dosItens: readonly { produto: string; familia: string | null }[]): Foto["produto"] {
-  const familias = new Map(daFicha.map(({ produto, familia }) => [produto, familia]));
-  for (const { produto, familia } of dosItens) {
-    if (!familias.has(produto)) familias.set(produto, familia ?? SEM_FAMILIA);
-  }
-  return [...familias].map(([produto, familia]) => ({ produto, familia }));
 }

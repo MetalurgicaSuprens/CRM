@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
 import type { FotoAtual } from "./foto/fotoAtual.ts";
 import { lerAnalises } from "./leituras/analises.ts";
+import { lerCatalogo } from "./leituras/catalogo.ts";
 import { lerCarteira, lerFicha } from "./leituras/clientes.ts";
 import { lerPainel } from "./leituras/painel.ts";
 import { lerPedidos } from "./leituras/pedidos.ts";
@@ -14,6 +16,7 @@ import type { Sessao } from "./sessao.ts";
  */
 
 const DO_REPRESENTANTE = { config: { acesso: "representante" as const } };
+const CLIENTE_FORA_DA_CARTEIRA = { erro: "Cliente não encontrado na sua carteira." };
 
 /** O id opaco do cliente: 16 caracteres hexadecimais (extrator/src/idDoCliente.ts). */
 const PARAMETRO_CLIENTE = {
@@ -32,7 +35,18 @@ export function registrarRotas(app: FastifyInstance, foto: FotoAtual): void {
     { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_CLIENTE } },
     (requisicao, resposta) => {
       const ficha = lerFicha(foto.abrir(), sessaoDa(requisicao), requisicao.params.codigo);
-      return ficha ?? resposta.code(404).send({ erro: "Cliente não encontrado na sua carteira." });
+      return ficha ?? resposta.code(404).send(CLIENTE_FORA_DA_CARTEIRA);
+    },
+  );
+  app.get<{ Params: { codigo: string } }>(
+    "/api/clientes/:codigo/catalogo",
+    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_CLIENTE } },
+    (requisicao, resposta) => {
+      const resultado = lerCatalogo(foto.abrir(), sessaoDa(requisicao), requisicao.params.codigo);
+      if (!resultado) return resposta.code(404).send(CLIENTE_FORA_DA_CARTEIRA);
+      // 409: o cliente existe e é do login, mas está negativo no cadastro e não recebe pedido.
+      if ("isNegativo" in resultado) return resposta.code(409).send({ erro: AVISO_DE_CLIENTE_NEGATIVO });
+      return resultado.catalogo;
     },
   );
   app.get("/api/analises", DO_REPRESENTANTE, (requisicao) => lerAnalises(foto.abrir(), sessaoDa(requisicao)));

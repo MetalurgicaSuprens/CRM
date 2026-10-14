@@ -4,7 +4,7 @@
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
  */
 
-export const VERSAO_DO_ESQUEMA = 4;
+export const VERSAO_DO_ESQUEMA = 5;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -40,7 +40,9 @@ CREATE TABLE cliente (
   faturamento_12m REAL NOT NULL,
   variacao_12m REAL,
   evolucao_12m TEXT NOT NULL,
-  grupo_mix TEXT
+  grupo_mix TEXT,
+  tabela_preco TEXT,
+  lista_de_precos INTEGER
 ) STRICT;
 CREATE INDEX cliente_representante ON cliente (representante);
 
@@ -61,7 +63,23 @@ CREATE TABLE cliente_familia (
 
 CREATE TABLE produto (
   produto TEXT PRIMARY KEY,
-  familia TEXT NOT NULL
+  familia TEXT NOT NULL,
+  medida TEXT,
+  embalagem INTEGER
+) STRICT;
+
+CREATE TABLE lista_de_precos (
+  lista INTEGER NOT NULL,
+  produto TEXT NOT NULL,
+  preco_cento REAL NOT NULL,
+  part_number TEXT,
+  PRIMARY KEY (lista, produto)
+) STRICT;
+
+CREATE TABLE produto_comprado (
+  cliente TEXT NOT NULL,
+  produto TEXT NOT NULL,
+  PRIMARY KEY (cliente, produto)
 ) STRICT;
 
 CREATE TABLE ficha_produto (
@@ -197,10 +215,22 @@ export type Foto = {
     variacao_12m: number | null;
     evolucao_12m: string;
     grupo_mix: string | null;
+    /** Nome da tabela de preço do cliente; null sem catálogo. */
+    tabela_preco: string | null;
+    /** A lista de `lista_de_precos` do cliente; null sem catálogo. */
+    lista_de_precos: number | null;
   }[];
   cliente_mes: { cliente: string; mes: string; valor: number }[];
   cliente_familia: { cliente: string; familia: string; valor: number; participacao: number }[];
-  produto: { produto: string; familia: string }[];
+  /** Medida ("14–22 mm") e embalagem (peças) só nos produtos de alguma lista de preços. */
+  produto: { produto: string; familia: string; medida: string | null; embalagem: number | null }[];
+  /**
+   * Preço do cento de cada produto vendável, por lista: clientes com a mesma tabela e os mesmos
+   * descontos dividem uma lista (extrator/src/calculo/catalogo.ts).
+   */
+  lista_de_precos: { lista: number; produto: string; preco_cento: number; part_number: string | null }[];
+  /** Os produtos da lista do cliente que ele comprou nos últimos 24 meses: a aba "Já comprados". */
+  produto_comprado: { cliente: string; produto: string }[];
   ficha_produto: { cliente: string; produto: string; pecas_12m: number; valor_12m: number; ultima_compra: string }[];
   cliente_mix: { cliente: string; familia: string; penetracao: number; ordem: number }[];
   analise_parado: { cliente: string; perda_mensal: number; ordem: number }[];

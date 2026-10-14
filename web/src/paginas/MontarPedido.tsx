@@ -73,7 +73,8 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
   const [entrega, setEntrega] = useState<string | null>(inicial?.entrega ?? null);
   const [observacao, setObservacao] = useState(inicial?.observacao ?? "");
   const [confirmando, setConfirmando] = useState(false);
-  const { idDoRascunho, salvoEm, salvarAgora } = useRascunhoAutomatico(catalogo, inicial, { quantidades, entrega, observacao });
+  const [erroAoEnviar, setErroAoEnviar] = useState<string | null>(null);
+  const { idDoRascunho, salvoEm, erroAoSalvar, salvarAgora } = useRascunhoAutomatico(catalogo, inicial, { quantidades, entrega, observacao });
 
   const escolhidos = catalogo.produtos.filter((produto) => (quantidades[produto.codigo] ?? 0) > 0);
   const linhas = escolhidos.map((produto) => ({ ...produto, quantidade: quantidades[produto.codigo] ?? 0 }));
@@ -82,9 +83,14 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
   const alterar = useCallback((codigo: string, pecas: number) => setQuantidades((atuais) => ({ ...atuais, [codigo]: pecas })), []);
 
   const enviar = useCallback(async () => {
-    const rascunho = await salvarAgora();
-    const pedido = await enviarPedido(rascunho.id);
-    navegar(`/pedidos/${pedido.numero}?enviado=1`, { replace: true });
+    try {
+      const rascunho = await salvarAgora();
+      const pedido = await enviarPedido(rascunho.id);
+      navegar(`/pedidos/${pedido.numero}?enviado=1`, { replace: true });
+    } catch (erro) {
+      setConfirmando(false);
+      setErroAoEnviar(mensagemDo(erro));
+    }
   }, [salvarAgora, navegar]);
 
   const descartar = () => {
@@ -135,7 +141,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
             />
             <p className={estilos.nota}>Preço da tabela do cliente, só para referência: o SGI recalcula quando recebe o pedido.</p>
             <p className={estilos.salvo} role="status">
-              {salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, relogio)}.` : "O rascunho é salvo sozinho enquanto você monta o pedido."}
+              {erroAoEnviar ?? erroAoSalvar ?? (salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, relogio)}.` : "O rascunho é salvo sozinho enquanto você monta o pedido.")}
             </p>
             {idDoRascunho ? (
               <button type="button" className={estilos.descartar} onClick={descartar}>
@@ -169,6 +175,7 @@ type ConteudoDoRascunho = { quantidades: Quantidades; entrega: string | null; ob
 function useRascunhoAutomatico(catalogo: CatalogoDoCliente, inicial: Rascunho | null, conteudo: ConteudoDoRascunho) {
   const [idDoRascunho, setIdDoRascunho] = useState(inicial?.id ?? null);
   const [salvoEm, setSalvoEm] = useState(inicial?.atualizadoEm ?? null);
+  const [erroAoSalvar, setErroAoSalvar] = useState<string | null>(null);
   const { quantidades, entrega, observacao } = conteudo;
   const dados = useMemo<Omit<RascunhoParaSalvar, "id">>(
     () => ({
@@ -189,17 +196,19 @@ function useRascunhoAutomatico(catalogo: CatalogoDoCliente, inicial: Rascunho | 
     ultimoSalvo.current = conteudoAtual;
     setIdDoRascunho(rascunho.id);
     setSalvoEm(rascunho.atualizadoEm);
+    setErroAoSalvar(null);
     return rascunho;
   }, [dados, conteudoAtual, idDoRascunho]);
 
   useEffect(() => {
     if (conteudoAtual === ultimoSalvo.current) return;
     if (!idDoRascunho && dados.itens.length === 0) return;
-    const espera = window.setTimeout(() => void salvarAgora(), ESPERA_PARA_SALVAR_MS);
+    // Com os dados reais, o rascunho ainda não é gravado (F3): o motivo aparece na linha de status.
+    const espera = window.setTimeout(() => salvarAgora().catch((erro: unknown) => setErroAoSalvar(mensagemDo(erro))), ESPERA_PARA_SALVAR_MS);
     return () => window.clearTimeout(espera);
   }, [conteudoAtual, idDoRascunho, dados.itens.length, salvarAgora]);
 
-  return { idDoRascunho, salvoEm, salvarAgora };
+  return { idDoRascunho, salvoEm, erroAoSalvar, salvarAgora };
 }
 
 // ---------------------------------------------------------------- catálogo
@@ -222,7 +231,7 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
     [filtro, comprados, catalogo.produtos, termo],
   );
   return (
-    <Cartao titulo="Produtos" icone={PackageSearch} subtitulo="Busque pelo código, pela família, pela medida ou pelo código que o cliente usa.">
+    <Cartao titulo="Produtos" icone={PackageSearch} subtitulo="Busque pelo código, pela família, pela medida ou pelo part number.">
       <div className={estilos.ferramentas}>
         <CampoDeBusca rotulo="Buscar produto" valor={busca} dica="Código, família ou medida" aoMudar={setBusca} />
         <Segmentos
@@ -439,14 +448,19 @@ function Indisponivel({ texto }: { texto: string }) {
 
 // ---------------------------------------------------------------- apoio
 
-function descricaoDe(produto: Pick<ProdutoDoCatalogo, "familia" | "medida" | "codigoNoCliente">): string {
-  const doCliente = produto.codigoNoCliente ? ` · no cliente: ${produto.codigoNoCliente}` : "";
-  return `${produto.familia} · ${produto.medida}${doCliente}`;
+function mensagemDo(erro: unknown): string {
+  return erro instanceof Error ? erro.message : "Não deu para falar com o servidor. Tente de novo.";
+}
+
+/** "FLEXIL · 14–22 mm · part number CF420118": a medida e o part number só quando existem. */
+function descricaoDe(produto: Pick<ProdutoDoCatalogo, "familia" | "medida" | "partNumber">): string {
+  const partNumber = produto.partNumber ? `part number ${produto.partNumber}` : null;
+  return [produto.familia, produto.medida, partNumber].filter(Boolean).join(" · ");
 }
 
 function correspondeABusca(produto: ProdutoDoCatalogo, termo: string): boolean {
   if (!termo) return true;
-  return [produto.codigo, produto.familia, produto.medida, produto.codigoNoCliente ?? ""].some((campo) =>
+  return [produto.codigo, produto.familia, produto.medida ?? "", produto.partNumber ?? ""].some((campo) =>
     normalizarParaBusca(campo).includes(termo),
   );
 }

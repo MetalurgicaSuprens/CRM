@@ -3,10 +3,9 @@ import type { FonteDeDados } from "./fonteDeDados";
 /*
  * Os dados reais: a API do servidor, que lê a foto do ERP (server/src/rotas.ts). Mesma origem,
  * sem CORS; o representante vem da sessão, nunca daqui.
- * Catálogo, rascunhos e envio chegam nas próximas fases (preços na F2, app.db na F3 e F5).
+ * Rascunhos e envio chegam nas próximas fases (app.db na F3 e F5).
  */
 
-const AINDA_SEM_CATALOGO = "O catálogo com os preços ainda não vem do ERP. Ele chega no próximo passo da F2.";
 const AINDA_SEM_PEDIDOS = "Com os dados reais, os pedidos ainda não são gravados. Isso chega com o login (F3) e os pedidos (F5).";
 
 export const fonteDoServidor: FonteDeDados = {
@@ -15,7 +14,8 @@ export const fonteDoServidor: FonteDeDados = {
   carregarClientes: () => buscar("/api/clientes"),
   carregarFicha: (codigo) => buscarOuNulo(`/api/clientes/${encodeURIComponent(codigo)}`),
   carregarAnalises: () => buscar("/api/analises"),
-  carregarCatalogo: () => Promise.reject(new Error(AINDA_SEM_CATALOGO)),
+  // 409, cliente negativo: a mensagem do servidor é o aviso que a montagem do pedido mostra.
+  carregarCatalogo: (codigoCliente) => buscarOuNulo(`/api/clientes/${encodeURIComponent(codigoCliente)}/catalogo`),
   carregarPedidos: () => buscar("/api/pedidos"),
   carregarPedidoEnviado: () => Promise.resolve(null),
   carregarRascunho: () => Promise.resolve(null),

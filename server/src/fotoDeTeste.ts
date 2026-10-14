@@ -15,7 +15,7 @@ export const CLIENTE_DE_A = "aaaaaaaaaaaaaaa1";
 export const CLIENTE_NEGATIVO_DE_A = "aaaaaaaaaaaaaaa2";
 export const CLIENTE_DE_B = "bbbbbbbbbbbbbbb1";
 /** O que nunca pode aparecer para o login de A. */
-export const MARCAS_DE_B = [CLIENTE_DE_B, "CLIENTE SO DE B", "999001", "888001", "PRODUTO-SO-DE-B", "999002"];
+export const MARCAS_DE_B = [CLIENTE_DE_B, "CLIENTE SO DE B", "999001", "888001", "PRODUTO-SO-DE-B", "999002", "TABELA SO DE B"];
 
 function cliente(id: string, representante: string, nome: string, negativo = 0): Foto["cliente"][number] {
   return {
@@ -36,6 +36,8 @@ function cliente(id: string, representante: string, nome: string, negativo = 0):
     variacao_12m: -0.3,
     evolucao_12m: JSON.stringify(Array.from({ length: 13 }, () => 12_000)),
     grupo_mix: "medio",
+    tabela_preco: representante === "1401" ? "PADRAO - FEV" : "TABELA SO DE B",
+    lista_de_precos: representante === "1401" ? 1 : 2,
   };
 }
 
@@ -89,9 +91,18 @@ export function montarFotoDeTeste(): Foto {
       cliente(CLIENTE_DE_B, "9999", "CLIENTE SO DE B"),
     ],
     produto: [
-      { produto: "F-100", familia: "FLEXIL" },
-      { produto: "P-200", familia: "PRESIL" },
-      { produto: "PRODUTO-SO-DE-B", familia: "FLEXIL" },
+      { produto: "F-100", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100 },
+      { produto: "P-200", familia: "PRESIL", medida: null, embalagem: null },
+      { produto: "PRODUTO-SO-DE-B", familia: "FLEXIL", medida: null, embalagem: 50 },
+    ],
+    lista_de_precos: [
+      { lista: 1, produto: "F-100", preco_cento: 95.5, part_number: "CF420118" },
+      { lista: 1, produto: "P-200", preco_cento: 120, part_number: null },
+      { lista: 2, produto: "PRODUTO-SO-DE-B", preco_cento: 80, part_number: null },
+    ],
+    produto_comprado: [
+      { cliente: CLIENTE_DE_A, produto: "F-100" },
+      { cliente: CLIENTE_DE_B, produto: "PRODUTO-SO-DE-B" },
     ],
     cliente_mes: [...a.cliente_mes, ...b.cliente_mes],
     cliente_familia: [...a.cliente_familia, ...b.cliente_familia],

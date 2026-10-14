@@ -12,6 +12,17 @@ import type { ClienteDaCarteira, DatasDeCompra, VendaDoMes } from "./tipos.ts";
  * do SGI só serve para marcar o cliente negativo: a foto não leva o status em si.
  */
 
+/**
+ * O cliente C (CRCL) é da carteira: VEND_1 de um autorizado e nota de venda desde :inicio, o
+ * começo da janela. Também é o filtro do catálogo, que é lido só para a carteira.
+ */
+export function condicaoDaCarteira(lista: string): string {
+  return `C.VEND_1 IN ${lista}
+        AND EXISTS (SELECT 1 FROM ABC71.NFME M
+                     WHERE M.EMP_FIL = C.EMP_FIL AND M.FORNEC = C.CLIENTE
+                       AND ${NOTA_DE_VENDA} AND M.DT_EMISSAO >= ${data("inicio")})`;
+}
+
 /** Da nota M, o cliente é da carteira de um autorizado. */
 function daCarteira(lista: string): string {
   return `EXISTS (SELECT 1 FROM ABC71.CRCL C WHERE C.EMP_FIL = M.EMP_FIL AND C.CLIENTE = M.FORNEC AND C.VEND_1 IN ${lista})`;
@@ -24,10 +35,7 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
             TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1, TRIM(G.CLI3_STA)
        FROM ABC71.CRCL C
        LEFT JOIN ABC71.SGI5_TAB_VEN_CLI3 G ON G.CLI3_CLI = C.CLIENTE
-      WHERE C.VEND_1 IN ${lista.sql}
-        AND EXISTS (SELECT 1 FROM ABC71.NFME M
-                     WHERE M.EMP_FIL = C.EMP_FIL AND M.FORNEC = C.CLIENTE
-                       AND ${NOTA_DE_VENDA} AND M.DT_EMISSAO >= ${data("inicio")})`,
+      WHERE ${condicaoDaCarteira(lista.sql)}`,
     { ...lista.binds, inicio: referencia.inicioDaJanela },
   );
   return linhas.map((linha) => ({

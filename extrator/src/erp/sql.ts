@@ -54,6 +54,15 @@ export function data(variavel: string): string {
 
 /** `IN (:r0, :r1, ...)` com uma variável por código: o SQL nunca leva valor escrito nele. */
 export function emLista(prefixo: string, codigos: readonly string[]): { sql: string; binds: Record<string, number> } {
-  const binds = Object.fromEntries(codigos.map((codigo, i) => [`${prefixo}${i}`, Number(codigo)]));
+  return comUmaVariavelPorValor(prefixo, codigos.map(Number));
+}
+
+/** O mesmo, com textos: o código da tabela de preço é texto ("PDR02"). */
+export function emListaDeTexto(prefixo: string, valores: readonly string[]): { sql: string; binds: Record<string, string> } {
+  return comUmaVariavelPorValor(prefixo, valores);
+}
+
+function comUmaVariavelPorValor<T>(prefixo: string, valores: readonly T[]): { sql: string; binds: Record<string, T> } {
+  const binds = Object.fromEntries(valores.map((valor, i) => [`${prefixo}${i}`, valor]));
   return { sql: `(${Object.keys(binds).map((nome) => `:${nome}`).join(", ")})`, binds };
 }

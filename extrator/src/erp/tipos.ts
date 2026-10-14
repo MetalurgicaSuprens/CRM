@@ -102,6 +102,44 @@ export type NotaRecente = {
 /** Faturado de cada representante autorizado por dia, desde 1º de janeiro do ano anterior. */
 export type VendaDoDia = { representante: string; dia: string; valor: number };
 
+/** Uma tabela de preço ligada ao cliente no SGI (SGI5_TAB_VEN_CLI), com o cadastro dela (TP1). */
+export type TabelaDoCliente = {
+  /** O número do cliente (CLI_COD = CRCL.CLIENTE). */
+  cliente: number;
+  tabela: string;
+  /** PRINCIPAL, SECUNDARIA ou null (CLI_STA). */
+  papel: string | null;
+  nome: string | null;
+  /** REAL, DOLAR ou EURO (TP1_MOE). */
+  moeda: string | null;
+  /** ATIVO ou OBSOLETO (TP1_STA). */
+  situacao: string | null;
+};
+
+/** Preço líquido de um produto ativo numa tabela do cliente, pela view do SGI. */
+export type PrecoDoCliente = {
+  cliente: number;
+  tabela: string;
+  produto: string;
+  /** Preço do cento com o desconto do modelo do produto, ou o padrão do cliente; sem IPI. */
+  precoCento: number;
+  /** O part number da tabela: o código da montadora ou do cliente para o produto. */
+  partNumber: string | null;
+};
+
+/** Família, medida e embalagem de um produto das tabelas de preço. */
+export type ProdutoDaTabela = {
+  produto: string;
+  familia: string | null;
+  medidaMinimaMm: number | null;
+  medidaMaximaMm: number | null;
+  /** Peças por embalagem (EAN_QTD); null sem EAN. */
+  embalagem: number | null;
+};
+
+/** Produto que o cliente comprou nos últimos 24 meses: a aba "Já comprados" do pedido. */
+export type ProdutoJaComprado = { chave: string; produto: string };
+
 export type DadosDoErp = {
   geradaEm: string;
   /** Código → nome (CRVN) dos representantes autorizados. */
@@ -116,4 +154,8 @@ export type DadosDoErp = {
   vendasDoDia: VendaDoDia[];
   /** Calendário do SGI: dia → é dia útil. Dia sem linha cai para segunda a sexta. */
   diasUteis: Map<string, boolean>;
+  tabelas: TabelaDoCliente[];
+  precos: PrecoDoCliente[];
+  produtosDasTabelas: ProdutoDaTabela[];
+  jaComprados: ProdutoJaComprado[];
 };

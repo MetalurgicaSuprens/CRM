@@ -110,6 +110,28 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     ]);
   });
 
+  it("dá a A o catálogo do cliente dele, com os preços da lista e o que ele já comprou", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const resposta = await app.inject({ method: "GET", url: `/api/clientes/${CLIENTE_DE_A}/catalogo` });
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toMatchObject({
+      cliente: { codigo: CLIENTE_DE_A },
+      tabela: "PADRAO - FEV",
+      produtos: [
+        { codigo: "F-100", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100, precoCento: 95.5, partNumber: "CF420118", jaComprou: true },
+        // Produto sem EAN: qualquer quantidade de peças.
+        { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoCento: 120, partNumber: null, jaComprou: false },
+      ],
+    });
+  });
+
+  it("não dá catálogo ao cliente negativo: 409, com o aviso para falar com a equipe de vendas", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const resposta = await app.inject({ method: "GET", url: `/api/clientes/${CLIENTE_NEGATIVO_DE_A}/catalogo` });
+    expect(resposta.statusCode).toBe(409);
+    expect(resposta.json().erro).toMatch(/equipe de vendas da Suprens/);
+  });
+
   it("recusa o código de cliente fora do formato do id", async () => {
     const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
     const resposta = await app.inject({ method: "GET", url: "/api/clientes/591328580003" });

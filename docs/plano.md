@@ -195,7 +195,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 2. **Clientes** (celular primeiro): carteira com busca e filtros. Mostra dias desde a última compra, faturamento em 12 meses com a variação, tendência e situação.
 3. **Ficha do cliente** (celular primeiro): evolução mensal, famílias, produtos, ciclo de compra, pedidos em aberto e oportunidades de mix.
 4. **Análises:** parou de comprar, comprando menos, comprando mais, novos e reativados, mix.
-5. **Pedidos** (celular primeiro): catálogo com busca por código, família, medidas e o código do produto no cliente; montagem do pedido com o preço da tabela do cliente (informativo); rascunhos; envio; acompanhamento da situação; pedidos em aberto no ERP; histórico faturado.
+5. **Pedidos** (celular primeiro): catálogo com busca por código, família, medidas e o código do produto no cliente; montagem do pedido com o preço da tabela do cliente (informativo; a tabela padrão do cliente com o desconto do modelo do produto ou, sem ele, o desconto padrão, decisão do Lucas em 2026-10-14); rascunhos; envio; acompanhamento da situação; pedidos em aberto no ERP; histórico faturado.
 6. **Mapa**, portado do protótipo, só com a carteira do representante: saem as classes "atendida" e "carteira de outros", que olham os outros representantes (decisão do Lucas em 2026-10-09). Na portabilidade:
    - usar o código IBGE do município, se o cadastro de clientes tiver (a NF-e exige);
    - corrigir os 48 nomes de município desatualizados;
