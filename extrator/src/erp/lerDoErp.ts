@@ -1,6 +1,6 @@
 import { montarReferencia, type Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
-import { lerCalendario, lerMomentoDoOracle, lerNomesDosRepresentantes } from "./cadastros.ts";
+import { lerMomentoDoOracle, lerNomesDosRepresentantes } from "./cadastros.ts";
 import { lerCarteira, lerDatasDeCompra, lerVendasPorMes } from "./carteira.ts";
 import { lerPrecos, lerProdutosDasTabelas, lerProdutosJaComprados, lerTabelasDosClientes } from "./catalogo.ts";
 import { lerNotasRecentes, lerVendasPorDia } from "./faturamento.ts";
@@ -36,7 +36,6 @@ export async function lerDadosDoErp(
     pedidos: await etapa("pedidos em aberto", () => lerPedidosEmAberto(oracle)),
     notas: await etapa("notas recentes", () => lerNotasRecentes(oracle, referencia, autorizados)),
     vendasDoDia: await etapa("vendas por dia", () => lerVendasPorDia(oracle, referencia, autorizados)),
-    diasUteis: await etapa("calendário", () => lerCalendario(oracle, referencia)),
     tabelas,
     precos: await etapa("preços", () => lerPrecos(oracle, referencia, autorizados)),
     produtosDasTabelas: await etapa("produtos das tabelas", () =>

@@ -1,14 +1,13 @@
 import {
   dataDoMomento,
   diasEntre,
-  diasUteisAte,
-  diasUteisDoMes,
   mesDe,
   momentoEmBrasilia,
   somarDias,
   somarMeses,
   ultimoDiaDoMes,
 } from "dominio/datas";
+import { diaUtilDoMes, diasUteisDoMes } from "dominio/calendario";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
 import { PECAS_POR_CENTO } from "./pedido";
@@ -249,7 +248,7 @@ function gerarCarteira(atualizadoEm: string): Carteira {
   const aleatorio = criarAleatorio(SEMENTE);
   const hoje = dataDoMomento(atualizadoEm);
   const mesAtual = mesDe(hoje);
-  const contexto: Contexto = { hoje, mesAtual, diaUtil: diasUteisAte(hoje), diasUteis: diasUteisDoMes(mesAtual) };
+  const contexto: Contexto = { hoje, mesAtual, diaUtil: diaUtilDoMes(hoje), diasUteis: diasUteisDoMes(mesAtual) };
   const clientes = Array.from({ length: QUANTIDADE_DE_CLIENTES }, () => gerarCliente(aleatorio, contexto));
   const aleatorioDosQueVoltaram = criarAleatorio(SEMENTE + 2);
   clientes.push(...Array.from({ length: CLIENTES_QUE_VOLTARAM }, () => gerarCliente(aleatorioDosQueVoltaram, contexto, "voltou")));

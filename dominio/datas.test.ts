@@ -2,8 +2,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   dataDoMomento,
   diasEntre,
-  diasUteisAte,
-  diasUteisDoMes,
   horaDoMomento,
   momentoEmBrasilia,
   somarDias,
@@ -46,10 +44,6 @@ describe("calendário", () => {
     expect(somarMeses("2026-10", -24)).toBe("2024-10");
   });
 
-  it("conta dias úteis de segunda a sexta", () => {
-    expect(diasUteisDoMes("2026-10")).toBe(22);
-    expect(diasUteisAte("2026-10-07")).toBe(5);
-  });
 
   it("conta dias entre datas de calendário", () => {
     expect(diasEntre("2026-09-30", "2026-10-07")).toBe(7);

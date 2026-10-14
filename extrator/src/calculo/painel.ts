@@ -1,7 +1,7 @@
 import { somarMeses } from "dominio/datas";
 import { MESES_DO_RITMO } from "dominio/projecao";
 import type { VendaDoDia } from "../erp/tipos.ts";
-import { corteDoMesmoDiaUtil, diaUtilDoMes, diasUteisDoMes, type Calendario } from "./calendario.ts";
+import { corteDoMesmoDiaUtil, diaUtilDoMes, diasUteisDoMes } from "dominio/calendario";
 import type { Referencia } from "./referencia.ts";
 
 /*
@@ -22,12 +22,7 @@ export type MesDoPainel = {
   ritmoPorDiaUtil: number | null;
 };
 
-export function montarPainel(
-  vendas: readonly VendaDoDia[],
-  autorizados: readonly string[],
-  referencia: Referencia,
-  calendario: Calendario,
-): MesDoPainel[] {
+export function montarPainel(vendas: readonly VendaDoDia[], autorizados: readonly string[], referencia: Referencia): MesDoPainel[] {
   const ano = Number(referencia.mesAtual.slice(0, 4));
   const meses = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
   return autorizados.flatMap((representante) => {
@@ -40,22 +35,22 @@ export function montarPainel(
         mes,
         faturado: mes > referencia.mesAtual ? null : somarDoMes(doRepresentante, mes),
         anoAnterior: somarDoMes(doRepresentante, mesAnterior),
-        anoAnteriorAteDiaUtil: mes === referencia.mesAtual ? ateOMesmoDiaUtil(doRepresentante, mesAnterior, referencia, calendario) : null,
-        ritmoPorDiaUtil: mes === referencia.mesAtual ? ritmoDosUltimosMeses(doRepresentante, referencia.mesAtual, calendario) : null,
+        anoAnteriorAteDiaUtil: mes === referencia.mesAtual ? ateOMesmoDiaUtil(doRepresentante, mesAnterior, referencia) : null,
+        ritmoPorDiaUtil: mes === referencia.mesAtual ? ritmoDosUltimosMeses(doRepresentante, referencia.mesAtual) : null,
       };
     });
   });
 }
 
-function ateOMesmoDiaUtil(vendas: readonly VendaDoDia[], mes: string, referencia: Referencia, calendario: Calendario): number {
-  const corte = corteDoMesmoDiaUtil(mes, diaUtilDoMes(referencia.hoje, calendario), calendario);
+function ateOMesmoDiaUtil(vendas: readonly VendaDoDia[], mes: string, referencia: Referencia): number {
+  const corte = corteDoMesmoDiaUtil(mes, diaUtilDoMes(referencia.hoje));
   return somar(vendas.filter((venda) => venda.dia.startsWith(mes) && (corte === null || venda.dia < corte)));
 }
 
 /** Faturado por dia útil nos 6 meses fechados antes do corrente. */
-function ritmoDosUltimosMeses(vendas: readonly VendaDoDia[], mesAtual: string, calendario: Calendario): number {
+function ritmoDosUltimosMeses(vendas: readonly VendaDoDia[], mesAtual: string): number {
   const meses = Array.from({ length: MESES_DO_RITMO }, (_, i) => somarMeses(mesAtual, -(i + 1)));
-  const diasUteis = meses.reduce((soma, mes) => soma + diasUteisDoMes(mes, calendario), 0);
+  const diasUteis = meses.reduce((soma, mes) => soma + diasUteisDoMes(mes), 0);
   const faturado = meses.reduce((soma, mes) => soma + somarDoMes(vendas, mes), 0);
   return diasUteis > 0 ? faturado / diasUteis : 0;
 }

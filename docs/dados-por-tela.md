@@ -87,9 +87,9 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
 | Faturado no mês | "Faturado em outubro" (Inicio.tsx:105-120) | RF do mês até hoje, atribuída ao representante | NFME, NFDE, `NFME.VENDEDOR`, CRCLH | extrator |
-| Mesmo dia útil do ano anterior | "+82% vs R$ 172 mil até o 7º dia útil de out/25", com a base à mostra (Inicio.tsx:110-119) | RF atribuída no mesmo mês do ano anterior, até o Nº dia útil | o mesmo, mais `SGI5_TAB_DP_CALEND` | extrator |
-| Dia útil e dias úteis | "8º de 22 dias úteis" (Inicio.tsx:219-222) | Dias com `NVL(TRIM(CAL_DUT_COM),'SIM') <> 'NAO'`, como o SGI (`untFunMat.pas:676`): de 1º até hoje e no mês todo | `SGI5_TAB_DP_CALEND` | extrator |
-| Projeção | "Projeção de outubro", com "no ritmo dos últimos 6 meses" (ou "pelos pedidos em carteira para o mês") e "faltam X para igualar out/25" (Inicio.tsx:121-131 e 182-209) | Decidido em 2026-10-13: faturado do mês mais o ritmo dos últimos 6 meses fechados (faturado por dia útil) nos dias úteis que faltam. A carteira com entrega no mês é o piso: se passar do que o ritmo prevê, vale ela (`dominio/projecao.ts`). A segunda linha compara a projeção com o mesmo mês inteiro do ano anterior; acima dele, mostra "X acima de out/25" | NFME, NFDE e `SGI5_TAB_DP_CALEND` para o ritmo; VEPM, VEPD para a carteira | ritmo: extrator; projeção: servidor, somando os códigos do login |
+| Mesmo dia útil do ano anterior | "+82% vs R$ 172 mil até o 7º dia útil de out/25", com a base à mostra (Inicio.tsx:110-119) | RF atribuída no mesmo mês do ano anterior, até o Nº dia útil | o mesmo; dias úteis pelo calendário padrão (`dominio/calendario.ts`) | extrator |
+| Dia útil e dias úteis | "8º de 22 dias úteis" (Inicio.tsx:219-222) | Decidido em 2026-10-14: o calendário padrão, segunda a sexta menos os feriados nacionais (`dominio/calendario.ts`), até o Lucas definir o calendário personalizado. Antes, era o calendário do SGI (`CAL_DUT_COM`), que marcava 7/10 como não útil: em 14/10, o 8º de 20 virou o 9º de 21 | nenhuma (SGI5_TAB_DP_CALEND` | extrator |
+| Projeção | "Projeção de outubro", com "no ritmo dos últimos 6 meses" (ou "pelos pedidos em carteira para o mês") e "faltam X para igualar out/25" (Inicio.tsx:121-131 e 182-209) | Decidido em 2026-10-13: faturado do mês mais o ritmo dos últimos 6 meses fechados (faturado por dia útil) nos dias úteis que faltam. A carteira com entrega no mês é o piso: se passar do que o ritmo prevê, vale ela (`dominio/projecao.ts`). A segunda linha compara a projeção com o mesmo mês inteiro do ano anterior; acima dele, mostra "X acima de out/25" | NFME e NFDE para o ritmo, com os dias úteis do calendário padrão; VEPM, VEPD para a carteira | ritmo: extrator; projeção: servidor, somando os códigos do login |
 | Acumulado do ano | "Acumulado de 2026" | Soma dos meses do ano corrente | (foto) | servidor |
 | Acumulado do ano anterior | "vs 2025" | Janeiro até o mês anterior inteiros, mais o mesmo dia útil do mês corrente | (foto) | servidor |
 | Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:138-143) | Contagem e soma dos pedidos em aberto atribuídos ao representante | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
@@ -109,13 +109,13 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Se ele vier nulo ou 0, vale o dono do cliente na data da nota, pelas trocas de `VEND_1` no CRCLH.
   - Antes da primeira troca, vale o "de" dela. Sem trocas, vale o `VEND_1` atual.
   - O extrator aplica a regra na LAN. Para os indicadores, grava as somas por representante e mês (`painel_mes`). Para a aba Faturados, grava só o representante já atribuído de cada nota (`nota.representante`, pergunta 23). Nada do CRCLH vai para a foto (plano.md:35).
-- **Mesmo dia útil (proposta a confirmar).** Em 2026-10-13, o Lucas estranhou o "+82%" ao lado dos R$ 610 mil de out/25 no gráfico: a base (R$ 172 mil até o 7º dia útil) não aparecia. Desde então o cartão mostra a base, e a dica do gráfico diz "mês inteiro". Com N = dia útil de hoje, soma-se o mesmo mês do ano anterior até antes do (N+1)º dia útil. Assim entram as notas de sábado ou de feriado logo depois do Nº. Se o mês do ano anterior tiver menos de N dias úteis, entra o mês inteiro. O fictício faz só uma proporção (ficticio.ts:515) e não serve de regra.
+- **Mesmo dia útil (proposta a confirmar).** Em 2026-10-13, o Lucas estranhou o "+82%" ao lado dos R$ 610 mil de out/25 no gráfico: a base (R$ 172 mil até o 7º dia útil) não aparecia. Desde então o cartão mostra a base, e a dica do gráfico diz "mês inteiro". Com N = dia útil de hoje, soma-se o mesmo mês do ano anterior até antes do (N+1)º dia útil. Assim entram as notas de sábado ou de feriado logo depois do Nº. Se o mês do ano anterior tiver menos de N dias úteis, entra o mês inteiro. O fictício faz só uma proporção (ficticio.ts:514) e não serve de regra.
 - **A faturar no mês.**
   - Entram os itens com saldo e `VEPD.DT_ENTREGA` até o último dia do mês, inclusive os vencidos.
   - Conta a entrega de cada item, como no protótipo (CRM-prototipo/REGRAS.md:52). O fictício usa a entrega do pedido inteiro.
   - O extrator grava em cada pedido o valor com entrega até o fim do mês, e o servidor soma os pedidos do representante.
   - A reconstrução das 00:10 resolve a virada do mês (plano.md:306).
-  - No gráfico, o mês corrente é o único com `aFaturar` como número, inclusive 0; nos outros ele é nulo (tipos.ts:120-124). O fictício manda 0 quando não há nada a faturar (ficticio.ts:574).
+  - No gráfico, o mês corrente é o único com `aFaturar` como número, inclusive 0; nos outros ele é nulo (tipos.ts:120-124). O fictício manda 0 quando não há nada a faturar (ficticio.ts:573).
   - Corrigido em 2026-10-09: antes a tela pedia `aFaturar` diferente de zero, e com 0 a faturar o mês parcial passava por fechado. Agora ela testa `aFaturar != null` (BarrasMensais.tsx:22-25). O teste é frouxo de propósito, porque a Ficha usa o mesmo gráfico sem mandar `aFaturar`.
 - **Escopo dos pedidos em aberto e da projeção (decidido em 2026-10-09, pergunta 22).**
   - Visão do representante, como os outros indicadores do Início (plano.md:207). A carteira dele é o piso da projeção (plano.md:194).
@@ -128,7 +128,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Menos e mais: semestre menos o semestre do ano anterior.
   - Novos: faturado desde então.
   - Os itens de "mais" e "novos" não aparecem em nenhuma tela. Proposta: a resposta leva só as contagens e os totais deles.
-- **Calendário.** `SGI5_TAB_DP_CALEND` tem 790 linhas pelas estatísticas (ABC71-SGI5-TAB_DP.md:77) e precisa cobrir o ano anterior inteiro. Data sem linha cai para segunda a sexta, como `web/src/calendario.ts:24`.
+- **Calendário (decidido em 2026-10-14).** Por enquanto, o padrão: segunda a sexta menos os feriados nacionais, os de data fixa, a Sexta-feira Santa (pela Páscoa) e a Consciência Negra desde 2024. Carnaval e Corpus Christi são ponto facultativo e contam como úteis. É o mesmo no extrator e no fictício (`dominio/calendario.ts`). Antes de o CRM ficar pronto, o Lucas define um calendário personalizado, com os dias úteis que ele disser. O calendário do SGI (`SGI5_TAB_DP_CALEND`, o "Calendário Suprens") deixou de ser lido.
 
 ## 3. Clientes
 
@@ -176,7 +176,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Se for, o extrator usa o nome da base pública do IBGE (`CRM-prototipo/data/geo`) e cai para `CIDADE` quando o código faltar. `TPMU.NOME_CIDADE` não resolve, porque também é CHAR(20) (omega/ABC71-TP.md:3066).
   - O código fica na LAN. Só o nome vai para a foto, até a F6.
   - Cliente do exterior vem com `ESTADO='EX'` e o país em `COD_PAIS`, que é um número (licoes.md:98; omega/ABC71-CR.md:1079). Proposta: a tela mostra "EX" na UF. Se a pergunta 5 decidir mostrar o país, o nome vem de `ABC71.TGPA.NOME_PAIS` por `COD_PAIS` (omega/ABC71-TG.md:437-455). A confirmar na F2: qual EMPRESA/FILIAL usar e se 12 = Uruguai e 10 = Paraguai (licoes.md:98).
-- **Variação.** O piso de R$ 2 mil que deixa a variação nula existe só no fictício (ficticio.ts:431). O plano diz só "dados insuficientes" (plano.md:243).
+- **Variação.** O piso de R$ 2 mil que deixa a variação nula existe só no fictício (ficticio.ts:430). O plano diz só "dados insuficientes" (plano.md:243).
 - **Tendência.** Exige 24 meses fechados de notas.
 
 ## 4. Ficha do cliente
@@ -209,9 +209,9 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Proposta: `PAC_GRC`, com a regra do Gestao como conferência na F2.
   - A mesma regra vale para a Ficha, o mix e o catálogo. Senão, "Já comprados" e o mix deixam de bater.
 - **Peças por mês.** `FaturamentoMensal.pecas` não aparece em nenhuma tela (FichaCliente.tsx:70), então sai do contrato. As peças por mês ficam no extrator, para a variação em peças das Análises.
-- **Cliente sem compra em 12 meses.** Famílias e produtos ficam vazios. O fictício usa 1/3 dos 36 meses (ficticio.ts:442), o que é só um marcador de lugar.
+- **Cliente sem compra em 12 meses.** Famílias e produtos ficam vazios. O fictício usa 1/3 dos 36 meses (ficticio.ts:441), o que é só um marcador de lugar.
 - **Cliente que nunca comprou.** Ele existe na carteira como inativo (dominio/analises.ts:76), e Clientes já mostra "sem compras" (Clientes.tsx:143). Corrigido em 2026-10-09: a Ficha quebrava com a primeira compra nula. Agora o contrato leva só o ano, `clienteDesde: number | null` (tipos.ts:98-99), e o cartão mostra "—" quando ele é nulo (FichaCliente.tsx:125).
-- **Ciclo.** Pelo plano (plano.md:221), o extrator usa os intervalos em dias entre eventos. Exige pelo menos 4 compras. Fora de 30 a 180 dias, o valor é nulo (irregular). O fictício prende o valor entre 30 e 180 e conta meses × 30,4 (ficticio.ts:403-412).
+- **Ciclo.** Pelo plano (plano.md:221), o extrator usa os intervalos em dias entre eventos. Exige pelo menos 4 compras. Fora de 30 a 180 dias, o valor é nulo (irregular). O fictício prende o valor entre 30 e 180 e conta meses × 30,4 (ficticio.ts:402-411).
 - **Pedidos em aberto (decidido em 2026-10-09, pergunta 22).** A ficha mostra só os pedidos do cliente atribuídos ao representante da sessão, como em Pedidos. O pedido do cliente atribuído a outro representante não aparece. Pela proposta da pergunta 26, ele ainda impede "parado" (ver Análises). Por isso a ficha pode mostrar "Nenhum" em pedidos em aberto num cliente que não está parado.
 - **Auditoria.** Abrir a ficha é evento auditado (plano.md:153). O registro leva o código opaco, nunca o nome.
 
@@ -238,7 +238,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Famílias a oferecer | Família e % | Ver regras abaixo | NFDE e família do produto | extrator |
 
 As regras são as de `analises.ts` e `mix.ts`, que têm testes, e o extrator precisa chegar aos mesmos resultados (plano.md:235). Duas partes ainda estão fora de `analises.ts`:
-- Quem entra em cada lista está só em `montarAnalises`, no fictício (`ficticio.ts:562-605`), sem teste. Antes da F2, essa montagem vai para `analises.ts`, com teste. A ordem de abertura é da tela (Analises.tsx:94, 106-109, 136, 164 e 203) e só importa ao servidor nos 5 primeiros do Início.
+- Quem entra em cada lista está só em `montarAnalises`, no fictício (`ficticio.ts:561-604`), sem teste. Antes da F2, essa montagem vai para `analises.ts`, com teste. A ordem de abertura é da tela (Analises.tsx:94, 106-109, 136, 164 e 203) e só importa ao servidor nos 5 primeiros do Início.
 - Os grupos por raiz de CNPJ (plano.md:244).
 
 Regras:
@@ -250,7 +250,7 @@ Regras:
   5. ativo.
   - Reativado não é situação própria.
   - A situação não é o status cadastral (`CLI3_STA`), que decide carteira e aceite de pedido.
-- **Evento de compra:** notas do mesmo cliente com até 7 dias de diferença contam como uma compra (plano.md:220). O fictício não aplica a regra (ficticio.ts:321).
+- **Evento de compra:** notas do mesmo cliente com até 7 dias de diferença contam como uma compra (plano.md:220). O fictício não aplica a regra (ficticio.ts:320).
 - **Parou de comprar:**
   - dias sem comprar acima do maior entre 60 e 2× o ciclo, ou 180 se o cliente é irregular;
   - sem pedido em aberto;
@@ -262,20 +262,20 @@ Regras:
   - pelo menos 3 compras nos dois períodos;
   - variação de 20% ou mais e diferença de R$ 2 mil ou mais;
   - a mudança tem de continuar nos 3 últimos meses fechados, contra os mesmos 3 do ano anterior: abaixo deles na queda, acima na alta (decidido pelo Lucas em 2026-10-14, a queda primeiro e a alta logo depois). A Nova Caminhões, da Star Vendas, estava em risco por −23% de abr a set/26, depois de maio e junho sem comprar, mas já tinha voltado: +30% de jul a set e +17% em 12 meses. Na foto de 14/10, a Star Vendas passou de 13 para 9 clientes comprando menos (em risco) e de 20 para 14 comprando mais.
-  - Listas só no fictício (`ficticio.ts:586-593`); a ordem de abertura é a da tela (Analises.tsx:106-109 e 136):
+  - Listas só no fictício (`ficticio.ts:585-592`); a ordem de abertura é a da tela (Analises.tsx:106-109 e 136):
     - "menos" é quem está em risco, ordenado pela diferença mais negativa;
     - "mais" é quem está fora de parado, inativo e novo, ordenado pela maior diferença. O plano não diz que "mais" exclui o cliente novo (plano.md:228-232): confirmar com o Lucas.
 - **Novo e reativado** (dominio/analises.ts:150-163; plano.md:234):
   - novo: primeira compra há até 365 dias;
   - reativado: alguma compra dos últimos 365 dias veio depois de 365 dias ou mais sem comprar;
-  - só entram clientes fora de parado e inativo (`ficticio.ts:562 e 594-599`).
-  - O "faturado desde então" existe só no fictício (ficticio.ts:619 e 631-635).
+  - só entram clientes fora de parado e inativo (`ficticio.ts:561 e 593-598`).
+  - O "faturado desde então" existe só no fictício (ficticio.ts:618 e 630-634).
 - **Mix** (mix.ts; plano.md:236-242):
   - O porte é o tercil do faturado em 12 meses entre os clientes ativos do mesmo mercado, em toda a Suprens.
   - Com menos de 20 clientes na faixa, compara com o mercado inteiro. Com menos de 20 no mercado, não há comparação.
   - Sugere a família comprada em 12 meses por pelo menos 50% dos parecidos e que o cliente não compra há 24 meses. A ordem é da maior penetração para a menor, com empate pelo nome.
   - A conta usa todos os clientes da Suprens, na LAN. Para a foto vão só a família, o percentual e a faixa usada.
-  - A lista de mix leva quem está fora de parado e inativo e tem sugestão, ordenada pelo faturado em 12 meses (`ficticio.ts:600-605`).
+  - A lista de mix leva quem está fora de parado e inativo e tem sugestão, ordenada pelo faturado em 12 meses (`ficticio.ts:599-604`).
 - **Grupos (regra do plano.md:244; o tratamento das filiais em carteiras diferentes é proposta a decidir, pergunta 19):**
   - Filiais da mesma raiz de CNPJ são analisadas juntas, para a compra que muda de filial não virar "parado" nem "novo".
   - A raiz é calculada na LAN e não vai para a foto.
@@ -324,7 +324,7 @@ Regras:
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Nota | "NF 123456", com o cliente (Pedidos.tsx:197) | Notas de venda dos últimos 45 dias atribuídas aos códigos do login (decidido em 2026-10-13), da mais recente à mais antiga (ordem de abertura no navegador, Pedidos.tsx:195). Os 45 dias estão no texto da tela (Pedidos.tsx:188, 190 e 194) e no fictício (ficticio.ts:159); o plano não fixa janela (plano.md:198). A confirmar | `NFME.N_FISCAL`, `SERIE` | extrator |
+| Nota | "NF 123456", com o cliente (Pedidos.tsx:197) | Notas de venda dos últimos 45 dias atribuídas aos códigos do login (decidido em 2026-10-13), da mais recente à mais antiga (ordem de abertura no navegador, Pedidos.tsx:195). Os 45 dias estão no texto da tela (Pedidos.tsx:188, 190 e 194) e no fictício (ficticio.ts:158); o plano não fixa janela (plano.md:198). A confirmar | `NFME.N_FISCAL`, `SERIE` | extrator |
 | Emissão | Data relativa | | `NFME.DT_EMISSAO` | extrator |
 | Cliente | Nome; o link para a ficha fica no fim dos detalhes da linha (DetalhesDosPedidos.tsx:70-80) | Cliente da nota. Nome e link só se o cliente é da carteira do representante (ver abaixo) | `NFME.FORNEC` → cliente | extrator; nome: servidor, por junção com `cliente` do representante da sessão |
 | Valor | Coluna | RF da nota, sem IPI e sem ICMS-ST | `NFDE.VLR_TOTAL`, `Z_FRANCA_DESC` | extrator |
@@ -682,7 +682,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 | `ABC71.SGI5_VIEW_ENG_PAC_SEM_ARVORE` | VIEW_PAC | Tirar do catálogo, e recusar na LAN, o produto sem árvore | untDmVenPvd.dfm:3249-3251; untVenPvd_PvdIncluirItens.pas:432-443; OracleDB/docs/modulos/pedidos-venda.md:47 | não (fora do catálogo); colunas do fonte do SGI, a confirmar na F2 em DBA_VIEWS |
 | `ABC71.SGI5_TAB_ENG_PAC` | PAC_COD, PAC_GRC, PAC_DMI_MM, PAC_DMA_MM | Família (grupo de custo) e medida | sgi/ABC71-SGI5-TAB_ENG.md:3346-3383 (PK 3354; 3363, 3377, 3382, 3383); OracleDB/docs/modulos/familias.md:15 | sim; medida conferida em 2026-10-14 (470 dos 692 produtos do catálogo têm as duas pontas) |
 | `ABC71.SGI5_TAB_CUS_V3_GRP` | GRP_GRP, GRP_DES, GRP_NIV | Nome da família (nível 2) | sgi/ABC71-SGI5-TAB_CUS.md:1357-1375; OracleDB/docs/modulos/familias.md:9-34 | sim |
-| `ABC71.SGI5_TAB_DP_CALEND` | CAL_DTA, CAL_DUT_COM | Dia útil, dias úteis e o corte do mesmo dia útil | sgi/ABC71-SGI5-TAB_DP.md:72-90; SGI12CodigoFonte/Aplicativo/untFunMat.pas:636-679 | sim; cobertura a confirmar |
+| `ABC71.SGI5_TAB_DP_CALEND` | não é lido desde 2026-10-14 | Era o calendário dos dias úteis; o CRM usa o calendário padrão até ter o personalizado | sgi/ABC71-SGI5-TAB_DP.md:72-90; SGI12CodigoFonte/Aplicativo/untFunMat.pas:636-679 | sim |
 | `ABC71.SGI5_TAB_VEN_PV1_V2` | PV1_NPE, PV1_DCA, PV1_STA, PV1_LR1, PV1_DLB_CTR, PV1_DLB_VD1, PV1_DLB_CON, PV1_DLB_CRE, PV1_DLB_VD2, PV1_DLB_BPV, PV1_DCO, PV1_DUA; PV1_CLI só se o pedido do SGI ainda não exportado impedir "parado" | Etapas e datas do pedido CRM; as datas de liberação conferem a de aprovado | sgi/ABC71-SGI5-TAB_VEN.md:1379-1441 (PK 1387; 1394-1396, 1404, 1421, 1425-1433, 1435, 1438, 1441); OracleDB/docs/modulos/pedidos-venda.md:9-19 | sim; LR1 como número CRM a confirmar |
 | `ABC71.SGI5_TAB_VEN_PV2_V2` | PV2_NPE, PV2_QTD, PV2_VLR_VEN | Total no SGI, sem IPI | sgi/ABC71-SGI5-TAB_VEN.md:1748-1779 (1764, 1774, 1779); untDmVenPvd.dfm:111-140 | sim |
 | `ABC71.SGI5_VIEW_VEPM_STA_FAT` | VIEW_NPE, VIEW_STA_FAT | Faturado parcial e faturado | untDmVenPvd.dfm:448-449 e 535-536; untVenPvd_Pvd.dfm:374-379; fora do catálogo (OracleDB/docs/lacunas.md:28) | não (fora do catálogo); colunas do fonte do SGI, a confirmar na F2 em DBA_VIEWS |
@@ -758,7 +758,7 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
   - uma empresa só (EMP_FIL 20210001) no CRCL, nas notas e nos pedidos (pergunta 4);
   - nenhuma nota de venda dos últimos 36 meses sem vendedor (pergunta 1);
   - todo pedido em aberto com o vendedor igual ao dono atual do cliente;
-  - o calendário vai de 2025-01-01 a 2027-06-29 (pergunta 2);
+  - o calendário do SGI ia de 2025-01-01 a 2027-06-29 (pergunta 2); desde 2026-10-14 o CRM usa o calendário padrão;
   - as notas vêm em CT, com 4 itens em PC (pergunta 3).
 - **Projeção (decidida em 2026-10-13).** O Lucas propôs faturado + média do faturado × dias úteis que faltam. A simulação com 20 representantes, de jan/25 a set/26, comparou as formas de projetar com o que cada mês fechou. Erro típico:
   - com a média do próprio mês: 59% nos 3 primeiros dias úteis, 33% do 4º ao 7º, 20% do 8º ao 12º, 10% do 13º ao 17º e 5% depois;
@@ -795,7 +795,7 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
    - Quantas notas de venda vêm com `NFME.VENDEDOR` nulo ou 0?
    - Quantos pedidos em aberto vêm com `VEPM.VENDEDOR` nulo, 0 ou diferente do `VEND_1` atual do cliente? Isso confirma que `VEPM.VENDEDOR` usa o mesmo código do representante e mede o pedido de cliente de outra carteira (ver Pedidos).
    - Ler em DBA_SOURCE como `SGI5_IUD_CUS_REP_FAT_V2` preenche `CUS_VEN`. Se ela usar o `VEND_1` atual para todo o histórico, o total por representante não bate com a regra do plano (plano.md:219 e 342). Qual dos dois vence?
-2. **Calendário.** Período coberto por `SGI5_TAB_DP_CALEND` (790 linhas): todo dia tem linha? O ano anterior inteiro está lá? Os feriados do ano seguinte são cadastrados com antecedência?
+2. **Calendário.** ~~Período coberto por `SGI5_TAB_DP_CALEND` (790 linhas): todo dia tem linha? O ano anterior inteiro está lá? Os feriados do ano seguinte são cadastrados com antecedência?~~ Decidido em 2026-10-14: calendário padrão até o personalizado, que o Lucas define antes de o CRM ficar pronto.
 3. **Unidades e tipos.** Quais são as unidades reais das notas e dos pedidos além de CT e PC? O Gestao faz CT ×100 e o resto ×1; o RELCUS001 faz ×100 sempre (custos-faturamento.md:23-24). Listar também os tipos de movimento (plano.md:280).
 4. **EMP_FIL.** Quantas empresas têm notas e pedidos de venda? Hoje o código do cliente leva só `CLIENTE`.
 5. **Cidade.**
@@ -877,8 +877,8 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
     - Com menos de 12 meses de história, divide por 12?
     - O "faturado desde então" do mês de "desde" até hoje vale?
     - O piso de "dados insuficientes" da variação em 12 meses vale?
-    - "Comprando mais" exclui o cliente novo, como faz o fictício (`ficticio.ts:591`)? O plano não diz (plano.md:228-232).
-    - Antes da F2, a regra de quem entra em cada lista sai do fictício (`ficticio.ts:562-605`) e vai para `analises.ts`, com teste.
+    - "Comprando mais" exclui o cliente novo, como faz o fictício (`ficticio.ts:590`)? O plano não diz (plano.md:228-232).
+    - Antes da F2, a regra de quem entra em cada lista sai do fictício (`ficticio.ts:561-604`) e vai para `analises.ts`, com teste.
 26. **Pedido em aberto que impede "parado".** Conta só o VEPD com saldo e o VEPM não bloqueado? Ou contam também o pedido bloqueado, o pedido do SGI ainda não exportado e o enviado pelo CRM? E o saldo antigo esquecido?
     - O pedido do cliente atribuído a outro representante conta? A decisão da pergunta 22 vale para as listas de pedidos. Proposta: conta, porque Análises usa a visão do cliente (ver Análises).
 27. **Ficha.**

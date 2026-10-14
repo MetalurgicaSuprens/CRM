@@ -48,28 +48,6 @@ export function diasEntre(deIso: string, ateIso: string): number {
   return Math.round((paraDiaUtc(ateIso) - paraDiaUtc(deIso)) / 86_400_000);
 }
 
-/** Sábado ou domingo. Os feriados vêm do calendário do ERP, que só o extrator lê. */
-export function isFimDeSemana(dataIso: string): boolean {
-  const diaDaSemana = new Date(paraDiaUtc(dataIso)).getUTCDay();
-  return diaDaSemana === 0 || diaDaSemana === 6;
-}
-
-/** Dias úteis (segunda a sexta) do mês. Feriados ficam para a foto do ERP. */
-export function diasUteisDoMes(mesIso: string): number {
-  return diasUteisAte(`${mesIso}-${doisDigitos(ultimoDiaDoMes(mesIso))}`);
-}
-
-/** Dias úteis do mês até a data, inclusive. */
-export function diasUteisAte(dataIso: string): number {
-  const mes = mesDe(dataIso);
-  const ultimo = Number(dataIso.slice(8, 10));
-  let total = 0;
-  for (let dia = 1; dia <= ultimo; dia++) {
-    if (!isFimDeSemana(`${mes}-${doisDigitos(dia)}`)) total++;
-  }
-  return total;
-}
-
 export function ultimoDiaDoMes(mesIso: string): number {
   const [ano, mes] = mesIso.split("-").map(Number);
   return new Date(Date.UTC(ano ?? 1970, mes ?? 1, 0)).getUTCDate();

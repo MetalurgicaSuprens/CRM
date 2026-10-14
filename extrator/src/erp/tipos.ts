@@ -152,8 +152,6 @@ export type DadosDoErp = {
   pedidos: PedidoEmAbertoNoErp[];
   notas: NotaRecente[];
   vendasDoDia: VendaDoDia[];
-  /** Calendário do SGI: dia → é dia útil. Dia sem linha cai para segunda a sexta. */
-  diasUteis: Map<string, boolean>;
   tabelas: TabelaDoCliente[];
   precos: PrecoDoCliente[];
   produtosDasTabelas: ProdutoDaTabela[];

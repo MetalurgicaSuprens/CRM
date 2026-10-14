@@ -1,8 +1,8 @@
 import { semestreDoRitmo } from "dominio/analises";
+import { diaUtilDoMes, diasUteisDoMes } from "dominio/calendario";
 import { VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
 import type { ClienteDaCarteira, DadosDoErp } from "../erp/tipos.ts";
 import { idDoCliente } from "../idDoCliente.ts";
-import { diaUtilDoMes, diasUteisDoMes } from "./calendario.ts";
 import { montarClientes } from "./clientes.ts";
 import { montarPainel } from "./painel.ts";
 import { montarPedidos } from "./pedidos.ts";
@@ -26,15 +26,15 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
       gerada_em: referencia.geradaEm,
       data_ref: referencia.hoje,
       mes_atual: referencia.mesAtual,
-      dia_util: diaUtilDoMes(referencia.hoje, dados.diasUteis),
-      dias_uteis: diasUteisDoMes(referencia.mesAtual, dados.diasUteis),
+      dia_util: diaUtilDoMes(referencia.hoje),
+      dias_uteis: diasUteisDoMes(referencia.mesAtual),
       semestre_inicio: semestre.inicio,
       semestre_fim: semestre.fim,
     },
     representante: autorizados.map((codigo) => ({ codigo, nome: dados.representantes.get(codigo) ?? "" })),
     ...clientes,
     produto: juntarProdutos(clientes.produto, [...pedidos, ...dados.notas].flatMap((documento) => documento.itens)),
-    painel_mes: montarPainel(dados.vendasDoDia, autorizados, referencia, dados.diasUteis).map((mes) => ({
+    painel_mes: montarPainel(dados.vendasDoDia, autorizados, referencia).map((mes) => ({
       representante: mes.representante,
       mes: mes.mes,
       faturado: mes.faturado,
