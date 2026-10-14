@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import {
   Boxes,
@@ -20,7 +20,7 @@ import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
-import { MotivoDoRisco, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { AvisoDeNegativo, MotivoDoRisco, SeloNegativo, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
@@ -42,6 +42,8 @@ export function FichaCliente() {
   const { codigo = "" } = useParams();
   const { dados: ficha, carregando } = useCarga(`ficha:${codigo}`, () => carregarFicha(codigo));
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
+  // Guarda de qual cliente é o aviso: ao abrir a ficha de outro, ele some.
+  const [codigoDoAviso, setCodigoDoAviso] = useState<string | null>(null);
   if (carregando || !situacao) return <Carregando />;
   if (!ficha) return <NaoEncontrado />;
   return (
@@ -49,11 +51,17 @@ export function FichaCliente() {
       <CabecalhoPagina
         antes={<Voltar para="/clientes" rotulo="Clientes" />}
         titulo={ficha.nome}
-        selo={<SituacaoCliente situacao={ficha.situacao} tamanho="grande" />}
+        selo={
+          <>
+            <SituacaoCliente situacao={ficha.situacao} tamanho="grande" />
+            {ficha.isNegativo ? <SeloNegativo tamanho="grande" /> : null}
+          </>
+        }
         descricao={descricaoDaFicha(ficha, situacao.semestre)}
         aoLado={<DadosDoCliente ficha={ficha} />}
-        acoes={<NovoPedido codigo={ficha.codigo} />}
+        acoes={<NovoPedido ficha={ficha} aoBloquear={() => setCodigoDoAviso(ficha.codigo)} />}
       />
+      {codigoDoAviso === ficha.codigo ? <AvisoDeNegativo /> : null}
       <Indicadores ficha={ficha} hoje={situacao.hoje} />
       <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo="Últimos 24 meses e o mês atual">
         <BarrasMensais
@@ -84,11 +92,25 @@ export function FichaCliente() {
   );
 }
 
-function NovoPedido({ codigo }: { codigo: string }) {
-  return (
-    <Link to={`/pedidos/novo?cliente=${codigo}`} className={`${botoes.primario} ${estilos.novoPedido}`}>
+/** No cliente negativo, o botão continua, mas mostra o aviso no lugar de abrir o pedido. */
+function NovoPedido({ ficha, aoBloquear }: { ficha: Ficha; aoBloquear: () => void }) {
+  const classe = `${botoes.primario} ${estilos.novoPedido}`;
+  const rotulo = (
+    <>
       <FilePlus2 size={19} aria-hidden="true" />
       Novo pedido
+    </>
+  );
+  if (ficha.isNegativo) {
+    return (
+      <button type="button" className={classe} onClick={aoBloquear}>
+        {rotulo}
+      </button>
+    );
+  }
+  return (
+    <Link to={`/pedidos/novo?cliente=${ficha.codigo}`} className={classe}>
+      {rotulo}
     </Link>
   );
 }

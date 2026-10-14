@@ -8,10 +8,11 @@ import { Cartao } from "../componentes/Cartao";
 import { Quantidade } from "../componentes/Quantidade";
 import { DataRelativa } from "../componentes/Quando";
 import { Segmentos } from "../componentes/Segmentos";
-import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { AvisoDeNegativo, SITUACOES, SeloNegativo, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Voltar } from "../componentes/Voltar";
+import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
 import { dataDoMomento } from "dominio/datas";
 import {
   carregarCatalogo,
@@ -25,7 +26,7 @@ import {
 import { LIMITE_DA_OBSERVACAO, problemasDoPedido, totalDoPedido, valorDaLinha } from "../dados/pedido";
 import type { CatalogoDoCliente, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarContagem, formatarMomento, formatarNumero, normalizarParaBusca } from "../formato";
+import { formatarCodigoDoCliente, formatarContagem, formatarMomento, formatarNumero, normalizarParaBusca } from "../formato";
 import { Carregando } from "./Carregando";
 import estilos from "./MontarPedido.module.css";
 
@@ -54,6 +55,7 @@ function Montagem({ codigoCliente, inicial }: { codigoCliente: string; inicial: 
   const { dados: catalogo, carregando, erro } = useCarga(`catalogo:${codigoCliente}`, () => carregarCatalogo(codigoCliente));
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   if (carregando || !situacao) return <Carregando />;
+  if (erro?.message === AVISO_DE_CLIENTE_NEGATIVO) return <ClienteNegativo />;
   if (!catalogo) return <Indisponivel texto={erro?.message ?? "Cliente não encontrado na sua carteira."} />;
   return <Formulario catalogo={catalogo} inicial={inicial} relogio={situacao.relogio} />;
 }
@@ -371,7 +373,7 @@ function EscolherCliente() {
   if (!clientes || !situacao) return <Carregando />;
   const termo = normalizarParaBusca(busca.trim());
   const visiveis = clientes.filter((cliente) =>
-    [cliente.nome, cliente.codigo, cliente.cidade].some((campo) => normalizarParaBusca(campo).includes(termo)),
+    [cliente.nome, cliente.codigoErp ?? "", cliente.cidade].some((campo) => normalizarParaBusca(campo).includes(termo)),
   );
   return (
     <div className={estilos.pagina}>
@@ -395,13 +397,33 @@ function EscolherCliente() {
             {
               titulo: "Cliente",
               ordenarPor: (cliente) => cliente.nome,
-              celula: (cliente) => <Identificacao titulo={cliente.nome} detalhe={`${cliente.cidade}/${cliente.uf} · ${cliente.codigo}`} />,
+              celula: (cliente) => (
+                <Identificacao titulo={cliente.nome} detalhe={`${cliente.cidade}/${cliente.uf} · ${formatarCodigoDoCliente(cliente.codigoErp)}`} />
+              ),
             },
-            { titulo: "Situação", ordenarPor: (cliente) => SITUACOES[cliente.situacao].rotulo, celula: (cliente) => <SituacaoCliente situacao={cliente.situacao} /> },
+            {
+              titulo: "Situação",
+              ordenarPor: (cliente) => SITUACOES[cliente.situacao].rotulo,
+              celula: (cliente) => (
+                <>
+                  <SituacaoCliente situacao={cliente.situacao} />
+                  {cliente.isNegativo ? <SeloNegativo /> : null}
+                </>
+              ),
+            },
             { titulo: "Última compra", ordenarPor: (cliente) => cliente.ultimaCompra, celula: (cliente) => <DataRelativa data={cliente.ultimaCompra} hoje={situacao.hoje} /> },
           ]}
         />
       </Cartao>
+    </div>
+  );
+}
+
+function ClienteNegativo() {
+  return (
+    <div className={estilos.pagina}>
+      <Voltar para="/pedidos" rotulo="Pedidos" />
+      <AvisoDeNegativo />
     </div>
   );
 }

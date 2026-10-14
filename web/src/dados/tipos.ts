@@ -42,6 +42,8 @@ export type ClienteResumo = {
   uf: string;
   mercado: Mercado;
   situacao: Situacao;
+  /** Fora de ATIVO no cadastro do SGI (INATIVO ou SUBSTITUIDO): aparece com o selo "Negativo" e não recebe pedido. */
+  isNegativo: boolean;
   ultimaCompra: string | null;
   /** Soma dos últimos 12 meses fechados. */
   faturamento12m: number;

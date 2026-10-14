@@ -19,6 +19,8 @@ export type ClienteDaCarteira = {
   mercado: Mercado;
   /** VEND_1: o representante dono do cliente. */
   representante: string;
+  /** Fora de ATIVO no cadastro do SGI (dominio/clienteNegativo.ts): aparece, mas não recebe pedido. */
+  isNegativo: boolean;
 };
 
 export type VendaDoMes = { chave: string; mes: string; valor: number; pecas: number };

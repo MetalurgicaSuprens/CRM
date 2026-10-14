@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
 import { dataDoMomento } from "dominio/datas";
 import {
   clientesFicticios,
@@ -8,6 +9,7 @@ import {
   pedidosNoErpFicticios,
   situacaoDosDadosFicticia,
 } from "./ficticio";
+import { fonteFicticia } from "./fonteFicticia";
 
 // Contrato que o extrator (F2) também precisa cumprir: tendência, faturado e variação contam a mesma história.
 describe("evolução do faturado em 12 meses, na lista de clientes", () => {
@@ -76,6 +78,17 @@ describe("contrato das outras telas", () => {
       if (!ficha?.ultimaCompra) continue;
       expect(ficha.clienteDesde).toBeLessThanOrEqual(Number(ficha.ultimaCompra.slice(0, 4)));
     }
+  });
+});
+
+describe("cliente negativo na carteira", () => {
+  it("existe no fictício, para a tela ter exemplo do selo", () => {
+    expect(clientesFicticios().some((cliente) => cliente.isNegativo)).toBe(true);
+  });
+
+  it("não abre o catálogo: a montagem do pedido recebe o aviso", async () => {
+    const negativo = clientesFicticios().find((cliente) => cliente.isNegativo);
+    await expect(fonteFicticia.carregarCatalogo(negativo?.codigo ?? "")).rejects.toThrow(AVISO_DE_CLIENTE_NEGATIVO);
   });
 });
 

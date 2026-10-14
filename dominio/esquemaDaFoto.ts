@@ -4,7 +4,7 @@
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
  */
 
-export const VERSAO_DO_ESQUEMA = 3;
+export const VERSAO_DO_ESQUEMA = 4;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -33,6 +33,7 @@ CREATE TABLE cliente (
   uf TEXT NOT NULL,
   mercado TEXT NOT NULL,
   situacao TEXT NOT NULL,
+  negativo INTEGER NOT NULL,
   ultima_compra TEXT,
   cliente_desde INTEGER,
   ciclo_dias INTEGER,
@@ -187,6 +188,8 @@ export type Foto = {
     uf: string;
     mercado: string;
     situacao: string;
+    /** 1 no cliente negativo (dominio/clienteNegativo.ts), 0 nos outros. O motivo não vem para a foto. */
+    negativo: number;
     ultima_compra: string | null;
     cliente_desde: number | null;
     ciclo_dias: number | null;

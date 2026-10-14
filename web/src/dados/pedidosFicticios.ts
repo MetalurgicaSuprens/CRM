@@ -229,8 +229,9 @@ function itensEnviados(itens: ItemDoPedido[], catalogo: CatalogoDoCliente): Item
 }
 
 function resumoDe(ficha: FichaCliente): ClienteResumo {
-  const { codigo, codigoErp, nome, cidade, uf, mercado, situacao, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre } = ficha;
-  return { codigo, codigoErp, nome, cidade, uf, mercado, situacao, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre };
+  const { codigo, codigoErp, nome, cidade, uf, mercado, situacao, isNegativo, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre } =
+    ficha;
+  return { codigo, codigoErp, nome, cidade, uf, mercado, situacao, isNegativo, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre };
 }
 
 function numeroCrm(numero: number): string {

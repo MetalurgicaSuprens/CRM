@@ -1,3 +1,4 @@
+import { isClienteNegativo } from "dominio/clienteNegativo";
 import type { Mercado } from "dominio/tipos";
 import type { Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
@@ -7,7 +8,8 @@ import type { ClienteDaCarteira, DatasDeCompra, VendaDoMes } from "./tipos.ts";
 
 /*
  * A carteira dos representantes autorizados e a história de compras de cada cliente dela.
- * Carteira: clientes com VEND_1 de um autorizado e nota de venda nos 36 meses da janela.
+ * Carteira: clientes com VEND_1 de um autorizado e nota de venda nos 36 meses da janela. O status
+ * do SGI só serve para marcar o cliente negativo: a foto não leva o status em si.
  */
 
 /** Da nota M, o cliente é da carteira de um autorizado. */
@@ -19,8 +21,9 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
   const lista = emLista("r", autorizados);
   const linhas = await oracle.consultar(
     `SELECT C.EMP_FIL, C.CLIENTE, TRIM(C.FIS_JURID), C.NOM_FANTAS, C.RAZ_SOCIAL || C.COMPLEM_RZ,
-            TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1
+            TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1, TRIM(G.CLI3_STA)
        FROM ABC71.CRCL C
+       LEFT JOIN ABC71.SGI5_TAB_VEN_CLI3 G ON G.CLI3_CLI = C.CLIENTE
       WHERE C.VEND_1 IN ${lista.sql}
         AND EXISTS (SELECT 1 FROM ABC71.NFME M
                      WHERE M.EMP_FIL = C.EMP_FIL AND M.FORNEC = C.CLIENTE
@@ -39,6 +42,7 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
     uf: texto(linha, 6),
     mercado: mercadoDoTipoDeCliente(textoOuNulo(linha, 7)),
     representante: String(numero(linha, 8)),
+    isNegativo: isClienteNegativo(textoOuNulo(linha, 9)),
   }));
 }
 

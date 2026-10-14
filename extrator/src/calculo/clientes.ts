@@ -115,6 +115,7 @@ function linhaDoCliente({ id, cliente, historico, analise, evolucao, mix }: Clie
     uf: cliente.uf,
     mercado: cliente.mercado,
     situacao: analise.situacao,
+    negativo: cliente.isNegativo ? 1 : 0,
     ultima_compra: historico.compras.at(-1) ?? null,
     cliente_desde: Number(historico.primeiraCompra.slice(0, 4)),
     ciclo_dias: historico.cicloDias,

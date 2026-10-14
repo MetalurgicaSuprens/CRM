@@ -1,3 +1,4 @@
+import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
 import { analisesFicticias, clientesFicticios, fichaFicticia, painelFicticio, situacaoDosDadosFicticia } from "./ficticio";
 import type { FonteDeDados } from "./fonteDeDados";
 import {
@@ -17,7 +18,11 @@ export const fonteFicticia: FonteDeDados = {
   carregarClientes: () => Promise.resolve(clientesFicticios()),
   carregarFicha: (codigo) => Promise.resolve(fichaFicticia(codigo)),
   carregarAnalises: () => Promise.resolve(analisesFicticias()),
-  carregarCatalogo: (codigoCliente) => Promise.resolve(catalogoDoClienteFicticio(codigoCliente)),
+  carregarCatalogo(codigoCliente) {
+    const catalogo = catalogoDoClienteFicticio(codigoCliente);
+    // O cliente negativo não recebe pedido: a montagem mostra o aviso no lugar do catálogo.
+    return catalogo?.cliente.isNegativo ? Promise.reject(new Error(AVISO_DE_CLIENTE_NEGATIVO)) : Promise.resolve(catalogo);
+  },
   carregarPedidos: () => Promise.resolve(painelDePedidosFicticio()),
   carregarPedidoEnviado: (numero) => Promise.resolve(pedidoEnviadoFicticio(numero)),
   carregarRascunho: (id) => Promise.resolve(rascunhoFicticio(id)),

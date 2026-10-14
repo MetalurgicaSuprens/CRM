@@ -4,7 +4,7 @@ import { Users } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Filtros, type Filtro } from "../componentes/Filtros";
-import { MotivoDoRisco, SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { MotivoDoRisco, SITUACOES, SeloNegativo, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
@@ -135,6 +135,7 @@ function LinhaCliente({ cliente, hoje, semestre }: { cliente: ClienteResumo; hoj
       </span>
       <span className={estilos.situacao}>
         <SituacaoCliente situacao={cliente.situacao} />
+        {cliente.isNegativo ? <SeloNegativo /> : null}
         <MotivoDoRisco queda={cliente.quedaNoSemestre} semestre={semestre} />
       </span>
       <span className={estilos.ultimaCompra} title={cliente.ultimaCompra ? formatarData(cliente.ultimaCompra) : undefined}>

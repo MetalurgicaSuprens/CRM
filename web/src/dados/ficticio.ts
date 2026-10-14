@@ -73,6 +73,9 @@ const SUFIXOS = ["Ltda", "Comércio Ltda", "Distribuição Ltda", "S.A.", "Indú
 /** Como no ERP, há pessoas físicas na carteira, todas do mercado praça. */
 const PESSOAS_FISICAS = ["Rogério Tavares", "Sandra Moreira", "Valter Nunes"];
 const CLIENTES_DA_PRACA_ENTRE_PESSOAS_FISICAS = 15;
+/** Como no SGI, alguns clientes estão fora de ATIVO no cadastro: um a cada 29 da carteira, a partir do 8º. */
+const CLIENTES_ENTRE_NEGATIVOS = 29;
+const PRIMEIRO_NEGATIVO = 7;
 const CIDADES: readonly (readonly [string, string])[] = [
   ["Ribeirão Preto", "SP"], ["Campinas", "SP"], ["Piracicaba", "SP"], ["Bauru", "SP"], ["Franca", "SP"],
   ["Sorocaba", "SP"], ["São José do Rio Preto", "SP"], ["Londrina", "PR"], ["Maringá", "PR"],
@@ -101,6 +104,7 @@ type ClienteFicticio = {
   cidade: string;
   uf: string;
   mercado: Mercado;
+  isNegativo: boolean;
   precoMedioPeca: number;
   pesosFamilias: Map<string, number>;
   mensal: MesFicticio[];
@@ -250,7 +254,7 @@ function gerarCarteira(atualizadoEm: string): Carteira {
   const aleatorioDosQueVoltaram = criarAleatorio(SEMENTE + 2);
   clientes.push(...Array.from({ length: CLIENTES_QUE_VOLTARAM }, () => gerarCliente(aleatorioDosQueVoltaram, contexto, "voltou")));
   const outros = gerarOutrosClientesDaSuprens(criarAleatorio(SEMENTE + 1));
-  const carteira = comPessoasFisicas(clientes);
+  const carteira = comNegativos(comPessoasFisicas(clientes));
   return { ...contexto, atualizadoEm, clientes: carteira, suprens: [...carteira.map(paraMix), ...outros] };
 }
 
@@ -272,6 +276,7 @@ function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Per
     cidade,
     uf,
     mercado,
+    isNegativo: false,
     precoMedioPeca,
     pesosFamilias: sortearFamilias(aleatorio),
     mensal,
@@ -292,6 +297,13 @@ function comPessoasFisicas(clientes: ClienteFicticio[]): ClienteFicticio[] {
     const nome = nomes.get(cliente);
     return nome ? { ...cliente, nome, razaoSocial: nome, codigoErp: null } : cliente;
   });
+}
+
+/** Marca alguns clientes como negativos, sem sorteio novo: o resto da carteira não muda. */
+function comNegativos(clientes: ClienteFicticio[]): ClienteFicticio[] {
+  return clientes.map((cliente, i) =>
+    i % CLIENTES_ENTRE_NEGATIVOS === PRIMEIRO_NEGATIVO ? { ...cliente, isNegativo: true } : cliente,
+  );
 }
 
 function gerarOutrosClientesDaSuprens(aleatorio: Aleatorio): ClienteNoMix[] {
@@ -441,6 +453,7 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
     uf: cliente.uf,
     mercado: cliente.mercado,
     situacao: indicadores.situacao,
+    isNegativo: cliente.isNegativo,
     ultimaCompra: indicadores.ultimaCompra,
     faturamento12m: indicadores.faturamento12m,
     variacao12m: variacao12m(evolucao),

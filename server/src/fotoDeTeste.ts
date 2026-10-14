@@ -11,11 +11,13 @@ import { ESQUEMA, VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
  */
 
 export const CLIENTE_DE_A = "aaaaaaaaaaaaaaa1";
+/** Cliente de A fora de ATIVO no SGI: aparece, mas não recebe pedido. */
+export const CLIENTE_NEGATIVO_DE_A = "aaaaaaaaaaaaaaa2";
 export const CLIENTE_DE_B = "bbbbbbbbbbbbbbb1";
 /** O que nunca pode aparecer para o login de A. */
 export const MARCAS_DE_B = [CLIENTE_DE_B, "CLIENTE SO DE B", "999001", "888001", "PRODUTO-SO-DE-B", "999002"];
 
-function cliente(id: string, representante: string, nome: string): Foto["cliente"][number] {
+function cliente(id: string, representante: string, nome: string, negativo = 0): Foto["cliente"][number] {
   return {
     cliente: id,
     codigo_erp: representante === "1401" ? "123456780001" : "876543210001",
@@ -26,6 +28,7 @@ function cliente(id: string, representante: string, nome: string): Foto["cliente
     uf: "SP",
     mercado: "PRACA",
     situacao: "parado",
+    negativo,
     ultima_compra: "2026-05-01",
     cliente_desde: 2015,
     ciclo_dias: 30,
@@ -80,7 +83,11 @@ export function montarFotoDeTeste(): Foto {
       { codigo: "1401", nome: "STAR VENDAS" },
       { codigo: "9999", nome: "OUTRA REPRESENTACAO" },
     ],
-    cliente: [cliente(CLIENTE_DE_A, "1401", "CLIENTE DE A"), cliente(CLIENTE_DE_B, "9999", "CLIENTE SO DE B")],
+    cliente: [
+      cliente(CLIENTE_DE_A, "1401", "CLIENTE DE A"),
+      cliente(CLIENTE_NEGATIVO_DE_A, "1401", "CLIENTE NEGATIVO DE A", 1),
+      cliente(CLIENTE_DE_B, "9999", "CLIENTE SO DE B"),
+    ],
     produto: [
       { produto: "F-100", familia: "FLEXIL" },
       { produto: "P-200", familia: "PRESIL" },

@@ -1,4 +1,5 @@
-import { CircleCheck, CircleOff, CirclePause, CirclePlus, TriangleAlert } from "lucide-react";
+import { Ban, CircleCheck, CircleOff, CirclePause, CirclePlus, TriangleAlert } from "lucide-react";
+import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
 import type { Semestre, Situacao } from "../dados/tipos";
 import { formatarSemestres } from "../formato";
 import { Selo } from "./Selo";
@@ -22,6 +23,21 @@ type Props = {
 
 export function SituacaoCliente({ situacao, tamanho }: Props) {
   return <Selo {...SITUACOES[situacao]} tamanho={tamanho} />;
+}
+
+/** Ao lado da situação: o cliente fora de ATIVO no cadastro do SGI, que não recebe pedido. */
+export function SeloNegativo({ tamanho }: Pick<Props, "tamanho">) {
+  return <Selo rotulo="Negativo" icone={Ban} tom="critico" tamanho={tamanho} />;
+}
+
+/** O que o representante vê ao tentar um pedido para o cliente negativo. */
+export function AvisoDeNegativo() {
+  return (
+    <p className={estilos.aviso} role="alert">
+      <Ban size={16} aria-hidden="true" />
+      {AVISO_DE_CLIENTE_NEGATIVO}
+    </p>
+  );
 }
 
 /**
