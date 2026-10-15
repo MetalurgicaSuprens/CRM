@@ -1,0 +1,151 @@
+/* As cores do mapa estão em tokens.css (--cor-mapa-*, --cor-potencial-*): a legenda usa as mesmas */
+.quadro {
+  position: relative;
+  width: 100%;
+}
+
+.mapa {
+  display: block;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.mapa path,
+.mapa circle {
+  vector-effect: non-scaling-stroke;
+}
+
+/* O resto do Brasil, de fundo: só para os estados da carteira terem onde estar */
+.brasil path {
+  fill: var(--cor-mapa-fundo);
+  stroke: var(--cor-superficie);
+  stroke-width: 1.5px;
+}
+
+.estadoEscolhido path,
+.estadoVizinho path {
+  fill: var(--cor-mapa-municipio);
+  stroke: var(--cor-superficie);
+  stroke-width: 0.6px;
+  transition: fill var(--transicao);
+}
+
+/* O estado vizinho da carteira aparece, mas recua: o escolhido é que conta */
+.estadoVizinho {
+  opacity: 0.55;
+}
+
+/* O município com cliente; na lente "onde crescer", a região da área que já está na média (classe 0) */
+.estadoEscolhido path[data-classe="cliente"],
+.estadoVizinho path[data-classe="cliente"],
+.estadoEscolhido path[data-classe="0"] {
+  fill: var(--cor-mapa-com-cliente);
+}
+
+.estadoEscolhido path[data-classe="1"] {
+  fill: var(--cor-potencial-1);
+}
+
+.estadoEscolhido path[data-classe="2"] {
+  fill: var(--cor-potencial-2);
+}
+
+.estadoEscolhido path[data-classe="3"] {
+  fill: var(--cor-potencial-3);
+}
+
+.estadoEscolhido path[data-classe="4"] {
+  fill: var(--cor-potencial-4);
+}
+
+.estadoEscolhido path[data-municipio] {
+  cursor: pointer;
+}
+
+.estadoEscolhido path[data-municipio]:not([data-classe]):hover {
+  fill: color-mix(in srgb, var(--cor-acento) 12%, var(--cor-mapa-municipio));
+}
+
+.estadoEscolhido path[data-classe]:hover {
+  filter: brightness(0.9);
+}
+
+.estadoEscolhido .regioes {
+  fill: none;
+  stroke: #b4b5b1;
+  stroke-width: 1px;
+  pointer-events: none;
+}
+
+.estadoEscolhido .contornoDoEstado,
+.estadoVizinho .contornoDoEstado {
+  fill: none;
+  stroke: #8c8d88;
+  stroke-width: 1.4px;
+  pointer-events: none;
+}
+
+.estadoEscolhido .contornoDoEstado {
+  stroke: var(--cor-texto-2);
+  stroke-width: 1.6px;
+}
+
+.circulos circle {
+  stroke: var(--cor-superficie);
+  stroke-width: 1px;
+  cursor: pointer;
+  transition: fill-opacity var(--transicao);
+}
+
+.receita .circulos circle {
+  fill: var(--cor-dado);
+  fill-opacity: 0.82;
+}
+
+.perda .circulos circle {
+  fill: var(--cor-queda);
+  fill-opacity: 0.8;
+}
+
+.circulos circle:hover {
+  fill-opacity: 1;
+}
+
+.regiaoEscolhida {
+  fill: none;
+  stroke: var(--cor-acento);
+  stroke-width: 2.2px;
+  pointer-events: none;
+}
+
+.municipioEscolhido {
+  fill: color-mix(in srgb, var(--cor-acento) 10%, transparent);
+  stroke: var(--cor-acento);
+  stroke-width: 2px;
+  pointer-events: none;
+}
+
+/* O nome ao lado dos maiores círculos, com um halo branco para não sumir sobre as divisas */
+.rotulos text {
+  fill: var(--cor-texto);
+  font-family: var(--fonte-texto);
+  font-weight: 600;
+  stroke: var(--cor-superficie);
+  stroke-linejoin: round;
+  paint-order: stroke;
+  pointer-events: none;
+}
+
+.dica {
+  position: absolute;
+  width: max-content;
+  max-width: 280px;
+  padding: var(--esp-2) var(--esp-3);
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  box-shadow: var(--sombra-3);
+  pointer-events: none;
+  font-size: var(--tam-pequeno);
+  z-index: 2;
+}

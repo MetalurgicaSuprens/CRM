@@ -4,12 +4,12 @@ import { Analises } from "./paginas/Analises";
 import { Clientes } from "./paginas/Clientes";
 import { Convite } from "./paginas/Convite";
 import { DetalheDoPedido } from "./paginas/DetalheDoPedido";
-import { EmPreparacao } from "./paginas/EmPreparacao";
 import { Entrar } from "./paginas/Entrar";
 import { MontarPedido } from "./paginas/MontarPedido";
 import { Pedidos } from "./paginas/Pedidos";
 import { FichaCliente } from "./paginas/FichaCliente";
 import { Inicio } from "./paginas/Inicio";
+import { Mapa } from "./paginas/Mapa";
 
 export function App() {
   return (
@@ -26,7 +26,7 @@ export function App() {
           <Route path="pedidos/novo" element={<MontarPedido />} />
           <Route path="pedidos/rascunhos/:id" element={<MontarPedido />} />
           <Route path="pedidos/:numero" element={<DetalheDoPedido />} />
-          <Route path="mapa" element={<EmPreparacao titulo="Mapa" etapa="quando o mapa for portado do protótipo antigo (F6)" />} />
+          <Route path="mapa" element={<Mapa />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

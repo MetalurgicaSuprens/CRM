@@ -40,6 +40,19 @@
   --cor-comparacao: #a7a8a3;
   --cor-tendencia: #8c8d88;
   --cor-grade: #ebebea;
+  /*
+   * O mapa: o resto do Brasil, os municípios e, num tom do aço, os que têm cliente (na lente de crescer, as
+   * regiões da área que já estão na média). Os quatro verdes do
+   * potencial passaram no validador de paleta como rampa ordinal (uma matiz, claridade crescente, o mais
+   * claro a 2:1 sobre o cartão). O verde é o do dinheiro: o que a região ainda pode faturar.
+   */
+  --cor-mapa-fundo: #ebebe9;
+  --cor-mapa-municipio: #f1f1ef;
+  --cor-mapa-com-cliente: #d3d7dc;
+  --cor-potencial-1: #93c1a3;
+  --cor-potencial-2: #6aa580;
+  --cor-potencial-3: #44855e;
+  --cor-potencial-4: #2b5f3f;
   --cor-eixo: #cfcfcc;
 
   /* Destaque da interface (ícones, escolha neutra, botão principal, foco): o grafite da Suprens */

@@ -1,0 +1,269 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-3);
+}
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--esp-4);
+}
+
+/* O mapa à esquerda, com a maior parte da largura; a lista das regiões ao lado */
+.principal {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(19rem, 1fr);
+  align-items: start;
+  gap: var(--esp-5);
+}
+
+.cartaoDoMapa,
+.cartaoDoRanking {
+  min-width: 0;
+}
+
+/* ------------------------------------------------ lista das regiões */
+
+.ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 calc(var(--esp-2) * -1);
+}
+
+.itemDoRanking {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "nome valor"
+    "barra barra"
+    "detalhe detalhe";
+  gap: 6px var(--esp-3);
+  width: 100%;
+  padding: var(--esp-3) var(--esp-2);
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  transition: background-color var(--transicao);
+}
+
+.itemDoRanking:hover {
+  background: var(--cor-superficie-2);
+}
+
+/* A região escolhida, a mesma que o mapa aproxima e contorna em grafite */
+.itemDoRanking[aria-pressed="true"] {
+  background: var(--cor-superficie-3);
+  box-shadow: inset 3px 0 0 var(--cor-acento);
+}
+
+.nomeDaRegiao {
+  grid-area: nome;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.valorDaRegiao {
+  grid-area: valor;
+  font-weight: 600;
+}
+
+/* A barra da parte de cada região, do tamanho do valor em relação ao maior da lista */
+.barra {
+  grid-area: barra;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cor-grade);
+  overflow: hidden;
+}
+
+.barra::after {
+  content: "";
+  display: block;
+  width: calc(var(--parte) * 100%);
+  height: 100%;
+  border-radius: inherit;
+}
+
+.barraDeReceita::after {
+  background: var(--cor-dado);
+}
+
+.barraDePotencial::after {
+  background: var(--cor-potencial-3);
+}
+
+.detalheDaRegiao {
+  grid-area: detalhe;
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.verTodas {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: var(--esp-3);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--tam-pequeno);
+  font-weight: 500;
+  color: var(--cor-texto-2);
+}
+
+.verTodas:hover {
+  color: var(--cor-texto);
+}
+
+/* ------------------------------------------------ legenda do mapa */
+
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-5);
+  margin-top: var(--esp-3);
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+}
+
+.itemDaLegenda {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-2);
+}
+
+.bolinha {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.bolinhaDeReceita {
+  background: var(--cor-dado);
+}
+
+.bolinhaDePerda {
+  background: var(--cor-queda);
+}
+
+.amostraNeutra,
+.amostraComCliente {
+  width: 14px;
+  height: 10px;
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: 2px;
+}
+
+.amostraNeutra {
+  background: var(--cor-mapa-municipio);
+}
+
+.amostraComCliente {
+  background: var(--cor-mapa-com-cliente);
+}
+
+.rampa {
+  display: inline-flex;
+}
+
+.rampa span {
+  width: 14px;
+  height: 10px;
+}
+
+.rampa span:first-child {
+  border-radius: 2px 0 0 2px;
+  background: var(--cor-potencial-1);
+}
+
+.rampa span:nth-child(2) {
+  background: var(--cor-potencial-2);
+}
+
+.rampa span:nth-child(3) {
+  background: var(--cor-potencial-3);
+}
+
+.rampa span:last-child {
+  border-radius: 0 2px 2px 0;
+  background: var(--cor-potencial-4);
+}
+
+/* ------------------------------------------------ dica e detalhes */
+
+.tituloDaDica {
+  margin-bottom: 2px;
+  font-weight: 600;
+}
+
+.linhaDaDica {
+  color: var(--cor-texto-2);
+}
+
+.regiaoDaDica {
+  margin-top: 4px;
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.numeros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-4);
+}
+
+.numeros div {
+  padding: var(--esp-3);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+}
+
+.numeros dt {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.numeros dd {
+  margin: 0;
+  font-size: var(--tam-destaque);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.vazio {
+  color: var(--cor-texto-suave);
+  font-size: var(--tam-pequeno);
+}
+
+/* ------------------------------------------------ larguras menores */
+
+@container (max-width: 900px) {
+  .principal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 760px) {
+  .indicadores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .numeros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

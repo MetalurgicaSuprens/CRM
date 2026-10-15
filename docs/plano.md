@@ -196,10 +196,12 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 3. **Ficha do cliente** (celular primeiro): evolução mensal, famílias, produtos, ciclo de compra, pedidos em aberto e oportunidades de mix.
 4. **Análises:** parou de comprar, comprando menos, comprando mais, novos e reativados, mix.
 5. **Pedidos** (celular primeiro): catálogo com busca por código, família, medidas e o código do produto no cliente; montagem do pedido com o preço da tabela do cliente (informativo; a tabela padrão do cliente com o desconto do modelo do produto ou, sem ele, o desconto padrão, decisão do Lucas em 2026-10-14); rascunhos; envio; acompanhamento da situação; pedidos em aberto no ERP; histórico faturado.
-6. **Mapa**, portado do protótipo, só com a carteira do representante: saem as classes "atendida" e "carteira de outros", que olham os outros representantes (decisão do Lucas em 2026-10-09). Na portabilidade:
-   - usar o código IBGE do município, se o cadastro de clientes tiver (a NF-e exige);
-   - corrigir os 48 nomes de município desatualizados;
-   - corrigir os valores que aparecem nos tooltips mesmo com "ocultar valores".
+6. **Mapa**, feito do zero em 2026-10-15, sem copiar o protótipo, a pedido do Lucas. Ele mostra de onde vem a receita do representante e as regiões que ele poderia atender melhor. Mais tarde, as rotas de visita saem dele.
+   - Só a carteira do representante: saem as classes "atendida" e "carteira de outros", que olham os outros representantes (decisão do Lucas em 2026-10-09).
+   - O município vem do código IBGE do cadastro (`CRCL.RESERVADO7`).
+   - Os nomes e os desenhos vêm da base atual do IBGE, o que resolve os nomes antigos do protótipo.
+   - Os valores da dica obedecem "ocultar valores".
+   - Detalhes em dados-por-tela.md, seção 10.
 7. **Admin** (só LAN): representantes, convites, chaves, auditoria e situação das cargas.
 
 **Dois escopos, sempre explícitos**
@@ -281,7 +283,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
 - **F3 — Login, sessões, escopo e auditoria**, com testes automáticos.
 - **F4 — Carteira e análises.** Termina com um piloto só de leitura com 2–3 representantes.
 - **F5 — Pedidos.** Termina com um piloto de ponta a ponta: CRM → SGI → aprovações → Omega.
-- **F6 — Mapa:** portado do protótipo. Pode vir antes, se o Lucas preferir.
+- **F6 — Mapa:** feito em 2026-10-15, antes da F3, a pedido do Lucas. Ele funciona com os dados reais e com o fictício (dados-por-tela.md, seção 10).
 - **F7 — Disponibilidade de estoque** (futuro, depois dos pedidos):
   - uma carga rápida e separada (`estoque-<data>.db` + manifesto, mesmo canal SFTP), enviada a cada 2–5 min e só quando o estoque mudou;
   - a tela de pedido mostra a situação do item ("disponível", "parcial: consulte a fábrica", "sob encomenda"), e não a quantidade exata, com a hora do dado;

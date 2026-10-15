@@ -138,7 +138,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Código | "Ribeirão Preto/SP · 123456780001" ou "Bauru/SP · Pessoa física" (Clientes.tsx:140; formato.ts:133) e busca | Empresa: o código do ERP. Pessoa física: nenhum, porque o código dela é o CPF (decisão do Lucas em 2026-10-13). O código é a raiz do CNPJ e a filial, sem os verificadores, e o ERP o guarda como número: perde os zeros da esquerda (61 dos 178 clientes da Star Vendas têm 10 ou 11 dígitos, em 2026-10-15). A busca completa os zeros | `CRCL.CLIENTE`, só com `FIS_JURID = 'J'` | extrator |
 | Identificador | URL `/clientes/:codigo`, rascunhos e pedidos | Id opaco para todos os clientes (decidido em 2026-10-13); nunca aparece na tela | nenhuma; gerado na LAN | extrator |
 | Nome | Título da linha, busca, ordem A–Z | Fantasia; se vazio, razão social; razão completa quando o fantasia vem cortado | `CRCL.NOM_FANTAS`, `RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
-| Cidade e UF | "Ribeirão Preto/SP" | Nome do IBGE pelo código de `RESERVADO7` (a confirmar); sem ele, `TRIM(CIDADE)`. Exterior: "EX" | `CRCL.CIDADE`, `ESTADO`, `RESERVADO7` | extrator |
+| Cidade e UF | "Ribeirão Preto/SP" | `TRIM(CIDADE)`, cortada em 20 letras. Proposta: o nome do IBGE pelo código de `RESERVADO7`, confirmado em 2026-10-15 (pergunta 5). Exterior: "EX" | `CRCL.CIDADE`, `ESTADO` | extrator |
 | Status | Coluna logo depois do cliente: "Ativo" em texto discreto, "Inativo" e "Substituído" no selo vermelho. No cartão do celular, só o selo, embaixo do nome (Clientes.tsx:38, 96 e 136-145; componentes/StatusDoCliente.tsx) | O status do cadastro do SGI, com os nomes de lá; sem linha, ATIVO, como no SGI (decisões do Lucas em 2026-10-14 e 2026-10-15). Fora de ativo, o cliente fica na carteira, mas não recebe pedido (dominio/statusDoCadastro.ts). Na Star Vendas, em 15/10, os 178 estão ativos | `SGI5_TAB_VEN_CLI3.CLI3_STA` | extrator |
 | Situação | Selo e filtros com contagem (Clientes.tsx:27-33, 73-78 e 146-149) | Ver Análises | NFME, NFDE, VEPM, VEPD | extrator |
 | Motivo do risco | Embaixo do selo "Em risco": "−23% em abr–set/26 vs abr–set/25" (Clientes.tsx:148; componentes/SituacaoCliente.tsx:27-40) | A variação do semestre que pôs o cliente em risco, com os meses comparados (pedido do Lucas em 2026-10-14). Sem a base à mostra, a queda do semestre parecia contradizer a variação de 12 meses ao lado | NFME, NFDE | extrator (`analise_ritmo`); texto: navegador |
@@ -170,11 +170,11 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Para pessoa física, o nome é dado pessoal: fica restrito à carteira e nunca vai para log.
 - **Cidade.**
   - `CRCL.CIDADE` é CHAR(20) e vem cortada ("SAO JOSE DO RIO PRET").
-  - `CRCL.RESERVADO7` deve ser o código IBGE. Pistas da GNRE:
+  - `CRCL.RESERVADO7` é o código IBGE (conferido em 2026-10-15; ver Mapa). Pistas da GNRE, que levaram a ele:
     - ela lê `RESERVADO7` como código da cidade do cliente (`untDmContGnre.dfm:348-352`);
     - ela manda como município `Copy(CLI_CCI,3,5)` (`untContGnre_Gnre.pas:496`), e `CLI_CCI` vem de `POS_CLI_CCI` (`untContGnre_GnreGerarXML.pas:410`), que é `B.RESERVADO7` (`untDmContGnre.dfm:348-349`). É o formato do código IBGE de 7 dígitos: 2 da UF e 5 do município.
-  - Se for, o extrator usa o nome da base pública do IBGE (`CRM-prototipo/data/geo`) e cai para `CIDADE` quando o código faltar. `TPMU.NOME_CIDADE` não resolve, porque também é CHAR(20) (omega/ABC71-TP.md:3066).
-  - O código fica na LAN. Só o nome vai para a foto, até a F6.
+  - Proposta: o nome vem da lista do IBGE, e `CIDADE` fica para quando o código faltar. `TPMU.NOME_CIDADE` não resolve, porque também é CHAR(20) (omega/ABC71-TP.md:3066).
+  - O código vai para a foto desde a versão 9 (`cliente.municipio_ibge`), para o Mapa. É um dado público do município, não do cliente.
   - Cliente do exterior vem com `ESTADO='EX'` e o país em `COD_PAIS`, que é um número (licoes.md:98; omega/ABC71-CR.md:1079). Proposta: a tela mostra "EX" na UF. Se a pergunta 5 decidir mostrar o país, o nome vem de `ABC71.TGPA.NOME_PAIS` por `COD_PAIS` (omega/ABC71-TG.md:437-455). A confirmar na F2: qual EMPRESA/FILIAL usar e se 12 = Uruguai e 10 = Paraguai (licoes.md:98).
 - **Variação.** O piso de R$ 2 mil que deixa a variação nula existe só no fictício (ficticio.ts:437). O plano diz só "dados insuficientes" (plano.md:243).
 - **Tendência.** Exige 24 meses fechados de notas.
@@ -502,28 +502,48 @@ Abre depois do envio (MontarPedido.tsx:92). Na aba Enviados, o mesmo andamento e
 - **Texto do convite expirado.** Ele cita 48 horas fixas (Convite.tsx:126). Se a validade variar de 24 a 48 h, o texto deixa de citar o prazo ou usa a validade gravada no app.db.
 - **Token.** Vai depois do `#` (plano.md:132) e o banco guarda só o hash. Há limite de requisições por IP (plano.md:92).
 
-## 10. Mapa (F6, não construída)
+## 10. Mapa (feito em 2026-10-15)
 
-O plano prevê (plano.md:199-202):
-- porte do mapa do protótipo, na visão do cliente (plano.md:206);
-- só a carteira do representante, sem as classes que olham os outros representantes (decidido em 2026-10-09);
-- código IBGE do município;
-- correção dos 48 nomes antigos;
-- valores ocultos também nos tooltips.
+Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele poderia atender melhor e de onde vem a receita dele, sem copiar o mapa antigo. Mais tarde, as rotas de visita saem daqui. Tela em `web/src/paginas/Mapa.tsx`; as regras em `web/src/dados/mapa.ts`, com teste.
+
+- **Duas visões**, nos botões do alto e no endereço (`visao=crescer`):
+  - "De onde vem a receita": um círculo por município, do tamanho do faturado em 12 meses, e as regiões que mais faturam;
+  - "Onde crescer": as regiões pelo potencial que falta, em 4 tons de verde, e o que dá para recuperar, em círculos vermelhos.
+- **Por estado.** Os botões mostram os estados da carteira, com o número de clientes, e a página abre no que tem mais (`uf=`). Os outros estados da carteira aparecem em volta, mais claros.
+- **Escolha.** A lista mostra as 8 primeiras regiões e o "Ver todas". A região escolhida na lista é aproximada no mapa. O clique ou o toque num município mostra os clientes dele, cada um com o caminho para a ficha. O mouse mostra a dica do município.
+- **Nomes no mapa.** Os 5 municípios que mais pesam têm o nome ao lado do círculo. O nome passa para a esquerda quando à direita encostaria em outro ou sairia do quadro. Se não cabe de nenhum lado, fica de fora (`web/src/graficos/nomesNoMapa.ts`, com teste).
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Município do cliente | Área do mapa | Código IBGE de 7 dígitos | `CRCL.RESERVADO7` (a confirmar) | extrator |
-| Nome e desenho do município | Rótulos e contornos | Base pública do IBGE (`CRM-prototipo/data/geo`) | não é ERP: arquivo estático | servidor |
-| Faturamento por área | Cor da área | Soma da RF dos clientes da carteira na área | (foto: cliente, cliente_mes) | servidor |
-| Clientes da área | Lista no tooltip | Nome, faturamento e última compra | (foto: cliente) | servidor |
-| Classe da área | Vazia, fria, fraca, saudável ou forte (CRM-prototipo/REGRAS.md) | Vazia: sem cliente da carteira, mesmo que outro representante tenha cliente ali; fria: tem cliente da carteira, mas sem faturamento; fraca: menos de 15% da média; forte: 75% da maior | (derivado) | extrator, gravada por representante × município na tabela do mapa da F6 (plano.md:63) |
+| Município do cliente | Círculo e área com cliente | Código IBGE de 7 dígitos que começa pelo código da UF do cliente. Fora disso, nulo, e o cliente fica fora do mapa (`municipioDoCadastro`, com teste) | `CRCL.RESERVADO7` | extrator |
+| Desenho, nome, região imediata e população | Contornos, nomes e potencial | Malha municipal do IBGE, lista dos municípios com a região imediata e Censo 2022, em arquivos estáticos (ver abaixo) | não é ERP | gerador do extrator, uma vez |
+| Faturado do município e da região | Círculos, lista e indicadores | Soma do faturado em 12 meses dos clientes da carteira | (foto: `cliente.faturamento_12m`) | navegador |
+| Concentração | "N municípios fazem 80% da receita no estado" | Os municípios que mais faturam, somados até 80% | (derivado) | navegador |
+| Área | As regiões que entram no potencial | As regiões imediatas com cliente da carteira e as vizinhas delas, no mesmo estado | (derivado; as vizinhas vêm no arquivo do estado) | navegador |
+| Potencial e lacuna | Verde do mapa, "Potencial por ano", "Maior oportunidade" e lista "Onde crescer" | Potencial: receita por habitante na área × população da região. Lacuna: o que falta para o potencial. Fora da área, os dois são 0. Os tons de verde seguem os quartis das lacunas | (derivado) | navegador |
+| A recuperar por mês | Círculos vermelhos e indicador | A perda mensal de quem parou e a queda por mês de quem compra menos, as listas de Análises | (foto: `analise_parado`, `analise_ritmo`) | navegador |
 
-- **Classes que olham os outros representantes (decidido em 2026-10-09, pergunta 34).**
-  - "Atendida" e "carteira de outros" saem do mapa. Elas precisavam de dado de fora da carteira, e mesmo um sinal por município revela onde os outros representantes têm clientes (plano.md:35 e 241).
-  - O mapa mostra só a carteira do representante (plano.md:199). Nada de outros representantes entra na tabela do mapa.
-- **Escopo.** O protótipo somava as vendas atribuídas ao representante (`CRM-prototipo/server/src/mapa.ts:295`). O plano põe o Mapa na visão do cliente.
-- **Município na foto.** A coluna do município só entra na foto com a F6.
+- **Por que a área (2026-10-15).**
+  - Com a régua do estado inteiro, a região de São Paulo dominava o fictício: 20,7 milhões de habitantes e nenhum cliente.
+  - A média do estado inteiro também diluía a régua com regiões que o representante não atende.
+  - Na área, a régua é a média dele onde ele atua, e a região distante, sem cliente por perto, fica de fora.
+- **Com os dados reais da Star Vendas (15/10).**
+  - Em Goiás, as 22 regiões estão na área, e Goiânia faz 88% da receita.
+  - A maior oportunidade é Luziânia: 738 mil habitantes, 2 clientes e +R$ 448 mil por ano. Em seguida vem Águas Lindas de Goiás.
+  - No estado sem faturado (MT, 1 cliente), a tela diz que não há média para medir, em vez de "todas na média".
+- **Só a carteira** (decidido em 2026-10-09, pergunta 34). Nada de outros representantes entra no mapa, nem para dizer que uma região já é atendida.
+- **Visão do cliente** (plano.md:206). O faturado é o histórico dos clientes da carteira, de qualquer representante, como em Clientes.
+- **Valores ocultos.** A dica, a lista, os indicadores e a legenda escrevem os valores pelo mesmo componente das outras telas, que obedece "Ocultar valores". Os nomes vêm da lista atual do IBGE, o que resolve os nomes antigos do protótipo.
+- **Arquivos do mapa.**
+  - `web/public/mapas/<UF>.json` leva:
+    - cada município: o caminho SVG, a região imediata, a população e o centro;
+    - cada região: o contorno, a caixa e as vizinhas;
+    - o contorno do estado.
+  - `brasil.json` traz o contorno de cada estado.
+  - A projeção é Mercator, em décimos de km. São 2,2 MB no total, mas a tela baixa só o Brasil e os estados da carteira.
+  - Gerados por `npm run mapas --workspace extrator -- <pasta do IBGE> <população> <pasta de saída>` (`extrator/src/mapas/gerarMapas.ts`, com as fontes no cabeçalho). Os 5.570 municípios acharam a população do Censo.
+- **Na foto.** `cliente.municipio_ibge` (versão 9). Na Star Vendas, em 15/10: os 178 clientes com município, em 42 municípios.
+- **Pendente.** A lista de Clientes ainda mostra o `CRCL.CIDADE`, cortado em 20 letras. Com o código confirmado, o nome pode vir do IBGE (pergunta 5).
 
 ## 11. Admin (só LAN, não construída)
 
@@ -562,7 +582,7 @@ Convenções:
 |---|---|---|---|
 | `foto` | Uma linha | `versao_esquema`, `gerada_em`, `data_ref`, `mes_atual`, `dia_util`, `dias_uteis`, `semestre_inicio`, `semestre_fim` | todas, Admin |
 | `representante` | Representante autorizado; PK `codigo` | `codigo`, `nome` (o da CRVN, para o Admin escolher os códigos) | Admin |
-| `cliente` | Cliente (filial) da carteira de um autorizado; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `status`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (só na F6) | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
+| `cliente` | Cliente (filial) da carteira de um autorizado; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `status`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (código IBGE do município, para o Mapa) | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
 | `cliente_mes` | Cliente × mês (24 fechados + o corrente); PK (`cliente`, `mes`) | `cliente`, `mes`, `valor` | Ficha |
 | `cliente_familia` | Cliente × família nos 12 meses fechados; PK (`cliente`, `familia`) | `cliente`, `familia`, `valor`, `participacao` | Ficha |
 | `ficha_produto` | Cliente × produto, só os 8 maiores em valor nos 12 meses fechados; PK (`cliente`, `produto`) | `cliente`, `produto`, `pecas_12m`, `valor_12m`, `ultima_compra` | Ficha |
@@ -670,7 +690,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 | Tabela | Colunas | Para quê | Citação | Confirmada |
 |---|---|---|---|---|
-| `ABC71.CRCL` | EMP_FIL, CLIENTE, TIPO_CAD, NOM_FANTAS, RAZ_SOCIAL, COMPLEM_RZ, CIDADE, ESTADO, TIPO_CLI, FIS_JURID, VEND_1; RESERVADO7 só se a pergunta 5 confirmar o código IBGE; COD_PAIS só se a pergunta 5 decidir mostrar o país | Identidade, mercado, carteira, raiz para os grupos (calculada na LAN), nome da cidade e município | omega/ABC71-CR.md:965-1141 (PK 973; 981-988, 995-996, 1005, 1019, 1052, 1079, 1088); OracleDB/docs/licoes.md:97-101 | sim |
+| `ABC71.CRCL` | EMP_FIL, CLIENTE, TIPO_CAD, NOM_FANTAS, RAZ_SOCIAL, COMPLEM_RZ, CIDADE, ESTADO, TIPO_CLI, FIS_JURID, VEND_1, RESERVADO7 (código IBGE do município); COD_PAIS só se a pergunta 5 decidir mostrar o país | Identidade, mercado, carteira, raiz para os grupos (calculada na LAN), nome da cidade e município | omega/ABC71-CR.md:965-1141 (PK 973; 981-988, 995-996, 1005, 1019, 1052, 1079, 1088); OracleDB/docs/licoes.md:97-101 | sim |
 | `ABC71.CRCLH` | EMP_FIL, CLIENTE, SEQ_HIST, DT_HIST, CAMPO, HISTORICO | Dono do cliente na data da nota sem vendedor. Só na LAN | omega/ABC71-CR.md:1279-1300; pista em CRM-prototipo/server/src/repHistorico.ts:7-41 | sim; formato de HISTORICO a confirmar |
 | `ABC71.CRVN` | EMP_FIL, VENDEDOR, NOME, NOME_CONH | Nome do representante, com `EMP_FIL = 20210001` | omega/ABC71-CR.md:5467-5488; untDmVenPvd.dfm:499-503 e 4976-5006 | sim |
 | `ABC71.NFME` | EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO, ID_CANCEL, DT_EMISSAO, VENDEDOR, NRO_PEDIDO | Cabeçalho da nota: cliente, data, cancelamento, vendedor (atribuição), número da NF e pedido da nota (pedido de origem na aba Faturados e datas de faturado do pedido CRM) | omega/ABC71-NF.md:6647-6739 (PK 6655; 6663-6667, 6674, 6678, 6694, 6739); Gestao/server/src/producao/foto/moduloVendasEntradas.ts:13 e 32-43; `Vendas {VEN}/Consulta Pedidos Venda {CONPVE}/untDmVenConPve_ConPve.dfm:527-528 e 1257-1261` | sim |
@@ -708,7 +728,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 | `ABC71.SGI5_TAB_CUS_REP_FAT` | CUS_CLI, CUS_DFA, CUS_TMO, CUS_QTF, CUS_VLF, CUS_VEN, CUS_CLI_MER | Totais do RELCUS001, inclusive por representante e por mercado (plano.md:279 e 342) | sgi/ABC71-SGI5-TAB_CUS.md:635-691 (687, 691); SGI12CodigoFonte/Diretoria {DIR}/Custos {CUS}/untDirCus_RelRepresSin.dfm:2933-2956 |
 | `ABC71.SGI5_VIEW_M_NFME_ULT_CPA_CLI` | VIEW_CLI, VIEW_DMO, VIEW_STA, VIEW_VEN | Última compra e situação que o CRM interno do SGI já calcula | sgi/ABC71-SGI5-VIEW_M.md:100-120; SGI12CodigoFonte/Vendas - CRM {CRM}/Clientes {CLI}/untDmCrmCli.dfm:21 e 107-108 |
 | `ABC71.SGI5_TAB_VEN_TP2` | TP2_COD, TP2_PRO, TP2_CMO, TP2_CMO_FOR, TP2_STA, TP2_LMI, TP2_MVE, TP2_IPR | Base da view de preço: part number repetido, valores de status, múltiplo, lote e o indicador de produto na tabela impressa. Se `TP2_IPR` virar filtro (pergunta 29), a TP2 passa para a lista do extrator | sgi/ABC71-SGI5-TAB_VEN.md:2721-2764 (PK 2729; IPR 2759); untDmVenPvd.dfm:6443 |
-| `ABC71.TPMU` | EMPRESA, COD_CIDADE, NOME_CIDADE, ESTADO | Conferir o código de `RESERVADO7` (pergunta 5). O nome não serve, porque é CHAR(20) | omega/ABC71-TP.md:3048-3067; SGI12CodigoFonte/Contabilidade {CONT}/Geracao GNRE {GNRE}/untDmContGnre.dfm:420-424 |
+| `ABC71.TPMU` | EMPRESA, COD_CIDADE, NOME_CIDADE, ESTADO | Não foi preciso: o código de `RESERVADO7` se confirmou pela UF e pela lista do IBGE (pergunta 5). O nome não serve, porque é CHAR(20) | omega/ABC71-TP.md:3048-3067; SGI12CodigoFonte/Contabilidade {CONT}/Geracao GNRE {GNRE}/untDmContGnre.dfm:420-424 |
 | `ABC71.SGI5_VIEW_VEN_PV2_V2_TOTAL` | VIEW_NPE, VIEW_VLR_SIP | Total sem IPI da tela do SGI, contra o total calculado pela PV2 | untDmVenPvd.dfm:368-372 e 529-530; fora do catálogo; colunas a confirmar na F2 |
 | Código e definições | `SGI5_IUD_CUS_REP_FAT_V2` (DBA_SOURCE); texto das views acima e da `SGI5_VIEW_CARGA_PEDIDOS` (DBA_VIEWS); gatilhos `SGI5_TRG_VEPM_TO_VEN_PV1_V2` e `SGI5_TRG_VEPD_TO_VEN_PV2_V2` (ALL_TRIGGERS) | De onde vem CUS_VEN; regra das views; se o `VIEW_LR1` da carga é o `PV1_LR1`; o que o Omega grava no PV1 ao alterar ou excluir pedido | OracleDB/docs/modulos/custos-faturamento.md:14 (procedure); ABC71/outros_objetos.md:393 e 395 (gatilhos); OracleDB/docs/lacunas.md:7; Recebimento {REC}/Carga Pedido Venda e NF {CPV}/untDmRecCpv_Cpv.dfm:930-931 e 1071 |
 
@@ -760,7 +780,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extrator gera a foto, e a API mostra com ela o Início, Clientes, Ficha, Análises e as abas "Em aberto no ERP" e "Faturados" de Pedidos. Tudo roda só neste computador, com o login de teste, porque o login de verdade é da F3 (README.md, "Como rodar"). Catálogo, rascunhos e envio ainda não usam os dados reais.
 
-- **Esquema implementado (versão 8, com o histórico de pedidos da ficha e os itens deles):** as tabelas acima, menos `pedido_crm` e `pedido_crm_etapa`. Falta também `cliente.municipio_ibge`, que chega com o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
+- **Esquema implementado (versão 9, com o município IBGE do cliente para o Mapa):** as tabelas acima, menos `pedido_crm` e `pedido_crm_etapa`. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
 - **Conferência com o RELCUS001.** O faturado por representante e mês bate com a `SGI5_TAB_CUS_REP_FAT` nos códigos 1401 e 1402, em todos os meses de 2025 e 2026, com duas exceções:
   - junho de 2025: R$ 2.567,02 estão no 1402 no RELCUS001 e no 1401 pelo vendedor da nota. A soma dos dois códigos bate;
   - o mês corrente, porque a tabela do RELCUS001 ainda não tinha o dia.
@@ -784,7 +804,7 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
   - entrega do pedido em aberto: a mais próxima entre os itens com saldo;
   - valor em aberto: a conta proposta em Pedidos, ainda sem conferir com a tela do SGI (pergunta 13);
   - `pedido_aberto.cliente` e `nota.cliente`: o id quando o cliente está na carteira de qualquer autorizado. O servidor só mostra o nome quando o cliente é da carteira do login. O pedido do login para cliente de outra carteira conta no Início e não aparece na lista (pergunta 33);
-  - nome e cidade como estão no ERP, em maiúsculas e sem acento, até o IBGE da F6.
+  - nome e cidade como estão no ERP, em maiúsculas e sem acento. O código IBGE já está na foto (Mapa); o nome do IBGE na lista é a pergunta 5.
 - **Itens em Pedidos (2026-10-14).** A linha da aba Pedidos abre os detalhes na própria lista, e a foto passou a levar os itens (`pedido_aberto_item`, `nota_item`) e o pedido de origem da nota (`nota.pedidos`).
   - O extrator lê os pedidos em aberto e as notas item a item. A entrega, o valor e a parte do mês de cada pedido passaram do SQL para `extrator/src/calculo/pedidos.ts`, com teste.
   - Conferido em 14/10: os 3 pedidos e as 66 notas da Star Vendas saíram iguais aos da foto da versão 2, com diferença de 1e-11 real, da soma feita no Node.
@@ -798,6 +818,9 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
 - **Pedidos (2026-10-15).** Os cartões de Pedidos ficam na ordem Faturados, Em aberto no ERP, Enviados pelo CRM e Rascunhos, e a página abre em Faturados. Na Ficha, "Pedidos em aberto" virou "Pedidos": o histórico de 12 meses, com a coluna Status (Faturado, Em aberto, Enviado pelo CRM e Rascunho).
   - Com os dados reais, a Ficha mostra só os pedidos do ERP; os do CRM chegam com o app.db (F3 e F5).
   - Na F5, o pedido enviado pelo CRM que chega ao ERP também vem na foto. Ligado pelo número CRM, ele aparece uma vez só, com o status do ERP, como o fictício já faz.
+- **Mapa (2026-10-15).** A tela do Mapa funciona com os dados reais e com o fictício (seção 10).
+  - A foto (versão 9) leva o município IBGE do cliente, de `CRCL.RESERVADO7`.
+  - Os desenhos são arquivos estáticos do IBGE, iguais nos dois modos.
   - A linha aberta, nas abas de Pedidos e na ficha: só uma por vez, o cabeçalho um tom mais escuro e o resumo por família antes dos itens. Na ficha, a tabela de pedidos passou a abrir como a de Pedidos, e os faturados trazem os itens das notas (`pedido_faturado_item`).
   - A busca de cliente em Pedidos, pelo nome fantasia ou pelo CNPJ (dados/busca.ts, com teste). A mesma regra passou a valer na busca de Clientes e na escolha do cliente do pedido, que também acham o CNPJ com pontuação e com o zero da esquerda.
 - **Ainda não feito:** grupos por raiz de CNPJ, a troca da foto por SFTP com manifesto e os esquemas de resposta da API.
@@ -815,9 +838,13 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
 3. **Unidades e tipos.** Quais são as unidades reais das notas e dos pedidos além de CT e PC? O Gestao faz CT ×100 e o resto ×1; o RELCUS001 faz ×100 sempre (custos-faturamento.md:23-24). Listar também os tipos de movimento (plano.md:280).
 4. **EMP_FIL.** Quantas empresas têm notas e pedidos de venda? Hoje o código do cliente leva só `CLIENTE`.
 5. **Cidade.**
-   - `CRCL.RESERVADO7` é o código IBGE do município? Quanto dele está preenchido?
-   - Se for, a tela mostra o nome do IBGE no lugar de `CIDADE`?
-   - Conferir o código contra a `TPMU` (`COD_CIDADE`), como a GNRE faz (`untDmContGnre.dfm:420-424`).
+   - ~~`CRCL.RESERVADO7` é o código IBGE do município? Quanto dele está preenchido?~~ Sim, conferido em 2026-10-15.
+     - O código tem 7 dígitos e começa pelo código da UF do cliente.
+     - Está preenchido nos 178 clientes da Star Vendas, que caem em 42 municípios da malha do IBGE.
+     - Na Suprens, 12.403 dos 17.802 clientes com vendedor têm o código nesse formato.
+     - É a base do Mapa.
+   - A lista de Clientes mostra o nome do IBGE no lugar de `CIDADE`, que vem cortada em 20 letras?
+   - ~~Conferir o código contra a `TPMU` (`COD_CIDADE`), como a GNRE faz (`untDmContGnre.dfm:420-424`).~~ Não foi preciso: a UF e a lista do IBGE bastaram.
    - O cliente com `ESTADO='EX'` mostra só "EX" ou o país? Se for o país, o nome vem de `ABC71.TGPA.NOME_PAIS` (omega/ABC71-TG.md:437-455)? Com qual EMPRESA/FILIAL? Sem essa decisão, `COD_PAIS` fica fora da leitura.
 6. **Mercado.** Há clientes cujo `TIPO_CLI` discorda do tipo de movimento das próprias notas (310/315 praça, 316/317 exportação, 320/325/326 montadora)? Qual dos dois vale no mix?
 7. **Família.**
