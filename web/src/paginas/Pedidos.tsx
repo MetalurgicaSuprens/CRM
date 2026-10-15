@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { FilePlus2, Trash, type LucideIcon } from "lucide-react";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
+import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Cartao } from "../componentes/Cartao";
 import { ETAPAS, EtapaDoPedido } from "../componentes/EtapaDoPedido";
 import { Filtros } from "../componentes/Filtros";
@@ -11,7 +12,8 @@ import { STATUS_DO_PEDIDO } from "../componentes/StatusDoPedido";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho } from "../dados/api";
-import type { NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Rascunho, SituacaoDosDados } from "../dados/tipos";
+import { correspondeAoCliente } from "../dados/busca";
+import type { ClienteResumo, NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Rascunho, SituacaoDosDados } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarContagem, formatarData, formatarTempoDesde } from "../formato";
 import { DataRelativa, MomentoRelativo } from "../componentes/Quando";
@@ -32,13 +34,23 @@ const ABAS: Record<Aba, { rotulo: string; icone: LucideIcon; tom: TomDoSelo }> =
 /** A ordem dos cartões; a página abre no primeiro. */
 const ORDEM_DAS_ABAS: readonly Aba[] = ["faturados", "emAberto", "enviados", "rascunhos"];
 const ABA_INICIAL: Aba = "faturados";
+/** A lista vazia por causa da busca de cliente, no lugar do texto de cada aba. */
+const SEM_RESULTADO = "Nada nesta aba para esse cliente.";
 
 export function Pedidos() {
   const { dados: painel, recarregar } = useCarga("pedidos", carregarPedidos);
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   const [parametros, setParametros] = useSearchParams();
   const aba = ORDEM_DAS_ABAS.find((opcao) => opcao === parametros.get("aba")) ?? ABA_INICIAL;
+  const busca = parametros.get("busca") ?? "";
   if (!painel || !situacao) return <Carregando />;
+  const doCliente = filtrarPorCliente(painel, busca);
+  const buscar = (valor: string) => {
+    const proximos = new URLSearchParams(parametros);
+    if (valor) proximos.set("busca", valor);
+    else proximos.delete("busca");
+    setParametros(proximos, { replace: true });
+  };
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
@@ -53,28 +65,48 @@ export function Pedidos() {
       />
       <Filtros
         rotulo="Pedidos"
-        opcoes={ORDEM_DAS_ABAS.map((valor) => ({ valor, ...ABAS[valor], quantidade: painel[valor].length }))}
+        opcoes={ORDEM_DAS_ABAS.map((valor) => ({ valor, ...ABAS[valor], quantidade: doCliente[valor].length }))}
         selecionado={aba}
-        aoEscolher={(valor) => setParametros(valor === ABA_INICIAL ? {} : { aba: valor }, { replace: true })}
+        aoEscolher={(valor) => setParametros(parametrosDaAba(valor, busca), { replace: true })}
       />
-      <AbaEscolhida aba={aba} painel={painel} situacao={situacao} recarregar={recarregar} />
+      <div className={estilos.ferramentas}>
+        <CampoDeBusca rotulo="Buscar cliente" valor={busca} dica="Cliente: nome fantasia ou CNPJ" aoMudar={buscar} className={estilos.busca} />
+      </div>
+      <AbaEscolhida aba={aba} painel={doCliente} situacao={situacao} recarregar={recarregar} vazio={busca.trim() ? SEM_RESULTADO : undefined} />
     </div>
   );
 }
 
-type PropsDaAba = { aba: Aba; painel: PainelDePedidos; situacao: SituacaoDosDados; recarregar: () => void };
+/** Trocar de aba recomeça a ordem e mantém a busca de cliente. */
+function parametrosDaAba(aba: Aba, busca: string): Record<string, string> {
+  return { ...(aba === ABA_INICIAL ? {} : { aba }), ...(busca ? { busca } : {}) };
+}
+
+/** Cada aba só com os pedidos e as notas dos clientes que correspondem à busca. */
+function filtrarPorCliente(painel: PainelDePedidos, busca: string): PainelDePedidos {
+  const doCliente = <T extends { cliente: ClienteResumo }>(lista: T[]) => lista.filter((item) => correspondeAoCliente(item.cliente, busca));
+  return {
+    enviados: doCliente(painel.enviados),
+    rascunhos: doCliente(painel.rascunhos),
+    emAberto: doCliente(painel.emAberto),
+    faturados: doCliente(painel.faturados),
+  };
+}
+
+/** `vazio` troca o texto da lista vazia de cada aba. */
+type PropsDaAba = { aba: Aba; painel: PainelDePedidos; situacao: SituacaoDosDados; recarregar: () => void; vazio: string | undefined };
 
 /** O que o CRM grava se compara com o relógio; o que vem do ERP, com a data da foto. */
-function AbaEscolhida({ aba, painel, situacao, recarregar }: PropsDaAba) {
+function AbaEscolhida({ aba, painel, situacao, recarregar, vazio }: PropsDaAba) {
   switch (aba) {
     case "enviados":
-      return <Enviados pedidos={painel.enviados} relogio={situacao.relogio} />;
+      return <Enviados pedidos={painel.enviados} relogio={situacao.relogio} vazio={vazio} />;
     case "rascunhos":
-      return <Rascunhos rascunhos={painel.rascunhos} relogio={situacao.relogio} recarregar={recarregar} />;
+      return <Rascunhos rascunhos={painel.rascunhos} relogio={situacao.relogio} recarregar={recarregar} vazio={vazio} />;
     case "emAberto":
-      return <EmAberto pedidos={painel.emAberto} hoje={situacao.hoje} />;
+      return <EmAberto pedidos={painel.emAberto} hoje={situacao.hoje} vazio={vazio} />;
     case "faturados":
-      return <Faturados notas={painel.faturados} hoje={situacao.hoje} />;
+      return <Faturados notas={painel.faturados} hoje={situacao.hoje} vazio={vazio} />;
   }
 }
 
@@ -88,7 +120,7 @@ function CartaoDaAba({ aba, subtitulo, children }: { aba: Aba; subtitulo: string
   );
 }
 
-function Enviados({ pedidos, relogio }: { pedidos: PedidoEnviado[]; relogio: string }) {
+function Enviados({ pedidos, relogio, vazio }: { pedidos: PedidoEnviado[]; relogio: string; vazio: string | undefined }) {
   return (
     <CartaoDaAba aba="enviados" subtitulo="Do envio até o faturamento. A situação volta do ERP a cada atualização dos dados.">
       <TabelaResponsiva
@@ -96,7 +128,7 @@ function Enviados({ pedidos, relogio }: { pedidos: PedidoEnviado[]; relogio: str
         itens={pedidos}
         chaveDe={(pedido) => pedido.numero}
         detalheDe={(pedido) => <DetalheDoEnviado pedido={pedido} relogio={relogio} />}
-        vazio="Nenhum pedido enviado pelo CRM ainda."
+        vazio={vazio ?? "Nenhum pedido enviado pelo CRM ainda."}
         ordemInicial={{ coluna: "Enviado", sentido: "decrescente" }}
         colunas={[
           { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
@@ -119,14 +151,14 @@ function Enviados({ pedidos, relogio }: { pedidos: PedidoEnviado[]; relogio: str
   );
 }
 
-function Rascunhos({ rascunhos, relogio, recarregar }: { rascunhos: Rascunho[]; relogio: string; recarregar: () => void }) {
+function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascunho[]; relogio: string; recarregar: () => void; vazio: string | undefined }) {
   return (
     <CartaoDaAba aba="rascunhos" subtitulo="Pedidos começados e ainda não enviados. No protótipo, ficam só até recarregar a página.">
       <TabelaResponsiva
         descricao="Rascunhos de pedido"
         itens={rascunhos}
         chaveDe={(rascunho) => rascunho.id}
-        vazio="Nenhum rascunho. Os pedidos começados e não enviados aparecem aqui."
+        vazio={vazio ?? "Nenhum rascunho. Os pedidos começados e não enviados aparecem aqui."}
         ordemInicial={{ coluna: "Atualizado", sentido: "decrescente" }}
         colunas={[
           {
@@ -161,7 +193,7 @@ function AcoesDoRascunho({ rascunho, aoExcluir }: { rascunho: Rascunho; aoExclui
   );
 }
 
-function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
+function EmAberto({ pedidos, hoje, vazio }: { pedidos: PedidoNoErp[]; hoje: string; vazio: string | undefined }) {
   return (
     <CartaoDaAba
       aba="emAberto"
@@ -172,7 +204,7 @@ function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
         itens={pedidos}
         chaveDe={(pedido) => pedido.numero}
         detalheDe={(pedido) => <DetalheDoPedidoNoErp pedido={pedido} hoje={hoje} />}
-        vazio="Nenhum pedido em aberto."
+        vazio={vazio ?? "Nenhum pedido em aberto."}
         ordemInicial={{ coluna: "Entrega", sentido: "crescente" }}
         colunas={[
           { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
@@ -186,7 +218,7 @@ function EmAberto({ pedidos, hoje }: { pedidos: PedidoNoErp[]; hoje: string }) {
   );
 }
 
-function Faturados({ notas, hoje }: { notas: NotaFaturada[]; hoje: string }) {
+function Faturados({ notas, hoje, vazio }: { notas: NotaFaturada[]; hoje: string; vazio: string | undefined }) {
   return (
     <CartaoDaAba aba="faturados" subtitulo="Notas dos últimos 45 dias.">
       <TabelaResponsiva
@@ -194,7 +226,7 @@ function Faturados({ notas, hoje }: { notas: NotaFaturada[]; hoje: string }) {
         itens={notas}
         chaveDe={(nota) => nota.id}
         detalheDe={(nota) => <DetalheDaNota nota={nota} />}
-        vazio="Nenhuma nota nos últimos 45 dias."
+        vazio={vazio ?? "Nenhuma nota nos últimos 45 dias."}
         ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
         colunas={[
           { titulo: "Nota", ordenarPor: (nota) => nota.numero, celula: (nota) => <Identificacao titulo={`NF ${nota.numero}`} detalhe={nota.cliente.nome} /> },

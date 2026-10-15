@@ -24,6 +24,7 @@ import {
   salvarRascunho,
 } from "../dados/api";
 import { PedidoBloqueado } from "../dados/fonteDeDados";
+import { correspondeAoClienteOuCidade } from "../dados/busca";
 import { LIMITE_DA_OBSERVACAO, problemasDoPedido, totalDoPedido, valorDaLinha } from "../dados/pedido";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { CatalogoDoCliente, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
@@ -382,10 +383,7 @@ function EscolherCliente() {
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   const [busca, setBusca] = useState("");
   if (!clientes || !situacao) return <Carregando />;
-  const termo = normalizarParaBusca(busca.trim());
-  const visiveis = clientes.filter((cliente) =>
-    [cliente.nome, cliente.codigoErp ?? "", cliente.cidade].some((campo) => normalizarParaBusca(campo).includes(termo)),
-  );
+  const visiveis = clientes.filter((cliente) => correspondeAoClienteOuCidade(cliente, busca));
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina antes={<Voltar para="/pedidos" rotulo="Pedidos" />} titulo="Novo pedido" descricao="Para qual cliente é o pedido?" />

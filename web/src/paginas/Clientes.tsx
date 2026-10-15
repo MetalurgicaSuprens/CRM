@@ -12,10 +12,11 @@ import { Variacao } from "../componentes/Variacao";
 import type { ColunaOrdenavel, Ordem } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
+import { correspondeAoClienteOuCidade } from "../dados/busca";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { ClienteResumo, Semestre, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarCodigoDoCliente, formatarData, formatarTempoDesde, normalizarParaBusca } from "../formato";
+import { formatarCodigoDoCliente, formatarData, formatarTempoDesde } from "../formato";
 import { AmostraReferencia, Sparkline } from "../graficos/Sparkline";
 import { Carregando } from "./Carregando";
 import estilos from "./Clientes.module.css";
@@ -51,7 +52,7 @@ export function Clientes() {
   const filtro = lerFiltro(parametros.get("situacao"));
 
   const filtrados = useMemo(
-    () => (clientes ?? []).filter((c) => (filtro === "todas" || c.situacao === filtro) && correspondeABusca(c, busca)),
+    () => (clientes ?? []).filter((c) => (filtro === "todas" || c.situacao === filtro) && correspondeAoClienteOuCidade(c, busca)),
     [clientes, filtro, busca],
   );
   const ordenacao = useOrdenacao(filtrados, Object.values(COLUNAS), { inicial: MAIOR_FATURAMENTO });
@@ -172,8 +173,3 @@ function contar(clientes: ClienteResumo[], filtro: FiltroSituacao): number {
   return filtro === "todas" ? clientes.length : clientes.filter((c) => c.situacao === filtro).length;
 }
 
-function correspondeABusca(cliente: ClienteResumo, busca: string): boolean {
-  const termo = normalizarParaBusca(busca.trim());
-  if (!termo) return true;
-  return [cliente.nome, cliente.codigoErp ?? "", cliente.cidade].some((campo) => normalizarParaBusca(campo).includes(termo));
-}

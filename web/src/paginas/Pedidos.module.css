@@ -4,6 +4,21 @@
   gap: var(--esp-5);
 }
 
+.ferramentas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+/* No celular, a busca ocupa a linha toda (o tamanho padrão vem de CampoDeBusca) */
+@media (max-width: 640px) {
+  .busca {
+    max-width: none;
+    flex-basis: 100%;
+  }
+}
+
 .suave {
   font-size: var(--tam-legenda);
   color: var(--cor-texto-suave);
