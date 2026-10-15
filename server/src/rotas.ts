@@ -1,5 +1,7 @@
+import type { DatabaseSync } from "node:sqlite";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
+import { auditar } from "./auditoria.ts";
 import type { FotoAtual } from "./foto/fotoAtual.ts";
 import { lerAnalises } from "./leituras/analises.ts";
 import { lerCatalogo } from "./leituras/catalogo.ts";
@@ -26,7 +28,7 @@ const PARAMETRO_CLIENTE = {
   additionalProperties: false,
 } as const;
 
-export function registrarRotas(app: FastifyInstance, foto: FotoAtual): void {
+export function registrarRotas(app: FastifyInstance, { foto, banco }: { foto: FotoAtual; banco: DatabaseSync }): void {
   app.get("/api/situacao", DO_REPRESENTANTE, (requisicao) => lerSituacao(foto.abrir(), sessaoDa(requisicao)));
   app.get("/api/painel", DO_REPRESENTANTE, (requisicao) => lerPainel(foto.abrir(), sessaoDa(requisicao)));
   app.get("/api/clientes", DO_REPRESENTANTE, (requisicao) => lerCarteira(foto.abrir(), sessaoDa(requisicao)));
@@ -34,8 +36,11 @@ export function registrarRotas(app: FastifyInstance, foto: FotoAtual): void {
     "/api/clientes/:codigo",
     { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_CLIENTE } },
     (requisicao, resposta) => {
-      const ficha = lerFicha(foto.abrir(), sessaoDa(requisicao), requisicao.params.codigo);
-      return ficha ?? resposta.code(404).send(CLIENTE_FORA_DA_CARTEIRA);
+      const sessao = sessaoDa(requisicao);
+      const ficha = lerFicha(foto.abrir(), sessao, requisicao.params.codigo);
+      if (!ficha) return resposta.code(404).send(CLIENTE_FORA_DA_CARTEIRA);
+      auditar(banco, { usuario: sessao.idDoUsuario, evento: "ficha_consultada", alvo: requisicao.params.codigo });
+      return ficha;
     },
   );
   app.get<{ Params: { codigo: string } }>(
