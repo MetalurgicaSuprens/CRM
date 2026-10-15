@@ -1,5 +1,5 @@
 import type { Foto } from "dominio/esquemaDaFoto";
-import type { ItemEmAbertoNoErp, NotaRecente, PedidoEmAbertoNoErp, PedidoFaturadoNoErp } from "../erp/tipos.ts";
+import type { ItemDaNota, ItemEmAbertoNoErp, NotaRecente, PedidoEmAbertoNoErp, PedidoFaturadoNoErp } from "../erp/tipos.ts";
 import type { Referencia } from "./referencia.ts";
 
 /*
@@ -65,22 +65,47 @@ export function montarPedidos(
   };
 }
 
+export type TabelasDosPedidosFaturados = Pick<Foto, "pedido_faturado" | "pedido_faturado_item">;
+
 /**
- * O histórico de pedidos da ficha. O pedido que ainda tem saldo, de qualquer representante, é "em
- * aberto" e fica só em `pedido_aberto`; o de cliente fora da carteira dos autorizados não aparece em
- * ficha nenhuma e não entra.
+ * O histórico de pedidos da ficha, com os itens que a linha mostra ao abrir. O pedido que ainda tem
+ * saldo, de qualquer representante, é "em aberto" e fica só em `pedido_aberto`; o de cliente fora da
+ * carteira dos autorizados não aparece em ficha nenhuma e não entra.
  */
 export function montarPedidosFaturados(
   faturados: readonly PedidoFaturadoNoErp[],
   emAberto: readonly PedidoEmAbertoNoErp[],
   idDoCliente: (chave: string) => string | null,
-): Foto["pedido_faturado"] {
+): TabelasDosPedidosFaturados {
   const comSaldo = new Set(emAberto.map((pedido) => pedido.pedido));
-  return faturados.flatMap(({ pedido, chave, representante, emissao, faturadoEm, itens, valor }) => {
-    const cliente = idDoCliente(chave);
-    if (!cliente || comSaldo.has(pedido)) return [];
-    return [{ pedido, representante, cliente, emissao, faturado_em: faturadoEm, itens, valor }];
+  const daFicha = faturados.flatMap((pedido) => {
+    const cliente = idDoCliente(pedido.chave);
+    return cliente && !comSaldo.has(pedido.pedido) ? [{ ...pedido, cliente, itens: somarPorProduto(pedido.itens) }] : [];
   });
+  return {
+    pedido_faturado: daFicha.map(({ pedido, representante, cliente, emissao, faturadoEm, itens }) => ({
+      pedido,
+      representante,
+      cliente,
+      emissao,
+      faturado_em: faturadoEm,
+      itens: itens.length,
+      valor: somarValores(itens),
+    })),
+    pedido_faturado_item: daFicha.flatMap(({ pedido, itens }) =>
+      itens.map(({ produto, pecas, valor }, i) => ({ pedido, ordem: i + 1, produto, pecas, valor })),
+    ),
+  };
+}
+
+/** O mesmo produto em mais de uma nota do pedido vira um item só, na posição da primeira vez. */
+function somarPorProduto(itens: readonly ItemDaNota[]): ItemDaNota[] {
+  const porProduto = new Map<string, ItemDaNota>();
+  for (const item of itens) {
+    const soma = porProduto.get(item.produto);
+    porProduto.set(item.produto, soma ? { ...soma, pecas: soma.pecas + item.pecas, valor: soma.valor + item.valor } : item);
+  }
+  return [...porProduto.values()];
 }
 
 function somarValores(itens: readonly { valor: number }[]): number {

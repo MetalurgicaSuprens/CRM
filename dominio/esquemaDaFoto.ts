@@ -4,7 +4,7 @@
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
  */
 
-export const VERSAO_DO_ESQUEMA = 7;
+export const VERSAO_DO_ESQUEMA = 8;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -171,6 +171,15 @@ CREATE TABLE pedido_faturado (
 ) STRICT;
 CREATE INDEX pedido_faturado_cliente ON pedido_faturado (cliente);
 
+CREATE TABLE pedido_faturado_item (
+  pedido TEXT NOT NULL,
+  ordem INTEGER NOT NULL,
+  produto TEXT NOT NULL,
+  pecas REAL NOT NULL,
+  valor REAL NOT NULL,
+  PRIMARY KEY (pedido, ordem)
+) STRICT;
+
 CREATE TABLE nota (
   nota TEXT NOT NULL,
   serie TEXT NOT NULL,
@@ -291,6 +300,8 @@ export type Foto = {
     itens: number;
     valor: number;
   }[];
+  /** Os produtos de cada pedido faturado, um por produto, na ordem em que foram faturados. */
+  pedido_faturado_item: { pedido: string; ordem: number; produto: string; pecas: number; valor: number }[];
   nota: {
     nota: string;
     serie: string;

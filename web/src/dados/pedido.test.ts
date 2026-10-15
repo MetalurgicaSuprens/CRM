@@ -6,6 +6,7 @@ import {
   pecasEmCentos,
   precoDoCento,
   problemasDoPedido,
+  resumirPorFamilia,
   totalDoPedido,
   valorDaLinha,
   type LinhaDoPedido,
@@ -54,6 +55,28 @@ describe("valorDaLinha e totalDoPedido", () => {
 
   it("soma as linhas", () => {
     expect(totalDoPedido([linha({ quantidade: 200, precoCento: 95 }), linha({ quantidade: 50, precoCento: 260 })])).toBe(320);
+  });
+});
+
+describe("resumirPorFamilia", () => {
+  it("soma as peças e o valor dos itens de cada família", () => {
+    const resumo = resumirPorFamilia([
+      { familia: "FLEXIL", pecas: 1_000, valor: 700 },
+      { familia: "PRESIL", pecas: 200, valor: 900 },
+      { familia: "FLEXIL", pecas: 500, valor: 350 },
+    ]);
+    expect(resumo).toEqual([
+      { familia: "FLEXIL", pecas: 1_500, valor: 1_050 },
+      { familia: "PRESIL", pecas: 200, valor: 900 },
+    ]);
+  });
+
+  it("começa pela família de maior valor, não pela de mais peças", () => {
+    const resumo = resumirPorFamilia([
+      { familia: "MICRO", pecas: 5_000, valor: 400 },
+      { familia: "RADIAL", pecas: 100, valor: 2_000 },
+    ]);
+    expect(resumo.map(({ familia }) => familia)).toEqual(["RADIAL", "MICRO"]);
   });
 });
 

@@ -104,10 +104,14 @@ export type PedidoDaFicha = {
   emissao: string;
   /** Faturado: a última nota. Em aberto: a entrega mais próxima. No CRM: a entrega pedida, se houver. */
   entrega: string | null;
-  itens: number;
+  /** O que a linha mostra ao abrir, na ordem do pedido. No faturado, um por produto, com as notas do período somadas. */
+  itens: ItemDaFicha[];
   /** Faturado: as notas do pedido no período. Em aberto: o saldo. No CRM: o total do SGI ou o estimado. */
   valor: number;
 };
+
+/** Item de um pedido da ficha; a entrega só no pedido em aberto. */
+export type ItemDaFicha = ItemDoErp & { entrega: string | null };
 
 export type FichaCliente = ClienteResumo & {
   razaoSocial: string;

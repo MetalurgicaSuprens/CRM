@@ -2,13 +2,14 @@ import { dataDoMomento, momentoEmBrasilia } from "dominio/datas";
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
-import { STATUS_NA_FICHA, totalDoPedido } from "./pedido";
+import { STATUS_NA_FICHA, totalDoPedido, valorDaLinha } from "./pedido";
 import { ROTULOS_DE_MERCADO } from "./rotulos";
 import type {
   CatalogoDoCliente,
   ClienteResumo,
   EtapaDoPedido,
   FichaCliente,
+  ItemDaFicha,
   ItemDoPedido,
   ItemEnviado,
   PainelDePedidos,
@@ -67,6 +68,8 @@ export function painelDePedidosFicticio(): PainelDePedidos {
 /** Os rascunhos e os pedidos enviados do cliente, como linhas do histórico da ficha. */
 export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
   garantirRascunhoDeExemplo();
+  const catalogo = catalogoDoClienteFicticio(codigoCliente);
+  if (!catalogo) return [];
   const doCliente = ({ cliente }: { cliente: ClienteResumo }) => cliente.codigo === codigoCliente;
   const rascunhosDoCliente = [...rascunhos.values()].filter(doCliente).map(
     (rascunho): PedidoDaFicha => ({
@@ -75,7 +78,7 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
       status: "rascunho",
       emissao: dataDoMomento(rascunho.atualizadoEm),
       entrega: rascunho.entrega,
-      itens: rascunho.itens.length,
+      itens: itensDaFicha(itensEnviados(rascunho.itens, catalogo)),
       valor: rascunho.totalEstimado,
     }),
   );
@@ -90,7 +93,7 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
         status,
         emissao: dataDoMomento(pedido.enviadoEm),
         entrega: pedido.entrega,
-        itens: pedido.itens.length,
+        itens: itensDaFicha(pedido.itens),
         valor: pedido.totalSgi ?? pedido.totalEstimado,
       },
     ];
@@ -254,6 +257,11 @@ function linhasDe(itens: ItemDoPedido[], catalogo: CatalogoDoCliente) {
     const produto = catalogo.produtos.find((candidato) => candidato.codigo === item.codigo);
     return produto ? [{ ...item, embalagem: produto.embalagem, precoCento: produto.precoCento }] : [];
   });
+}
+
+/** Os itens do pedido do CRM com o valor pelo preço do cento, como os do ERP; sem entrega por item. */
+function itensDaFicha(itens: ItemEnviado[]): ItemDaFicha[] {
+  return itens.map((item, i) => ({ ordem: i + 1, codigo: item.codigo, familia: item.familia, pecas: item.quantidade, valor: valorDaLinha(item), entrega: null }));
 }
 
 function itensEnviados(itens: ItemDoPedido[], catalogo: CatalogoDoCliente): ItemEnviado[] {

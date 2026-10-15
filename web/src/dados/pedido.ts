@@ -43,6 +43,19 @@ export function totalDoPedido(linhas: readonly LinhaDoPedido[]): number {
   return linhas.reduce((total, linha) => total + valorDaLinha(linha), 0);
 }
 
+/** Peças e valor de uma família no pedido; serve também para um item só. */
+export type TotalDaFamilia = { familia: string; pecas: number; valor: number };
+
+/** O resumo do pedido aberto na lista: as famílias, da de maior valor à de menor, com a soma de cada uma. */
+export function resumirPorFamilia(itens: readonly TotalDaFamilia[]): TotalDaFamilia[] {
+  const porFamilia = new Map<string, TotalDaFamilia>();
+  for (const { familia, pecas, valor } of itens) {
+    const total = porFamilia.get(familia) ?? { familia, pecas: 0, valor: 0 };
+    porFamilia.set(familia, { familia, pecas: total.pecas + pecas, valor: total.valor + valor });
+  }
+  return [...porFamilia.values()].sort((a, b) => b.valor - a.valor);
+}
+
 export type PassoDoAndamento = {
   etapa: EtapaDoPedido;
   estado: "feito" | "atual" | "futuro";

@@ -126,6 +126,12 @@ export function montarFotoDeTeste(): Foto {
       { pedido: "999001", ordem: 1, produto: "PRODUTO-SO-DE-B", pecas: 700, entrega: "2026-10-21", valor: 7_000 },
       { pedido: "777001", ordem: 1, produto: "F-100", pecas: 300, entrega: "2026-11-05", valor: 3_000 },
     ],
+    pedido_faturado_item: [
+      { pedido: "100003", ordem: 1, produto: "F-100", pecas: 2_000, valor: 3_000 },
+      { pedido: "100003", ordem: 2, produto: "P-200", pecas: 1_000, valor: 1_500 },
+      { pedido: "999003", ordem: 1, produto: "PRODUTO-SO-DE-B", pecas: 100, valor: 900 },
+      { pedido: "999004", ordem: 1, produto: "PRODUTO-SO-DE-B", pecas: 100, valor: 800 },
+    ],
     pedido_faturado: [
       { pedido: "100003", representante: "1401", cliente: CLIENTE_DE_A, emissao: "2026-09-02", faturado_em: "2026-09-10", itens: 3, valor: 4_500 },
       { pedido: "999003", representante: "9999", cliente: CLIENTE_DE_B, emissao: "2026-09-03", faturado_em: "2026-09-11", itens: 1, valor: 900 },

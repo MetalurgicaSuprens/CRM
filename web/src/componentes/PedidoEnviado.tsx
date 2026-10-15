@@ -2,7 +2,7 @@ import { passosDoAndamento, valorDaLinha, type PassoDoAndamento } from "../dados
 import type { PedidoEnviado } from "../dados/tipos";
 import { formatarData, formatarMomento, formatarNumero } from "../formato";
 import { ETAPAS } from "./EtapaDoPedido";
-import { Identificacao, TabelaResponsiva } from "./TabelaResponsiva";
+import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva } from "./TabelaResponsiva";
 import { Valor } from "./Valor";
 import estilos from "./PedidoEnviado.module.css";
 
@@ -56,6 +56,7 @@ export function ItensDoPedidoEnviado({ pedido }: { pedido: PedidoEnviado }) {
         itens={pedido.itens}
         chaveDe={(item) => item.codigo}
         vazio="Pedido sem itens."
+        parametroDaOrdem={ORDEM_DOS_ITENS}
         colunas={[
           { titulo: "Produto", ordenarPor: (item) => item.codigo, celula: (item) => <Identificacao titulo={item.codigo} detalhe={[item.familia, item.medida].filter(Boolean).join(" · ")} /> },
           { titulo: "Peças", numerica: true, largura: 5, ordenarPor: (item) => item.quantidade, celula: (item) => formatarNumero(item.quantidade) },

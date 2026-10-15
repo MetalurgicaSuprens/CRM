@@ -76,8 +76,30 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     const { pedidos } = (await app.inject({ method: "GET", url: `/api/clientes/${CLIENTE_DE_A}` })).json();
     // O 999004 é do mesmo cliente, mas de B: fica de fora, como o pedido em aberto de outro representante.
     expect(pedidos).toEqual([
-      { id: "100001", numero: "100001", status: "em_aberto", emissao: "2026-10-01", entrega: "2026-10-20", itens: 2, valor: 5_000 },
-      { id: "100003", numero: "100003", status: "faturado", emissao: "2026-09-02", entrega: "2026-09-10", itens: 3, valor: 4_500 },
+      {
+        id: "100001",
+        numero: "100001",
+        status: "em_aberto",
+        emissao: "2026-10-01",
+        entrega: "2026-10-20",
+        itens: [
+          { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 1_000, valor: 3_000, entrega: "2026-10-20" },
+          { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 500, valor: 2_000, entrega: "2026-10-27" },
+        ],
+        valor: 5_000,
+      },
+      {
+        id: "100003",
+        numero: "100003",
+        status: "faturado",
+        emissao: "2026-09-02",
+        entrega: "2026-09-10",
+        itens: [
+          { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 2_000, valor: 3_000, entrega: null },
+          { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 1_000, valor: 1_500, entrega: null },
+        ],
+        valor: 4_500,
+      },
     ]);
   });
 

@@ -488,7 +488,17 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
 }
 
 function pedidosDaFicha(cliente: ClienteFicticio, contexto: Contexto): PedidoDaFicha[] {
-  const emAberto = cliente.pedidos.map((pedido) => ({ ...pedido, id: pedido.numero, status: "em_aberto" as const }));
+  const emAberto = cliente.pedidos.map(
+    (pedido): PedidoDaFicha => ({
+      id: pedido.numero,
+      numero: pedido.numero,
+      status: "em_aberto",
+      emissao: pedido.emissao,
+      entrega: pedido.entrega,
+      itens: itensDoPedido(pedido, cliente.pesosFamilias),
+      valor: pedido.valor,
+    }),
+  );
   return [...emAberto, ...pedidosFaturados(cliente, contexto)];
 }
 
@@ -504,6 +514,7 @@ function pedidosFaturados(cliente: ClienteFicticio, { hoje, mesAtual }: Contexto
   return compras.map((data) => {
     const mes = mesDe(data);
     const comprasDoMes = compras.filter((outra) => mesDe(outra) === mes).length;
+    const valor = Math.round((cliente.mensal.find((mensal) => mensal.mes === mes)?.valor ?? 0) / comprasDoMes);
     numero += aleatorio.inteiro(50, 900);
     return {
       id: String(numero),
@@ -511,8 +522,8 @@ function pedidosFaturados(cliente: ClienteFicticio, { hoje, mesAtual }: Contexto
       status: "faturado",
       emissao: somarDias(data, -aleatorio.inteiro(2, 12)),
       entrega: data,
-      itens: aleatorio.inteiro(2, 14),
-      valor: Math.round((cliente.mensal.find((mensal) => mensal.mes === mes)?.valor ?? 0) / comprasDoMes),
+      itens: sortearItens(aleatorio, valor, aleatorio.inteiro(2, 14), cliente.pesosFamilias).map((item) => ({ ...item, entrega: null })),
+      valor,
     };
   });
 }

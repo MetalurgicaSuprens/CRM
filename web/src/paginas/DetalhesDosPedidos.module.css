@@ -26,7 +26,35 @@
   color: var(--cor-texto-2);
 }
 
-/* O pedido de origem à esquerda e a ficha do cliente à direita, mesmo sozinha */
+/* O resumo por família: um cartão branco por família, lado a lado, que quebram a linha quando não cabem */
+.familias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+.familia {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--esp-2) var(--esp-3);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  font-size: var(--tam-pequeno);
+  font-variant-numeric: tabular-nums;
+}
+
+.nomeDaFamilia {
+  font-weight: 600;
+}
+
+.numerosDaFamilia {
+  color: var(--cor-texto-2);
+  white-space: nowrap;
+}
+
+/* O pedido de origem à esquerda e o caminho à direita, mesmo sozinho */
 .rodape {
   display: flex;
   flex-wrap: wrap;
@@ -39,7 +67,7 @@
   color: var(--cor-texto-2);
 }
 
-.ficha {
+.caminho {
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -49,7 +77,7 @@
   white-space: nowrap;
 }
 
-.ficha:hover {
+.caminho:hover {
   color: var(--cor-texto);
 }
 

@@ -80,22 +80,41 @@ describe("montarPedidos", () => {
 
 describe("montarPedidosFaturados", () => {
   function faturado(pedido: string, chave: string): PedidoFaturadoNoErp {
-    return { pedido, chave, representante: "1401", emissao: "2026-09-02", faturadoEm: "2026-09-10", itens: 3, valor: 4_500 };
+    return {
+      pedido,
+      chave,
+      representante: "1401",
+      emissao: "2026-09-02",
+      faturadoEm: "2026-09-10",
+      // Duas notas: o produto A veio nas duas.
+      itens: [
+        { produto: "A", familia: "FLEXIL", pecas: 1_000, valor: 2_000 },
+        { produto: "B", familia: "PRESIL", pecas: 200, valor: 1_500 },
+        { produto: "A", familia: "FLEXIL", pecas: 500, valor: 1_000 },
+      ],
+    };
   }
   const emAberto: PedidoEmAbertoNoErp = { pedido: "1801234", chave: "1/123", representante: "9999", emissao: "2026-09-01", itens: [item("A", "2026-10-20", 1_000)] };
   const idDoCliente = (chave: string) => (chave === "1/123" ? "id-do-cliente" : null);
 
-  it("grava o pedido faturado com o id do cliente", () => {
-    expect(montarPedidosFaturados([faturado("1801000", "1/123")], [], idDoCliente)).toEqual([
-      { pedido: "1801000", representante: "1401", cliente: "id-do-cliente", emissao: "2026-09-02", faturado_em: "2026-09-10", itens: 3, valor: 4_500 },
+  it("grava o pedido faturado com o id do cliente, os produtos e a soma das notas", () => {
+    expect(montarPedidosFaturados([faturado("1801000", "1/123")], [], idDoCliente).pedido_faturado).toEqual([
+      { pedido: "1801000", representante: "1401", cliente: "id-do-cliente", emissao: "2026-09-02", faturado_em: "2026-09-10", itens: 2, valor: 4_500 },
+    ]);
+  });
+
+  it("soma o produto que veio em mais de uma nota num item só, na posição da primeira vez", () => {
+    expect(montarPedidosFaturados([faturado("1801000", "1/123")], [], idDoCliente).pedido_faturado_item).toEqual([
+      { pedido: "1801000", ordem: 1, produto: "A", pecas: 1_500, valor: 3_000 },
+      { pedido: "1801000", ordem: 2, produto: "B", pecas: 200, valor: 1_500 },
     ]);
   });
 
   it("deixa de fora o pedido que ainda tem saldo, de qualquer representante: ele é o em aberto", () => {
-    expect(montarPedidosFaturados([faturado("1801234", "1/123")], [emAberto], idDoCliente)).toEqual([]);
+    expect(montarPedidosFaturados([faturado("1801234", "1/123")], [emAberto], idDoCliente)).toEqual({ pedido_faturado: [], pedido_faturado_item: [] });
   });
 
   it("deixa de fora o pedido de cliente fora da carteira dos autorizados, que nenhuma ficha mostra", () => {
-    expect(montarPedidosFaturados([faturado("1801000", "1/999")], [], idDoCliente)).toEqual([]);
+    expect(montarPedidosFaturados([faturado("1801000", "1/999")], [], idDoCliente)).toEqual({ pedido_faturado: [], pedido_faturado_item: [] });
   });
 });

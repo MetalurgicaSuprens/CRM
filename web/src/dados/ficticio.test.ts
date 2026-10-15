@@ -96,6 +96,15 @@ describe("histórico de pedidos da ficha", () => {
     expect(Math.abs(somaDosPedidos - faturadoNosMeses)).toBeLessThanOrEqual(faturados.length);
   });
 
+  it("abre cada pedido do ERP nos itens dele, que somam o valor do pedido", () => {
+    const pedidos = fichaFicticia(maior?.codigo ?? "")?.pedidos ?? [];
+    expect(pedidos.length).toBeGreaterThan(0);
+    for (const pedido of pedidos) {
+      expect(pedido.itens.length, pedido.id).toBeGreaterThan(0);
+      expect(pedido.itens.reduce((soma, item) => soma + item.valor, 0), pedido.id).toBeCloseTo(pedido.valor, 0);
+    }
+  });
+
   it("traz o rascunho do cliente, junto dos pedidos do ERP", async () => {
     const codigo = maior?.codigo ?? "";
     const rascunho = salvarRascunhoFicticio({ id: null, codigoCliente: codigo, itens: [], entrega: null, observacao: "" });

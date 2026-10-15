@@ -10,6 +10,8 @@
   --cor-fundo: #f3f3f2;
   --cor-superficie: #ffffff;
   --cor-superficie-2: #f6f6f5;
+  /* Um tom acima de --cor-superficie-2: o cabeçalho da linha aberta sobre os detalhes dela (texto suave a 4,6:1) */
+  --cor-superficie-3: #efefed;
   --cor-linha: #e6e6e4;
   --cor-linha-forte: #cfcfcc;
   /* Contorno dos cartões: quase invisível, a sombra é que separa do fundo */

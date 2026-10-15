@@ -23,6 +23,7 @@ import { Indicador } from "../componentes/Indicador";
 import { MotivoDoRisco, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { AvisoDePedidoBloqueado, SeloDoStatus } from "../componentes/StatusDoCliente";
 import { STATUS_DO_PEDIDO, SeloDoPedido } from "../componentes/StatusDoPedido";
+import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
@@ -32,12 +33,13 @@ import { useOrdenacao } from "../componentes/useOrdenacao";
 import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
-import type { FichaCliente as Ficha, Mercado, PedidoDaFicha, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
+import type { FichaCliente as Ficha, Mercado, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigoDoCliente, formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
 import { BarrasMensais } from "../graficos/BarrasMensais";
 import { Carregando } from "./Carregando";
+import { DetalheDoPedidoDaFicha } from "./DetalhesDosPedidos";
 import estilos from "./FichaCliente.module.css";
 
 
@@ -91,7 +93,7 @@ export function FichaCliente() {
         <TabelaProdutos ficha={ficha} hoje={situacao.hoje} />
       </Cartao>
       <Cartao titulo="Pedidos" icone={ClipboardList} subtitulo="Últimos 12 meses e o mês atual, e todos os em aberto">
-        <TabelaPedidos ficha={ficha} />
+        <TabelaPedidos ficha={ficha} hoje={situacao.hoje} />
       </Cartao>
     </div>
   );
@@ -275,64 +277,26 @@ function TabelaProdutos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
   );
 }
 
-const COLUNAS_DE_PEDIDOS = {
-  pedido: { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero },
-  status: { titulo: "Status", ordenarPor: (pedido) => STATUS_DO_PEDIDO[pedido.status].rotulo },
-  emissao: { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao },
-  entrega: { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega },
-  itens: { titulo: "Itens", numerica: true, ordenarPor: (pedido) => pedido.itens },
-  valor: { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor },
-} satisfies Record<string, ColunaOrdenavel<PedidoDaFicha>>;
-
-function TabelaPedidos({ ficha }: { ficha: Ficha }) {
-  const ordenacao = useOrdenacao(ficha.pedidos, Object.values(COLUNAS_DE_PEDIDOS), {
-    inicial: { coluna: COLUNAS_DE_PEDIDOS.emissao.titulo, sentido: "decrescente" },
-    parametro: "ordem-pedidos",
-  });
-  if (ficha.pedidos.length === 0) return <p className={estilos.vazio}>Nenhum pedido nos últimos 12 meses.</p>;
+/** O histórico de pedidos do cliente; a linha abre o resumo por família e os itens, como em Pedidos. */
+function TabelaPedidos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
   return (
-    <div className={estilos.rolagem}>
-      <table className={estilos.tabela}>
-        <thead>
-          <tr>
-            <th scope="col">
-              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.pedido} ordenacao={ordenacao} />
-            </th>
-            <th scope="col">
-              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.status} ordenacao={ordenacao} />
-            </th>
-            <th scope="col" className={estilos.opcional}>
-              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.emissao} ordenacao={ordenacao} />
-            </th>
-            <th scope="col" className={estilos.opcional}>
-              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.entrega} ordenacao={ordenacao} />
-            </th>
-            <th scope="col" className={`${estilos.numero} ${estilos.opcional}`}>
-              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.itens} ordenacao={ordenacao} />
-            </th>
-            <th scope="col" className={estilos.numero}>
-              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.valor} ordenacao={ordenacao} />
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {ordenacao.ordenados.map((pedido) => (
-            <tr key={pedido.id}>
-              <th scope="row">{pedido.numero ?? "—"}</th>
-              <td>
-                <SeloDoPedido status={pedido.status} />
-              </td>
-              <td className={estilos.opcional}>{formatarData(pedido.emissao)}</td>
-              <td className={estilos.opcional}>{pedido.entrega ? formatarData(pedido.entrega) : "—"}</td>
-              <td className={`${estilos.numero} ${estilos.opcional}`}>{pedido.itens}</td>
-              <td className={estilos.numero}>
-                <Valor valor={pedido.valor} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <TabelaResponsiva
+      descricao={`Pedidos de ${ficha.nome}`}
+      itens={ficha.pedidos}
+      chaveDe={(pedido) => pedido.id}
+      detalheDe={(pedido) => <DetalheDoPedidoDaFicha pedido={pedido} hoje={hoje} />}
+      vazio="Nenhum pedido nos últimos 12 meses."
+      ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
+      parametroDaOrdem="ordem-pedidos"
+      colunas={[
+        { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero ?? "—"} detalhe={null} /> },
+        { titulo: "Status", largura: 9, ordenarPor: (pedido) => STATUS_DO_PEDIDO[pedido.status].rotulo, celula: (pedido) => <SeloDoPedido status={pedido.status} /> },
+        { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
+        { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => (pedido.entrega ? formatarData(pedido.entrega) : "—") },
+        { titulo: "Itens", numerica: true, largura: 4.5, ordenarPor: (pedido) => pedido.itens.length, celula: (pedido) => pedido.itens.length },
+        { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} /> },
+      ]}
+    />
   );
 }
 

@@ -57,32 +57,45 @@ export async function lerNotasRecentes(oracle: Oracle, referencia: Referencia, a
 }
 
 /**
- * Pedidos com nota de venda nos 12 meses fechados e no corrente, um por linha: o histórico da ficha.
- * O cliente e o representante são os do pedido (VEPM), e o valor e os produtos, os das notas do
- * período. Nota sem pedido no VEPM fica de fora (nenhuma da Star Vendas, em 2026-10-15).
+ * Pedidos com nota de venda nos 12 meses fechados e no corrente, com as linhas dessas notas: o
+ * histórico da ficha. O cliente, o representante e a emissão são os do pedido (VEPM, alias O, porque
+ * P é o produto da família). Nota sem pedido no VEPM fica de fora (nenhuma da Star Vendas, em 2026-10-15).
  */
 export async function lerPedidosFaturados(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<PedidoFaturadoNoErp[]> {
   const lista = emLista("r", autorizados);
-  const representante = representanteDaVenda("P.VENDEDOR");
+  const representante = representanteDaVenda("O.VENDEDOR");
   const linhas = await oracle.consultar(
-    `SELECT P.EMP_FIL, P.NUMERO, P.CLIENTE, ${representante}, ${textoDaData("P.DT_PED")}, ${textoDaData("MAX(M.DT_EMISSAO)")},
-            COUNT(DISTINCT TRIM(D.C_PROD)), SUM(${VALOR_DO_ITEM})
+    `SELECT O.EMP_FIL, O.NUMERO, O.CLIENTE, ${representante}, ${textoDaData("O.DT_PED")}, ${textoDaData("M.DT_EMISSAO")},
+            TRIM(D.C_PROD), TRIM(G.GRP_DES), ${PECAS_DO_ITEM}, ${VALOR_DO_ITEM}
      ${ITENS_DAS_NOTAS}
-       JOIN ABC71.VEPM P ON P.EMP_FIL = M.EMP_FIL AND P.NUMERO = M.NRO_PEDIDO
-       LEFT JOIN ABC71.CRCL C ON C.EMP_FIL = P.EMP_FIL AND C.CLIENTE = P.CLIENTE
+       JOIN ABC71.VEPM O ON O.EMP_FIL = M.EMP_FIL AND O.NUMERO = M.NRO_PEDIDO
+       LEFT JOIN ABC71.CRCL C ON C.EMP_FIL = O.EMP_FIL AND C.CLIENTE = O.CLIENTE
+     ${FAMILIA_DO_ITEM}
       WHERE ${NOTA_DE_VENDA} AND M.DT_EMISSAO >= ${data("inicio")} AND ${representante} IN ${lista.sql}
-      GROUP BY P.EMP_FIL, P.NUMERO, P.CLIENTE, ${representante}, P.DT_PED`,
+      ORDER BY O.EMP_FIL, O.NUMERO, M.DT_EMISSAO, M.N_FISCAL, D.LINHA`,
     { ...lista.binds, inicio: referencia.inicio12 },
   );
-  return linhas.map((linha) => ({
-    pedido: String(numero(linha, 1)),
-    chave: chaveDoCliente(numero(linha, 0), numero(linha, 2)),
-    representante: String(numero(linha, 3)),
-    emissao: texto(linha, 4),
-    faturadoEm: texto(linha, 5),
-    itens: numero(linha, 6),
-    valor: numero(linha, 7),
-  }));
+  return agruparPorPedidoFaturado(linhas);
+}
+
+/** Uma linha por item de nota; o cabeçalho do pedido se repete em cada uma, e a última nota fica. */
+function agruparPorPedidoFaturado(linhas: Linha[]): PedidoFaturadoNoErp[] {
+  const pedidos = new Map<string, PedidoFaturadoNoErp>();
+  for (const linha of linhas) {
+    const chaveDoPedido = `${numero(linha, 0)}/${numero(linha, 1)}`;
+    const pedido = pedidos.get(chaveDoPedido) ?? {
+      pedido: String(numero(linha, 1)),
+      chave: chaveDoCliente(numero(linha, 0), numero(linha, 2)),
+      representante: String(numero(linha, 3)),
+      emissao: texto(linha, 4),
+      faturadoEm: texto(linha, 5),
+      itens: [],
+    };
+    pedido.faturadoEm = texto(linha, 5);
+    pedido.itens.push({ produto: texto(linha, 6), familia: textoOuNulo(linha, 7), pecas: numero(linha, 8), valor: numero(linha, 9) });
+    pedidos.set(chaveDoPedido, pedido);
+  }
+  return [...pedidos.values()];
 }
 
 /** Uma linha por item; o cabeçalho se repete em cada uma. */

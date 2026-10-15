@@ -85,10 +85,8 @@ export type PedidoFaturadoNoErp = {
   emissao: string;
   /** A última nota do pedido no período. */
   faturadoEm: string;
-  /** Produtos diferentes nas notas. */
-  itens: number;
-  /** As notas do pedido no período, pela regra do RELCUS001. */
-  valor: number;
+  /** As linhas das notas do pedido no período, em ordem; o mesmo produto pode vir em mais de uma. */
+  itens: ItemDaNota[];
 };
 
 /** Item de uma nota de venda. */

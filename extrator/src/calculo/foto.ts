@@ -34,7 +34,7 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
     },
     representante: autorizados.map((codigo) => ({ codigo, nome: dados.representantes.get(codigo) ?? "" })),
     ...clientes,
-    produto: juntarProdutos(clientes.produto, [...pedidos, ...dados.notas].flatMap((documento) => documento.itens)),
+    produto: juntarProdutos(clientes.produto, [...pedidos, ...dados.notas, ...dados.pedidosFaturados].flatMap((documento) => documento.itens)),
     painel_mes: montarPainel(dados.vendasDoDia, autorizados, referencia).map((mes) => ({
       representante: mes.representante,
       mes: mes.mes,
@@ -44,6 +44,6 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
       ritmo_por_dia_util: mes.ritmoPorDiaUtil,
     })),
     ...montarPedidos({ pedidos, notas: dados.notas }, referencia, idNaCarteira),
-    pedido_faturado: montarPedidosFaturados(dados.pedidosFaturados, dados.pedidos, idNaCarteira),
+    ...montarPedidosFaturados(dados.pedidosFaturados, dados.pedidos, idNaCarteira),
   };
 }

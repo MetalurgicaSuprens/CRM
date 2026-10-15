@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { ItemDoErp, ItemEmAberto, PainelDePedidos, PedidoDaFicha, StatusDoPedido } from "../../../web/src/dados/tipos.ts";
+import type { ItemDaFicha, ItemDoErp, ItemEmAberto, PainelDePedidos, PedidoDaFicha, StatusDoPedido } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
-import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, resumoDoCliente, texto, type Linha } from "./linhas.ts";
+import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, resumoDoCliente, texto, textoOuNulo, type Linha } from "./linhas.ts";
 
 /*
  * Pedidos do login: em aberto no ERP e notas dos últimos 45 dias, só os atribuídos aos códigos
@@ -71,26 +71,44 @@ export function lerPedidos(db: DatabaseSync, sessao: Sessao): PainelDePedidos {
 
 /**
  * O histórico da ficha: os pedidos em aberto e os faturados nos 12 meses, do cliente e atribuídos ao
- * login, do mais recente ao mais antigo. Quem chama já conferiu que o cliente é da carteira.
+ * login, do mais recente ao mais antigo, com os itens que a linha mostra ao abrir. Quem chama já
+ * conferiu que o cliente é da carteira.
  */
 export function lerPedidosDaFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): PedidoDaFicha[] {
   const { marcas, codigos } = escopo(sessao);
+  /** O mesmo filtro nas duas tabelas de pedido (x), cada uma com os parâmetros dela. */
+  const doCliente = `x.cliente = ? AND x.representante IN (${marcas})`;
+  const parametros = [codigoDoCliente, ...codigos, codigoDoCliente, ...codigos];
+  const itens = agruparPor(
+    lerLinhas(
+      db,
+      `SELECT i.pedido, i.ordem, i.produto, p.familia, i.pecas, i.valor, i.entrega
+         FROM pedido_aberto_item i JOIN pedido_aberto x ON x.pedido = i.pedido LEFT JOIN produto p ON p.produto = i.produto
+        WHERE ${doCliente}
+       UNION ALL
+       SELECT i.pedido, i.ordem, i.produto, p.familia, i.pecas, i.valor, NULL
+         FROM pedido_faturado_item i JOIN pedido_faturado x ON x.pedido = i.pedido LEFT JOIN produto p ON p.produto = i.produto
+        WHERE ${doCliente}
+       ORDER BY 1, 2`,
+      parametros,
+    ),
+    (linha) => texto(linha, "pedido"),
+    (linha): ItemDaFicha => ({ ...itemDoErp(linha), entrega: textoOuNulo(linha, "entrega") }),
+  );
   return lerLinhas(
     db,
-    `SELECT 'em_aberto' AS status, pedido, emissao, entrega, itens, valor
-       FROM pedido_aberto WHERE cliente = ? AND representante IN (${marcas})
+    `SELECT 'em_aberto' AS status, x.pedido, x.emissao, x.entrega, x.valor FROM pedido_aberto x WHERE ${doCliente}
      UNION ALL
-     SELECT 'faturado', pedido, emissao, faturado_em, itens, valor
-       FROM pedido_faturado WHERE cliente = ? AND representante IN (${marcas})
-     ORDER BY emissao DESC, pedido DESC`,
-    [codigoDoCliente, ...codigos, codigoDoCliente, ...codigos],
+     SELECT 'faturado', x.pedido, x.emissao, x.faturado_em, x.valor FROM pedido_faturado x WHERE ${doCliente}
+     ORDER BY 3 DESC, 2 DESC`,
+    parametros,
   ).map((linha) => ({
     id: texto(linha, "pedido"),
     numero: texto(linha, "pedido"),
     status: texto(linha, "status") as StatusDoPedido,
     emissao: texto(linha, "emissao"),
     entrega: texto(linha, "entrega"),
-    itens: numero(linha, "itens"),
+    itens: itens.get(texto(linha, "pedido")) ?? [],
     valor: numero(linha, "valor"),
   }));
 }

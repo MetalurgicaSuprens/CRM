@@ -1,4 +1,4 @@
-import { useId, useState, type CSSProperties, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router";
 import { ChevronDown } from "lucide-react";
 import { useLargura } from "../graficos/useLargura";
@@ -31,7 +31,12 @@ type Props<T> = ToqueNaLinha<T> & {
   vazio: string;
   /** A ordem ao abrir; sem ela, a da lista recebida, sem coluna marcada. */
   ordemInicial?: Ordem;
+  /** Nome da ordem na URL. Muda na tabela de dentro da linha aberta, para não reordenar a lista de fora. */
+  parametroDaOrdem?: string;
 };
+
+/** O nome da ordem na URL da tabela de itens que fica dentro da linha aberta de outra. */
+export const ORDEM_DOS_ITENS = "ordem-itens";
 
 const LARGURA_DA_IDENTIFICACAO_REM = 12;
 const LARGURA_PADRAO_REM = 6.5;
@@ -50,9 +55,11 @@ export function TabelaResponsiva<T>({ itens, vazio, ...props }: Props<T>) {
   return <Tabela itens={itens} {...props} />;
 }
 
-function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, ordemInicial }: Omit<Props<T>, "vazio">) {
+function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, ordemInicial, parametroDaOrdem }: Omit<Props<T>, "vazio">) {
   const { referencia, largura } = useLargura<HTMLElement>();
-  const ordenacao = useOrdenacao(itens, colunas, { inicial: ordemInicial });
+  const ordenacao = useOrdenacao(itens, colunas, { inicial: ordemInicial, parametro: parametroDaOrdem });
+  // Só uma linha aberta por vez: abrir outra fecha a anterior.
+  const [chaveAberta, setChaveAberta] = useState<string | null>(null);
   const [identificacao, ...demais] = colunas;
   const grade: ColunaDaGrade[] = [
     ...demais.map((coluna) => ({ minima: coluna.largura ?? LARGURA_PADRAO_REM, cresce: true })),
@@ -86,17 +93,23 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, orde
         {detalheDe ? <span className={estilos.semOrdem} aria-hidden="true" /> : null}
       </div>
       <ul>
-        {ordenacao.ordenados.map((item) =>
-          detalheDe ? (
-            <LinhaQueAbre key={chaveDe(item)} detalhe={() => detalheDe(item)}>
+        {ordenacao.ordenados.map((item) => {
+          const chave = chaveDe(item);
+          return detalheDe ? (
+            <LinhaQueAbre
+              key={chave}
+              isAberta={chave === chaveAberta}
+              aoAlternar={() => setChaveAberta((aberta) => (aberta === chave ? null : chave))}
+              detalhe={() => detalheDe(item)}
+            >
               {conteudoDe(item)}
             </LinhaQueAbre>
           ) : (
-            <li key={chaveDe(item)}>
+            <li key={chave}>
               <LinhaSemDetalhe destino={linkDe?.(item)}>{conteudoDe(item)}</LinhaSemDetalhe>
             </li>
-          ),
-        )}
+          );
+        })}
       </ul>
     </section>
   );
@@ -111,18 +124,27 @@ function LinhaSemDetalhe({ destino, children }: { destino: string | undefined; c
   );
 }
 
-/** Abre e fecha os detalhes logo abaixo da linha; eles só são montados quando ela está aberta. */
-function LinhaQueAbre({ detalhe, children }: { detalhe: () => ReactNode; children: ReactNode }) {
-  const [isAberta, setAberta] = useState(false);
+type PropsDaLinhaQueAbre = { isAberta: boolean; aoAlternar: () => void; detalhe: () => ReactNode; children: ReactNode };
+
+/**
+ * Abre e fecha os detalhes logo abaixo da linha; eles só são montados quando ela está aberta. Ao
+ * abrir, a linha vem para a tela: se a aberta antes estava acima, ela fechou e a lista subiu.
+ */
+function LinhaQueAbre({ isAberta, aoAlternar, detalhe, children }: PropsDaLinhaQueAbre) {
   const idDoDetalhe = useId();
+  const botao = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    if (isAberta) botao.current?.scrollIntoView({ block: "nearest" });
+  }, [isAberta]);
   return (
     <li className={isAberta ? estilos.aberta : undefined}>
       <button
+        ref={botao}
         type="button"
         className={`${estilos.linha} ${estilos.link} ${estilos.linhaQueAbre}`}
         aria-expanded={isAberta}
         aria-controls={isAberta ? idDoDetalhe : undefined}
-        onClick={() => setAberta((aberta) => !aberta)}
+        onClick={aoAlternar}
       >
         {children}
         <ChevronDown size={18} className={estilos.seta} aria-hidden="true" />

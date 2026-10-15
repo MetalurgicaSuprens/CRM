@@ -1,23 +1,26 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { AndamentoDoPedido, ItensDoPedidoEnviado } from "../componentes/PedidoEnviado";
 import { DataRelativa } from "../componentes/Quando";
-import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
+import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
-import { precoDoCento } from "../dados/pedido";
-import type { ClienteResumo, ItemDoErp, ItemEmAberto, NotaFaturada, PedidoEnviado, PedidoNoErp } from "../dados/tipos";
+import { precoDoCento, resumirPorFamilia, valorDaLinha, type TotalDaFamilia } from "../dados/pedido";
+import type { ClienteResumo, ItemDoErp, NotaFaturada, PedidoDaFicha, PedidoEnviado, PedidoNoErp } from "../dados/tipos";
 import { formatarNumero, formatarPedidosDaNota } from "../formato";
 import estilos from "./DetalhesDosPedidos.module.css";
 
 /*
- * O que a linha de cada aba de Pedidos mostra ao abrir, na própria lista. O caminho para a ficha
- * do cliente, que antes era a linha inteira, fica no fim dos detalhes.
+ * O que a linha de um pedido mostra ao abrir, na própria lista: nas abas de Pedidos e na ficha do
+ * cliente. Primeiro o resumo por família, depois os itens. Nas abas, o caminho para a ficha do
+ * cliente, que antes era a linha inteira, fica no fim.
  */
 
 /** O andamento e os itens, como na página do pedido. */
 export function DetalheDoEnviado({ pedido, relogio }: { pedido: PedidoEnviado; relogio: string }) {
   return (
     <>
+      <ResumoPorFamilia itens={pedido.itens.map((item) => ({ familia: item.familia, pecas: item.quantidade, valor: valorDaLinha(item) }))} />
       <div className={estilos.enviado}>
         <div className={estilos.partes}>
           <section className={estilos.parte}>
@@ -30,7 +33,9 @@ export function DetalheDoEnviado({ pedido, relogio }: { pedido: PedidoEnviado; r
           </section>
         </div>
       </div>
-      <Rodape cliente={pedido.cliente} />
+      <Rodape>
+        <LinkParaFicha cliente={pedido.cliente} />
+      </Rodape>
     </>
   );
 }
@@ -39,14 +44,11 @@ export function DetalheDoEnviado({ pedido, relogio }: { pedido: PedidoEnviado; r
 export function DetalheDoPedidoNoErp({ pedido, hoje }: { pedido: PedidoNoErp; hoje: string }) {
   return (
     <>
-      <TabelaResponsiva
-        descricao={`Itens em aberto do pedido ${pedido.numero}`}
-        itens={pedido.itensEmAberto}
-        chaveDe={(item) => String(item.ordem)}
-        vazio="Nenhum item em aberto."
-        colunas={[PRODUTO, colunaDaEntrega(hoje), PECAS, CENTO, VALOR]}
-      />
-      <Rodape cliente={pedido.cliente} />
+      <ResumoPorFamilia itens={pedido.itensEmAberto} />
+      <ItensDoErp descricao={`Itens em aberto do pedido ${pedido.numero}`} itens={pedido.itensEmAberto} entregaAte={hoje} />
+      <Rodape>
+        <LinkParaFicha cliente={pedido.cliente} />
+      </Rodape>
     </>
   );
 }
@@ -55,31 +57,100 @@ export function DetalheDoPedidoNoErp({ pedido, hoje }: { pedido: PedidoNoErp; ho
 export function DetalheDaNota({ nota }: { nota: NotaFaturada }) {
   return (
     <>
-      <TabelaResponsiva
-        descricao={`Itens da nota ${nota.numero}`}
-        itens={nota.itens}
-        chaveDe={(item) => String(item.ordem)}
-        vazio="Nota sem itens."
-        colunas={[PRODUTO, PECAS, CENTO, VALOR]}
-      />
-      <Rodape cliente={nota.cliente} pedidos={nota.pedidos} />
+      <ResumoPorFamilia itens={nota.itens} />
+      <ItensDoErp descricao={`Itens da nota ${nota.numero}`} itens={nota.itens} />
+      <Rodape>
+        {nota.pedidos.length > 0 ? <span className={estilos.origem}>{formatarPedidosDaNota(nota.pedidos)}</span> : null}
+        <LinkParaFicha cliente={nota.cliente} />
+      </Rodape>
     </>
   );
 }
 
-function Rodape({ cliente, pedidos = [] }: { cliente: ClienteResumo; pedidos?: string[] }) {
+/**
+ * Na ficha do cliente: o resumo e os itens; a entrega de cada item, no pedido em aberto. O rascunho
+ * leva à montagem, para continuar, e o enviado, à página dele, com o andamento.
+ */
+export function DetalheDoPedidoDaFicha({ pedido, hoje }: { pedido: PedidoDaFicha; hoje: string }) {
+  const caminho = CAMINHO_NO_CRM[pedido.status]?.(pedido.id);
   return (
-    <div className={estilos.rodape}>
-      {pedidos.length > 0 ? <span className={estilos.origem}>{formatarPedidosDaNota(pedidos)}</span> : null}
-      <Link to={`/clientes/${cliente.codigo}`} className={estilos.ficha}>
-        Abrir a ficha do cliente
-        <ChevronRight size={15} aria-hidden="true" />
-      </Link>
-    </div>
+    <>
+      <ResumoPorFamilia itens={pedido.itens} />
+      <ItensDoErp
+        descricao={`Itens do pedido ${pedido.numero ?? "em rascunho"}`}
+        itens={pedido.itens}
+        entregaAte={pedido.status === "em_aberto" ? hoje : undefined}
+      />
+      {caminho ? (
+        <Rodape>
+          <LinkDoRodape para={caminho.para}>{caminho.texto}</LinkDoRodape>
+        </Rodape>
+      ) : null}
+    </>
   );
 }
 
-/* As colunas dos itens do ERP, iguais no pedido em aberto e na nota. */
+const CAMINHO_NO_CRM: Partial<Record<PedidoDaFicha["status"], (id: string) => { para: string; texto: string }>> = {
+  rascunho: (id) => ({ para: `/pedidos/rascunhos/${id}`, texto: "Continuar o rascunho" }),
+  enviado: (id) => ({ para: `/pedidos/${id}`, texto: "Ver o andamento" }),
+};
+
+/** Antes dos itens: as famílias do pedido, da de maior valor à de menor, com as peças e o valor de cada uma. */
+function ResumoPorFamilia({ itens }: { itens: readonly TotalDaFamilia[] }) {
+  if (itens.length === 0) return null;
+  return (
+    <section className={estilos.parte}>
+      <h3 className={estilos.tituloDaParte}>Famílias</h3>
+      <ul className={estilos.familias}>
+        {resumirPorFamilia(itens).map(({ familia, pecas, valor }) => (
+          <li key={familia} className={estilos.familia}>
+            <span className={estilos.nomeDaFamilia}>{familia}</span>
+            <span className={estilos.numerosDaFamilia}>
+              {formatarNumero(pecas)} peças · <Valor valor={valor} />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Os itens do ERP, iguais no pedido em aberto, na nota e no pedido da ficha; a entrega, só com `entregaAte`. */
+function ItensDoErp<T extends ItemDoErp & { entrega?: string | null }>({ descricao, itens, entregaAte }: { descricao: string; itens: readonly T[]; entregaAte?: string }) {
+  const colunas: readonly [ColunaDaTabela<T>, ...ColunaDaTabela<T>[]] = entregaAte
+    ? [PRODUTO, colunaDaEntrega(entregaAte), PECAS, CENTO, VALOR]
+    : [PRODUTO, PECAS, CENTO, VALOR];
+  return (
+    <TabelaResponsiva
+      descricao={descricao}
+      itens={itens}
+      chaveDe={(item) => String(item.ordem)}
+      vazio="Sem itens."
+      colunas={colunas}
+      parametroDaOrdem={ORDEM_DOS_ITENS}
+    />
+  );
+}
+
+/** O pedido de origem à esquerda, quando há, e o caminho à direita. */
+function Rodape({ children }: { children: ReactNode }) {
+  return <div className={estilos.rodape}>{children}</div>;
+}
+
+function LinkParaFicha({ cliente }: { cliente: ClienteResumo }) {
+  return <LinkDoRodape para={`/clientes/${cliente.codigo}`}>Abrir a ficha do cliente</LinkDoRodape>;
+}
+
+function LinkDoRodape({ para, children }: { para: string; children: ReactNode }) {
+  return (
+    <Link to={para} className={estilos.caminho}>
+      {children}
+      <ChevronRight size={15} aria-hidden="true" />
+    </Link>
+  );
+}
+
+/* As colunas dos itens do ERP. */
 
 const PRODUTO: ColunaDaTabela<ItemDoErp> = {
   titulo: "Produto",
@@ -111,6 +182,6 @@ const VALOR: ColunaDaTabela<ItemDoErp> = {
   celula: (item) => <Valor valor={item.valor} />,
 };
 
-function colunaDaEntrega(hoje: string): ColunaDaTabela<ItemEmAberto> {
-  return { titulo: "Entrega", ordenarPor: (item) => item.entrega, celula: (item) => <DataRelativa data={item.entrega} hoje={hoje} /> };
+function colunaDaEntrega(hoje: string): ColunaDaTabela<{ entrega?: string | null }> {
+  return { titulo: "Entrega", ordenarPor: (item) => item.entrega ?? null, celula: (item) => <DataRelativa data={item.entrega ?? null} hoje={hoje} /> };
 }
