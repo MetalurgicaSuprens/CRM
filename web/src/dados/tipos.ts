@@ -40,6 +40,8 @@ export type ClienteResumo = {
   nome: string;
   cidade: string;
   uf: string;
+  /** Código IBGE de 7 dígitos do município, o que liga o cliente ao mapa; null quando o cadastro não tem. */
+  municipio: string | null;
   mercado: Mercado;
   situacao: Situacao;
   /** Fora de ativo no cadastro do SGI, o cliente aparece com o status e não recebe pedido. */

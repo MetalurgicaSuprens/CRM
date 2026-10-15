@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { statusDoCadastro } from "./carteira.ts";
+import { municipioDoCadastro, statusDoCadastro } from "./carteira.ts";
 
 describe("statusDoCadastro", () => {
   it("traz os três status do SGI com os nomes do CRM", () => {
@@ -14,5 +14,18 @@ describe("statusDoCadastro", () => {
 
   it("para a foto com um status que o CRM não conhece", () => {
     expect(() => statusDoCadastro("BLOQUEADO")).toThrow(/Status de cliente desconhecido/);
+  });
+});
+
+describe("municipioDoCadastro", () => {
+  it("aceita o código IBGE de 7 dígitos do estado do cliente", () => {
+    expect(municipioDoCadastro("5208707", "GO")).toBe("5208707");
+  });
+
+  it("deixa sem município o código de outro estado, curto ou vazio, e o cliente do exterior", () => {
+    expect(municipioDoCadastro("3550308", "GO")).toBeNull();
+    expect(municipioDoCadastro("520870", "GO")).toBeNull();
+    expect(municipioDoCadastro(null, "GO")).toBeNull();
+    expect(municipioDoCadastro("5208707", "EX")).toBeNull();
   });
 });

@@ -121,6 +121,7 @@ function linhaDoCliente(
     razao_social: cliente.razaoSocial,
     cidade: cliente.cidade,
     uf: cliente.uf,
+    municipio_ibge: cliente.municipio,
     mercado: cliente.mercado,
     situacao: analise.situacao,
     status: cliente.status,

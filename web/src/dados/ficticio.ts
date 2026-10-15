@@ -80,12 +80,15 @@ const CLIENTES_DA_PRACA_ENTRE_PESSOAS_FISICAS = 15;
  */
 const CLIENTES_ENTRE_FORA_DE_ATIVO = 29;
 const PRIMEIRO_FORA_DE_ATIVO = 7;
-const CIDADES: readonly (readonly [string, string])[] = [
-  ["Ribeirão Preto", "SP"], ["Campinas", "SP"], ["Piracicaba", "SP"], ["Bauru", "SP"], ["Franca", "SP"],
-  ["Sorocaba", "SP"], ["São José do Rio Preto", "SP"], ["Londrina", "PR"], ["Maringá", "PR"],
-  ["Cascavel", "PR"], ["Ponta Grossa", "PR"], ["Joinville", "SC"], ["Chapecó", "SC"], ["Blumenau", "SC"],
-  ["Uberlândia", "MG"], ["Uberaba", "MG"], ["Poços de Caldas", "MG"], ["Rio Verde", "GO"],
-  ["Campo Grande", "MS"], ["Dourados", "MS"],
+/** Cidade, UF e código IBGE do município, que liga o cliente ao mapa. */
+const CIDADES: readonly (readonly [string, string, string])[] = [
+  ["Ribeirão Preto", "SP", "3543402"], ["Campinas", "SP", "3509502"], ["Piracicaba", "SP", "3538709"],
+  ["Bauru", "SP", "3506003"], ["Franca", "SP", "3516200"], ["Sorocaba", "SP", "3552205"],
+  ["São José do Rio Preto", "SP", "3549805"], ["Londrina", "PR", "4113700"], ["Maringá", "PR", "4115200"],
+  ["Cascavel", "PR", "4104808"], ["Ponta Grossa", "PR", "4119905"], ["Joinville", "SC", "4209102"],
+  ["Chapecó", "SC", "4204202"], ["Blumenau", "SC", "4202404"], ["Uberlândia", "MG", "3170206"],
+  ["Uberaba", "MG", "3170107"], ["Poços de Caldas", "MG", "3151800"], ["Rio Verde", "GO", "5218805"],
+  ["Campo Grande", "MS", "5002704"], ["Dourados", "MS", "5003702"],
 ];
 /** Peso de cada mês do ano no faturamento: férias coletivas em dezembro e janeiro. */
 const SAZONALIDADE = [0.72, 0.88, 1.04, 1.02, 1.08, 1.04, 0.98, 1.06, 1.04, 1.1, 1.0, 0.78];
@@ -107,6 +110,7 @@ type ClienteFicticio = {
   razaoSocial: string;
   cidade: string;
   uf: string;
+  municipio: string;
   mercado: Mercado;
   status: StatusDoCadastro;
   precoMedioPeca: number;
@@ -265,7 +269,7 @@ function gerarCarteira(atualizadoEm: string): Carteira {
 function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Perfil): ClienteFicticio {
   const perfil = perfilFixo ?? sortearComPeso(aleatorio, PERFIS);
   const mercado = sortearMercado(aleatorio);
-  const [cidade, uf] = aleatorio.escolher(CIDADES);
+  const [cidade, uf, municipio] = aleatorio.escolher(CIDADES);
   const nome = `${aleatorio.escolher(RAMOS)} ${aleatorio.escolher(NOMES)}`;
   const porteMensal = sortearPorteMensal(aleatorio, mercado);
   const precoMedioPeca = aleatorio.entre(1.6, 5.2);
@@ -279,6 +283,7 @@ function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Per
     razaoSocial: `${nome} ${aleatorio.escolher(SUFIXOS)}`,
     cidade,
     uf,
+    municipio,
     mercado,
     status: "ativo" as const,
     precoMedioPeca,
@@ -457,6 +462,7 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
     nome: cliente.nome,
     cidade: cliente.cidade,
     uf: cliente.uf,
+    municipio: cliente.municipio,
     mercado: cliente.mercado,
     situacao: indicadores.situacao,
     status: cliente.status,

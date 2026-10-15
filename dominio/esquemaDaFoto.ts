@@ -4,7 +4,7 @@
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
  */
 
-export const VERSAO_DO_ESQUEMA = 8;
+export const VERSAO_DO_ESQUEMA = 9;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -31,6 +31,7 @@ CREATE TABLE cliente (
   razao_social TEXT NOT NULL,
   cidade TEXT NOT NULL,
   uf TEXT NOT NULL,
+  municipio_ibge TEXT,
   mercado TEXT NOT NULL,
   situacao TEXT NOT NULL,
   status TEXT NOT NULL,
@@ -224,6 +225,8 @@ export type Foto = {
     razao_social: string;
     cidade: string;
     uf: string;
+    /** Código IBGE de 7 dígitos do município (CRCL.RESERVADO7); null fora do formato ou de outro estado. */
+    municipio_ibge: string | null;
     mercado: string;
     /** A situação de compra (dominio/tipos.ts, Situacao). */
     situacao: string;

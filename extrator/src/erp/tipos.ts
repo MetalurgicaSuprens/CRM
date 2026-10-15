@@ -16,6 +16,8 @@ export type ClienteDaCarteira = {
   razaoSocial: string;
   cidade: string;
   uf: string;
+  /** Código IBGE do município; null fora do formato (erp/carteira.ts, municipioDoCadastro). */
+  municipio: string | null;
   mercado: Mercado;
   /** VEND_1: o representante dono do cliente. */
   representante: string;

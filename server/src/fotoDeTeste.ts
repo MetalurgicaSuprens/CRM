@@ -27,6 +27,7 @@ function cliente(id: string, representante: string, nome: string, status: Status
     razao_social: `${nome} LTDA`,
     cidade: "CAMPINAS",
     uf: "SP",
+    municipio_ibge: "3509502",
     mercado: "PRACA",
     situacao: "parado",
     status,

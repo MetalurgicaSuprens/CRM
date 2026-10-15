@@ -31,7 +31,7 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
   const lista = emLista("r", autorizados);
   const linhas = await oracle.consultar(
     `SELECT C.EMP_FIL, C.CLIENTE, TRIM(C.FIS_JURID), C.NOM_FANTAS, C.RAZ_SOCIAL || C.COMPLEM_RZ,
-            TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1, TRIM(G.CLI3_STA)
+            TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1, TRIM(G.CLI3_STA), C.RESERVADO7
        FROM ABC71.CRCL C
        LEFT JOIN ABC71.SGI5_TAB_VEN_CLI3 G ON G.CLI3_CLI = C.CLIENTE
       WHERE ${condicaoDaCarteira(lista.sql)}`,
@@ -50,6 +50,7 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
     mercado: mercadoDoTipoDeCliente(textoOuNulo(linha, 7)),
     representante: String(numero(linha, 8)),
     status: statusDoCadastro(textoOuNulo(linha, 9)),
+    municipio: municipioDoCadastro(textoOuNulo(linha, 10), texto(linha, 6)),
   }));
 }
 
@@ -58,6 +59,24 @@ export function mercadoDoTipoDeCliente(tipo: string | null): Mercado {
   if (tipo === "M") return "MONTADORA";
   if (tipo === "E") return "EXPORTACAO";
   return "PRACA";
+}
+
+/** Os dois primeiros dígitos do código IBGE dos municípios de cada estado. */
+const CODIGO_IBGE_DA_UF: Readonly<Record<string, string>> = {
+  RO: "11", AC: "12", AM: "13", RR: "14", PA: "15", AP: "16", TO: "17",
+  MA: "21", PI: "22", CE: "23", RN: "24", PB: "25", PE: "26", AL: "27", SE: "28", BA: "29",
+  MG: "31", ES: "32", RJ: "33", SP: "35", PR: "41", SC: "42", RS: "43",
+  MS: "50", MT: "51", GO: "52", DF: "53",
+};
+
+/**
+ * O município pelo código IBGE do cadastro (CRCL.RESERVADO7, que a GNRE do SGI manda como código da
+ * cidade). Em 2026-10-15, os 178 clientes da Star Vendas tinham 7 dígitos, sempre do estado deles.
+ * Fora do formato ou de outro estado, o cliente fica sem município, e o mapa não o põe em lugar nenhum.
+ */
+export function municipioDoCadastro(codigo: string | null, uf: string): string | null {
+  const prefixo = CODIGO_IBGE_DA_UF[uf];
+  return codigo !== null && prefixo !== undefined && /^\d{7}$/.test(codigo) && codigo.startsWith(prefixo) ? codigo : null;
 }
 
 /** Os valores do CLI3_STA, os mesmos da tela de cadastro do SGI (untVenCli_CliMov.dfm:573-576). */
