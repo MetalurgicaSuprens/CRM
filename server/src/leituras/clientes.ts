@@ -3,6 +3,7 @@ import type { Porte } from "dominio/tipos";
 import type { ClienteResumo, FichaCliente } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, numeroOuNulo, resumoDoCliente, texto, textoOuNulo } from "./linhas.ts";
+import { lerPedidosDaFicha } from "./pedidos.ts";
 
 /** A carteira do login: os clientes de todos os códigos dele. */
 export function lerCarteira(db: DatabaseSync, sessao: Sessao): ClienteResumo[] {
@@ -50,18 +51,7 @@ export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: stri
     })),
     oportunidades: lerOportunidades(db, codigoDoCliente),
     grupoDoMix: grupoDoMix(textoOuNulo(linha, "grupo_mix")),
-    pedidosEmAberto: lerLinhas(
-      db,
-      `SELECT pedido, emissao, entrega, itens, valor FROM pedido_aberto
-        WHERE cliente = ? AND representante IN (${marcas}) ORDER BY entrega`,
-      [codigoDoCliente, ...codigos],
-    ).map((pedido) => ({
-      numero: texto(pedido, "pedido"),
-      emissao: texto(pedido, "emissao"),
-      entrega: texto(pedido, "entrega"),
-      itens: numero(pedido, "itens"),
-      valor: numero(pedido, "valor"),
-    })),
+    pedidos: lerPedidosDaFicha(db, sessao, codigoDoCliente),
   };
 }
 

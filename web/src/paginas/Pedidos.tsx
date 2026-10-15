@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { ClipboardList, FilePen, FilePlus2, ReceiptText, Send, Trash, type LucideIcon } from "lucide-react";
+import { FilePlus2, Trash, type LucideIcon } from "lucide-react";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { ETAPAS, EtapaDoPedido } from "../componentes/EtapaDoPedido";
 import { Filtros } from "../componentes/Filtros";
 import type { TomDoSelo } from "../componentes/Selo";
+import { STATUS_DO_PEDIDO } from "../componentes/StatusDoPedido";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho } from "../dados/api";
@@ -20,27 +21,29 @@ import estilos from "./Pedidos.module.css";
 
 type Aba = keyof PainelDePedidos;
 
-/** Nome, ícone e tom de cada aba: os mesmos no filtro e no cartão da lista. */
+/** Nome, ícone e tom de cada aba: os mesmos no filtro e no cartão da lista, e o ícone e o tom do status. */
 const ABAS: Record<Aba, { rotulo: string; icone: LucideIcon; tom: TomDoSelo }> = {
-  enviados: { rotulo: "Enviados pelo CRM", icone: Send, tom: "neutro" },
-  rascunhos: { rotulo: "Rascunhos", icone: FilePen, tom: "rascunho" },
-  emAberto: { rotulo: "Em aberto no ERP", icone: ClipboardList, tom: "pendente" },
-  faturados: { rotulo: "Faturados", icone: ReceiptText, tom: "ok" },
+  faturados: { ...STATUS_DO_PEDIDO.faturado, rotulo: "Faturados" },
+  emAberto: { ...STATUS_DO_PEDIDO.em_aberto, rotulo: "Em aberto no ERP" },
+  enviados: { ...STATUS_DO_PEDIDO.enviado, rotulo: "Enviados pelo CRM" },
+  rascunhos: { ...STATUS_DO_PEDIDO.rascunho, rotulo: "Rascunhos" },
 };
 
-const ORDEM_DAS_ABAS: readonly Aba[] = ["enviados", "rascunhos", "emAberto", "faturados"];
+/** A ordem dos cartões; a página abre no primeiro. */
+const ORDEM_DAS_ABAS: readonly Aba[] = ["faturados", "emAberto", "enviados", "rascunhos"];
+const ABA_INICIAL: Aba = "faturados";
 
 export function Pedidos() {
   const { dados: painel, recarregar } = useCarga("pedidos", carregarPedidos);
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   const [parametros, setParametros] = useSearchParams();
-  const aba = ORDEM_DAS_ABAS.find((opcao) => opcao === parametros.get("aba")) ?? "enviados";
+  const aba = ORDEM_DAS_ABAS.find((opcao) => opcao === parametros.get("aba")) ?? ABA_INICIAL;
   if (!painel || !situacao) return <Carregando />;
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
         titulo="Pedidos"
-        descricao="O que você enviou pelo CRM, os rascunhos e os pedidos do ERP"
+        descricao="Os pedidos do ERP, o que você enviou pelo CRM e os rascunhos"
         acoes={
           <Link to="/pedidos/novo" className={botoes.primario}>
             <FilePlus2 size={18} aria-hidden="true" />
@@ -52,7 +55,7 @@ export function Pedidos() {
         rotulo="Pedidos"
         opcoes={ORDEM_DAS_ABAS.map((valor) => ({ valor, ...ABAS[valor], quantidade: painel[valor].length }))}
         selecionado={aba}
-        aoEscolher={(valor) => setParametros(valor === "enviados" ? {} : { aba: valor }, { replace: true })}
+        aoEscolher={(valor) => setParametros(valor === ABA_INICIAL ? {} : { aba: valor }, { replace: true })}
       />
       <AbaEscolhida aba={aba} painel={painel} situacao={situacao} recarregar={recarregar} />
     </div>

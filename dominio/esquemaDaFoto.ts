@@ -4,7 +4,7 @@
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
  */
 
-export const VERSAO_DO_ESQUEMA = 6;
+export const VERSAO_DO_ESQUEMA = 7;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -160,6 +160,17 @@ CREATE TABLE pedido_aberto_item (
   PRIMARY KEY (pedido, ordem)
 ) STRICT;
 
+CREATE TABLE pedido_faturado (
+  pedido TEXT PRIMARY KEY,
+  representante TEXT NOT NULL,
+  cliente TEXT NOT NULL,
+  emissao TEXT NOT NULL,
+  faturado_em TEXT NOT NULL,
+  itens INTEGER NOT NULL,
+  valor REAL NOT NULL
+) STRICT;
+CREATE INDEX pedido_faturado_cliente ON pedido_faturado (cliente);
+
 CREATE TABLE nota (
   nota TEXT NOT NULL,
   serie TEXT NOT NULL,
@@ -267,6 +278,19 @@ export type Foto = {
   }[];
   /** Os itens com saldo de cada pedido, na ordem do pedido; o mesmo produto pode vir em duas entregas. */
   pedido_aberto_item: { pedido: string; ordem: number; produto: string; pecas: number; entrega: string; valor: number }[];
+  /**
+   * Pedidos sem saldo com nota de venda nos 12 meses fechados e no corrente, só de cliente da carteira
+   * de um autorizado: o histórico da ficha. `faturado_em` é a última nota; `itens`, os produtos das notas.
+   */
+  pedido_faturado: {
+    pedido: string;
+    representante: string;
+    cliente: string;
+    emissao: string;
+    faturado_em: string;
+    itens: number;
+    valor: number;
+  }[];
   nota: {
     nota: string;
     serie: string;

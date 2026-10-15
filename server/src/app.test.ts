@@ -68,7 +68,17 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     expect(clientes.json()).toHaveLength(2);
     const ficha = await app.inject({ method: "GET", url: `/api/clientes/${CLIENTE_DE_A}` });
     expect(ficha.statusCode).toBe(200);
-    expect(ficha.json()).toMatchObject({ nome: "CLIENTE DE A", codigoErp: "123456780001", pedidosEmAberto: [{ numero: "100001" }] });
+    expect(ficha.json()).toMatchObject({ nome: "CLIENTE DE A", codigoErp: "123456780001" });
+  });
+
+  it("dá na ficha os pedidos em aberto e os faturados do cliente, só os atribuídos a A", async () => {
+    const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
+    const { pedidos } = (await app.inject({ method: "GET", url: `/api/clientes/${CLIENTE_DE_A}` })).json();
+    // O 999004 é do mesmo cliente, mas de B: fica de fora, como o pedido em aberto de outro representante.
+    expect(pedidos).toEqual([
+      { id: "100001", numero: "100001", status: "em_aberto", emissao: "2026-10-01", entrega: "2026-10-20", itens: 2, valor: 5_000 },
+      { id: "100003", numero: "100003", status: "faturado", emissao: "2026-09-02", entrega: "2026-09-10", itens: 3, valor: 4_500 },
+    ]);
   });
 
   it("conta no Início o pedido do A para cliente de outra carteira, sem listá-lo", async () => {

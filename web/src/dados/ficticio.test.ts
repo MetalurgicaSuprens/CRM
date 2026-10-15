@@ -10,6 +10,7 @@ import {
   situacaoDosDadosFicticia,
 } from "./ficticio";
 import { PedidoBloqueado } from "./fonteDeDados";
+import { salvarRascunhoFicticio } from "./pedidosFicticios";
 import { fonteFicticia } from "./fonteFicticia";
 
 // Contrato que o extrator (F2) também precisa cumprir: tendência, faturado e variação contam a mesma história.
@@ -79,6 +80,27 @@ describe("contrato das outras telas", () => {
       if (!ficha?.ultimaCompra) continue;
       expect(ficha.clienteDesde).toBeLessThanOrEqual(Number(ficha.ultimaCompra.slice(0, 4)));
     }
+  });
+});
+
+describe("histórico de pedidos da ficha", () => {
+  const [maior] = clientesFicticios();
+
+  it("tem os pedidos faturados, que somam o faturado do cliente nos meses deles", () => {
+    const ficha = fichaFicticia(maior?.codigo ?? "");
+    const faturados = ficha?.pedidos.filter((pedido) => pedido.status === "faturado") ?? [];
+    expect(faturados.length).toBeGreaterThan(0);
+    const meses = new Set(faturados.map((pedido) => pedido.entrega?.slice(0, 7)));
+    const faturadoNosMeses = ficha?.mensal.filter((mes) => meses.has(mes.mes)).reduce((soma, mes) => soma + mes.valor, 0) ?? 0;
+    const somaDosPedidos = faturados.reduce((soma, pedido) => soma + pedido.valor, 0);
+    expect(Math.abs(somaDosPedidos - faturadoNosMeses)).toBeLessThanOrEqual(faturados.length);
+  });
+
+  it("traz o rascunho do cliente, junto dos pedidos do ERP", async () => {
+    const codigo = maior?.codigo ?? "";
+    const rascunho = salvarRascunhoFicticio({ id: null, codigoCliente: codigo, itens: [], entrega: null, observacao: "" });
+    const ficha = await fonteFicticia.carregarFicha(codigo);
+    expect(ficha?.pedidos.find((pedido) => pedido.id === rascunho?.id)).toMatchObject({ numero: null, status: "rascunho" });
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ItemEmAbertoNoErp, NotaRecente, PedidoEmAbertoNoErp } from "../erp/tipos.ts";
-import { montarPedidos, resumirPedido } from "./pedidos.ts";
+import type { ItemEmAbertoNoErp, NotaRecente, PedidoEmAbertoNoErp, PedidoFaturadoNoErp } from "../erp/tipos.ts";
+import { montarPedidos, montarPedidosFaturados, resumirPedido } from "./pedidos.ts";
 import { montarReferencia } from "./referencia.ts";
 
 const REFERENCIA = montarReferencia("2026-10-13T09:50");
@@ -75,5 +75,27 @@ describe("montarPedidos", () => {
       { nota: "180001", serie: "1", ordem: 1, produto: "B", pecas: 200, valor: 700 },
       { nota: "180001", serie: "1", ordem: 2, produto: "C", pecas: 100, valor: 300 },
     ]);
+  });
+});
+
+describe("montarPedidosFaturados", () => {
+  function faturado(pedido: string, chave: string): PedidoFaturadoNoErp {
+    return { pedido, chave, representante: "1401", emissao: "2026-09-02", faturadoEm: "2026-09-10", itens: 3, valor: 4_500 };
+  }
+  const emAberto: PedidoEmAbertoNoErp = { pedido: "1801234", chave: "1/123", representante: "9999", emissao: "2026-09-01", itens: [item("A", "2026-10-20", 1_000)] };
+  const idDoCliente = (chave: string) => (chave === "1/123" ? "id-do-cliente" : null);
+
+  it("grava o pedido faturado com o id do cliente", () => {
+    expect(montarPedidosFaturados([faturado("1801000", "1/123")], [], idDoCliente)).toEqual([
+      { pedido: "1801000", representante: "1401", cliente: "id-do-cliente", emissao: "2026-09-02", faturado_em: "2026-09-10", itens: 3, valor: 4_500 },
+    ]);
+  });
+
+  it("deixa de fora o pedido que ainda tem saldo, de qualquer representante: ele é o em aberto", () => {
+    expect(montarPedidosFaturados([faturado("1801234", "1/123")], [emAberto], idDoCliente)).toEqual([]);
+  });
+
+  it("deixa de fora o pedido de cliente fora da carteira dos autorizados, que nenhuma ficha mostra", () => {
+    expect(montarPedidosFaturados([faturado("1801000", "1/999")], [], idDoCliente)).toEqual([]);
   });
 });

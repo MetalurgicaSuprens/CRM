@@ -15,8 +15,8 @@ export const CLIENTE_DE_A = "aaaaaaaaaaaaaaa1";
 /** Cliente de A inativo no cadastro do SGI: aparece, mas não recebe pedido. */
 export const CLIENTE_INATIVO_DE_A = "aaaaaaaaaaaaaaa2";
 export const CLIENTE_DE_B = "bbbbbbbbbbbbbbb1";
-/** O que nunca pode aparecer para o login de A. */
-export const MARCAS_DE_B = [CLIENTE_DE_B, "CLIENTE SO DE B", "999001", "888001", "PRODUTO-SO-DE-B", "999002", "TABELA SO DE B"];
+/** O que nunca pode aparecer para o login de A. O pedido 999004 é de B, mas para um cliente de A. */
+export const MARCAS_DE_B = [CLIENTE_DE_B, "CLIENTE SO DE B", "999001", "888001", "PRODUTO-SO-DE-B", "999002", "TABELA SO DE B", "999003", "999004"];
 
 function cliente(id: string, representante: string, nome: string, status: StatusDoCadastro = "ativo"): Foto["cliente"][number] {
   return {
@@ -125,6 +125,11 @@ export function montarFotoDeTeste(): Foto {
       { pedido: "100001", ordem: 2, produto: "P-200", pecas: 500, entrega: "2026-10-27", valor: 2_000 },
       { pedido: "999001", ordem: 1, produto: "PRODUTO-SO-DE-B", pecas: 700, entrega: "2026-10-21", valor: 7_000 },
       { pedido: "777001", ordem: 1, produto: "F-100", pecas: 300, entrega: "2026-11-05", valor: 3_000 },
+    ],
+    pedido_faturado: [
+      { pedido: "100003", representante: "1401", cliente: CLIENTE_DE_A, emissao: "2026-09-02", faturado_em: "2026-09-10", itens: 3, valor: 4_500 },
+      { pedido: "999003", representante: "9999", cliente: CLIENTE_DE_B, emissao: "2026-09-03", faturado_em: "2026-09-11", itens: 1, valor: 900 },
+      { pedido: "999004", representante: "9999", cliente: CLIENTE_DE_A, emissao: "2026-09-04", faturado_em: "2026-09-12", itens: 1, valor: 800 },
     ],
     nota: [
       { nota: "100002", serie: "1", representante: "1401", cliente: CLIENTE_DE_A, emissao: "2026-10-05", valor: 1_000, pedidos: '["100001"]' },

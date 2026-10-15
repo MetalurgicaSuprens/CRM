@@ -76,6 +76,21 @@ export type PedidoEmAbertoNoErp = {
   itens: ItemEmAbertoNoErp[];
 };
 
+/** Pedido do Omega com nota de venda nos 12 meses fechados e no corrente: o histórico da ficha. */
+export type PedidoFaturadoNoErp = {
+  pedido: string;
+  chave: string;
+  /** VEPM.VENDEDOR e, sem ele, o dono atual do cliente. */
+  representante: string;
+  emissao: string;
+  /** A última nota do pedido no período. */
+  faturadoEm: string;
+  /** Produtos diferentes nas notas. */
+  itens: number;
+  /** As notas do pedido no período, pela regra do RELCUS001. */
+  valor: number;
+};
+
 /** Item de uma nota de venda. */
 export type ItemDaNota = {
   produto: string;
@@ -150,6 +165,7 @@ export type DadosDoErp = {
   familias: FamiliaDoCliente[];
   produtos: ProdutoDoCliente[];
   pedidos: PedidoEmAbertoNoErp[];
+  pedidosFaturados: PedidoFaturadoNoErp[];
   notas: NotaRecente[];
   vendasDoDia: VendaDoDia[];
   tabelas: TabelaDoCliente[];

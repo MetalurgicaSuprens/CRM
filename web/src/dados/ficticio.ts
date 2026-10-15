@@ -28,6 +28,7 @@ import type {
   Mercado,
   NotaFaturada,
   PainelInicio,
+  PedidoDaFicha,
   PedidoEmAberto,
   PedidoNoErp,
   ProdutoComprado,
@@ -482,8 +483,38 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     produtos: produtosDoCliente(cliente, familias),
     oportunidades: mix?.oportunidades ?? [],
     grupoDoMix: mix ? { porte: mix.porte } : null,
-    pedidosEmAberto: cliente.pedidos,
+    pedidos: pedidosDaFicha(cliente, dados),
   };
+}
+
+function pedidosDaFicha(cliente: ClienteFicticio, contexto: Contexto): PedidoDaFicha[] {
+  const emAberto = cliente.pedidos.map((pedido) => ({ ...pedido, id: pedido.numero, status: "em_aberto" as const }));
+  return [...emAberto, ...pedidosFaturados(cliente, contexto)];
+}
+
+/**
+ * Um pedido faturado por compra dos 12 meses fechados e do corrente, emitido alguns dias antes da
+ * nota. O valor divide o do mês entre as compras dele, para a soma bater com o faturado.
+ */
+function pedidosFaturados(cliente: ClienteFicticio, { hoje, mesAtual }: Contexto): PedidoDaFicha[] {
+  const aleatorio = criarAleatorio(Number(cliente.codigo.slice(0, 8)) + 11);
+  const inicio = `${somarMeses(mesAtual, -12)}-01`;
+  const compras = cliente.datasCompra.filter((data) => data >= inicio && data <= hoje);
+  let numero = aleatorio.inteiro(1_500_000, 1_600_000);
+  return compras.map((data) => {
+    const mes = mesDe(data);
+    const comprasDoMes = compras.filter((outra) => mesDe(outra) === mes).length;
+    numero += aleatorio.inteiro(50, 900);
+    return {
+      id: String(numero),
+      numero: String(numero),
+      status: "faturado",
+      emissao: somarDias(data, -aleatorio.inteiro(2, 12)),
+      entrega: data,
+      itens: aleatorio.inteiro(2, 14),
+      valor: Math.round((cliente.mensal.find((mensal) => mensal.mes === mes)?.valor ?? 0) / comprasDoMes),
+    };
+  });
 }
 
 function distribuirPorFamilia(cliente: ClienteFicticio, base: number) {

@@ -22,6 +22,7 @@ import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
 import { MotivoDoRisco, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { AvisoDePedidoBloqueado, SeloDoStatus } from "../componentes/StatusDoCliente";
+import { STATUS_DO_PEDIDO, SeloDoPedido } from "../componentes/StatusDoPedido";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
@@ -31,7 +32,7 @@ import { useOrdenacao } from "../componentes/useOrdenacao";
 import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
-import type { FichaCliente as Ficha, Mercado, PedidoEmAberto, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
+import type { FichaCliente as Ficha, Mercado, PedidoDaFicha, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigoDoCliente, formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
@@ -89,7 +90,7 @@ export function FichaCliente() {
       <Cartao titulo="Produtos mais comprados" icone={Package} subtitulo="Últimos 12 meses">
         <TabelaProdutos ficha={ficha} hoje={situacao.hoje} />
       </Cartao>
-      <Cartao titulo="Pedidos em aberto" icone={ClipboardList} subtitulo="Ainda não faturados">
+      <Cartao titulo="Pedidos" icone={ClipboardList} subtitulo="Últimos 12 meses e o mês atual, e todos os em aberto">
         <TabelaPedidos ficha={ficha} />
       </Cartao>
     </div>
@@ -159,7 +160,8 @@ function descricaoDaFicha(ficha: Ficha, semestre: Semestre): ReactNode {
 }
 
 function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
-  const totalEmAberto = ficha.pedidosEmAberto.reduce((soma, pedido) => soma + pedido.valor, 0);
+  const emAberto = ficha.pedidos.filter((pedido) => pedido.status === "em_aberto");
+  const totalEmAberto = emAberto.reduce((soma, pedido) => soma + pedido.valor, 0);
   return (
     <div className={estilos.indicadores}>
       <Indicador
@@ -184,8 +186,8 @@ function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
       <Indicador
         rotulo="Pedidos em aberto"
         icone={ClipboardList}
-        valor={ficha.pedidosEmAberto.length ? <Valor valor={totalEmAberto} compacto /> : "Nenhum"}
-        detalhe={ficha.pedidosEmAberto.length ? `${ficha.pedidosEmAberto.length} pedido(s)` : "tudo faturado"}
+        valor={emAberto.length ? <Valor valor={totalEmAberto} compacto /> : "Nenhum"}
+        detalhe={emAberto.length ? `${emAberto.length} pedido(s)` : "tudo faturado"}
       />
     </div>
   );
@@ -275,18 +277,19 @@ function TabelaProdutos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
 
 const COLUNAS_DE_PEDIDOS = {
   pedido: { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero },
+  status: { titulo: "Status", ordenarPor: (pedido) => STATUS_DO_PEDIDO[pedido.status].rotulo },
   emissao: { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao },
   entrega: { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega },
   itens: { titulo: "Itens", numerica: true, ordenarPor: (pedido) => pedido.itens },
   valor: { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor },
-} satisfies Record<string, ColunaOrdenavel<PedidoEmAberto>>;
+} satisfies Record<string, ColunaOrdenavel<PedidoDaFicha>>;
 
 function TabelaPedidos({ ficha }: { ficha: Ficha }) {
-  const ordenacao = useOrdenacao(ficha.pedidosEmAberto, Object.values(COLUNAS_DE_PEDIDOS), {
-    inicial: { coluna: COLUNAS_DE_PEDIDOS.entrega.titulo, sentido: "crescente" },
+  const ordenacao = useOrdenacao(ficha.pedidos, Object.values(COLUNAS_DE_PEDIDOS), {
+    inicial: { coluna: COLUNAS_DE_PEDIDOS.emissao.titulo, sentido: "decrescente" },
     parametro: "ordem-pedidos",
   });
-  if (ficha.pedidosEmAberto.length === 0) return <p className={estilos.vazio}>Nenhum pedido em aberto.</p>;
+  if (ficha.pedidos.length === 0) return <p className={estilos.vazio}>Nenhum pedido nos últimos 12 meses.</p>;
   return (
     <div className={estilos.rolagem}>
       <table className={estilos.tabela}>
@@ -295,13 +298,16 @@ function TabelaPedidos({ ficha }: { ficha: Ficha }) {
             <th scope="col">
               <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.pedido} ordenacao={ordenacao} />
             </th>
+            <th scope="col">
+              <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.status} ordenacao={ordenacao} />
+            </th>
             <th scope="col" className={estilos.opcional}>
               <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.emissao} ordenacao={ordenacao} />
             </th>
-            <th scope="col">
+            <th scope="col" className={estilos.opcional}>
               <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.entrega} ordenacao={ordenacao} />
             </th>
-            <th scope="col" className={estilos.numero}>
+            <th scope="col" className={`${estilos.numero} ${estilos.opcional}`}>
               <TituloDaColuna coluna={COLUNAS_DE_PEDIDOS.itens} ordenacao={ordenacao} />
             </th>
             <th scope="col" className={estilos.numero}>
@@ -311,11 +317,14 @@ function TabelaPedidos({ ficha }: { ficha: Ficha }) {
         </thead>
         <tbody>
           {ordenacao.ordenados.map((pedido) => (
-            <tr key={pedido.numero}>
-              <th scope="row">{pedido.numero}</th>
+            <tr key={pedido.id}>
+              <th scope="row">{pedido.numero ?? "—"}</th>
+              <td>
+                <SeloDoPedido status={pedido.status} />
+              </td>
               <td className={estilos.opcional}>{formatarData(pedido.emissao)}</td>
-              <td>{formatarData(pedido.entrega)}</td>
-              <td className={estilos.numero}>{pedido.itens}</td>
+              <td className={estilos.opcional}>{pedido.entrega ? formatarData(pedido.entrega) : "—"}</td>
+              <td className={`${estilos.numero} ${estilos.opcional}`}>{pedido.itens}</td>
               <td className={estilos.numero}>
                 <Valor valor={pedido.valor} />
               </td>

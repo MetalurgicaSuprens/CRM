@@ -1,5 +1,5 @@
 import type { Foto } from "dominio/esquemaDaFoto";
-import type { ItemEmAbertoNoErp, NotaRecente, PedidoEmAbertoNoErp } from "../erp/tipos.ts";
+import type { ItemEmAbertoNoErp, NotaRecente, PedidoEmAbertoNoErp, PedidoFaturadoNoErp } from "../erp/tipos.ts";
 import type { Referencia } from "./referencia.ts";
 
 /*
@@ -63,6 +63,24 @@ export function montarPedidos(
       itens.map(({ produto, pecas, valor }, i) => ({ nota, serie, ordem: i + 1, produto, pecas, valor })),
     ),
   };
+}
+
+/**
+ * O histórico de pedidos da ficha. O pedido que ainda tem saldo, de qualquer representante, é "em
+ * aberto" e fica só em `pedido_aberto`; o de cliente fora da carteira dos autorizados não aparece em
+ * ficha nenhuma e não entra.
+ */
+export function montarPedidosFaturados(
+  faturados: readonly PedidoFaturadoNoErp[],
+  emAberto: readonly PedidoEmAbertoNoErp[],
+  idDoCliente: (chave: string) => string | null,
+): Foto["pedido_faturado"] {
+  const comSaldo = new Set(emAberto.map((pedido) => pedido.pedido));
+  return faturados.flatMap(({ pedido, chave, representante, emissao, faturadoEm, itens, valor }) => {
+    const cliente = idDoCliente(chave);
+    if (!cliente || comSaldo.has(pedido)) return [];
+    return [{ pedido, representante, cliente, emissao, faturado_em: faturadoEm, itens, valor }];
+  });
 }
 
 function somarValores(itens: readonly { valor: number }[]): number {

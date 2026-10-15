@@ -7,6 +7,7 @@ import {
   excluirRascunhoFicticio,
   painelDePedidosFicticio,
   pedidoEnviadoFicticio,
+  pedidosDoCrmNaFicha,
   rascunhoFicticio,
   salvarRascunhoFicticio,
 } from "./pedidosFicticios";
@@ -16,7 +17,10 @@ export const fonteFicticia: FonteDeDados = {
   carregarSituacaoDosDados: () => Promise.resolve(situacaoDosDadosFicticia()),
   carregarPainel: () => Promise.resolve(painelFicticio()),
   carregarClientes: () => Promise.resolve(clientesFicticios()),
-  carregarFicha: (codigo) => Promise.resolve(fichaFicticia(codigo)),
+  carregarFicha(codigo) {
+    const ficha = fichaFicticia(codigo);
+    return Promise.resolve(ficha && { ...ficha, pedidos: [...pedidosDoCrmNaFicha(codigo), ...ficha.pedidos] });
+  },
   carregarAnalises: () => Promise.resolve(analisesFicticias()),
   carregarCatalogo(codigoCliente) {
     const catalogo = catalogoDoClienteFicticio(codigoCliente);

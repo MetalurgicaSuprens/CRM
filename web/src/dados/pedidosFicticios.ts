@@ -1,8 +1,8 @@
-import { momentoEmBrasilia } from "dominio/datas";
+import { dataDoMomento, momentoEmBrasilia } from "dominio/datas";
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
-import { totalDoPedido } from "./pedido";
+import { STATUS_NA_FICHA, totalDoPedido } from "./pedido";
 import { ROTULOS_DE_MERCADO } from "./rotulos";
 import type {
   CatalogoDoCliente,
@@ -12,6 +12,7 @@ import type {
   ItemDoPedido,
   ItemEnviado,
   PainelDePedidos,
+  PedidoDaFicha,
   PedidoEnviado,
   Rascunho,
   RascunhoParaSalvar,
@@ -61,6 +62,40 @@ export function painelDePedidosFicticio(): PainelDePedidos {
     emAberto: pedidosNoErpFicticios(),
     faturados: notasFaturadasFicticias(),
   };
+}
+
+/** Os rascunhos e os pedidos enviados do cliente, como linhas do histórico da ficha. */
+export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
+  garantirRascunhoDeExemplo();
+  const doCliente = ({ cliente }: { cliente: ClienteResumo }) => cliente.codigo === codigoCliente;
+  const rascunhosDoCliente = [...rascunhos.values()].filter(doCliente).map(
+    (rascunho): PedidoDaFicha => ({
+      id: rascunho.id,
+      numero: null,
+      status: "rascunho",
+      emissao: dataDoMomento(rascunho.atualizadoEm),
+      entrega: rascunho.entrega,
+      itens: rascunho.itens.length,
+      valor: rascunho.totalEstimado,
+    }),
+  );
+  const enviados = [...enviadosNaSessao, ...pedidosDeExemplo()].filter(doCliente).flatMap((pedido): PedidoDaFicha[] => {
+    const status = STATUS_NA_FICHA[pedido.etapa];
+    if (!status) return [];
+    const numero = status === "enviado" ? pedido.numero : (pedido.numeroErp ?? pedido.numero);
+    return [
+      {
+        id: pedido.numero,
+        numero,
+        status,
+        emissao: dataDoMomento(pedido.enviadoEm),
+        entrega: pedido.entrega,
+        itens: pedido.itens.length,
+        valor: pedido.totalSgi ?? pedido.totalEstimado,
+      },
+    ];
+  });
+  return [...rascunhosDoCliente, ...enviados];
 }
 
 export function pedidoEnviadoFicticio(numero: string): PedidoEnviado | null {

@@ -1,4 +1,4 @@
-import type { EtapaDoPedido, PedidoEnviado } from "./tipos";
+import type { EtapaDoPedido, PedidoEnviado, StatusDoPedido } from "./tipos";
 
 /*
  * Contas do pedido no CRM. São só estimativas para o representante: ao receber o pedido, o SGI
@@ -69,6 +69,22 @@ export function passosDoAndamento(pedido: Pick<PedidoEnviado, "etapa" | "histori
     em: quando.get(etapa) ?? null,
   }));
 }
+
+/**
+ * O status do pedido enviado pelo CRM no histórico da ficha: "enviado" até chegar ao ERP e, de lá em
+ * diante, o de um pedido do ERP. Recusado e cancelado não viraram pedido e ficam fora (null).
+ */
+export const STATUS_NA_FICHA: Record<EtapaDoPedido, StatusDoPedido | null> = {
+  enviado: "enviado",
+  recebido: "enviado",
+  em_aprovacao: "enviado",
+  aprovado: "enviado",
+  no_erp: "em_aberto",
+  faturado_parcial: "em_aberto",
+  faturado: "faturado",
+  recusado: null,
+  cancelado: null,
+};
 
 /**
  * O que impede o envio, em frases para o representante; lista vazia quando dá para enviar.

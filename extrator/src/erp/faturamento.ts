@@ -12,7 +12,7 @@ import {
   representanteDaVenda,
   textoDaData,
 } from "./sql.ts";
-import type { NotaRecente, VendaDoDia } from "./tipos.ts";
+import type { NotaRecente, PedidoFaturadoNoErp, VendaDoDia } from "./tipos.ts";
 
 /*
  * A visão do representante: o que foi faturado em nome de cada autorizado, seja o cliente da
@@ -54,6 +54,35 @@ export async function lerNotasRecentes(oracle: Oracle, referencia: Referencia, a
     { ...lista.binds, inicio: referencia.inicioDosFaturados },
   );
   return agruparPorNota(linhas);
+}
+
+/**
+ * Pedidos com nota de venda nos 12 meses fechados e no corrente, um por linha: o histórico da ficha.
+ * O cliente e o representante são os do pedido (VEPM), e o valor e os produtos, os das notas do
+ * período. Nota sem pedido no VEPM fica de fora (nenhuma da Star Vendas, em 2026-10-15).
+ */
+export async function lerPedidosFaturados(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<PedidoFaturadoNoErp[]> {
+  const lista = emLista("r", autorizados);
+  const representante = representanteDaVenda("P.VENDEDOR");
+  const linhas = await oracle.consultar(
+    `SELECT P.EMP_FIL, P.NUMERO, P.CLIENTE, ${representante}, ${textoDaData("P.DT_PED")}, ${textoDaData("MAX(M.DT_EMISSAO)")},
+            COUNT(DISTINCT TRIM(D.C_PROD)), SUM(${VALOR_DO_ITEM})
+     ${ITENS_DAS_NOTAS}
+       JOIN ABC71.VEPM P ON P.EMP_FIL = M.EMP_FIL AND P.NUMERO = M.NRO_PEDIDO
+       LEFT JOIN ABC71.CRCL C ON C.EMP_FIL = P.EMP_FIL AND C.CLIENTE = P.CLIENTE
+      WHERE ${NOTA_DE_VENDA} AND M.DT_EMISSAO >= ${data("inicio")} AND ${representante} IN ${lista.sql}
+      GROUP BY P.EMP_FIL, P.NUMERO, P.CLIENTE, ${representante}, P.DT_PED`,
+    { ...lista.binds, inicio: referencia.inicio12 },
+  );
+  return linhas.map((linha) => ({
+    pedido: String(numero(linha, 1)),
+    chave: chaveDoCliente(numero(linha, 0), numero(linha, 2)),
+    representante: String(numero(linha, 3)),
+    emissao: texto(linha, 4),
+    faturadoEm: texto(linha, 5),
+    itens: numero(linha, 6),
+    valor: numero(linha, 7),
+  }));
 }
 
 /** Uma linha por item; o cabeçalho se repete em cada uma. */

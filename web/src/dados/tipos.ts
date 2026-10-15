@@ -90,6 +90,25 @@ export type PedidoEmAberto = {
   valor: number;
 };
 
+/** Onde o pedido está hoje: as abas de Pedidos, uma por status. */
+export type StatusDoPedido = "faturado" | "em_aberto" | "enviado" | "rascunho";
+
+/** Uma linha do histórico de pedidos da ficha, venha do ERP ou do CRM. */
+export type PedidoDaFicha = {
+  /** Identifica a linha; não aparece na tela. */
+  id: string;
+  /** O número do ERP ou, até o pedido chegar lá, o do CRM ("CRM-00106"); null no rascunho. */
+  numero: string | null;
+  status: StatusDoPedido;
+  /** A emissão no ERP; no CRM, o envio ou o último salvamento do rascunho. */
+  emissao: string;
+  /** Faturado: a última nota. Em aberto: a entrega mais próxima. No CRM: a entrega pedida, se houver. */
+  entrega: string | null;
+  itens: number;
+  /** Faturado: as notas do pedido no período. Em aberto: o saldo. No CRM: o total do SGI ou o estimado. */
+  valor: number;
+};
+
 export type FichaCliente = ClienteResumo & {
   razaoSocial: string;
   /** Só o ano da primeira compra (a data completa fica na LAN); null para quem nunca comprou. */
@@ -106,7 +125,8 @@ export type FichaCliente = ClienteResumo & {
    * mesma faixa de porte (porte null = o mercado inteiro). null quando nem o mercado tem 20.
    */
   grupoDoMix: { porte: Porte | null } | null;
-  pedidosEmAberto: PedidoEmAberto[];
+  /** Os pedidos dos últimos 12 meses e do mês corrente, e os em aberto de qualquer data. */
+  pedidos: PedidoDaFicha[];
 };
 
 export type MesDoPainel = {

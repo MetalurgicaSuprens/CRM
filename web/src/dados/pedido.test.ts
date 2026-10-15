@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  STATUS_NA_FICHA,
   ajustarAEmbalagem,
   passosDoAndamento,
   pecasEmCentos,
@@ -53,6 +54,26 @@ describe("valorDaLinha e totalDoPedido", () => {
 
   it("soma as linhas", () => {
     expect(totalDoPedido([linha({ quantidade: 200, precoCento: 95 }), linha({ quantidade: 50, precoCento: 260 })])).toBe(320);
+  });
+});
+
+describe("STATUS_NA_FICHA", () => {
+  it("deixa o pedido como enviado pelo CRM até ele chegar ao ERP", () => {
+    expect(STATUS_NA_FICHA.enviado).toBe("enviado");
+    expect(STATUS_NA_FICHA.recebido).toBe("enviado");
+    expect(STATUS_NA_FICHA.em_aprovacao).toBe("enviado");
+    expect(STATUS_NA_FICHA.aprovado).toBe("enviado");
+  });
+
+  it("dá ao pedido que chegou ao ERP o status de lá: em aberto até faturar tudo", () => {
+    expect(STATUS_NA_FICHA.no_erp).toBe("em_aberto");
+    expect(STATUS_NA_FICHA.faturado_parcial).toBe("em_aberto");
+    expect(STATUS_NA_FICHA.faturado).toBe("faturado");
+  });
+
+  it("tira da ficha o recusado e o cancelado, que não viraram pedido", () => {
+    expect(STATUS_NA_FICHA.recusado).toBeNull();
+    expect(STATUS_NA_FICHA.cancelado).toBeNull();
   });
 });
 

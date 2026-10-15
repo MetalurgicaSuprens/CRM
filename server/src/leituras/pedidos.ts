@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { ItemDoErp, ItemEmAberto, PainelDePedidos } from "../../../web/src/dados/tipos.ts";
+import type { ItemDoErp, ItemEmAberto, PainelDePedidos, PedidoDaFicha, StatusDoPedido } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, resumoDoCliente, texto, type Linha } from "./linhas.ts";
 
@@ -67,6 +67,32 @@ export function lerPedidos(db: DatabaseSync, sessao: Sessao): PainelDePedidos {
       }),
     ),
   };
+}
+
+/**
+ * O histórico da ficha: os pedidos em aberto e os faturados nos 12 meses, do cliente e atribuídos ao
+ * login, do mais recente ao mais antigo. Quem chama já conferiu que o cliente é da carteira.
+ */
+export function lerPedidosDaFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): PedidoDaFicha[] {
+  const { marcas, codigos } = escopo(sessao);
+  return lerLinhas(
+    db,
+    `SELECT 'em_aberto' AS status, pedido, emissao, entrega, itens, valor
+       FROM pedido_aberto WHERE cliente = ? AND representante IN (${marcas})
+     UNION ALL
+     SELECT 'faturado', pedido, emissao, faturado_em, itens, valor
+       FROM pedido_faturado WHERE cliente = ? AND representante IN (${marcas})
+     ORDER BY emissao DESC, pedido DESC`,
+    [codigoDoCliente, ...codigos, codigoDoCliente, ...codigos],
+  ).map((linha) => ({
+    id: texto(linha, "pedido"),
+    numero: texto(linha, "pedido"),
+    status: texto(linha, "status") as StatusDoPedido,
+    emissao: texto(linha, "emissao"),
+    entrega: texto(linha, "entrega"),
+    itens: numero(linha, "itens"),
+    valor: numero(linha, "valor"),
+  }));
 }
 
 /** Série e número: o número sozinho se repete entre séries. */
