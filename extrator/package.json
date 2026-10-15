@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "foto": "node src/principal.ts",
+    "mapas": "node src/mapas/gerarMapas.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
