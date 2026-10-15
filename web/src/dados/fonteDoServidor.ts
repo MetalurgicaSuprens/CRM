@@ -3,10 +3,10 @@ import { PedidoBloqueado, type FonteDeDados } from "./fonteDeDados";
 /*
  * Os dados reais: a API do servidor, que lê a foto do ERP (server/src/rotas.ts). Mesma origem,
  * sem CORS; o representante vem da sessão, nunca daqui.
- * Rascunhos e envio chegam nas próximas fases (app.db na F3 e F5).
+ * Rascunhos e envio chegam com os pedidos (app.db na F5).
  */
 
-const AINDA_SEM_PEDIDOS = "Com os dados reais, os pedidos ainda não são gravados. Isso chega com o login (F3) e os pedidos (F5).";
+const AINDA_SEM_PEDIDOS = "Com os dados reais, os pedidos ainda não são gravados. Isso chega com os pedidos (F5).";
 
 export const fonteDoServidor: FonteDeDados = {
   carregarSituacaoDosDados: () => buscar("/api/situacao"),
@@ -23,8 +23,14 @@ export const fonteDoServidor: FonteDeDados = {
   enviarPedido: () => Promise.reject(new Error(AINDA_SEM_PEDIDOS)),
 };
 
+export async function mensagemDeErro(resposta: Response): Promise<string> {
+  const corpo = (await resposta.json().catch(() => null)) as { erro?: string } | null;
+  return corpo?.erro ?? `O servidor respondeu ${resposta.status}.`;
+}
+
 async function buscar<T>(caminho: string): Promise<T> {
   const resposta = await fetch(caminho, { headers: { Accept: "application/json" } });
+  if (resposta.status === 401) return irParaAEntrada(resposta);
   if (!resposta.ok) throw new Error(await mensagemDeErro(resposta));
   return (await resposta.json()) as T;
 }
@@ -35,13 +41,20 @@ async function buscar<T>(caminho: string): Promise<T> {
  */
 async function buscarOuNulo<T>(caminho: string): Promise<T | null> {
   const resposta = await fetch(caminho, { headers: { Accept: "application/json" } });
+  if (resposta.status === 401) return irParaAEntrada(resposta);
   if (resposta.status === 404 || resposta.status === 400) return null;
   if (resposta.status === 409) throw new PedidoBloqueado(await mensagemDeErro(resposta));
   if (!resposta.ok) throw new Error(await mensagemDeErro(resposta));
   return (await resposta.json()) as T;
 }
 
-async function mensagemDeErro(resposta: Response): Promise<string> {
-  const corpo = (await resposta.json().catch(() => null)) as { erro?: string } | null;
-  return corpo?.erro ?? `O servidor respondeu ${resposta.status}.`;
+/**
+ * Sem sessão, porque ainda não entrou ou porque ela terminou: volta para a entrada, que explica o
+ * motivo. A carga recomeça do zero, sem nada do login anterior na memória, e a tela que pediu os
+ * dados fica esperando até a troca de página.
+ */
+async function irParaAEntrada(resposta: Response): Promise<never> {
+  const corpo = (await resposta.json().catch(() => null)) as { motivo?: string | null } | null;
+  window.location.replace(corpo?.motivo ? `/entrar?motivo=${encodeURIComponent(corpo.motivo)}` : "/entrar");
+  return new Promise<never>(() => {});
 }

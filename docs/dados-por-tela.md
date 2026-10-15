@@ -477,30 +477,31 @@ Abre depois do envio (MontarPedido.tsx:92). Na aba Enviados, o mesmo andamento e
   - A tela de hoje mostra uma frase que cita o produto ("O produto X saiu de linha…", pedidosFicticios.ts:233). A recusa por item (fora de linha, sem preço, fora do catálogo) leva o código do produto em `pedido_crm.motivo_produto`, único parâmetro da frase fixa. Nenhum outro texto variável entra.
 - Não extrair `PV1_ULB_*`, `PV1_JCA`, `PV1_JLB_CRE`, `PV1_JUS_BPV`, `PV1_LIM_CRE`, `PV1_TIT_ABE`, `PV1_PED_ABE`, `PV1_VLR_PED`, `PV1_TRA_*` nem `LOG_USU`.
 
-## 9. Entrar e Convite
+## 9. Entrar e Convite (feitas em 2026-10-15)
+
+Feitas com a chave de acesso de verdade no modo de dados reais em 2026-10-15 (F3). No protótipo com dados fictícios, os botões continuam simulando. As regras ficam em `server/src/login`, e as telas usam `web/src/acesso/login.ts`.
 
 **Entrar**
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Chave de acesso | "Entrar com chave de acesso" (Entrar.tsx:42-50) | rpID igual ao domínio, verificação do usuário, chave residente, sem atestação (plano.md:136-140) | nenhuma | app.db |
-| Motivo da saída | "Você saiu", "60 minutos sem uso", "limite de 12 horas" | `?motivo=` com saiu, inatividade ou limite; sessão de 60 min sem uso e 12 h no máximo (plano.md:144) | nenhuma | app.db |
-| Aviso de registro | "Os acessos ao CRM são registrados." (TelaDeAcesso.tsx:20-23) | Texto fixo | nenhuma | navegador |
+| Chave de acesso | "Entrar com chave de acesso" (Entrar.tsx) | Chave residente: o aparelho mostra as chaves do CRM que tem, sem digitar nada. Exige a digital, o rosto ou o PIN e fica presa ao domínio do CRM. O servidor confere a assinatura, o desafio de uso único e o dono da chave (`POST /api/entrar/opcoes` e `/api/entrar`) | nenhuma | app.db |
+| Motivo da saída | "Você saiu", "60 minutos sem uso", "limite de 12 horas", "acesso encerrado pelo administrador" | O `motivo` da 401 do servidor vira `?motivo=` (saiu, inatividade, limite ou revogada) | nenhuma | app.db |
+| Erro da chave | "A chave de acesso não foi usada: o pedido foi cancelado ou o tempo acabou" e outros (acesso/chaveDeAcesso.ts, `explicarErro`) | O erro do aparelho na língua de quem usa, sem detalhe técnico | nenhuma | navegador |
+| Aviso de registro | "Os acessos ao CRM são registrados." (TelaDeAcesso.tsx) | Texto fixo | nenhuma | navegador |
 
 **Convite**
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Saudação | "Olá, Carlos Andrade" (Convite.tsx:43) | Só com token válido, por rota pública | (foto: representante) | servidor |
-| Validade | "vale até 10/10 às 16:42" (Convite.tsx:71) | Gravada na criação, 24 a 48 h | nenhuma | app.db |
-| Estado do convite | "Convite expirado", "já usado", "Link incompleto" | Uso único; consumido só depois que a chave é criada (plano.md:133) | nenhuma | app.db |
-| Navegador de aplicativo | Aviso com "Copiar link" (Convite.tsx:76-100) | `userAgent`, sem enviar nem guardar | nenhuma | navegador |
-| Chave criada | Tela de conclusão | Grava a chave pública | nenhuma | app.db |
+| Saudação | "Olá, Star Vendas" (Convite.tsx) | O nome do login, só com token válido, pela rota pública `POST /api/convite/consultar`; o token vai no corpo, nunca na URL do pedido | nenhuma (app.db: usuarios) | servidor |
+| Validade | "vale até 17/10 às 15:42" | Gravada na criação: 48 horas | nenhuma | app.db |
+| Estado do convite | "Convite expirado", "já usado", "trocado" e "Link incompleto" | Uso único, usado só junto com a chave gravada (plano.md:133); o convite novo do mesmo login troca o anterior; token fora do formato nem chega ao servidor | nenhuma | app.db |
+| Navegador de aplicativo | Aviso com "Copiar link" (Convite.tsx) | `userAgent`, sem enviar nem guardar | nenhuma | navegador |
+| Chave criada | Tela de conclusão e "Ir para o CRM" | Grava a chave pública e já abre a sessão | nenhuma | app.db |
 
-- **Rota do Convite.** Hoje o Convite chama `carregarSituacaoDosDados` (Convite.tsx:28), que vai exigir sessão na F3. O Convite precisa de uma rota pública que confere o hash do token e devolve só o nome e a validade.
-- **Validade.** Hoje é calculada no navegador como agora + 48 h (Convite.tsx:15 e 31). Passa a vir do servidor.
-- **Texto do convite expirado.** Ele cita 48 horas fixas (Convite.tsx:126). Se a validade variar de 24 a 48 h, o texto deixa de citar o prazo ou usa a validade gravada no app.db.
-- **Token.** Vai depois do `#` (plano.md:132) e o banco guarda só o hash. Há limite de requisições por IP (plano.md:92).
+- **Token.** Vai depois do `#` (plano.md:132), com 256 bits, e o banco guarda só o hash. As rotas do login e do convite têm limite de 30 pedidos por IP em 10 minutos (plano.md:92).
+- **Prévia do WhatsApp.** Abrir o link só consulta o convite; ele é usado só quando a chave é criada.
 
 ## 10. Mapa (feito em 2026-10-15)
 
@@ -653,14 +654,16 @@ A `lista_de_precos` é a maior tabela da foto. Medido em 14/10, na Star Vendas: 
 
 ## O que fica no app.db
 
+As seis primeiras tabelas existem desde a F3 (`server/src/bancoDoApp.ts`, migração 1). Rascunhos e pedidos chegam na F5.
+
 | Tabela | O que guarda | Telas |
 |---|---|---|
-| `usuarios` | id, papel (representante ou admin), nome da pessoa, ativo, identificador WebAuthn aleatório, criado em | todas, Admin |
-| `usuario_codigos` | usuário, código do representante, ligado em, ligado por; um login tem um ou mais códigos | todas, Admin |
-| `chaves` | id da credencial, usuário, chave pública, contador, provedor, criada em, último uso, revogada em | Entrar, Convite, Montar pedido, Admin |
-| `convites` | hash do token, usuário, criado por, criado em, expira em, consumido em | Convite, Admin |
+| `usuarios` | id, nome do login, ativo, identificador WebAuthn aleatório, criado em. O papel de admin entra com a API de admin | todas, Admin |
+| `usuario_codigos` | usuário, código do representante, ligado em, ligado por; um login tem um ou mais códigos, e um código fica em um login ativo só | todas, Admin |
+| `chaves` | id da credencial, usuário, chave pública, contador, transportes, AAGUID e provedor, sincronizada, criada em, último uso, revogada em | Entrar, Convite, Montar pedido, Admin |
+| `convites` | hash do token, usuário, criado por, criado em, expira em, usado em, trocado em | Convite, Admin |
 | `sessoes` | hash do token, usuário, chave usada, criada em, último uso, encerrada em e motivo | todas, Entrar |
-| `auditoria` | momento, usuário, evento, alvo, resultado | Admin |
+| `auditoria` | momento, usuário (ou "linha-de-comando"), evento, alvo, resultado | Admin |
 | `rascunhos` e itens | id aleatório, usuário, cliente (id opaco), entrega, observação, atualizado em; itens com produto e quantidade em peças | Pedidos, Montar pedido |
 | `pedidos` e itens | número CRM, usuário, cliente, enviado em, entrega, observação, total estimado, hash do conteúdo, asserção da chave e id da chave; itens com produto, quantidade, cento, família e medida copiados da foto | Pedidos, Detalhe |
 | sequência do número CRM | último número usado; nunca reutilizado | Pedidos |
@@ -824,6 +827,30 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
   - A linha aberta, nas abas de Pedidos e na ficha: só uma por vez, o cabeçalho um tom mais escuro e o resumo por família antes dos itens. Na ficha, a tabela de pedidos passou a abrir como a de Pedidos, e os faturados trazem os itens das notas (`pedido_faturado_item`).
   - A busca de cliente em Pedidos, pelo nome fantasia ou pelo CNPJ (dados/busca.ts, com teste). A mesma regra passou a valer na busca de Clientes e na escolha do cliente do pedido, que também acham o CNPJ com pontuação e com o zero da esquerda.
 - **Ainda não feito:** grupos por raiz de CNPJ, a troca da foto por SFTP com manifesto e os esquemas de resposta da API.
+
+## O que a F3 já faz (2026-10-15)
+
+O login de verdade, com a chave de acesso, aprovado pelo Lucas em 2026-10-15 com o pacote `@simplewebauthn/server` (versão fixa 14.0.3; só `server/src/login/chaveDeAcesso.ts` o importa). O login de teste fixo saiu: no modo de dados reais, entra-se pelo convite e pela chave, como os representantes vão entrar.
+
+- **Convite, chave e sessão.**
+  - As regras de convite, chave e sessão do plano (plano.md, "Login e sessão") estão em `server/src/login`, com os testes em `login.test.ts`.
+  - Os testes passam pela conferência inteira do pacote, com um aparelho simulado que assina como um de verdade.
+  - Conferido de ponta a ponta no Chrome, com o autenticador virtual do próprio Chrome: convite, chave, sessão, saída, entrada de novo, convite reusado, link cortado, sem sessão e sem chave.
+- **Proteções.**
+  - Cookie `__Host-` com HttpOnly, Secure e SameSite=Strict; o JavaScript da página não lê o token.
+  - POST só da própria origem.
+  - Limite por IP no login e por usuário no resto.
+  - O IP só vem do X-Forwarded-For do Apache, nesta máquina.
+  - Erro do pedido sem detalhe.
+- **Admin pela linha de comando** (`npm run admin`), no servidor, por SSH: `convidar`, `novo-convite`, `usuarios`, `revogar` e `desativar`.
+  - Os códigos são conferidos contra a lista de autorizados da foto (CLAUDE.md, regra 4).
+  - Toda ação vai para a auditoria.
+- **Auditoria.** Grava a chave criada e a recusada, a entrada e a recusada, a saída, as ações de admin e a ficha consultada. O alvo é sempre um id; nome e IP ficam fora (pergunta 36).
+- **Falta na F3:**
+  - a tela de Admin, só na rede interna, com a API de admin e o login de admin;
+  - a cópia da auditoria em `saida/auditoria/*.jsonl` para a LAN, que vem com o canal SFTP da I1;
+  - apagar a auditoria e as sessões antigas, depois de 6 a 12 meses (plano.md:155).
+- **Antes da produção:** o domínio do CRM (`CRM_ORIGEM`). As chaves criadas ficam presas a ele, e as deste computador, a `localhost`.
 
 ## Perguntas para a F2
 

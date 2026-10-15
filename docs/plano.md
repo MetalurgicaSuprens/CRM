@@ -280,7 +280,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - SQL de faturamento do Gestao;
   - totais conferidos com o RELCUS001, inclusive o relatório por representante;
   - listagem das unidades e dos tipos de movimento reais.
-- **F3 — Login, sessões, escopo e auditoria**, com testes automáticos.
+- **F3 — Login, sessões, escopo e auditoria**, com testes automáticos. Feita em 2026-10-15 no servidor e nas telas de Entrar e Convite, com as ações de admin pela linha de comando; faltam a tela de Admin e a cópia da auditoria para a LAN (dados-por-tela.md, "O que a F3 já faz").
 - **F4 — Carteira e análises.** Termina com um piloto só de leitura com 2–3 representantes.
 - **F5 — Pedidos.** Termina com um piloto de ponta a ponta: CRM → SGI → aprovações → Omega.
 - **F6 — Mapa:** feito em 2026-10-15, antes da F3, a pedido do Lucas. Ele funciona com os dados reais e com o fictício (dados-por-tela.md, seção 10).

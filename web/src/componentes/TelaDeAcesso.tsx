@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ShieldCheck } from "lucide-react";
+import { isDadosReais } from "../dados/api";
 import estilos from "./TelaDeAcesso.module.css";
 
 /** Moldura das telas de entrada e de convite, fora do menu do CRM. */
@@ -21,7 +22,7 @@ export function TelaDeAcesso({ titulo, children }: { titulo: string; children: R
           <ShieldCheck size={14} aria-hidden="true" />
           Os acessos ao CRM são registrados.
         </p>
-        <p className={estilos.prototipo}>Protótipo: os botões só simulam a chave de acesso. A de verdade chega com o login (F3).</p>
+        {isDadosReais ? null : <p className={estilos.prototipo}>Protótipo: os botões só simulam a chave de acesso. A de verdade vale com os dados reais.</p>}
       </main>
     </div>
   );

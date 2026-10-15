@@ -2,12 +2,14 @@
 setlocal
 title CRM - dados reais neste computador
 
-rem Abre o CRM com os dados reais do ERP, so neste computador: ainda nao ha login (F3), entao
-rem nada fica exposto na rede. Gera uma foto nova do ERP, sobe a API e o site e abre o navegador.
+rem Abre o CRM com os dados reais do ERP, so neste computador: a API e o site escutam so nesta
+rem maquina. Gera uma foto nova do ERP, sobe a API e o site e abre o navegador. Para entrar, a
+rem chave de acesso (F3).
 rem Antes da primeira vez:
 rem   extrator\.env  com o acesso ao Oracle (chaves em extrator\.env.example);
-rem   server\.env    com o login de teste e os codigos dele (chaves em server\.env.example);
 rem   data\representantes-autorizados.txt  com os codigos que entram na foto, um por linha.
+rem Depois da primeira foto, crie o seu login uma vez e abra no Chrome ou no Edge o link do convite:
+rem   npm run admin -- convidar --nome "Star Vendas" --codigos 1401,1402
 rem Para atualizar os dados, rode de novo: com o CRM aberto, so a foto muda, e a API passa a
 rem usa-la em ate meio minuto. Para fechar, feche as janelas "CRM - API" e "CRM - site".
 
@@ -27,11 +29,6 @@ if not exist "extrator\.env" (
   pause
   exit /b 1
 )
-if not exist "server\.env" (
-  echo Falta server\.env com o login de teste. Veja as chaves em server\.env.example.
-  pause
-  exit /b 1
-)
 
 echo Gerando a foto do ERP...
 call npm run foto
@@ -40,6 +37,9 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+
+echo Logins do CRM neste computador:
+call npm run admin --silent -- usuarios
 
 call :abrirSeFechado 5176 "CRM - API" dev:servidor
 call :abrirSeFechado 5175 "CRM - site" dev:real

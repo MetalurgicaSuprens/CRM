@@ -1,46 +1,62 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router";
 import { CircleCheck, Copy, Fingerprint, KeyRound, ShieldCheck, Smartphone, TriangleAlert } from "lucide-react";
+import { login, type ConsultaDoConvite } from "../acesso/login";
 import { abertoEmNavegadorDeAplicativo } from "../acesso/navegador";
 import botoes from "../componentes/Botao.module.css";
 import { TelaDeAcesso } from "../componentes/TelaDeAcesso";
-import { carregarSituacaoDosDados } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
 import estilos from "./Acesso.module.css";
 
-type EstadoDoConvite = "valido" | "expirado" | "usado" | "incompleto";
-
-/** Tempo que o protótipo finge esperar o aparelho criar a chave. */
-const ESPERA_SIMULADA_MS = 1_400;
-const VALIDADE_DO_CONVITE_MS = 48 * 60 * 60 * 1_000;
+type ConviteIndisponivel = Exclude<ConsultaDoConvite["estado"], "valido">;
 
 /**
- * O token vem depois do "#", para não aparecer em log de servidor. No protótipo, o próprio token
- * escolhe o estado: #expirado, #usado ou qualquer outro (válido).
+ * O convite do admin. O token vem depois do "#", para não aparecer em log de servidor, e só é usado
+ * quando a chave é criada: a prévia do link no WhatsApp abre esta página sem gastar o convite.
  */
 export function Convite() {
-  const { hash } = useLocation();
-  const estado = lerEstado(hash);
-  return estado === "valido" ? <CriarChave /> : <ConviteIndisponivel estado={estado} />;
+  const token = useLocation().hash.replace(/^#/, "");
+  const { dados: consulta, erro } = useCarga(`convite:${token}`, () => login.consultarConvite(token));
+  if (erro) return <AvisoDoConvite titulo="Convite" texto={erro.message} />;
+  if (!consulta) {
+    return (
+      <TelaDeAcesso titulo="Convite">
+        <p className={estilos.texto}>Conferindo o convite…</p>
+      </TelaDeAcesso>
+    );
+  }
+  if (consulta.estado !== "valido") return <AvisoDoConvite {...INDISPONIVEL[consulta.estado]} />;
+  return <CriarChave token={token} nome={consulta.nome} validoAte={consulta.validoAte} />;
 }
 
-function CriarChave() {
-  const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
+function CriarChave({ token, nome, validoAte }: { token: string; nome: string; validoAte: string }) {
   const [etapa, setEtapa] = useState<"inicio" | "criando" | "pronta">("inicio");
+  const [erro, setErro] = useState<string | null>(null);
   const [noAplicativo] = useState(() => abertoEmNavegadorDeAplicativo(navigator.userAgent));
-  const [validade] = useState(() => formatarValidade(new Date(Date.now() + VALIDADE_DO_CONVITE_MS)));
 
-  useEffect(() => {
-    if (etapa !== "criando") return;
-    const espera = window.setTimeout(() => setEtapa("pronta"), ESPERA_SIMULADA_MS);
-    return () => window.clearTimeout(espera);
-  }, [etapa]);
+  const criar = () => {
+    setEtapa("criando");
+    setErro(null);
+    login.criarChaveDoConvite(token).then(
+      () => setEtapa("pronta"),
+      (falha: Error) => {
+        setErro(falha.message);
+        setEtapa("inicio");
+      },
+    );
+  };
 
   if (etapa === "pronta") return <ChaveCriada />;
   return (
     <TelaDeAcesso titulo="Crie sua chave de acesso">
       {noAplicativo ? <AvisoDeAplicativo /> : null}
-      {situacao ? <p className={estilos.saudacao}>Olá, {situacao.representante.nome}</p> : null}
+      {erro ? (
+        <p className={`${estilos.aviso} ${estilos.alerta}`} role="alert">
+          <TriangleAlert size={16} aria-hidden="true" />
+          {erro}
+        </p>
+      ) : null}
+      <p className={estilos.saudacao}>Olá, {nome}</p>
       <p className={estilos.texto}>
         Você foi convidado para o CRM dos representantes da Suprens. Para entrar, não vai precisar de senha: basta criar uma chave
         de acesso neste aparelho.
@@ -59,16 +75,11 @@ function CriarChave() {
           Ninguém usa a sua chave sem o seu aparelho desbloqueado.
         </li>
       </ul>
-      <button
-        type="button"
-        className={`${botoes.primario} ${botoes.aguardando} ${estilos.largo}`}
-        onClick={() => setEtapa("criando")}
-        disabled={etapa === "criando"}
-      >
+      <button type="button" className={`${botoes.primario} ${botoes.aguardando} ${estilos.largo}`} onClick={criar} disabled={etapa === "criando"}>
         <KeyRound size={20} aria-hidden="true" />
         {etapa === "criando" ? "Confirme no seu aparelho…" : "Criar chave de acesso"}
       </button>
-      <p className={estilos.validade}>Este convite vale até {validade} e só pode ser usado uma vez.</p>
+      <p className={estilos.validade}>Este convite vale até {formatarValidade(validoAte)} e só pode ser usado uma vez.</p>
     </TelaDeAcesso>
   );
 }
@@ -120,24 +131,27 @@ function ChaveCriada() {
   );
 }
 
-const INDISPONIVEL: Record<Exclude<EstadoDoConvite, "valido">, { titulo: string; texto: string }> = {
+const INDISPONIVEL: Record<ConviteIndisponivel, { titulo: string; texto: string }> = {
   expirado: {
     titulo: "Convite expirado",
-    texto: "Este convite passou do prazo de 48 horas. Peça um novo ao administrador do CRM.",
+    texto: "Este convite passou do prazo. Peça um novo ao administrador do CRM.",
   },
   usado: {
     titulo: "Convite já usado",
     texto:
       "Este convite já criou uma chave de acesso e não vale mais. Se foi você, entre pela tela de entrada. Se não foi, avise o administrador do CRM agora.",
   },
-  incompleto: {
+  trocado: {
+    titulo: "Convite trocado",
+    texto: "O administrador mandou um convite mais novo, e só o último link vale. Use o último que você recebeu.",
+  },
+  invalido: {
     titulo: "Link incompleto",
-    texto: "Abra o link do convite exatamente como você recebeu, sem cortar nenhuma parte.",
+    texto: "Abra o link do convite exatamente como você recebeu, sem cortar nenhuma parte. Se não der certo, peça um novo ao administrador do CRM.",
   },
 };
 
-function ConviteIndisponivel({ estado }: { estado: Exclude<EstadoDoConvite, "valido"> }) {
-  const { titulo, texto } = INDISPONIVEL[estado];
+function AvisoDoConvite({ titulo, texto }: { titulo: string; texto: string }) {
   return (
     <TelaDeAcesso titulo={titulo}>
       <p className={`${estilos.aviso} ${estilos.alerta}`} role="alert">
@@ -151,14 +165,8 @@ function ConviteIndisponivel({ estado }: { estado: Exclude<EstadoDoConvite, "val
   );
 }
 
-function lerEstado(fragmento: string): EstadoDoConvite {
-  const token = fragmento.replace(/^#/, "");
-  if (!token) return "incompleto";
-  if (token === "expirado" || token === "usado") return token;
-  return "valido";
-}
-
-function formatarValidade(data: Date): string {
+function formatarValidade(momentoIso: string): string {
+  const data = new Date(momentoIso);
   const dia = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" }).format(data);
   const hora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" }).format(data);
   return `${dia} às ${hora}`;

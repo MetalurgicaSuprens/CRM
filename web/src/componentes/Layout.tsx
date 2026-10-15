@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
 import { ChartColumn, ClipboardList, Clock, Eye, EyeOff, House, LogOut, MapIcon, Users } from "lucide-react";
+import { login } from "../acesso/login";
 import { useValores } from "../contexto/valores";
 import { carregarSituacaoDosDados, isDadosReais } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
@@ -51,10 +52,10 @@ export function Layout() {
             </span>
             <p className={estilos.nomeUsuario}>{situacao.representante.nome}</p>
             <p className={estilos.codigoUsuario}>{formatarCodigosDoRepresentante(situacao.representante.codigos)}</p>
-            <Link to="/entrar?motivo=saiu" className={estilos.sair}>
+            <button type="button" className={estilos.sair} onClick={sair}>
               <LogOut size={15} aria-hidden="true" />
               Sair
-            </Link>
+            </button>
           </div>
         ) : null}
       </aside>
@@ -92,6 +93,14 @@ function Marca() {
       <span className={estilos.nomeProduto}>CRM</span>
     </div>
   );
+}
+
+/**
+ * Encerra a sessão e carrega a entrada do zero: nada do login que saiu fica na memória da página,
+ * nem para quem entrar em seguida no mesmo aparelho.
+ */
+function sair(): void {
+  void login.sair().finally(() => window.location.replace("/entrar?motivo=saiu"));
 }
 
 /** "Carlos Andrade" vira "CA": a primeira letra do primeiro e do último nome. */
