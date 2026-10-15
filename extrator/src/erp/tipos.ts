@@ -1,4 +1,4 @@
-import type { Mercado } from "dominio/tipos";
+import type { Mercado, StatusDoCadastro } from "dominio/tipos";
 
 /*
  * O que o extrator lê do ERP, já com nomes do CRM. A chave do cliente ("empresa/código") só
@@ -19,8 +19,8 @@ export type ClienteDaCarteira = {
   mercado: Mercado;
   /** VEND_1: o representante dono do cliente. */
   representante: string;
-  /** Fora de ATIVO no cadastro do SGI (dominio/clienteNegativo.ts): aparece, mas não recebe pedido. */
-  isNegativo: boolean;
+  /** Fora de ativo no cadastro do SGI, o cliente aparece, mas não recebe pedido (dominio/statusDoCadastro.ts). */
+  status: StatusDoCadastro;
 };
 
 export type VendaDoMes = { chave: string; mes: string; valor: number; pecas: number };

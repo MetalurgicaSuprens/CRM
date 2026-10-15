@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
+import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
 import { dataDoMomento } from "dominio/datas";
 import {
   clientesFicticios,
@@ -9,6 +9,7 @@ import {
   pedidosNoErpFicticios,
   situacaoDosDadosFicticia,
 } from "./ficticio";
+import { PedidoBloqueado } from "./fonteDeDados";
 import { fonteFicticia } from "./fonteFicticia";
 
 // Contrato que o extrator (F2) também precisa cumprir: tendência, faturado e variação contam a mesma história.
@@ -81,14 +82,17 @@ describe("contrato das outras telas", () => {
   });
 });
 
-describe("cliente negativo na carteira", () => {
-  it("existe no fictício, para a tela ter exemplo do selo", () => {
-    expect(clientesFicticios().some((cliente) => cliente.isNegativo)).toBe(true);
+describe("cliente fora de ativo no cadastro", () => {
+  it("existe no fictício, inativo e substituído, para a tela ter exemplo dos dois", () => {
+    const status = new Set(clientesFicticios().map((cliente) => cliente.status));
+    expect([...status].sort()).toEqual(["ativo", "inativo", "substituido"]);
   });
 
-  it("não abre o catálogo: a montagem do pedido recebe o aviso", async () => {
-    const negativo = clientesFicticios().find((cliente) => cliente.isNegativo);
-    await expect(fonteFicticia.carregarCatalogo(negativo?.codigo ?? "")).rejects.toThrow(AVISO_DE_CLIENTE_NEGATIVO);
+  it("não abre o catálogo: a montagem do pedido recebe o aviso do status", async () => {
+    const inativo = clientesFicticios().find((cliente) => cliente.status === "inativo");
+    const recusa = fonteFicticia.carregarCatalogo(inativo?.codigo ?? "");
+    await expect(recusa).rejects.toBeInstanceOf(PedidoBloqueado);
+    await expect(recusa).rejects.toThrow(AVISO_DE_PEDIDO_BLOQUEADO.inativo);
   });
 });
 

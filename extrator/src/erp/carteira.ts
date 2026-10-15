@@ -1,5 +1,4 @@
-import { isClienteNegativo } from "dominio/clienteNegativo";
-import type { Mercado } from "dominio/tipos";
+import type { Mercado, StatusDoCadastro } from "dominio/tipos";
 import type { Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
 import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
@@ -8,8 +7,8 @@ import type { ClienteDaCarteira, DatasDeCompra, VendaDoMes } from "./tipos.ts";
 
 /*
  * A carteira dos representantes autorizados e a história de compras de cada cliente dela.
- * Carteira: clientes com VEND_1 de um autorizado e nota de venda nos 36 meses da janela. O status
- * do SGI só serve para marcar o cliente negativo: a foto não leva o status em si.
+ * Carteira: clientes com VEND_1 de um autorizado e nota de venda nos 36 meses da janela, com o
+ * status do cadastro do SGI, que a tela mostra quando não é ativo.
  */
 
 /**
@@ -50,7 +49,7 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
     uf: texto(linha, 6),
     mercado: mercadoDoTipoDeCliente(textoOuNulo(linha, 7)),
     representante: String(numero(linha, 8)),
-    isNegativo: isClienteNegativo(textoOuNulo(linha, 9)),
+    status: statusDoCadastro(textoOuNulo(linha, 9)),
   }));
 }
 
@@ -59,6 +58,23 @@ export function mercadoDoTipoDeCliente(tipo: string | null): Mercado {
   if (tipo === "M") return "MONTADORA";
   if (tipo === "E") return "EXPORTACAO";
   return "PRACA";
+}
+
+/** Os valores do CLI3_STA, os mesmos da tela de cadastro do SGI (untVenCli_CliMov.dfm:573-576). */
+const STATUS_DO_SGI = new Map<string, StatusDoCadastro>([
+  ["ATIVO", "ativo"],
+  ["INATIVO", "inativo"],
+  ["SUBSTITUIDO", "substituido"],
+]);
+
+/**
+ * O cliente sem status conta como ATIVO, como no próprio SGI (untDmVenPvd.dfm:2572). Um valor
+ * novo no SGI para a foto: sem saber o que ele significa, o CRM não decide se o cliente recebe pedido.
+ */
+export function statusDoCadastro(valorNoSgi: string | null): StatusDoCadastro {
+  const status = STATUS_DO_SGI.get(valorNoSgi ?? "ATIVO");
+  if (!status) throw new Error(`Status de cliente desconhecido no cadastro do SGI (CLI3_STA): ${valorNoSgi}`);
+  return status;
 }
 
 export async function lerVendasPorMes(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<VendaDoMes[]> {

@@ -8,11 +8,11 @@ import { Cartao } from "../componentes/Cartao";
 import { Quantidade } from "../componentes/Quantidade";
 import { DataRelativa } from "../componentes/Quando";
 import { Segmentos } from "../componentes/Segmentos";
-import { AvisoDeNegativo, SITUACOES, SeloNegativo, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { AvisoDePedidoBloqueado, StatusDoCliente } from "../componentes/StatusDoCliente";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Voltar } from "../componentes/Voltar";
-import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
 import { dataDoMomento } from "dominio/datas";
 import {
   carregarCatalogo,
@@ -23,7 +23,9 @@ import {
   excluirRascunho,
   salvarRascunho,
 } from "../dados/api";
+import { PedidoBloqueado } from "../dados/fonteDeDados";
 import { LIMITE_DA_OBSERVACAO, problemasDoPedido, totalDoPedido, valorDaLinha } from "../dados/pedido";
+import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { CatalogoDoCliente, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigoDoCliente, formatarContagem, formatarMomento, formatarNumero, normalizarParaBusca } from "../formato";
@@ -55,7 +57,7 @@ function Montagem({ codigoCliente, inicial }: { codigoCliente: string; inicial: 
   const { dados: catalogo, carregando, erro } = useCarga(`catalogo:${codigoCliente}`, () => carregarCatalogo(codigoCliente));
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   if (carregando || !situacao) return <Carregando />;
-  if (erro?.message === AVISO_DE_CLIENTE_NEGATIVO) return <ClienteNegativo />;
+  if (erro instanceof PedidoBloqueado) return <ClienteSemPedido aviso={erro.message} />;
   if (!catalogo) return <Indisponivel texto={erro?.message ?? "Cliente não encontrado na sua carteira."} />;
   return <Formulario catalogo={catalogo} inicial={inicial} relogio={situacao.relogio} />;
 }
@@ -411,15 +413,12 @@ function EscolherCliente() {
               ),
             },
             {
-              titulo: "Situação",
-              ordenarPor: (cliente) => SITUACOES[cliente.situacao].rotulo,
-              celula: (cliente) => (
-                <>
-                  <SituacaoCliente situacao={cliente.situacao} />
-                  {cliente.isNegativo ? <SeloNegativo /> : null}
-                </>
-              ),
+              titulo: "Status",
+              largura: 7,
+              ordenarPor: (cliente) => ROTULOS_DE_STATUS[cliente.status],
+              celula: (cliente) => <StatusDoCliente status={cliente.status} />,
             },
+            { titulo: "Situação", ordenarPor: (cliente) => SITUACOES[cliente.situacao].rotulo, celula: (cliente) => <SituacaoCliente situacao={cliente.situacao} /> },
             { titulo: "Última compra", ordenarPor: (cliente) => cliente.ultimaCompra, celula: (cliente) => <DataRelativa data={cliente.ultimaCompra} hoje={situacao.hoje} /> },
           ]}
         />
@@ -428,11 +427,11 @@ function EscolherCliente() {
   );
 }
 
-function ClienteNegativo() {
+function ClienteSemPedido({ aviso }: { aviso: string }) {
   return (
     <div className={estilos.pagina}>
       <Voltar para="/pedidos" rotulo="Pedidos" />
-      <AvisoDeNegativo />
+      <AvisoDePedidoBloqueado texto={aviso} />
     </div>
   );
 }

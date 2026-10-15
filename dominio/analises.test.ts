@@ -48,10 +48,10 @@ describe("parouDeComprar", () => {
     expect(parouDeComprar(historico({ compras: ["2026-06-01"], temPedidoEmAberto: true }), HOJE)).toBe(false);
   });
 
-  it("depois de 24 meses sem compra, o cliente é inativo e não parado", () => {
+  it("depois de 24 meses sem compra, o cliente é perdido e não parado", () => {
     const antigo = historico({ compras: ["2024-08-01"] });
     expect(parouDeComprar(antigo, HOJE)).toBe(false);
-    expect(classificarSituacao(antigo, HOJE)).toBe("inativo");
+    expect(classificarSituacao(antigo, HOJE)).toBe("perdido");
   });
 });
 

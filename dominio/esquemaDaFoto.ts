@@ -4,7 +4,7 @@
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
  */
 
-export const VERSAO_DO_ESQUEMA = 5;
+export const VERSAO_DO_ESQUEMA = 6;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -33,7 +33,7 @@ CREATE TABLE cliente (
   uf TEXT NOT NULL,
   mercado TEXT NOT NULL,
   situacao TEXT NOT NULL,
-  negativo INTEGER NOT NULL,
+  status TEXT NOT NULL,
   ultima_compra TEXT,
   cliente_desde INTEGER,
   ciclo_dias INTEGER,
@@ -205,9 +205,10 @@ export type Foto = {
     cidade: string;
     uf: string;
     mercado: string;
+    /** A situação de compra (dominio/tipos.ts, Situacao). */
     situacao: string;
-    /** 1 no cliente negativo (dominio/clienteNegativo.ts), 0 nos outros. O motivo não vem para a foto. */
-    negativo: number;
+    /** O status no cadastro do SGI: ativo, inativo ou substituido (dominio/tipos.ts, StatusDoCadastro). */
+    status: string;
     ultima_compra: string | null;
     cliente_desde: number | null;
     ciclo_dias: number | null;

@@ -170,7 +170,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 **Na LAN, antes de gravar na pasta do SGI**, a rotina do extrator:
 - só aceita arquivos com nome no padrão, até 64 KB, com limite de quantidade por execução e por representante por dia;
 - valida o schema estrito: limites de tamanho, conjunto de caracteres permitido e datas válidas pelas regras do SGI;
-- **revalida no Oracle** que o representante está ativo, que o cliente é de um dos códigos do login e não está negativo (fora de ATIVO no status do SGI, `NVL(CLI3_STA,'ATIVO')`; o CRM mostra o cliente com o selo "Negativo" e não aceita pedido para ele, decisão de 2026-10-14; sem ler `CRCL.SUSPENSO` nem a restrição financeira; decisão do Lucas em 2026-10-09), que cada produto é vendável e tem preço, e que as quantidades estão dentro dos limites. O pedido vai para o SGI com o código dono do cliente (`VEND_1`), escolhido na LAN e nunca pelo navegador;
+- **revalida no Oracle** que o representante está ativo, que o cliente é de um dos códigos do login e está ATIVO no status do SGI (`NVL(CLI3_STA,'ATIVO')`; o CRM mostra o status do cliente fora de ativo e não aceita pedido para ele, decisões de 2026-10-14 e 2026-10-15; sem ler `CRCL.SUSPENSO` nem a restrição financeira; decisão do Lucas em 2026-10-09), que cada produto é vendável e tem preço, e que as quantidades estão dentro dos limites. O pedido vai para o SGI com o código dono do cliente (`VEND_1`), escolhido na LAN e nunca pelo navegador;
 - manda pedidos acima de um valor-teto para revisão manual;
 - monta o arquivo do SGI **só com os campos validados**, gravando `.tmp` e depois renomeando;
 - mantém um registro de idempotência e uma quarentena;
@@ -222,7 +222,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
 - **Parou de comprar:**
   - sem compra há mais que o maior entre 60 dias e 2× o ciclo (ou mais de 180 dias se o cliente for irregular);
   - não conta se o cliente tem pedido em aberto;
-  - depois de 24 meses sem compra, vai para "inativo";
+  - depois de 24 meses sem compra, vai para "perdido" (até 2026-10-15, "inativo");
   - ordenado pela média mensal dos 12 meses anteriores à última compra.
 - **Comprando menos / mais:**
   - últimos 6 meses fechados contra os mesmos 6 meses do ano anterior; a queda ou a alta tem de continuar nos 3 últimos meses fechados, contra os mesmos 3 do ano anterior, para não marcar uma pausa ou um pico que já passou (decisão do Lucas em 2026-10-14);

@@ -11,6 +11,12 @@ import type {
   SituacaoDosDados,
 } from "./tipos";
 
+/**
+ * Recusa do catálogo do cliente que está na carteira, mas fora de ativo no cadastro
+ * (dominio/statusDoCadastro.ts). A mensagem é o aviso que a montagem do pedido mostra.
+ */
+export class PedidoBloqueado extends Error {}
+
 /** O que as telas pedem, venha dos dados fictícios (fonteFicticia) ou do servidor (fonteDoServidor). */
 export type FonteDeDados = {
   carregarSituacaoDosDados(): Promise<SituacaoDosDados>;

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
+import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
 import type { FotoAtual } from "./foto/fotoAtual.ts";
 import { lerAnalises } from "./leituras/analises.ts";
 import { lerCatalogo } from "./leituras/catalogo.ts";
@@ -44,8 +44,8 @@ export function registrarRotas(app: FastifyInstance, foto: FotoAtual): void {
     (requisicao, resposta) => {
       const resultado = lerCatalogo(foto.abrir(), sessaoDa(requisicao), requisicao.params.codigo);
       if (!resultado) return resposta.code(404).send(CLIENTE_FORA_DA_CARTEIRA);
-      // 409: o cliente existe e é do login, mas está negativo no cadastro e não recebe pedido.
-      if ("isNegativo" in resultado) return resposta.code(409).send({ erro: AVISO_DE_CLIENTE_NEGATIVO });
+      // 409: o cliente existe e é do login, mas está fora de ativo no cadastro e não recebe pedido.
+      if ("foraDeAtivo" in resultado) return resposta.code(409).send({ erro: AVISO_DE_PEDIDO_BLOQUEADO[resultado.foraDeAtivo] });
       return resultado.catalogo;
     },
   );

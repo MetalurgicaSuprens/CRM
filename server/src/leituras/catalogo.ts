@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { podeReceberPedido, type StatusForaDeAtivo } from "dominio/statusDoCadastro";
 import type { CatalogoDoCliente } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, numeroOuNulo, resumoDoCliente, texto, textoOuNulo } from "./linhas.ts";
@@ -6,13 +7,13 @@ import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, numeroOuNulo, resumoDoCli
 /*
  * O catálogo do cliente para montar o pedido: os preços da lista dele, com a família, a medida e a
  * embalagem de cada produto e se o cliente já comprou. Só de cliente da carteira do login; o
- * cliente negativo não recebe pedido e não tem catálogo.
+ * cliente fora de ativo no cadastro não recebe pedido e não tem catálogo.
  */
 
 /** Sem embalagem cadastrada (produto sem EAN), qualquer quantidade de peças. */
 const EMBALAGEM_SEM_CADASTRO = 1;
 
-export type ResultadoDoCatalogo = { catalogo: CatalogoDoCliente } | { isNegativo: true } | null;
+export type ResultadoDoCatalogo = { catalogo: CatalogoDoCliente } | { foraDeAtivo: StatusForaDeAtivo } | null;
 
 export function lerCatalogo(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): ResultadoDoCatalogo {
   const { marcas, codigos } = escopo(sessao);
@@ -23,10 +24,11 @@ export function lerCatalogo(db: DatabaseSync, sessao: Sessao, codigoDoCliente: s
     [codigoDoCliente, ...codigos],
   );
   if (!cliente) return null;
-  if (numero(cliente, "negativo") === 1) return { isNegativo: true };
+  const resumo = resumoDoCliente(cliente);
+  if (!podeReceberPedido(resumo.status)) return { foraDeAtivo: resumo.status };
   return {
     catalogo: {
-      cliente: resumoDoCliente(cliente),
+      cliente: resumo,
       tabela: textoOuNulo(cliente, "tabela_preco") ?? "",
       produtos: lerProdutos(db, codigoDoCliente, numeroOuNulo(cliente, "lista_de_precos")),
     },

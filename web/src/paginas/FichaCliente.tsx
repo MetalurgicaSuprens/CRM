@@ -20,13 +20,15 @@ import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
-import { AvisoDeNegativo, MotivoDoRisco, SeloNegativo, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { MotivoDoRisco, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { AvisoDePedidoBloqueado, SeloDoStatus } from "../componentes/StatusDoCliente";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { Voltar } from "../componentes/Voltar";
 import type { ColunaOrdenavel } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
+import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import type { FichaCliente as Ficha, Mercado, PedidoEmAberto, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
@@ -54,14 +56,16 @@ export function FichaCliente() {
         selo={
           <>
             <SituacaoCliente situacao={ficha.situacao} tamanho="grande" />
-            {ficha.isNegativo ? <SeloNegativo tamanho="grande" /> : null}
+            <SeloDoStatus status={ficha.status} tamanho="grande" />
           </>
         }
         descricao={descricaoDaFicha(ficha, situacao.semestre)}
         aoLado={<DadosDoCliente ficha={ficha} />}
         acoes={<NovoPedido ficha={ficha} aoBloquear={() => setCodigoDoAviso(ficha.codigo)} />}
       />
-      {codigoDoAviso === ficha.codigo ? <AvisoDeNegativo /> : null}
+      {codigoDoAviso === ficha.codigo && !podeReceberPedido(ficha.status) ? (
+        <AvisoDePedidoBloqueado texto={AVISO_DE_PEDIDO_BLOQUEADO[ficha.status]} />
+      ) : null}
       <Indicadores ficha={ficha} hoje={situacao.hoje} />
       <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo="Últimos 24 meses e o mês atual">
         <BarrasMensais
@@ -92,7 +96,7 @@ export function FichaCliente() {
   );
 }
 
-/** No cliente negativo, o botão continua, mas mostra o aviso no lugar de abrir o pedido. */
+/** No cliente fora de ativo no cadastro, o botão continua, mas mostra o aviso no lugar de abrir o pedido. */
 function NovoPedido({ ficha, aoBloquear }: { ficha: Ficha; aoBloquear: () => void }) {
   const classe = `${botoes.primario} ${estilos.novoPedido}`;
   const rotulo = (
@@ -101,7 +105,7 @@ function NovoPedido({ ficha, aoBloquear }: { ficha: Ficha; aoBloquear: () => voi
       Novo pedido
     </>
   );
-  if (ficha.isNegativo) {
+  if (!podeReceberPedido(ficha.status)) {
     return (
       <button type="button" className={classe} onClick={aoBloquear}>
         {rotulo}

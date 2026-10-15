@@ -1,0 +1,21 @@
+.ativo {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+/* O aviso do pedido bloqueado, no lugar do pedido: em vermelho e com o ícone, nunca só pela cor */
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  padding: var(--esp-3) var(--esp-4);
+  border-radius: var(--raio);
+  background: var(--cor-critico-fundo);
+  color: var(--cor-critico);
+  font-weight: 500;
+}
+
+.aviso svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}

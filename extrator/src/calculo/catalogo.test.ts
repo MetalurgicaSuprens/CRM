@@ -18,7 +18,7 @@ function cliente(numero: number, mercado: ClienteDaCarteira["mercado"] = "PRACA"
     uf: "SP",
     mercado,
     representante: "1401",
-    isNegativo: false,
+    status: "ativo",
   };
 }
 

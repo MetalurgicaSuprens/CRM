@@ -71,7 +71,7 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
   - A data da foto vale para as regras do extrator e para as datas que vêm do ERP.
   - O relógio vale para:
     - o rótulo "hoje" da barra;
-    - a data mínima de entrega (MontarPedido.tsx:69 e 124; pedido.ts:75-85);
+    - a data mínima de entrega (MontarPedido.tsx:71 e 126; pedido.ts:75-85);
     - o dia por extenso e a saudação do Início (Inicio.tsx:29-30 e 219-230);
     - todo momento gravado no app.db: "Enviado" e "Atualizado" em Pedidos, "Rascunho salvo" e o cabeçalho e o Andamento do Detalhe (formato.ts:144-156).
 - A CRVN tem uma linha por gerente e supervisor (PK em ABC71-CR.md:5475). Por isso o nome é agrupado por VENDEDOR.
@@ -109,13 +109,13 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Se ele vier nulo ou 0, vale o dono do cliente na data da nota, pelas trocas de `VEND_1` no CRCLH.
   - Antes da primeira troca, vale o "de" dela. Sem trocas, vale o `VEND_1` atual.
   - O extrator aplica a regra na LAN. Para os indicadores, grava as somas por representante e mês (`painel_mes`). Para a aba Faturados, grava só o representante já atribuído de cada nota (`nota.representante`, pergunta 23). Nada do CRCLH vai para a foto (plano.md:35).
-- **Mesmo dia útil (proposta a confirmar).** Em 2026-10-13, o Lucas estranhou o "+82%" ao lado dos R$ 610 mil de out/25 no gráfico: a base (R$ 172 mil até o 7º dia útil) não aparecia. Desde então o cartão mostra a base, e a dica do gráfico diz "mês inteiro". Com N = dia útil de hoje, soma-se o mesmo mês do ano anterior até antes do (N+1)º dia útil. Assim entram as notas de sábado ou de feriado logo depois do Nº. Se o mês do ano anterior tiver menos de N dias úteis, entra o mês inteiro. O fictício faz só uma proporção (ficticio.ts:514) e não serve de regra.
+- **Mesmo dia útil (proposta a confirmar).** Em 2026-10-13, o Lucas estranhou o "+82%" ao lado dos R$ 610 mil de out/25 no gráfico: a base (R$ 172 mil até o 7º dia útil) não aparecia. Desde então o cartão mostra a base, e a dica do gráfico diz "mês inteiro". Com N = dia útil de hoje, soma-se o mesmo mês do ano anterior até antes do (N+1)º dia útil. Assim entram as notas de sábado ou de feriado logo depois do Nº. Se o mês do ano anterior tiver menos de N dias úteis, entra o mês inteiro. O fictício faz só uma proporção (ficticio.ts:520) e não serve de regra.
 - **A faturar no mês.**
   - Entram os itens com saldo e `VEPD.DT_ENTREGA` até o último dia do mês, inclusive os vencidos.
   - Conta a entrega de cada item, como no protótipo (CRM-prototipo/REGRAS.md:52). O fictício usa a entrega do pedido inteiro.
   - O extrator grava em cada pedido o valor com entrega até o fim do mês, e o servidor soma os pedidos do representante.
   - A reconstrução das 00:10 resolve a virada do mês (plano.md:306).
-  - No gráfico, o mês corrente é o único com `aFaturar` como número, inclusive 0; nos outros ele é nulo (tipos.ts:120-124). O fictício manda 0 quando não há nada a faturar (ficticio.ts:573).
+  - No gráfico, o mês corrente é o único com `aFaturar` como número, inclusive 0; nos outros ele é nulo (tipos.ts:120-124). O fictício manda 0 quando não há nada a faturar (ficticio.ts:579).
   - Corrigido em 2026-10-09: antes a tela pedia `aFaturar` diferente de zero, e com 0 a faturar o mês parcial passava por fechado. Agora ela testa `aFaturar != null` (BarrasMensais.tsx:22-25). O teste é frouxo de propósito, porque a Ficha usa o mesmo gráfico sem mandar `aFaturar`.
 - **Escopo dos pedidos em aberto e da projeção (decidido em 2026-10-09, pergunta 22).**
   - Visão do representante, como os outros indicadores do Início (plano.md:207). A carteira dele é o piso da projeção (plano.md:194).
@@ -134,19 +134,19 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Carteira | "N clientes na carteira" (Clientes.tsx:67) | Clientes com `VEND_1` igual ao código da sessão (decidido em 2026-10-09) | `CRCL.EMP_FIL`, `CLIENTE`, `VEND_1` | extrator |
-| Código | "Ribeirão Preto/SP · 123456780001" ou "Bauru/SP · Pessoa física" (Clientes.tsx:133; formato.ts:133) e busca | Empresa: o código do ERP. Pessoa física: nenhum, porque o código dela é o CPF (decisão do Lucas em 2026-10-13) | `CRCL.CLIENTE`, só com `FIS_JURID = 'J'` | extrator |
+| Carteira | "N clientes na carteira" (Clientes.tsx:70) | Clientes com `VEND_1` igual ao código da sessão (decidido em 2026-10-09) | `CRCL.EMP_FIL`, `CLIENTE`, `VEND_1` | extrator |
+| Código | "Ribeirão Preto/SP · 123456780001" ou "Bauru/SP · Pessoa física" (Clientes.tsx:139; formato.ts:133) e busca | Empresa: o código do ERP. Pessoa física: nenhum, porque o código dela é o CPF (decisão do Lucas em 2026-10-13) | `CRCL.CLIENTE`, só com `FIS_JURID = 'J'` | extrator |
 | Identificador | URL `/clientes/:codigo`, rascunhos e pedidos | Id opaco para todos os clientes (decidido em 2026-10-13); nunca aparece na tela | nenhuma; gerado na LAN | extrator |
 | Nome | Título da linha, busca, ordem A–Z | Fantasia; se vazio, razão social; razão completa quando o fantasia vem cortado | `CRCL.NOM_FANTAS`, `RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
 | Cidade e UF | "Ribeirão Preto/SP" | Nome do IBGE pelo código de `RESERVADO7` (a confirmar); sem ele, `TRIM(CIDADE)`. Exterior: "EX" | `CRCL.CIDADE`, `ESTADO`, `RESERVADO7` | extrator |
-| Situação | Selo e filtros com contagem (Clientes.tsx:24-30, 69-74 e 136-140) | Ver Análises | NFME, NFDE, VEPM, VEPD | extrator |
-| Negativo | Selo "Negativo", em vermelho, abaixo da situação (Clientes.tsx:138; componentes/SituacaoCliente.tsx) | Cliente fora de ATIVO no cadastro do SGI: INATIVO ou SUBSTITUIDO (decisão do Lucas em 2026-10-14; dominio/clienteNegativo.ts). Ele fica na carteira, mas não recebe pedido. Na Star Vendas, em 14/10, nenhum | `SGI5_TAB_VEN_CLI3.CLI3_STA` | extrator; a foto leva só a marca, não o status |
-| Motivo do risco | Embaixo do selo "Em risco": "−23% em abr–set/26 vs abr–set/25" (Clientes.tsx:139; componentes/SituacaoCliente.tsx:27-40) | A variação do semestre que pôs o cliente em risco, com os meses comparados (pedido do Lucas em 2026-10-14). Sem a base à mostra, a queda do semestre parecia contradizer a variação de 12 meses ao lado | NFME, NFDE | extrator (`analise_ritmo`); texto: navegador |
+| Status | Coluna logo depois do cliente: "Ativo" em texto discreto, "Inativo" e "Substituído" no selo vermelho. No cartão do celular, só o selo, embaixo do nome (Clientes.tsx:37, 95 e 135-144; componentes/StatusDoCliente.tsx) | O status do cadastro do SGI, com os nomes de lá; sem linha, ATIVO, como no SGI (decisões do Lucas em 2026-10-14 e 2026-10-15). Fora de ativo, o cliente fica na carteira, mas não recebe pedido (dominio/statusDoCadastro.ts). Na Star Vendas, em 15/10, os 178 estão ativos | `SGI5_TAB_VEN_CLI3.CLI3_STA` | extrator |
+| Situação | Selo e filtros com contagem (Clientes.tsx:26-32, 72-77 e 145-148) | Ver Análises | NFME, NFDE, VEPM, VEPD | extrator |
+| Motivo do risco | Embaixo do selo "Em risco": "−23% em abr–set/26 vs abr–set/25" (Clientes.tsx:147; componentes/SituacaoCliente.tsx:27-40) | A variação do semestre que pôs o cliente em risco, com os meses comparados (pedido do Lucas em 2026-10-14). Sem a base à mostra, a queda do semestre parecia contradizer a variação de 12 meses ao lado | NFME, NFDE | extrator (`analise_ritmo`); texto: navegador |
 | Última compra | "há 12 dias", com a data na dica | Última nota válida, no histórico inteiro; nulo se nunca comprou | `MAX(NFME.DT_EMISSAO)` com a RF | extrator |
-| Faturado 12 meses | Coluna e ordem de abertura, no navegador (Clientes.tsx:41 e 54) | RF dos 12 últimos meses fechados, sem o corrente | NFME, NFDE | extrator |
-| Variação | Coluna, ordenável pelo título (Clientes.tsx:38 e 100-102) | 12 meses ÷ 12 meses anteriores − 1; nulo com base pequena | NFME, NFDE | extrator |
-| Tendência | Minigráfico de 13 pontos (Clientes.tsx:152-154) | Faturado em 12 meses recalculado no fim de cada mês fechado, de um ano atrás até o mês passado | NFME, NFDE | extrator |
-| Busca, filtros e ordem | Campo, botões e títulos das colunas (Clientes.tsx:54 e 86-110) | Sobre a lista recebida | nenhuma | navegador |
+| Faturado 12 meses | Coluna e ordem de abertura, no navegador (Clientes.tsx:44 e 57) | RF dos 12 últimos meses fechados, sem o corrente | NFME, NFDE | extrator |
+| Variação | Coluna, ordenável pelo título (Clientes.tsx:41 e 106-108) | 12 meses ÷ 12 meses anteriores − 1; nulo com base pequena | NFME, NFDE | extrator |
+| Tendência | Minigráfico de 13 pontos (Clientes.tsx:160-162) | Faturado em 12 meses recalculado no fim de cada mês fechado, de um ano atrás até o mês passado | NFME, NFDE | extrator |
+| Busca, filtros e ordem | Campo, botões e títulos das colunas (Clientes.tsx:57 e 89-116) | Sobre a lista recebida | nenhuma | navegador |
 
 - **Carteira (decidida em 2026-10-09; filtro de empresa e exclusões ainda em aberto).**
   - Clientes da `CRCL` com `VEND_1`, o campo vendedor do cliente, igual a um dos códigos da sessão. Proposta: também `EMP_FIL = 20210001`.
@@ -155,7 +155,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Há pessoa física com vendedor. A contagem de 2026-10-09 no banco, só de quantidades e sem dado pessoal, achou 196 clientes com `FIS_JURID = 'F'` e vendedor, 46 deles com venda nos últimos 24 meses. Pessoa jurídica com vendedor: 17.602, das quais 3.469 com venda em 24 meses. Segue em aberto se a pessoa física entra, junto com o código do cliente (perguntas 17 e 18).
   - O cliente transferido aparece só para o dono atual, com todo o histórico.
   - A pessoa física fica na carteira, com o nome e sem o código do ERP (decisão do Lucas em 2026-10-13). O SGI faz diferente: tira a pessoa física da tela e da exportação para os representantes.
-  - Ficam em aberto as exclusões: `CLI3_STA` inativo, `TIPO_CAD` diferente de 'C' e cliente sem compra há anos.
+  - Ficam em aberto as exclusões: `TIPO_CAD` diferente de 'C' e cliente sem compra há anos. O cliente fora de ativo no `CLI3_STA` fica, com o status à mostra (decidido em 2026-10-14).
 - **Código do cliente (decisão do Lucas em 2026-10-13).**
   - Na empresa, `CRCL.CLIENTE` é a raiz do CNPJ em 8 dígitos mais a filial em 4 (OracleDB/docs/licoes.md:97). Os dígitos verificadores se calculam a partir dos 12, então mostrar o código é mostrar o CNPJ. O CNPJ é público, e o Lucas decidiu mostrá-lo (CLAUDE.md, regra 3; plano.md:20).
   - Na pessoa física, o código é o CPF. Em 193 dos 196 clientes com vendedor, `CRCL.CLIENTE` são os 9 primeiros dígitos do CPF, "00" e os 2 dígitos verificadores (contagem de 2026-10-13, sem exibir dados). Ele nunca sai da LAN, e a tela mostra "Pessoa física".
@@ -176,28 +176,28 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Se for, o extrator usa o nome da base pública do IBGE (`CRM-prototipo/data/geo`) e cai para `CIDADE` quando o código faltar. `TPMU.NOME_CIDADE` não resolve, porque também é CHAR(20) (omega/ABC71-TP.md:3066).
   - O código fica na LAN. Só o nome vai para a foto, até a F6.
   - Cliente do exterior vem com `ESTADO='EX'` e o país em `COD_PAIS`, que é um número (licoes.md:98; omega/ABC71-CR.md:1079). Proposta: a tela mostra "EX" na UF. Se a pergunta 5 decidir mostrar o país, o nome vem de `ABC71.TGPA.NOME_PAIS` por `COD_PAIS` (omega/ABC71-TG.md:437-455). A confirmar na F2: qual EMPRESA/FILIAL usar e se 12 = Uruguai e 10 = Paraguai (licoes.md:98).
-- **Variação.** O piso de R$ 2 mil que deixa a variação nula existe só no fictício (ficticio.ts:430). O plano diz só "dados insuficientes" (plano.md:243).
+- **Variação.** O piso de R$ 2 mil que deixa a variação nula existe só no fictício (ficticio.ts:436). O plano diz só "dados insuficientes" (plano.md:243).
 - **Tendência.** Exige 24 meses fechados de notas.
 
 ## 4. Ficha do cliente
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Nome e situação | Título e selos: a situação e, no cliente negativo, "Negativo" (FichaCliente.tsx:53-59) | Como em Clientes | (ver Clientes) | extrator |
-| Razão social e motivo do risco | Embaixo do nome: a razão social, que some quando é igual a ele, como na pessoa física, e o motivo do selo "Em risco", como em Clientes. O motivo não vai ao lado do selo porque a linha do título empurraria o cadastro (FichaCliente.tsx:60 e 142-155) | `RAZ_SOCIAL` + `COMPLEM_RZ`; motivo: ver Clientes | `CRCL.RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
-| Cidade, Mercado e Código | Cartões (FichaCliente.tsx:122-124) | Mercado: M = montadora, E = exportação, o resto é praça. Código: como em Clientes, "Pessoa física" sem número | `CRCL.TIPO_CLI`; código: `CRCL.CLIENTE` só de empresa | extrator |
-| Cliente desde | Só o ano (FichaCliente.tsx:125) | Ano da primeira nota válida da história; nulo se nunca comprou | `MIN(NFME.DT_EMISSAO)` com a RF | extrator; vai só o ano |
+| Nome e situação | Título e selos: a situação e, no cliente fora de ativo, o status, "Inativo" ou "Substituído" (FichaCliente.tsx:55-61) | Como em Clientes | (ver Clientes) | extrator |
+| Razão social e motivo do risco | Embaixo do nome: a razão social, que some quando é igual a ele, como na pessoa física, e o motivo do selo "Em risco", como em Clientes. O motivo não vai ao lado do selo porque a linha do título empurraria o cadastro (FichaCliente.tsx:62 e 146-159) | `RAZ_SOCIAL` + `COMPLEM_RZ`; motivo: ver Clientes | `CRCL.RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
+| Cidade, Mercado e Código | Cartões (FichaCliente.tsx:126-128) | Mercado: M = montadora, E = exportação, o resto é praça. Código: como em Clientes, "Pessoa física" sem número | `CRCL.TIPO_CLI`; código: `CRCL.CLIENTE` só de empresa | extrator |
+| Cliente desde | Só o ano (FichaCliente.tsx:129) | Ano da primeira nota válida da história; nulo se nunca comprou | `MIN(NFME.DT_EMISSAO)` com a RF | extrator; vai só o ano |
 | Faturado em 12 meses | Indicador, com "vs 12 meses anteriores" | Como em Clientes | NFME, NFDE | extrator |
 | Última compra | Indicador | Como em Clientes | NFME | extrator |
-| Ciclo de compra | "N dias" ou "Irregular" (FichaCliente.tsx:174-179) | Mediana dos intervalos entre eventos de compra em 24 meses | `NFME.DT_EMISSAO` | extrator |
+| Ciclo de compra | "N dias" ou "Irregular" (FichaCliente.tsx:178-183) | Mediana dos intervalos entre eventos de compra em 24 meses | `NFME.DT_EMISSAO` | extrator |
 | Pedidos em aberto (indicador) | Soma e "N pedidos", ou "Nenhum" | Soma da lista: pedidos do cliente atribuídos ao representante | VEPM, VEPD | navegador |
 | Faturamento mensal | 24 meses fechados e o mês corrente | RF por mês; mês sem compra = 0 | NFME, NFDE | extrator |
-| Famílias compradas | Barras com valor e % (12 meses), do maior valor para o menor (FichaCliente.tsx:78) | RF por família nos mesmos 12 meses do faturado | NFDE, família do produto | extrator |
-| Produtos mais comprados | Produto, família, peças, valor, última compra (FichaCliente.tsx:255-263) | Os 8 maiores em valor nos 12 meses | Peças: `TRIM(NFDE.C_PROD)`, `QTDE`, `UNIDADE`. Valor: `NFDE.VLR_TOTAL − Z_FRANCA_DESC` com a RF. Última compra: `NFME.DT_EMISSAO`. Família: `PAC_GRC` → `GRP_DES` | extrator, já com o corte em 8 |
-| Pedidos em aberto (lista) | Pedido, emissão, entrega, itens, valor, abre da entrega mais próxima para a mais distante, ordenada no navegador (FichaCliente.tsx:281-284) | Pedidos do cliente atribuídos ao representante. Ver Pedidos | VEPM, VEPD | extrator |
+| Famílias compradas | Barras com valor e % (12 meses), do maior valor para o menor (FichaCliente.tsx:82) | RF por família nos mesmos 12 meses do faturado | NFDE, família do produto | extrator |
+| Produtos mais comprados | Produto, família, peças, valor, última compra (FichaCliente.tsx:259-267) | Os 8 maiores em valor nos 12 meses | Peças: `TRIM(NFDE.C_PROD)`, `QTDE`, `UNIDADE`. Valor: `NFDE.VLR_TOTAL − Z_FRANCA_DESC` com a RF. Última compra: `NFME.DT_EMISSAO`. Família: `PAC_GRC` → `GRP_DES` | extrator, já com o corte em 8 |
+| Pedidos em aberto (lista) | Pedido, emissão, entrega, itens, valor, abre da entrega mais próxima para a mais distante, ordenada no navegador (FichaCliente.tsx:285-288) | Pedidos do cliente atribuídos ao representante. Ver Pedidos | VEPM, VEPD | extrator |
 | Oportunidades de mix | Família e "X% dos clientes parecidos compram" | Ver Análises | NFDE, CRCL | extrator |
 | Com quem comparou | "mercado Praça, porte médio" ou "Poucos clientes parecidos" | Ver Análises | CRCL, NFDE | extrator |
-| Novo pedido | Botão para Montar pedido; no cliente negativo, o botão fica e mostra o aviso para falar com a equipe de vendas da Suprens (FichaCliente.tsx:64 e 95-116) | Leva o id do cliente. O cliente negativo não recebe pedido (decisão do Lucas em 2026-10-14) | nenhuma | navegador |
+| Novo pedido | Botão para Montar pedido; no cliente fora de ativo, o botão fica e mostra o aviso do status, para falar com a equipe de vendas da Suprens (FichaCliente.tsx:66-68 e 99-120) | Leva o id do cliente. Só o cliente ativo no cadastro recebe pedido (decisões do Lucas em 2026-10-14 e 2026-10-15) | nenhuma | navegador |
 
 - **Razão social.** O SGI concatena `TRIM(A.RAZ_SOCIAL||A.COMPLEM_RZ)` (`untDmCrmCli.dfm:32`). Como `RAZ_SOCIAL` é CHAR(35), o extrator junta direto só quando ela ocupa os 35 caracteres. Nos outros casos, separa com um espaço. Quando a razão é igual ao nome mostrado, a ficha pode omitir a linha.
 - **Família do produto.**
@@ -208,10 +208,10 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - Os dois bateram em 100% das vendas de três famílias desde 1994 (licoes.md:99).
   - Proposta: `PAC_GRC`, com a regra do Gestao como conferência na F2.
   - A mesma regra vale para a Ficha, o mix e o catálogo. Senão, "Já comprados" e o mix deixam de bater.
-- **Peças por mês.** `FaturamentoMensal.pecas` não aparece em nenhuma tela (FichaCliente.tsx:70), então sai do contrato. As peças por mês ficam no extrator, para a variação em peças das Análises.
-- **Cliente sem compra em 12 meses.** Famílias e produtos ficam vazios. O fictício usa 1/3 dos 36 meses (ficticio.ts:441), o que é só um marcador de lugar.
-- **Cliente que nunca comprou.** Ele existe na carteira como inativo (dominio/analises.ts:76), e Clientes já mostra "sem compras" (Clientes.tsx:143). Corrigido em 2026-10-09: a Ficha quebrava com a primeira compra nula. Agora o contrato leva só o ano, `clienteDesde: number | null` (tipos.ts:98-99), e o cartão mostra "—" quando ele é nulo (FichaCliente.tsx:125).
-- **Ciclo.** Pelo plano (plano.md:221), o extrator usa os intervalos em dias entre eventos. Exige pelo menos 4 compras. Fora de 30 a 180 dias, o valor é nulo (irregular). O fictício prende o valor entre 30 e 180 e conta meses × 30,4 (ficticio.ts:402-411).
+- **Peças por mês.** `FaturamentoMensal.pecas` não aparece em nenhuma tela (FichaCliente.tsx:74), então sai do contrato. As peças por mês ficam no extrator, para a variação em peças das Análises.
+- **Cliente sem compra em 12 meses.** Famílias e produtos ficam vazios. O fictício usa 1/3 dos 36 meses (ficticio.ts:447), o que é só um marcador de lugar.
+- **Cliente que nunca comprou.** Ele existe na carteira como perdido (dominio/analises.ts:76), e Clientes já mostra "sem compras" (Clientes.tsx:151). Corrigido em 2026-10-09: a Ficha quebrava com a primeira compra nula. Agora o contrato leva só o ano, `clienteDesde: number | null` (tipos.ts:98-99), e o cartão mostra "—" quando ele é nulo (FichaCliente.tsx:129).
+- **Ciclo.** Pelo plano (plano.md:221), o extrator usa os intervalos em dias entre eventos. Exige pelo menos 4 compras. Fora de 30 a 180 dias, o valor é nulo (irregular). O fictício prende o valor entre 30 e 180 e conta meses × 30,4 (ficticio.ts:408-417).
 - **Pedidos em aberto (decidido em 2026-10-09, pergunta 22).** A ficha mostra só os pedidos do cliente atribuídos ao representante da sessão, como em Pedidos. O pedido do cliente atribuído a outro representante não aparece. Pela proposta da pergunta 26, ele ainda impede "parado" (ver Análises). Por isso a ficha pode mostrar "Nenhum" em pedidos em aberto num cliente que não está parado.
 - **Auditoria.** Abrir a ficha é evento auditado (plano.md:153). O registro leva o código opaco, nunca o nome.
 
@@ -232,25 +232,25 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Novos e reativados | Lista com selo e contagens | Ordem pelo faturado desde então | NFME | extrator; contagem de novos e de reativados: navegador (Analises.tsx:144 e 156) |
 | Desde | Data relativa | Primeira compra (novo) ou compra da volta (reativado) | `NFME.DT_EMISSAO` | extrator |
 | Faturado desde então | Coluna e soma | RF do mês de "desde" até hoje | NFME, NFDE | extrator; soma do resumo: navegador (Analises.tsx:157) |
-| Oportunidades de mix | Lista com contagem (Analises.tsx:170-207) | Fora de parado e inativo, com sugestão; ordem pelo faturado em 12 meses | NFDE, CRCL | extrator |
+| Oportunidades de mix | Lista com contagem (Analises.tsx:170-207) | Fora de parado e perdido, com sugestão; ordem pelo faturado em 12 meses | NFDE, CRCL | extrator |
 | Faturado 12 meses | Coluna da lista de mix (Analises.tsx:190) | Como em Clientes | NFME, NFDE | extrator |
 | Comparado a | "Praça, porte médio" ou "mercado todo" | Faixa usada na comparação | `CRCL.TIPO_CLI` e RF de toda a Suprens | extrator |
 | Famílias a oferecer | Família e % | Ver regras abaixo | NFDE e família do produto | extrator |
 
 As regras são as de `analises.ts` e `mix.ts`, que têm testes, e o extrator precisa chegar aos mesmos resultados (plano.md:235). Duas partes ainda estão fora de `analises.ts`:
-- Quem entra em cada lista está só em `montarAnalises`, no fictício (`ficticio.ts:561-604`), sem teste. Antes da F2, essa montagem vai para `analises.ts`, com teste. A ordem de abertura é da tela (Analises.tsx:94, 106-109, 136, 164 e 203) e só importa ao servidor nos 5 primeiros do Início.
+- Quem entra em cada lista está só em `montarAnalises`, no fictício (`ficticio.ts:567-610`), sem teste. Antes da F2, essa montagem vai para `analises.ts`, com teste. A ordem de abertura é da tela (Analises.tsx:94, 106-109, 136, 164 e 203) e só importa ao servidor nos 5 primeiros do Início.
 - Os grupos por raiz de CNPJ (plano.md:244).
 
 Regras:
 - **Situação**, por precedência (dominio/analises.ts:74-81):
-  1. inativo: nunca comprou ou está há mais de 730 dias sem comprar;
+  1. perdido: nunca comprou ou está há mais de 730 dias sem comprar. Até 2026-10-15 se chamava "inativo"; o Lucas trocou o nome, que se confundia com o status do cadastro, e o selo continua cinza. O perdido recebe pedido normalmente;
   2. parado;
   3. novo;
   4. em risco: comprando menos, com a queda ainda no último trimestre;
   5. ativo.
   - Reativado não é situação própria.
   - A situação não é o status cadastral (`CLI3_STA`), que decide carteira e aceite de pedido.
-- **Evento de compra:** notas do mesmo cliente com até 7 dias de diferença contam como uma compra (plano.md:220). O fictício não aplica a regra (ficticio.ts:320).
+- **Evento de compra:** notas do mesmo cliente com até 7 dias de diferença contam como uma compra (plano.md:220). O fictício não aplica a regra (ficticio.ts:326).
 - **Parou de comprar:**
   - dias sem comprar acima do maior entre 60 e 2× o ciclo, ou 180 se o cliente é irregular;
   - sem pedido em aberto;
@@ -262,20 +262,20 @@ Regras:
   - pelo menos 3 compras nos dois períodos;
   - variação de 20% ou mais e diferença de R$ 2 mil ou mais;
   - a mudança tem de continuar nos 3 últimos meses fechados, contra os mesmos 3 do ano anterior: abaixo deles na queda, acima na alta (decidido pelo Lucas em 2026-10-14, a queda primeiro e a alta logo depois). A Nova Caminhões, da Star Vendas, estava em risco por −23% de abr a set/26, depois de maio e junho sem comprar, mas já tinha voltado: +30% de jul a set e +17% em 12 meses. Na foto de 14/10, a Star Vendas passou de 13 para 9 clientes comprando menos (em risco) e de 20 para 14 comprando mais.
-  - Listas só no fictício (`ficticio.ts:585-592`); a ordem de abertura é a da tela (Analises.tsx:106-109 e 136):
+  - Listas só no fictício (`ficticio.ts:591-598`); a ordem de abertura é a da tela (Analises.tsx:106-109 e 136):
     - "menos" é quem está em risco, ordenado pela diferença mais negativa;
-    - "mais" é quem está fora de parado, inativo e novo, ordenado pela maior diferença. O plano não diz que "mais" exclui o cliente novo (plano.md:228-232): confirmar com o Lucas.
+    - "mais" é quem está fora de parado, perdido e novo, ordenado pela maior diferença. O plano não diz que "mais" exclui o cliente novo (plano.md:228-232): confirmar com o Lucas.
 - **Novo e reativado** (dominio/analises.ts:150-163; plano.md:234):
   - novo: primeira compra há até 365 dias;
   - reativado: alguma compra dos últimos 365 dias veio depois de 365 dias ou mais sem comprar;
-  - só entram clientes fora de parado e inativo (`ficticio.ts:561 e 593-598`).
-  - O "faturado desde então" existe só no fictício (ficticio.ts:618 e 630-634).
+  - só entram clientes fora de parado e perdido (`ficticio.ts:567 e 599-604`).
+  - O "faturado desde então" existe só no fictício (ficticio.ts:624 e 636-640).
 - **Mix** (mix.ts; plano.md:236-242):
   - O porte é o tercil do faturado em 12 meses entre os clientes ativos do mesmo mercado, em toda a Suprens.
   - Com menos de 20 clientes na faixa, compara com o mercado inteiro. Com menos de 20 no mercado, não há comparação.
   - Sugere a família comprada em 12 meses por pelo menos 50% dos parecidos e que o cliente não compra há 24 meses. A ordem é da maior penetração para a menor, com empate pelo nome.
   - A conta usa todos os clientes da Suprens, na LAN. Para a foto vão só a família, o percentual e a faixa usada.
-  - A lista de mix leva quem está fora de parado e inativo e tem sugestão, ordenada pelo faturado em 12 meses (`ficticio.ts:599-604`).
+  - A lista de mix leva quem está fora de parado e perdido e tem sugestão, ordenada pelo faturado em 12 meses (`ficticio.ts:605-610`).
 - **Grupos (regra do plano.md:244; o tratamento das filiais em carteiras diferentes é proposta a decidir, pergunta 19):**
   - Filiais da mesma raiz de CNPJ são analisadas juntas, para a compra que muda de filial não virar "parado" nem "novo".
   - A raiz é calculada na LAN e não vai para a foto.
@@ -324,7 +324,7 @@ Regras:
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Nota | "NF 123456", com o cliente (Pedidos.tsx:197) | Notas de venda dos últimos 45 dias atribuídas aos códigos do login (decidido em 2026-10-13), da mais recente à mais antiga (ordem de abertura no navegador, Pedidos.tsx:195). Os 45 dias estão no texto da tela (Pedidos.tsx:188, 190 e 194) e no fictício (ficticio.ts:158); o plano não fixa janela (plano.md:198). A confirmar | `NFME.N_FISCAL`, `SERIE` | extrator |
+| Nota | "NF 123456", com o cliente (Pedidos.tsx:197) | Notas de venda dos últimos 45 dias atribuídas aos códigos do login (decidido em 2026-10-13), da mais recente à mais antiga (ordem de abertura no navegador, Pedidos.tsx:195). Os 45 dias estão no texto da tela (Pedidos.tsx:188, 190 e 194) e no fictício (ficticio.ts:162); o plano não fixa janela (plano.md:198). A confirmar | `NFME.N_FISCAL`, `SERIE` | extrator |
 | Emissão | Data relativa | | `NFME.DT_EMISSAO` | extrator |
 | Cliente | Nome; o link para a ficha fica no fim dos detalhes da linha (DetalhesDosPedidos.tsx:70-80) | Cliente da nota. Nome e link só se o cliente é da carteira do representante (ver abaixo) | `NFME.FORNEC` → cliente | extrator; nome: servidor, por junção com `cliente` do representante da sessão |
 | Valor | Coluna | RF da nota, sem IPI e sem ICMS-ST | `NFDE.VLR_TOTAL`, `Z_FRANCA_DESC` | extrator |
@@ -333,7 +333,7 @@ Regras:
 
 - **Detalhes na própria lista (pedido do Lucas, 2026-10-14).**
   - Nas abas Enviados, Em aberto e Faturados, tocar na linha abre os detalhes logo abaixo dela, sem sair da lista. Tocar de novo fecha, e mais de uma linha pode ficar aberta (componentes/TabelaResponsiva.tsx:114-137).
-  - Antes, a linha de Enviados levava ao Detalhe do pedido, e as de Em aberto e Faturados, à ficha do cliente. O Detalhe do pedido continua como a tela que abre depois do envio (MontarPedido.tsx:89).
+  - Antes, a linha de Enviados levava ao Detalhe do pedido, e as de Em aberto e Faturados, à ficha do cliente. O Detalhe do pedido continua como a tela que abre depois do envio (MontarPedido.tsx:91).
   - Rascunhos não abre: a linha tem os botões Continuar e Descartar, e Continuar já mostra o rascunho inteiro.
   - A aba Em aberto mostra só os itens com saldo, que formam o valor em aberto. O item já faturado fica no pedido do Omega com saldo 0 e não aparece.
 - **Pedido em aberto.**
@@ -367,10 +367,10 @@ Regras:
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Escolha do cliente | Nome, código do ERP (ou "Pessoa física"), cidade, situação com o selo "Negativo" e última compra. Escolher o cliente negativo abre o aviso para falar com a equipe de vendas, e não o catálogo (MontarPedido.tsx:58 e 431-438). Até 2026-10-14, a escolha mostrava e buscava pelo id do cliente, que não deve aparecer na tela. Abre na ordem recebida, sem coluna marcada, e o representante reordena por Cliente, Situação e Última compra (MontarPedido.tsx:396-423) | Clientes da carteira | (ver Clientes) | extrator; ordem de abertura: servidor, por `faturamento_12m` decrescente; busca e reordenação: navegador (MontarPedido.tsx:382-384 e 405-424) |
-| Cliente do pedido | Nome e cidade/UF no cabeçalho e no diálogo de envio (MontarPedido.tsx:104 e 159) | Cliente da carteira, pelo código da URL ou do rascunho | (ver Clientes) | extrator |
-| Tabela de preço | O nome da tabela no cabeçalho e em "Preços da …" (MontarPedido.tsx:104 e 117). O fictício junta o mercado ao nome ("Tabela 23 · Praça", pedidosFicticios.ts:39); a tela real mostra só `cliente.tabela_preco` | Uma por cliente, escolhida pelo extrator, nunca pelo navegador: a principal; sem ela, a que não é secundária. Só em real; na montadora, só a ativa (extrator/src/calculo/catalogo.ts). Na Star Vendas, em 14/10: "PADRAO - FEV" para 177 clientes e "MITSUBISHI CATA" para 1 | `SGI5_TAB_VEN_CLI.CLI_TAB` e `CLI_STA`; `SGI5_TAB_VEN_TP1.TP1_NOM`, `TP1_MOE`, `TP1_STA` | extrator |
-| Catálogo | Abas "Já comprados" e "Todos", com contagem | Só produto vendável e com preço para o cliente. Clientes com a mesma tabela e os mesmos descontos dividem uma lista de preços: em 14/10, 50 listas para os 178 clientes da Star Vendas | view de preço líquido, ESTQ, view de produto sem árvore | extrator; servidor, por `/api/clientes/:codigo/catalogo`, só de cliente do login e nunca do negativo (409) |
+| Escolha do cliente | Nome, código do ERP (ou "Pessoa física"), cidade, status, situação e última compra. Escolher o cliente fora de ativo abre o aviso do status, para falar com a equipe de vendas, e não o catálogo (MontarPedido.tsx:60 e 430-437). Até 2026-10-14, a escolha mostrava e buscava pelo id do cliente, que não deve aparecer na tela. Abre na ordem recebida, sem coluna marcada, e o representante reordena por Cliente, Status, Situação e Última compra (MontarPedido.tsx:407-423) | Clientes da carteira | (ver Clientes) | extrator; ordem de abertura: servidor, por `faturamento_12m` decrescente; busca e reordenação: navegador (MontarPedido.tsx:385-388 e 407-423) |
+| Cliente do pedido | Nome e cidade/UF no cabeçalho e no diálogo de envio (MontarPedido.tsx:106 e 161) | Cliente da carteira, pelo código da URL ou do rascunho | (ver Clientes) | extrator |
+| Tabela de preço | O nome da tabela no cabeçalho e em "Preços da …" (MontarPedido.tsx:106 e 119). O fictício junta o mercado ao nome ("Tabela 23 · Praça", pedidosFicticios.ts:39); a tela real mostra só `cliente.tabela_preco` | Uma por cliente, escolhida pelo extrator, nunca pelo navegador: a principal; sem ela, a que não é secundária. Só em real; na montadora, só a ativa (extrator/src/calculo/catalogo.ts). Na Star Vendas, em 14/10: "PADRAO - FEV" para 177 clientes e "MITSUBISHI CATA" para 1 | `SGI5_TAB_VEN_CLI.CLI_TAB` e `CLI_STA`; `SGI5_TAB_VEN_TP1.TP1_NOM`, `TP1_MOE`, `TP1_STA` | extrator |
+| Catálogo | Abas "Já comprados" e "Todos", com contagem | Só produto vendável e com preço para o cliente. Clientes com a mesma tabela e os mesmos descontos dividem uma lista de preços: em 14/10, 50 listas para os 178 clientes da Star Vendas | view de preço líquido, ESTQ, view de produto sem árvore | extrator; servidor, por `/api/clientes/:codigo/catalogo`, só de cliente do login e nunca do cliente fora de ativo (409) |
 | Código do produto | Título da linha | `TRIM(VIEW_PAC)` | `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI.VIEW_PAC` | extrator |
 | Família | Descrição e busca | Mesma regra da Ficha | `PAC_GRC` → `GRP_DES` | extrator |
 | Medida | "14–22 mm" na descrição e na busca | Faixa de aperto em mm; sem as duas pontas, nenhuma (kits, molas). Em 14/10, 470 dos 692 produtos do catálogo tinham | `PAC_DMI_MM`, `PAC_DMA_MM` | extrator |
@@ -379,7 +379,7 @@ Regras:
 | Cento | Preço do cento, só referência | Decidido pelo Lucas em 2026-10-14: o preço da tabela do cliente com o desconto do modelo do produto e, sem ele, com o desconto padrão do cliente. É a conta da view do SGI: `TP2_PVE × DES_IND ÷ 100`, com o desconto de `SGI5_TAB_VEN_CLI2` (cliente × `PAC_MOD`) no lugar do `CLI_DES` quando existe. Em 14/10, a conta refeita pelas tabelas deu o mesmo preço nos 122.142 pares de cliente e produto. Sem IPI | `VIEW_VLR_LIQ` | extrator |
 | Já comprou | Separa as abas | Produto da lista do cliente que ele comprou nos últimos 24 meses, com o mês corrente (proposta, pergunta 28) | `TRIM(NFDE.C_PROD)` com a RF | extrator (`produto_comprado`) |
 | Quantidade | Peças, de embalagem em embalagem | Múltiplo da embalagem | nenhuma | app.db |
-| Valor do item | Ao lado da quantidade (MontarPedido.tsx:287) | Peças ÷ 100 × cento | (foto) | navegador |
+| Valor do item | Ao lado da quantidade (MontarPedido.tsx:289) | Peças ÷ 100 × cento | (foto) | navegador |
 | Entrega desejada | Data com mínimo hoje | Não antes de hoje, pelo relógio de Brasília | vira `PV2_DEN` de cada item (no arquivo, `CGA_DEN`) | app.db |
 | Observação | "Observação (n/300)" | Até 300 caracteres, conjunto permitido, CP1252 | vira `PV1_OBS` | app.db |
 | Total estimado | Barra e fechamento | Σ peças ÷ 100 × cento | (foto) | navegador; ao salvar e enviar: servidor |
@@ -397,7 +397,7 @@ Regras:
   - A tela de item grava a unidade 'CT' com `VIEW_VLR_LIQ` como valor líquido e de venda (`untVenPvd_ItensMov.pas:139-149`).
   - O preço já tem o desconto do cliente e não tem IPI. O SGI aplica o IPI à parte (`untVenPvd_ItensMov.pas:181-185`).
 - **Tabela.** Proposta: a linha com `CLI_STA = 'PRINCIPAL'`. O SGI ignora `CLI_STA` e deixa o usuário escolher quando há mais de uma (`untVenPvd_PvdIncluir.pas:1167-1176`). Pendência do plano.md:335.
-- **Part number.** A PK da `SGI5_TAB_VEN_TP2` inclui o part number (TP2_COD, TP2_PRO, TP2_CMO). O mesmo produto pode aparecer mais de uma vez na tabela, mas o CRM indexa só pelo código (MontarPedido.tsx:248).
+- **Part number.** A PK da `SGI5_TAB_VEN_TP2` inclui o part number (TP2_COD, TP2_PRO, TP2_CMO). O mesmo produto pode aparecer mais de uma vez na tabela, mas o CRM indexa só pelo código (MontarPedido.tsx:250).
 - **O navegador nunca manda preço, tabela nem representante.** `RascunhoParaSalvar` tem só id, código do cliente, itens, entrega e observação (tipos.ts:227-233). O servidor confere:
   - cliente na carteira;
   - produto no catálogo do cliente;
@@ -405,7 +405,7 @@ Regras:
   - limite de itens;
   - schema estrito.
 - **Rascunho com produto que saiu do catálogo** (deixou de ser vendável ou perdeu o preço entre duas fotos).
-  - A tela carrega as quantidades de todos os itens do rascunho (MontarPedido.tsx:68-69), mostra só os que estão no catálogo (MontarPedido.tsx:77) e reenvia todos em cada salvamento automático (MontarPedido.tsx:181-183).
+  - A tela carrega as quantidades de todos os itens do rascunho (MontarPedido.tsx:70-71), mostra só os que estão no catálogo (MontarPedido.tsx:79) e reenvia todos em cada salvamento automático (MontarPedido.tsx:183-185).
   - Com a validação "produto no catálogo do cliente", o servidor recusaria o rascunho inteiro em todo salvamento.
   - A aba Rascunhos conta esse item em "N produtos" (Pedidos.tsx:134), e o total estimado não tem preço para ele (pergunta 33).
 - **URL do catálogo.** O catálogo é pedido pelo código do cliente na URL (`/pedidos/novo?cliente=`). Com o id opaco, a query string deixa de levar o CNPJ e, na pessoa física, o CPF.
@@ -418,7 +418,7 @@ Regras:
 
 ## 8. Detalhe do pedido
 
-Abre depois do envio (MontarPedido.tsx:89). Na aba Enviados, o mesmo andamento e os mesmos itens aparecem ao tocar na linha (componentes/PedidoEnviado.tsx).
+Abre depois do envio (MontarPedido.tsx:91). Na aba Enviados, o mesmo andamento e os mesmos itens aparecem ao tocar na linha (componentes/PedidoEnviado.tsx).
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
@@ -466,7 +466,7 @@ Abre depois do envio (MontarPedido.tsx:89). Na aba Enviados, o mesmo andamento e
 - **Motivo da recusa.**
   - Lista fechada de códigos com frases fixas.
   - Nunca texto do Oracle, crédito, restrição financeira, preço mínimo ou nome de cliente.
-  - A recusa por cliente inativo no SGI (`CLI3_STA`) sai com texto genérico. A LAN não recusa por crédito, porque não lê a restrição financeira (pergunta 16).
+  - A recusa por cliente fora de ativo no SGI (`CLI3_STA`) sai com texto genérico. A LAN não recusa por crédito, porque não lê a restrição financeira (pergunta 16).
   - A tela de hoje mostra uma frase que cita o produto ("O produto X saiu de linha…", pedidosFicticios.ts:195). A recusa por item (fora de linha, sem preço, fora do catálogo) leva o código do produto em `pedido_crm.motivo_produto`, único parâmetro da frase fixa. Nenhum outro texto variável entra.
 - Não extrair `PV1_ULB_*`, `PV1_JCA`, `PV1_JLB_CRE`, `PV1_JUS_BPV`, `PV1_LIM_CRE`, `PV1_TIT_ABE`, `PV1_PED_ABE`, `PV1_VLR_PED`, `PV1_TRA_*` nem `LOG_USU`.
 
@@ -555,7 +555,7 @@ Convenções:
 |---|---|---|---|
 | `foto` | Uma linha | `versao_esquema`, `gerada_em`, `data_ref`, `mes_atual`, `dia_util`, `dias_uteis`, `semestre_inicio`, `semestre_fim` | todas, Admin |
 | `representante` | Representante autorizado; PK `codigo` | `codigo`, `nome` (o da CRVN, para o Admin escolher os códigos) | Admin |
-| `cliente` | Cliente (filial) da carteira de um autorizado; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `negativo`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (só na F6) | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
+| `cliente` | Cliente (filial) da carteira de um autorizado; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `status`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (só na F6) | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
 | `cliente_mes` | Cliente × mês (24 fechados + o corrente); PK (`cliente`, `mes`) | `cliente`, `mes`, `valor` | Ficha |
 | `cliente_familia` | Cliente × família nos 12 meses fechados; PK (`cliente`, `familia`) | `cliente`, `familia`, `valor`, `participacao` | Ficha |
 | `ficha_produto` | Cliente × produto, só os 8 maiores em valor nos 12 meses fechados; PK (`cliente`, `produto`) | `cliente`, `produto`, `pecas_12m`, `valor_12m`, `ultima_compra` | Ficha |
@@ -579,12 +579,12 @@ Colunas que pedem nota:
 - `cliente.evolucao_12m`: texto JSON com 13 números, do mais antigo ao mais recente.
 - `cliente.grupo_mix`: 'pequeno', 'medio' ou 'grande'. 'mercado' quando a comparação usou o mercado inteiro. Nulo quando nem o mercado tem 20 clientes.
 - `cliente.situacao`, `ciclo_dias` e `variacao_12m`: nulos conforme as regras de Análises e Clientes.
-- `cliente.negativo`: 1 no cliente fora de ATIVO no SGI e 0 nos outros. O status em si (INATIVO ou SUBSTITUIDO) fica na LAN.
+- `cliente.status`: o status do cadastro do SGI, 'ativo', 'inativo' ou 'substituido'. Até a versão 5, a foto levava só a marca de fora de ativo (`negativo`); desde 2026-10-15, a coluna Status mostra o status de todo cliente.
 - `cliente.cliente_desde`: só o ano (inteiro), que é o que a Ficha mostra (`FichaCliente.clienteDesde`). A data completa fica na LAN. Nulo quando o cliente nunca comprou, e então o cartão "Cliente desde" mostra "—".
 - `cliente.uf`: `ESTADO`. Para o cliente do exterior, "EX", até a pergunta 5 decidir sobre o país.
 - `cliente.tabela_preco` e `cliente.lista_de_precos`: o nome da tabela escolhida (`TP1_NOM`, ou `TP1_COD` na falta) e a lista dela. Nulos no cliente sem tabela usável, que fica sem catálogo.
 - `ficha_produto`: o extrator já faz o corte dos 8. Peças, valor e última compra dos outros produtos não aparecem em nenhuma tela e ficam na LAN.
-- `produto_comprado`: só os produtos da lista do cliente, na janela da pergunta 28. É o que o Montar pedido usa (`ProdutoDoCatalogo.jaComprou`, tipos.ts:222; MontarPedido.tsx:225).
+- `produto_comprado`: só os produtos da lista do cliente, na janela da pergunta 28. É o que o Montar pedido usa (`ProdutoDoCatalogo.jaComprou`, tipos.ts:222; MontarPedido.tsx:227).
 - `produto.embalagem` e `produto.medida`: só nos produtos de alguma lista. A embalagem é por produto (`EAN_QTD`), e não por tabela: o `TP2_MVE` vem vazio.
 - `painel_mes.faturado`: nulo nos meses que ainda não chegaram. `ano_anterior_ate_dia_util` e `ritmo_por_dia_util` (faturado por dia útil nos 6 meses fechados, base da projeção) só têm valor no mês corrente.
 - `pedido_aberto.representante`: atribuído na LAN, `VEPM.VENDEDOR` ou, se vier nulo ou 0, o `VEND_1` atual do cliente. `VEPM.VENDEDOR` não vai para a foto.
@@ -611,11 +611,11 @@ O que o servidor calcula sobre a foto (leituras com escopo e somas simples):
   - a faturar no mês, soma de `valor_entrega_no_mes` dos mesmos pedidos, que também vai para a barra do mês corrente no gráfico;
   - destaques: contagem, soma e os 5 primeiros de cada lista;
 - a ordem das listas que a tela mostra como recebe:
-  - clientes do Montar pedido por `faturamento_12m` decrescente (MontarPedido.tsx:396-423);
-  - famílias da Ficha por valor decrescente (FichaCliente.tsx:75-79);
-  - famílias sugeridas do mix pela coluna `ordem` de `cliente_mix` (FichaCliente.tsx:197-206);
+  - clientes do Montar pedido por `faturamento_12m` decrescente (MontarPedido.tsx:398-422);
+  - famílias da Ficha por valor decrescente (FichaCliente.tsx:79-83);
+  - famílias sugeridas do mix pela coluna `ordem` de `cliente_mix` (FichaCliente.tsx:201-210);
   - os 5 primeiros de cada cartão do Início, na ordem da análise (Inicio.tsx:47 e 67);
-- as demais tabelas o navegador ordena pelo título das colunas, com a ordem de abertura na própria tela (Clientes.tsx:41 e 54; Analises.tsx:94, 136, 164 e 203; Pedidos.tsx:97, 127, 173 e 195; FichaCliente.tsx:227-230 e 281-284). Empate mantém a ordem recebida (componentes/ordenacao.ts:22-23).
+- as demais tabelas o navegador ordena pelo título das colunas, com a ordem de abertura na própria tela (Clientes.tsx:44 e 57; Analises.tsx:94, 136, 164 e 203; Pedidos.tsx:97, 127, 173 e 195; FichaCliente.tsx:231-234 e 285-288). Empate mantém a ordem recebida (componentes/ordenacao.ts:22-23).
 - total estimado do rascunho, na leitura; e o do envio, que fica congelado no app.db.
 
 A `lista_de_precos` é a maior tabela da foto. Medido em 14/10, na Star Vendas: 33.626 linhas (50 listas), contra os 122.142 pares de cliente e produto que um catálogo por cliente teria; a foto foi de 0,8 MB para 2,8 MB.
@@ -749,7 +749,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extrator gera a foto, e a API mostra com ela o Início, Clientes, Ficha, Análises e as abas "Em aberto no ERP" e "Faturados" de Pedidos. Tudo roda só neste computador, com o login de teste, porque o login de verdade é da F3 (README.md, "Como rodar"). Catálogo, rascunhos e envio ainda não usam os dados reais.
 
-- **Esquema implementado (versão 5, com o cliente negativo e o catálogo):** as tabelas acima, menos `pedido_crm` e `pedido_crm_etapa`. Falta também `cliente.municipio_ibge`, que chega com o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
+- **Esquema implementado (versão 6, com o status do cadastro e o catálogo):** as tabelas acima, menos `pedido_crm` e `pedido_crm_etapa`. Falta também `cliente.municipio_ibge`, que chega com o mapa. O esquema fica em `dominio/esquemaDaFoto.ts`, e o servidor recusa foto de outra versão.
 - **Conferência com o RELCUS001.** O faturado por representante e mês bate com a `SGI5_TAB_CUS_REP_FAT` nos códigos 1401 e 1402, em todos os meses de 2025 e 2026, com duas exceções:
   - junho de 2025: R$ 2.567,02 estão no 1402 no RELCUS001 e no 1401 pelo vendedor da nota. A soma dos dois códigos bate;
   - o mês corrente, porque a tabela do RELCUS001 ainda não tinha o dia.
@@ -780,7 +780,7 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
   - Nos dados: o Omega guarda no pedido o item já faturado, com saldo 0. Em 41 dos pedidos com saldo, algum item já foi faturado, mas só 2 itens estão faturados em parte. A aba mostra só os itens com saldo, que são o valor em aberto.
   - Cada nota dos últimos 45 dias tem um pedido de origem. Não há produto repetido num pedido ou numa nota da Star Vendas, mas a foto aceita, porque o pedido programado pode ter o mesmo produto em duas entregas.
   - A resposta de `/api/pedidos` da Star Vendas foi a 137 KB sem compressão, quase toda dos 1.188 itens das notas.
-- **Cliente negativo (2026-10-14).** O cliente fora de ATIVO no SGI aparece com o selo "Negativo" em Clientes, na Ficha e na escolha do cliente do pedido, e o "Novo pedido" mostra o aviso para falar com a equipe de vendas da Suprens (pergunta 16).
+- **Status do cadastro (2026-10-14, simplificado em 2026-10-15).** Clientes tem a coluna Status, e a Ficha e a escolha do cliente do pedido mostram o mesmo status, pelo nome do SGI. O cliente fora de ativo fica na carteira, e o "Novo pedido" mostra o aviso do status, para falar com a equipe de vendas da Suprens (pergunta 16). O termo "negativo" saiu. A situação de compra "inativo" (mais de 24 meses sem comprar) virou "perdido", continua cinza e recebe pedido. Na Star Vendas, em 15/10: os 178 clientes ativos no cadastro, e 18 perdidos.
 - **Catálogo com preços (2026-10-14).** O Novo pedido mostra, com os dados reais, o catálogo do cliente: a tabela dele, o preço do cento pela regra do Lucas (tabela + desconto do modelo ou padrão), família, medida, embalagem e part number, e as abas "Já comprados" e "Todos". O extrator lê o catálogo em 2 s.
   - A propor ao Lucas: a embalagem do EAN como passo da quantidade, como no protótipo; "já comprou" em 24 meses; montadora só com tabela ativa e só tabela em real, como o SGI.
   - O rascunho e o envio ainda não gravam com os dados reais (F3 e F5): a tela agora mostra o motivo, em vez de falhar calada.
@@ -831,7 +831,10 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
 16. **Status do cliente** (plano.md:173).
     - Decidido em 2026-10-09: o mesmo do SGI, `NVL(CLI3_STA,'ATIVO')` (`untDmVenPvd.dfm:2572`; `Vendas - CRM {CRM}/Clientes {CLI}/untDmCrmCli.dfm:18`). `CRCL.SUSPENSO` não é lido; usá-lo foi erro do protótipo (CRM-prototipo/REGRAS.md:79).
     - Decidido em 2026-10-09: a revalidação de "não está suspenso" na LAN também segue o SGI, com `CLI3_STA`. `CLI3_RFI` não é lido.
-    - Decidido em 2026-10-14: o cliente fora de ATIVO (INATIVO ou SUBSTITUIDO; "negativo", nas palavras do Lucas) continua na carteira, com o selo "Negativo", e não recebe pedido: a tela mostra o aviso para falar com a equipe de vendas da Suprens. Valores do `CLI3_STA` em 14/10: ATIVO 17.449, INATIVO 269, SUBSTITUIDO 36 e 17 nulos. O SUBSTITUIDO entrou por segurança, porque o código foi trocado por outro.
+    - Decidido em 2026-10-14 e simplificado em 2026-10-15: o cliente fora de ATIVO (INATIVO ou SUBSTITUIDO) continua na carteira, com o status à mostra pelo nome do SGI (coluna Status em Clientes; selo na Ficha e na escolha do cliente do pedido), e não recebe pedido: a tela mostra o aviso para falar com a equipe de vendas da Suprens e, no inativo, pedir a reativação. O SUBSTITUIDO também bloqueia, porque o código foi trocado por outro.
+    - Valores do `CLI3_STA` em 14/10: ATIVO 17.449, INATIVO 269, SUBSTITUIDO 36 e 17 nulos. Nenhum INATIVO ou SUBSTITUIDO tem a Star Vendas como vendedor ou já recebeu nota dela. Um valor desconhecido para a foto (`extrator/src/erp/carteira.ts`), porque o CRM não sabe se o cliente recebe pedido.
+    - No SGI, a tela de pedido só barra o INATIVO de montadora (`untVenPvd_PvdIncluir.pas:1007-1011`). O CRM barra todo cliente fora de ativo, como o Lucas decidiu.
+    - `CRCL.SUSPENSO` continua fora: em 15/10, 7 clientes da carteira da Star Vendas estavam suspensos no Omega, com o motivo "PC", todos com compra nos últimos 24 meses. O SGI não usa esse campo.
 
 **Decidir com o Lucas**
 
@@ -849,7 +852,7 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
         - as maiores compram quase todo mês: a primeira tem 52 notas e R$ 111 mil; a terceira, 62 notas;
         - as maiores fatias por representante: 4,8% das vendas do 1125, 2,7% do 1213, 2,4% do 1120 e 1,8% do 1302;
         - cada nota tem o próprio pedido no SGI: 320 notas e 320 pedidos.
-    - Saem `CLI3_STA` inativo, `TIPO_CAD` diferente de 'C' e cliente sem compra há N anos?
+    - Saem `TIPO_CAD` diferente de 'C' e cliente sem compra há N anos? O cliente fora de ativo no `CLI3_STA` fica (decidido em 2026-10-14).
     - `VEND_2` e `VEND_3` têm uso?
 19. **Grupos por raiz de CNPJ (plano.md:244).**
     - A lista mostra a filial ou o grupo?
@@ -877,8 +880,8 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
     - Com menos de 12 meses de história, divide por 12?
     - O "faturado desde então" do mês de "desde" até hoje vale?
     - O piso de "dados insuficientes" da variação em 12 meses vale?
-    - "Comprando mais" exclui o cliente novo, como faz o fictício (`ficticio.ts:590`)? O plano não diz (plano.md:228-232).
-    - Antes da F2, a regra de quem entra em cada lista sai do fictício (`ficticio.ts:561-604`) e vai para `analises.ts`, com teste.
+    - "Comprando mais" exclui o cliente novo, como faz o fictício (`ficticio.ts:596`)? O plano não diz (plano.md:228-232).
+    - Antes da F2, a regra de quem entra em cada lista sai do fictício (`ficticio.ts:567-610`) e vai para `analises.ts`, com teste.
 26. **Pedido em aberto que impede "parado".** Conta só o VEPD com saldo e o VEPM não bloqueado? Ou contam também o pedido bloqueado, o pedido do SGI ainda não exportado e o enviado pelo CRM? E o saldo antigo esquecido?
     - O pedido do cliente atribuído a outro representante conta? A decisão da pergunta 22 vale para as listas de pedidos. Proposta: conta, porque Análises usa a visão do cliente (ver Análises).
 27. **Ficha.**
@@ -902,7 +905,7 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
 31. **Motivo da recusa.** Fechar a lista de códigos e frases, escrita pelo importador e pela validação da LAN. Quais códigos são por item e levam o código do produto (`motivo_produto`)?
 32. **Valor em aberto.** O pedido antecipado bloqueado (condição de pagamento 1000, `untRecCpv_Cpv.pas:344-373`) entra no valor em aberto? A coluna "Itens" conta só as linhas com saldo? A "Entrega" mostra a próxima entrega com saldo ou a entrega do cabeçalho?
 33. **Rascunho de cliente que saiu da carteira.** Some, fica bloqueado para envio ou continua visível? O pedido já enviado continua visível para quem enviou?
-    - E o rascunho com produto que saiu do catálogo do cliente? O servidor tira o item na leitura e avisa o representante, ou bloqueia só o envio? Hoje a tela esconde o item (MontarPedido.tsx:77), mas o reenvia em todo salvamento (MontarPedido.tsx:181-183), e a validação recusaria o rascunho inteiro.
+    - E o rascunho com produto que saiu do catálogo do cliente? O servidor tira o item na leitura e avisa o representante, ou bloqueia só o envio? Hoje a tela esconde o item (MontarPedido.tsx:79), mas o reenvia em todo salvamento (MontarPedido.tsx:183-185), e a validação recusaria o rascunho inteiro.
     - Como esse item entra em "N produtos" e no total estimado da aba Rascunhos?
     - E o pedido em aberto ou a nota atribuídos ao representante de cliente que hoje é de outra carteira? Proposta: a linha aparece sem o nome, com "Cliente de outra carteira", e sem link para a ficha (ver Pedidos).
 34. **Mapa.** Decidido em 2026-10-09: saem as classes "atendida" e "carteira de outros". O mapa mostra só a carteira do representante (plano.md:199).

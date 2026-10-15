@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { criarApp } from "./app.ts";
 import { criarFotoAtual, type FotoAtual } from "./foto/fotoAtual.ts";
-import { CLIENTE_DE_A, CLIENTE_DE_B, CLIENTE_NEGATIVO_DE_A, MARCAS_DE_B, gravarFotoDeTeste } from "./fotoDeTeste.ts";
+import { CLIENTE_DE_A, CLIENTE_DE_B, CLIENTE_INATIVO_DE_A, MARCAS_DE_B, gravarFotoDeTeste } from "./fotoDeTeste.ts";
 import { sessaoDeTeste, type FonteDeSessao } from "./sessao.ts";
 
 const LOGIN_DE_A = sessaoDeTeste("Teste A", ["1401"]);
@@ -101,12 +101,12 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     expect(clientes.find(({ codigo }) => codigo === CLIENTE_DE_A)?.quedaNoSemestre).toBe(-0.5);
   });
 
-  it("marca o cliente negativo de A, que continua na carteira", async () => {
+  it("mostra o status do cadastro: o cliente inativo de A continua na carteira", async () => {
     const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
-    const clientes: { codigo: string; isNegativo: boolean }[] = (await app.inject({ method: "GET", url: "/api/clientes" })).json();
-    expect(clientes.map(({ codigo, isNegativo }) => [codigo, isNegativo]).sort()).toEqual([
-      [CLIENTE_DE_A, false],
-      [CLIENTE_NEGATIVO_DE_A, true],
+    const clientes: { codigo: string; status: string }[] = (await app.inject({ method: "GET", url: "/api/clientes" })).json();
+    expect(clientes.map(({ codigo, status }) => [codigo, status]).sort()).toEqual([
+      [CLIENTE_DE_A, "ativo"],
+      [CLIENTE_INATIVO_DE_A, "inativo"],
     ]);
   });
 
@@ -125,11 +125,11 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     });
   });
 
-  it("não dá catálogo ao cliente negativo: 409, com o aviso para falar com a equipe de vendas", async () => {
+  it("não dá catálogo ao cliente inativo: 409, com o aviso para pedir a reativação", async () => {
     const app = criarApp({ foto, sessaoDe: LOGIN_DE_A });
-    const resposta = await app.inject({ method: "GET", url: `/api/clientes/${CLIENTE_NEGATIVO_DE_A}/catalogo` });
+    const resposta = await app.inject({ method: "GET", url: `/api/clientes/${CLIENTE_INATIVO_DE_A}/catalogo` });
     expect(resposta.statusCode).toBe(409);
-    expect(resposta.json().erro).toMatch(/equipe de vendas da Suprens/);
+    expect(resposta.json().erro).toMatch(/inativo no cadastro da Suprens.*peça a reativação/);
   });
 
   it("recusa o código de cliente fora do formato do id", async () => {

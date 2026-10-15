@@ -4,13 +4,15 @@ import { Users } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Filtros, type Filtro } from "../componentes/Filtros";
-import { MotivoDoRisco, SITUACOES, SeloNegativo, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { MotivoDoRisco, SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { StatusDoCliente } from "../componentes/StatusDoCliente";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import type { ColunaOrdenavel, Ordem } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
+import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { ClienteResumo, Semestre, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigoDoCliente, formatarData, formatarTempoDesde, normalizarParaBusca } from "../formato";
@@ -32,6 +34,7 @@ const FILTROS: readonly Omit<Filtro<FiltroSituacao>, "quantidade">[] = [
 /** As colunas que ordenam a carteira. A tendência fica de fora: ela desenha a mesma variação. */
 const COLUNAS = {
   cliente: { titulo: "Cliente", ordenarPor: (cliente) => cliente.nome },
+  status: { titulo: "Status", ordenarPor: (cliente) => ROTULOS_DE_STATUS[cliente.status] },
   situacao: { titulo: "Situação", ordenarPor: (cliente) => SITUACOES[cliente.situacao].rotulo },
   ultimaCompra: { titulo: "Última compra", ordenarPor: (cliente) => cliente.ultimaCompra },
   faturamento: { titulo: "Faturado 12 meses", numerica: true, ordenarPor: (cliente) => cliente.faturamento12m },
@@ -89,6 +92,9 @@ export function Clientes() {
             <TituloDaColuna coluna={COLUNAS.cliente} ordenacao={ordenacao} />
           </span>
           <span>
+            <TituloDaColuna coluna={COLUNAS.status} ordenacao={ordenacao} />
+          </span>
+          <span>
             <TituloDaColuna coluna={COLUNAS.situacao} ordenacao={ordenacao} />
           </span>
           <span>
@@ -126,16 +132,18 @@ export function Clientes() {
 
 function LinhaCliente({ cliente, hoje, semestre }: { cliente: ClienteResumo; hoje: string; semestre: Semestre }) {
   return (
-    <Link to={`/clientes/${cliente.codigo}`} className={estilos.linha}>
+    <Link to={`/clientes/${cliente.codigo}`} className={cliente.status === "ativo" ? estilos.linha : `${estilos.linha} ${estilos.foraDeAtivo}`}>
       <span className={estilos.identificacao}>
         <span className={estilos.nome}>{cliente.nome}</span>
         <span className={estilos.local}>
           {cliente.cidade}/{cliente.uf} · {formatarCodigoDoCliente(cliente.codigoErp)}
         </span>
       </span>
+      <span className={estilos.status}>
+        <StatusDoCliente status={cliente.status} />
+      </span>
       <span className={estilos.situacao}>
         <SituacaoCliente situacao={cliente.situacao} />
-        {cliente.isNegativo ? <SeloNegativo /> : null}
         <MotivoDoRisco queda={cliente.quedaNoSemestre} semestre={semestre} />
       </span>
       <span className={estilos.ultimaCompra} title={cliente.ultimaCompra ? formatarData(cliente.ultimaCompra) : undefined}>

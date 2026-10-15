@@ -1,6 +1,6 @@
-import { AVISO_DE_CLIENTE_NEGATIVO } from "dominio/clienteNegativo";
+import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { analisesFicticias, clientesFicticios, fichaFicticia, painelFicticio, situacaoDosDadosFicticia } from "./ficticio";
-import type { FonteDeDados } from "./fonteDeDados";
+import { PedidoBloqueado, type FonteDeDados } from "./fonteDeDados";
 import {
   catalogoDoClienteFicticio,
   enviarRascunhoFicticio,
@@ -20,8 +20,10 @@ export const fonteFicticia: FonteDeDados = {
   carregarAnalises: () => Promise.resolve(analisesFicticias()),
   carregarCatalogo(codigoCliente) {
     const catalogo = catalogoDoClienteFicticio(codigoCliente);
-    // O cliente negativo não recebe pedido: a montagem mostra o aviso no lugar do catálogo.
-    return catalogo?.cliente.isNegativo ? Promise.reject(new Error(AVISO_DE_CLIENTE_NEGATIVO)) : Promise.resolve(catalogo);
+    if (catalogo && !podeReceberPedido(catalogo.cliente.status)) {
+      return Promise.reject(new PedidoBloqueado(AVISO_DE_PEDIDO_BLOQUEADO[catalogo.cliente.status]));
+    }
+    return Promise.resolve(catalogo);
   },
   carregarPedidos: () => Promise.resolve(painelDePedidosFicticio()),
   carregarPedidoEnviado: (numero) => Promise.resolve(pedidoEnviadoFicticio(numero)),

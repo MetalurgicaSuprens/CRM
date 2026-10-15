@@ -1,4 +1,4 @@
-import type { FonteDeDados } from "./fonteDeDados";
+import { PedidoBloqueado, type FonteDeDados } from "./fonteDeDados";
 
 /*
  * Os dados reais: a API do servidor, que lê a foto do ERP (server/src/rotas.ts). Mesma origem,
@@ -14,7 +14,6 @@ export const fonteDoServidor: FonteDeDados = {
   carregarClientes: () => buscar("/api/clientes"),
   carregarFicha: (codigo) => buscarOuNulo(`/api/clientes/${encodeURIComponent(codigo)}`),
   carregarAnalises: () => buscar("/api/analises"),
-  // 409, cliente negativo: a mensagem do servidor é o aviso que a montagem do pedido mostra.
   carregarCatalogo: (codigoCliente) => buscarOuNulo(`/api/clientes/${encodeURIComponent(codigoCliente)}/catalogo`),
   carregarPedidos: () => buscar("/api/pedidos"),
   carregarPedidoEnviado: () => Promise.resolve(null),
@@ -30,10 +29,14 @@ async function buscar<T>(caminho: string): Promise<T> {
   return (await resposta.json()) as T;
 }
 
-/** 404 (e o código fora do formato, 400) é "não encontrado": a tela mostra o aviso dela. */
+/**
+ * 404 (e o código fora do formato, 400) é "não encontrado": a tela mostra o aviso dela. 409 é o
+ * cliente da carteira que não recebe pedido, e a mensagem do servidor é o aviso.
+ */
 async function buscarOuNulo<T>(caminho: string): Promise<T | null> {
   const resposta = await fetch(caminho, { headers: { Accept: "application/json" } });
   if (resposta.status === 404 || resposta.status === 400) return null;
+  if (resposta.status === 409) throw new PedidoBloqueado(await mensagemDeErro(resposta));
   if (!resposta.ok) throw new Error(await mensagemDeErro(resposta));
   return (await resposta.json()) as T;
 }

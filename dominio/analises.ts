@@ -38,11 +38,11 @@ export type AnaliseDoCliente = {
   ritmo: MudancaDeRitmo | null;
   /** "Novos e reativados". */
   entrada: EntradaRecente | null;
-  /** Fora de parado e inativo: pode receber sugestão de mix. */
+  /** Fora de parado e perdido: pode receber sugestão de mix. */
   isAtivo: boolean;
 };
 
-const DIAS_PARA_INATIVO = 730;
+const DIAS_PARA_PERDIDO = 730;
 const DIAS_DE_CLIENTE_NOVO = 365;
 const INTERVALO_PARA_REATIVADO = 365;
 const BASE_MINIMA_DO_SEMESTRE = 3_000;
@@ -53,7 +53,7 @@ const COMPRAS_MINIMAS = 3;
 
 export function analisarCliente(cliente: HistoricoDoCliente, hoje: string): AnaliseDoCliente {
   const situacao = classificarSituacao(cliente, hoje);
-  const isAtivo = situacao !== "parado" && situacao !== "inativo";
+  const isAtivo = situacao !== "parado" && situacao !== "perdido";
   return {
     situacao,
     parada: parouDeComprar(cliente, hoje)
@@ -73,7 +73,7 @@ function ritmoDasListas(ritmo: MudancaDeRitmo | null, situacao: Situacao): Mudan
 
 export function classificarSituacao(cliente: HistoricoDoCliente, hoje: string): Situacao {
   const dias = diasSemComprar(cliente, hoje);
-  if (dias === null || dias > DIAS_PARA_INATIVO) return "inativo";
+  if (dias === null || dias > DIAS_PARA_PERDIDO) return "perdido";
   if (parouDeComprar(cliente, hoje)) return "parado";
   if (entradaRecente(cliente, hoje)?.tipo === "novo") return "novo";
   if (mudancaDeRitmo(cliente)?.direcao === "menos") return "em_risco";
@@ -90,11 +90,11 @@ export function limiteSemComprar(cicloDias: number | null): number {
   return cicloDias === null ? 180 : Math.max(60, 2 * cicloDias);
 }
 
-/** Passou do limite sem comprar, não tem pedido em aberto e ainda não virou inativo (24 meses). */
+/** Passou do limite sem comprar, não tem pedido em aberto e ainda não virou perdido (24 meses). */
 export function parouDeComprar(cliente: HistoricoDoCliente, hoje: string): boolean {
   const dias = diasSemComprar(cliente, hoje);
   if (dias === null || cliente.temPedidoEmAberto) return false;
-  return dias > limiteSemComprar(cliente.cicloDias) && dias <= DIAS_PARA_INATIVO;
+  return dias > limiteSemComprar(cliente.cicloDias) && dias <= DIAS_PARA_PERDIDO;
 }
 
 /** Média mensal dos 12 meses até a última compra: o que deixou de entrar por mês. */

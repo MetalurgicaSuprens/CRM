@@ -2,8 +2,11 @@
  * Conceitos do negócio que as regras, o extrator, o servidor e as telas compartilham.
  */
 
-/** "inativo": 24 meses ou mais sem comprar. */
-export type Situacao = "ativo" | "em_risco" | "parado" | "novo" | "inativo";
+/** A situação de compra, que o CRM calcula pelas notas. "perdido": mais de 24 meses sem comprar. */
+export type Situacao = "ativo" | "em_risco" | "parado" | "novo" | "perdido";
+
+/** O status do cliente no cadastro do SGI (`CLI3_STA`), com os nomes de lá. */
+export type StatusDoCadastro = "ativo" | "inativo" | "substituido";
 
 export type Mercado = "PRACA" | "MONTADORA" | "EXPORTACAO";
 

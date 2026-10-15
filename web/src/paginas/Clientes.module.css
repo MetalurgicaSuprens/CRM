@@ -24,11 +24,17 @@
   overflow: clip;
 }
 
-/* Em telas largas, a sobra se divide entre todas as colunas, e os números não ficam longe do nome */
+/*
+ * Em telas largas, a sobra se divide entre todas as colunas, e os números não ficam longe do nome.
+ * As mínimas são a largura do título de cada coluna ou do conteúdo dela, o que for maior: o selo
+ * "Substituído", o sparkline. Com elas, as sete colunas cabem a partir de 960 px.
+ */
 .cabecalhoTabela,
 .linha {
   display: grid;
-  grid-template-columns: minmax(13rem, 3fr) minmax(7.5rem, 1fr) minmax(8rem, 1fr) minmax(10.5rem, 1fr) minmax(6rem, 0.8fr) minmax(6.5rem, 0.8fr);
+  grid-template-columns:
+    minmax(10rem, 3fr) minmax(6.25rem, 0.8fr) minmax(6.5rem, 1fr) minmax(7.5rem, 1fr) minmax(9.25rem, 1fr)
+    minmax(5.25rem, 0.8fr) minmax(5.5rem, 0.8fr);
   align-items: center;
   gap: var(--esp-4);
   padding: 0 var(--esp-5);
@@ -91,6 +97,11 @@ li:last-child .linha {
   white-space: nowrap;
 }
 
+.status {
+  display: flex;
+  min-width: 0;
+}
+
 /* O selo e, no cliente em risco, o motivo embaixo dele */
 .situacao {
   display: flex;
@@ -139,6 +150,24 @@ li:last-child .linha {
   text-align: center;
 }
 
+/*
+ * Até 1039 px (o notebook de 1280 px com o menu), a tendência sai: ela repete a variação, e o nome
+ * do cliente precisa do espaço. No de 1366 px, as sete colunas aparecem.
+ */
+@container (min-width: 960px) and (max-width: 1039px) {
+  .cabecalhoTabela,
+  .linha {
+    grid-template-columns:
+      minmax(10rem, 3fr) minmax(6.25rem, 0.8fr) minmax(6.5rem, 1fr) minmax(7.5rem, 1fr) minmax(9.25rem, 1fr)
+      minmax(5.25rem, 0.8fr);
+  }
+
+  .tituloTendencia,
+  .tendencia {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------ cartões (celular e tablet) */
 
 /* Abaixo disso as seis colunas não cabem: cada cliente vira um cartão */
@@ -173,6 +202,24 @@ li:last-child .linha {
 
   .identificacao {
     grid-area: identificacao;
+  }
+
+  /* No cartão, o status só aparece fora de ativo: o selo embaixo do nome, e a situação ao lado dos dois */
+  .status {
+    display: none;
+  }
+
+  .foraDeAtivo {
+    grid-template-areas:
+      "identificacao situacao"
+      "status situacao"
+      "faturamento tendencia"
+      "rodape rodape";
+  }
+
+  .foraDeAtivo .status {
+    display: flex;
+    grid-area: status;
   }
 
   /* O motivo do risco quebra em linhas curtas embaixo do selo, para não espremer o nome */

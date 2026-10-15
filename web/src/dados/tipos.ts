@@ -5,9 +5,9 @@
  */
 
 import type { Projecao } from "dominio/projecao";
-import type { Mercado, OportunidadeMix, Porte, Situacao } from "dominio/tipos";
+import type { Mercado, OportunidadeMix, Porte, Situacao, StatusDoCadastro } from "dominio/tipos";
 
-export type { Mercado, OportunidadeMix, Porte, Situacao };
+export type { Mercado, OportunidadeMix, Porte, Situacao, StatusDoCadastro };
 
 /** Meses "2026-04" a "2026-09": os 6 fechados que as análises de ritmo comparam com os mesmos do ano anterior. */
 export type Semestre = { inicio: string; fim: string };
@@ -42,8 +42,8 @@ export type ClienteResumo = {
   uf: string;
   mercado: Mercado;
   situacao: Situacao;
-  /** Fora de ATIVO no cadastro do SGI (INATIVO ou SUBSTITUIDO): aparece com o selo "Negativo" e não recebe pedido. */
-  isNegativo: boolean;
+  /** Fora de ativo no cadastro do SGI, o cliente aparece com o status e não recebe pedido. */
+  status: StatusDoCadastro;
   ultimaCompra: string | null;
   /** Soma dos últimos 12 meses fechados. */
   faturamento12m: number;

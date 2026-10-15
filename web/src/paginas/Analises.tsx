@@ -81,7 +81,7 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
   return (
     <CartaoDaAnalise
       tipo="pararam"
-      subtitulo="Sem comprar há mais que o dobro do ciclo típico (no mínimo 60 dias; 180 para quem compra sem ritmo) e sem pedido em aberto. Com 24 meses sem comprar, o cliente vira inativo e sai da lista."
+      subtitulo="Sem comprar há mais que o dobro do ciclo típico (no mínimo 60 dias; 180 para quem compra sem ritmo) e sem pedido em aberto. Com 24 meses sem comprar, o cliente vira perdido e sai da lista."
     >
       <p className={estilos.resumo}>
         {formatarContagem(itens.length, "cliente", "clientes")} · <Valor valor={somar(itens.map((item) => item.perdaMensal))} compacto comoPerda /> por mês deixaram de entrar
