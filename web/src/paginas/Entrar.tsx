@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { Info, KeyRound, TriangleAlert } from "lucide-react";
+import { useArea } from "../acesso/area";
 import { login } from "../acesso/login";
 import botoes from "../componentes/Botao.module.css";
 import { TelaDeAcesso } from "../componentes/TelaDeAcesso";
@@ -12,6 +13,7 @@ const MOTIVOS: Record<string, string> = {
   inatividade: "Sua sessão terminou depois de 60 minutos sem uso. Entre de novo.",
   limite: "Sua sessão chegou ao limite de 12 horas. Entre de novo.",
   revogada: "Seu acesso foi encerrado pelo administrador do CRM. Se precisar, peça um novo convite.",
+  encerrada: "O administrador do CRM encerrou a sua sessão. Entre de novo com a sua chave.",
 };
 
 export function Entrar() {
@@ -19,6 +21,7 @@ export function Entrar() {
   const navegar = useNavigate();
   const [aguardando, setAguardando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const area = useArea();
   const motivo = MOTIVOS[parametros.get("motivo") ?? ""];
 
   const entrar = () => {
@@ -34,7 +37,7 @@ export function Entrar() {
   };
 
   return (
-    <TelaDeAcesso titulo="Entrar no CRM">
+    <TelaDeAcesso titulo={`Entrar ${area.noSite}`}>
       {motivo && !erro ? (
         <p className={estilos.aviso} role="status">
           <Info size={16} aria-hidden="true" />
@@ -59,14 +62,14 @@ export function Entrar() {
         <summary>Precisa de ajuda?</summary>
         <ul>
           <li>
-            <strong>Primeiro acesso:</strong> abra o link do convite que você recebeu do administrador.
+            <strong>Primeiro acesso:</strong> {area.ajudaDoPrimeiroAcesso}
           </li>
           <li>
             <strong>Notebook sem leitor de digital:</strong> use o PIN do Windows ou escolha "usar outro aparelho" e leia o QR
             code com o celular.
           </li>
           <li>
-            <strong>Trocou de celular ou perdeu o acesso:</strong> peça um novo convite ao administrador do CRM.
+            <strong>Trocou de aparelho ou perdeu o acesso:</strong> {area.ajudaDoAcessoPerdido}
           </li>
         </ul>
       </details>

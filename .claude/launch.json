@@ -33,6 +33,17 @@
         "web"
       ],
       "port": 5175
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:admin",
+        "--workspace",
+        "web"
+      ],
+      "port": 5179
     }
   ]
 }

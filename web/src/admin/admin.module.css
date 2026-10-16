@@ -1,0 +1,306 @@
+/* As telas da administração: os mesmos tokens e cartões do CRM, com o que só a gestão tem */
+
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+}
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-4);
+}
+
+/* Os cartões do detalhe do login: dois por linha quando cabem */
+.grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--esp-5);
+}
+
+.inteiro {
+  grid-column: 1 / -1;
+}
+
+/* O filtro dentro do cartão, acima da lista: no celular, ele rola por dentro em vez de alargar a página */
+.filtroDaLista {
+  display: flex;
+  min-width: 0;
+  margin-bottom: var(--esp-4);
+}
+
+/* ------------------------------------------------ formulário */
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+  max-width: 44rem;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.rotulo {
+  padding: 0;
+  font-weight: 600;
+}
+
+.ajuda {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.entrada {
+  width: 100%;
+  max-width: 28rem;
+  padding: 9px var(--esp-3);
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-1);
+  color: var(--cor-texto);
+  font: inherit;
+  transition:
+    border-color var(--transicao),
+    box-shadow var(--transicao);
+}
+
+.entrada:focus-visible {
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
+  outline: none;
+}
+
+.botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-3);
+}
+
+/* ------------------------------------------------ escolha dos códigos */
+
+.escolha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.codigos {
+  display: flex;
+  flex-direction: column;
+  max-height: 22rem;
+  overflow-y: auto;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+}
+
+.codigos li + li {
+  border-top: 1px solid var(--cor-linha);
+}
+
+.codigo {
+  display: grid;
+  grid-template-columns: auto 4.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: 10px var(--esp-3);
+  cursor: pointer;
+  transition: background-color var(--transicao);
+}
+
+.codigo:hover {
+  background: var(--cor-superficie-2);
+}
+
+.codigo input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: var(--cor-acento);
+}
+
+/* O código que já está em outro login ativo: aparece, mas não pode ser escolhido */
+.codigo[data-indisponivel] {
+  cursor: not-allowed;
+  color: var(--cor-texto-suave);
+}
+
+.codigo[data-indisponivel]:hover {
+  background: none;
+}
+
+.numeroDoCodigo {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.nomeDoCodigo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notaDoCodigo {
+  font-size: var(--tam-pequeno);
+}
+
+/* ------------------------------------------------ convite gerado */
+
+.link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3);
+}
+
+.textoDoLink {
+  flex: 1 1 22rem;
+  min-width: 0;
+  padding: var(--esp-3);
+  border: 1px dashed var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie-2);
+  font-size: var(--tam-pequeno);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.instrucoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  margin-top: var(--esp-4);
+  padding-left: var(--esp-5);
+  list-style: disc;
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+}
+
+/* ------------------------------------------------ ações do login */
+
+.acoes {
+  display: flex;
+  flex-direction: column;
+}
+
+.acao {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-4);
+  padding: var(--esp-3) 0;
+}
+
+.acao + .acao {
+  border-top: 1px solid var(--cor-linha);
+}
+
+.nomeDaAcao {
+  font-weight: 600;
+}
+
+.explicacao {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+/* A ação que tira o acesso de alguém: o botão leva o vermelho do texto, sem fundo */
+.perigosa {
+  color: var(--cor-critico);
+}
+
+/* ------------------------------------------------ mensagens e registro */
+
+.mensagem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  padding: var(--esp-3) var(--esp-4);
+  border-radius: var(--raio-pequeno);
+  font-size: var(--tam-pequeno);
+}
+
+.mensagem svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sucesso {
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
+}
+
+.erro {
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+}
+
+.vazio {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.resultadoDaAcao {
+  color: var(--cor-texto-suave);
+}
+
+.recusa {
+  color: var(--cor-critico);
+}
+
+.maisAntigos {
+  align-self: flex-start;
+}
+
+.rodapeDoCartao {
+  margin-top: var(--esp-3);
+  font-size: var(--tam-pequeno);
+}
+
+.rodapeDoCartao a {
+  color: var(--cor-texto-2);
+  text-decoration: underline;
+}
+
+/* ------------------------------------------------ larguras menores */
+
+@container (max-width: 1100px) {
+  .grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 900px) {
+  .indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 560px) {
+  .indicadores {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .acao {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .codigo {
+    grid-template-columns: auto 4rem minmax(0, 1fr);
+  }
+
+  .notaDoCodigo {
+    grid-column: 2 / -1;
+  }
+}

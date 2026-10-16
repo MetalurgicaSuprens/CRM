@@ -35,6 +35,18 @@
   color: var(--cor-texto-2);
 }
 
+/* A área ao lado da marca, como a administração: pequena, na cor da marca */
+.area {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--cor-marca-fundo);
+  color: var(--cor-marca);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .cartao {
   display: flex;
   flex-direction: column;

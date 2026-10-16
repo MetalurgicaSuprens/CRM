@@ -202,7 +202,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
    - Os nomes e os desenhos vêm da base atual do IBGE, o que resolve os nomes antigos do protótipo.
    - Os valores da dica obedecem "ocultar valores".
    - Detalhes em dados-por-tela.md, seção 10.
-7. **Admin** (só LAN): representantes, convites, chaves, auditoria e situação das cargas.
+7. **Admin**, só na rede interna: logins dos representantes, códigos, convites, chaves, sessões, auditoria e a hora da foto. Feita em 2026-10-16 como um site à parte, com API própria e login só de admin (dados-por-tela.md, seção 11). Falta a situação das cargas: trocas e recusas da foto.
 
 **Dois escopos, sempre explícitos**
 - **Visão do cliente** (o histórico completo do cliente, de qualquer representante): Clientes, Ficha, Análises e Mapa.
@@ -280,7 +280,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - SQL de faturamento do Gestao;
   - totais conferidos com o RELCUS001, inclusive o relatório por representante;
   - listagem das unidades e dos tipos de movimento reais.
-- **F3 — Login, sessões, escopo e auditoria**, com testes automáticos. Feita em 2026-10-15 no servidor e nas telas de Entrar e Convite, com as ações de admin pela linha de comando; faltam a tela de Admin e a cópia da auditoria para a LAN (dados-por-tela.md, "O que a F3 já faz").
+- **F3 — Login, sessões, escopo e auditoria**, com testes automáticos. Feita em 2026-10-15 no servidor e nas telas de Entrar e Convite; a tela de Admin veio em 2026-10-16. Falta a cópia da auditoria para a LAN (dados-por-tela.md, "O que a F3 já faz").
 - **F4 — Carteira e análises.** Termina com um piloto só de leitura com 2–3 representantes.
 - **F5 — Pedidos.** Termina com um piloto de ponta a ponta: CRM → SGI → aprovações → Omega.
 - **F6 — Mapa:** feito em 2026-10-15, antes da F3, a pedido do Lucas. Ele funciona com os dados reais e com o fictício (dados-por-tela.md, seção 10).

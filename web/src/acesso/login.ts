@@ -1,5 +1,5 @@
 import { carregarSituacaoDosDados, isDadosReais } from "../dados/api";
-import { mensagemDeErro } from "../dados/fonteDoServidor";
+import { mensagemDeErro } from "../dados/http";
 import { criarChave, usarChave, type OpcoesDeCriacaoJSON, type OpcoesDeEntradaJSON } from "./chaveDeAcesso";
 
 /*

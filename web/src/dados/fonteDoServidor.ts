@@ -1,4 +1,5 @@
 import { PedidoBloqueado, type FonteDeDados } from "./fonteDeDados";
+import { irParaAEntrada, mensagemDeErro } from "./http";
 
 /*
  * Os dados reais: a API do servidor, que lê a foto do ERP (server/src/rotas.ts). Mesma origem,
@@ -23,11 +24,6 @@ export const fonteDoServidor: FonteDeDados = {
   enviarPedido: () => Promise.reject(new Error(AINDA_SEM_PEDIDOS)),
 };
 
-export async function mensagemDeErro(resposta: Response): Promise<string> {
-  const corpo = (await resposta.json().catch(() => null)) as { erro?: string } | null;
-  return corpo?.erro ?? `O servidor respondeu ${resposta.status}.`;
-}
-
 async function buscar<T>(caminho: string): Promise<T> {
   const resposta = await fetch(caminho, { headers: { Accept: "application/json" } });
   if (resposta.status === 401) return irParaAEntrada(resposta);
@@ -46,15 +42,4 @@ async function buscarOuNulo<T>(caminho: string): Promise<T | null> {
   if (resposta.status === 409) throw new PedidoBloqueado(await mensagemDeErro(resposta));
   if (!resposta.ok) throw new Error(await mensagemDeErro(resposta));
   return (await resposta.json()) as T;
-}
-
-/**
- * Sem sessão, porque ainda não entrou ou porque ela terminou: volta para a entrada, que explica o
- * motivo. A carga recomeça do zero, sem nada do login anterior na memória, e a tela que pediu os
- * dados fica esperando até a troca de página.
- */
-async function irParaAEntrada(resposta: Response): Promise<never> {
-  const corpo = (await resposta.json().catch(() => null)) as { motivo?: string | null } | null;
-  window.location.replace(corpo?.motivo ? `/entrar?motivo=${encodeURIComponent(corpo.motivo)}` : "/entrar");
-  return new Promise<never>(() => {});
 }

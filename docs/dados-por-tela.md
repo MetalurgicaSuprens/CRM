@@ -546,28 +546,51 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
 - **Na foto.** `cliente.municipio_ibge` (versão 9). Na Star Vendas, em 15/10: os 178 clientes com município, em 42 municípios.
 - **Pendente.** A lista de Clientes ainda mostra o `CRCL.CIDADE`, cortado em 20 letras. Com o código confirmado, o nome pode vir do IBGE (pergunta 5).
 
-## 11. Admin (só LAN, não construída)
+## 11. Administração (feita em 2026-10-16)
 
-O plano prevê representantes, convites, chaves, auditoria e situação das cargas (plano.md:203).
+Pedido do Lucas em 2026-10-16: gerenciar os acessos por uma tela, não por comandos, num lugar que só ele usa.
 
-| Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
+**Como funciona**
+- É um site à parte, que nunca vai junto com o do CRM e nunca fica na internet.
+  - Entrada em `web/admin`, telas em `web/src/admin`, montado por `web/vite.admin.config.ts` em `web/dist-admin`.
+  - Neste computador: `abrir-administracao.bat`, ou `npm run dev:admin`, em http://localhost:5179.
+- A API dela é um segundo ouvinte do servidor, em 127.0.0.1:5178 (`server/src/admin`).
+  - Ela usa as mesmas regras de segurança da do CRM (`criarApi`, em app.ts).
+  - Tem cookie próprio (`__Host-crm-admin`) e aceita só login de admin.
+  - Convite, chave e sessão de admin não valem no CRM, e os do representante não valem nela. As rotas de um portal respondem 404 no outro.
+- O primeiro admin nasce pela linha de comando, no servidor: `npm run admin -- criar-admin --nome "..."`. A tela não cria admin.
+- A tela e a linha de comando fazem as mesmas ações, pelo mesmo módulo (`server/src/admin/gestao.ts`), e toda ação vai para a auditoria com quem fez.
+
+| Dado | O que a tela mostra | Regra | Origem | Onde é calculado |
 |---|---|---|---|---|
-| Usuários | Lista, criar e desativar; ligar e desligar códigos | O usuário tem nome e os códigos escolhidos entre os autorizados da foto; o login puxa todos | (foto: representante) | app.db |
-| Convites | Gerar, validade e uso | Uso único, 24 a 48 h | nenhuma | app.db |
-| Chaves | Por provedor (Google, Apple, Windows) e revogar | plano.md:140 e 150 | nenhuma | app.db |
-| Auditoria | Eventos | plano.md:152-156 | nenhuma | app.db |
-| Situação das cargas | Foto atual (hora, versão, contagens), trocas e recusas | Manifesto e eventos "foto trocada ou recusada" | (foto: tabela `foto`) | app.db |
+| Logins | Lista com a situação, os códigos, as chaves, o último acesso e o convite; números do alto: ativos, convites pendentes, chaves ativas, sessões abertas | Situação: ativo (chave que vale), convite pendente (sem chave, com convite valendo), sem acesso, desativado | app.db | servidor |
+| Novo login | Nome e os códigos marcados na lista de autorizados; o link do convite, para copiar | Os códigos vêm da tabela `representante` da foto; o que já está em outro login ativo aparece bloqueado | (foto: representante) | servidor |
+| Chaves | Provedor, sincronizada ou não, criada, último uso, bloqueada; "Bloquear" uma a uma | Uma chave sincronizada vale em todos os aparelhos da conta Google ou Apple | app.db | servidor |
+| Convites | Gerado, situação (valendo, usado, venceu, trocado) e quando | 48 horas, uma vez só; o novo troca o anterior | app.db | servidor |
+| Sessões | As últimas 20: aberta, último uso, chave e por que terminou | As regras da entrada: 60 minutos sem uso, 12 horas | app.db | servidor |
+| Registro | Os eventos, de 100 em 100, com quem fez e o alvo pelo nome; por login no detalhe | O cliente da ficha consultada sai da foto pelo id | app.db e foto | servidor |
+| Foto do ERP | A hora da foto, no alto | Tabela `foto` | foto | servidor |
 
-- **Lista dos representantes autorizados.** Hoje não tem dono. Proposta:
-  - um arquivo na LAN, mantido pelo Lucas e lido pelo extrator;
-  - a foto leva só esses representantes;
-  - o Admin escolhe o código entre eles.
-- **Exceção à regra 4 do CLAUDE.md (decidida em 2026-10-13).**
-  - Para ligar o login aos códigos, a rota de admin recebe do navegador o código do representante. É a única rota que recebe esse código.
-  - A rota tem `config.acesso: 'admin'`, só existe na API de admin (vhost só da LAN, plano.md:75), confere o código contra a tabela `representante` da foto e grava auditoria.
-  - Nenhuma rota `representante` ou `publico` aceita o código. A exceção já está no CLAUDE.md e entra no teste de escopo da F3.
-- **Primeiro admin:** criado por linha de comando via SSH (plano.md:75).
-- **Sem dados comerciais.** Não há perfil "vê tudo" (plano.md:23).
+- **Ações.**
+  - Gerar convite novo: para o primeiro acesso ou para um aparelho novo.
+  - Trocar os códigos: a sessão aberta do representante já vê os novos.
+  - Encerrar as sessões: as chaves continuam valendo, e a entrada explica "o administrador encerrou a sua sessão".
+  - Bloquear todas as chaves ou só uma, como a do aparelho perdido.
+  - Desativar o login: os códigos ficam livres para outro login.
+  - As ações que tiram o acesso pedem confirmação. O admin não age no próprio login pela tela, para não se trancar para fora.
+- **Exceção à regra 4 do CLAUDE.md (decidida em 2026-10-13).** As rotas que ligam códigos a um login (criar o login e trocar os códigos) são as únicas que recebem do navegador o código do representante. Elas só existem na API da administração, conferem o código contra a tabela `representante` da foto e gravam auditoria.
+- **Lista dos representantes autorizados.** É a tabela `representante` da foto, que o extrator monta a partir de `data/representantes-autorizados.txt`.
+- **Sem dados comerciais.** Não há perfil "vê tudo" (plano.md:23). A administração mostra só nomes de login, códigos, chaves e o registro.
+- **Na produção, proposta a confirmar com o Lucas.** A administração fica só no servidor, em 127.0.0.1, e o Lucas a abre por um túnel SSH até ele, em http://localhost:5179.
+  - Não é preciso porta nova nem certificado: o firewall já só deixa o SSH vir do IP dele.
+  - A chave de acesso aceita "localhost" sem https.
+  - A alternativa do plano é um vhost só da rede interna, com https.
+- **Conferido em 2026-10-16** com 20 testes da API e de ponta a ponta no Chrome, com o autenticador virtual:
+  - o admin cria a chave pelo convite, cria o login de um representante e copia o link;
+  - o representante cria a chave e entra no CRM;
+  - a administração mostra o login ativo; bloquear as chaves derruba a sessão do CRM, com o motivo;
+  - o registro mostra tudo com nomes;
+  - as quatro telas cabem no celular, sem rolagem para o lado.
 
 ## Esquema proposto da foto
 
@@ -842,12 +865,11 @@ O login de verdade, com a chave de acesso, aprovado pelo Lucas em 2026-10-15 com
   - Limite por IP no login e por usuário no resto.
   - O IP só vem do X-Forwarded-For do Apache, nesta máquina.
   - Erro do pedido sem detalhe.
-- **Admin pela linha de comando** (`npm run admin`), no servidor, por SSH: `convidar`, `novo-convite`, `usuarios`, `revogar` e `desativar`.
+- **Administração.** Pela tela da administração (seção 11, desde 2026-10-16) ou pela linha de comando (`npm run admin`), no servidor, por SSH: `criar-admin`, `convidar`, `novo-convite`, `usuarios`, `revogar` e `desativar`.
   - Os códigos são conferidos contra a lista de autorizados da foto (CLAUDE.md, regra 4).
   - Toda ação vai para a auditoria.
 - **Auditoria.** Grava a chave criada e a recusada, a entrada e a recusada, a saída, as ações de admin e a ficha consultada. O alvo é sempre um id; nome e IP ficam fora (pergunta 36).
 - **Falta na F3:**
-  - a tela de Admin, só na rede interna, com a API de admin e o login de admin;
   - a cópia da auditoria em `saida/auditoria/*.jsonl` para a LAN, que vem com o canal SFTP da I1;
   - apagar a auditoria e as sessões antigas, depois de 6 a 12 meses (plano.md:155).
 - **Antes da produção:** o domínio do CRM (`CRM_ORIGEM`). As chaves criadas ficam presas a ele, e as deste computador, a `localhost`.

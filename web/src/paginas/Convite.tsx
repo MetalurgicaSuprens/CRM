@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router";
 import { CircleCheck, Copy, Fingerprint, KeyRound, ShieldCheck, Smartphone, TriangleAlert } from "lucide-react";
+import { useArea } from "../acesso/area";
 import { login, type ConsultaDoConvite } from "../acesso/login";
 import { abertoEmNavegadorDeAplicativo } from "../acesso/navegador";
 import botoes from "../componentes/Botao.module.css";
@@ -33,6 +34,7 @@ function CriarChave({ token, nome, validoAte }: { token: string; nome: string; v
   const [etapa, setEtapa] = useState<"inicio" | "criando" | "pronta">("inicio");
   const [erro, setErro] = useState<string | null>(null);
   const [noAplicativo] = useState(() => abertoEmNavegadorDeAplicativo(navigator.userAgent));
+  const area = useArea();
 
   const criar = () => {
     setEtapa("criando");
@@ -58,8 +60,8 @@ function CriarChave({ token, nome, validoAte }: { token: string; nome: string; v
       ) : null}
       <p className={estilos.saudacao}>Olá, {nome}</p>
       <p className={estilos.texto}>
-        Você foi convidado para o CRM dos representantes da Suprens. Para entrar, não vai precisar de senha: basta criar uma chave
-        de acesso neste aparelho.
+        Você foi convidado para {area.convidadoPara}. Para entrar, não vai precisar de senha: basta criar uma chave de acesso
+        neste aparelho.
       </p>
       <ul className={estilos.passos}>
         <li className={estilos.passo}>
@@ -111,6 +113,7 @@ function AvisoDeAplicativo() {
 }
 
 function ChaveCriada() {
+  const area = useArea();
   return (
     <TelaDeAcesso titulo="Chave criada">
       <p className={`${estilos.aviso} ${estilos.sucesso}`} role="status">
@@ -118,14 +121,11 @@ function ChaveCriada() {
         Pronto! Sua chave de acesso foi guardada neste aparelho, e o convite não vale mais.
       </p>
       <p className={estilos.texto}>
-        Da próxima vez, é só abrir o CRM e tocar em <strong>Entrar com chave de acesso</strong>.
+        Da próxima vez, é só abrir {area.oSite} e tocar em <strong>Entrar com chave de acesso</strong>.
       </p>
-      <p className={estilos.texto}>
-        Vai usar o CRM também no computador? Na tela de entrada dele, escolha "usar outro aparelho" e leia o QR code com este
-        celular.
-      </p>
+      {area.dicaDoComputador ? <p className={estilos.texto}>{area.dicaDoComputador}</p> : null}
       <Link to="/" className={`${botoes.primario} ${estilos.largo}`}>
-        Ir para o CRM
+        Continuar
       </Link>
     </TelaDeAcesso>
   );
