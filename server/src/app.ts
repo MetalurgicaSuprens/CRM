@@ -3,16 +3,19 @@ import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, ty
 import { FotoIndisponivel, type FotoAtual } from "./foto/fotoAtual.ts";
 import { criarLimitador, type Limite } from "./limite.ts";
 import { siteDaOrigem } from "./login/chaveDeAcesso.ts";
-import { COOKIE_APAGADO, lerTokenDoCookie } from "./login/cookie.ts";
+import { cookieApagado, lerTokenDoCookie } from "./login/cookie.ts";
 import { criarDesafios } from "./login/desafios.ts";
+import { PORTAL_DO_CRM, type Portal } from "./login/portal.ts";
 import { registrarRotasDoLogin } from "./login/rotasDoLogin.ts";
 import { usarSessao, type ConsultaDaSessao } from "./login/sessoes.ts";
 import { registrarRotas } from "./rotas.ts";
 
 /*
- * A API do CRM. Regras de segurança que valem para toda rota (CLAUDE.md, regras 4 a 6):
+ * As APIs do sistema: a do CRM, para os representantes, e a da administração (admin/appDoAdmin.ts).
+ * Regras de segurança que valem para toda rota das duas (CLAUDE.md, regras 4 a 6):
  * - toda rota declara `config.acesso`, ou o servidor não sobe;
- * - rota de representante sem sessão responde 401; o escopo vem sempre da sessão;
+ * - rota do papel do portal sem sessão responde 401; rota de outro portal nunca responde (404);
+ * - o escopo vem sempre da sessão;
  * - pedido que altera algo só vale da própria origem;
  * - limite de requisições por IP no login e nos convites, e por usuário no resto;
  * - erro interno não leva detalhe para o navegador;
@@ -36,7 +39,15 @@ export type Dependencias = {
   agora?: () => Date;
 };
 
-export function criarApp({ foto, banco, origem, agora = () => new Date() }: Dependencias): FastifyInstance {
+export type DependenciasDaApi = { banco: DatabaseSync; origem: string; portal: Portal; agora?: () => Date };
+
+/** A API do CRM, a dos representantes. */
+export function criarApp(dependencias: Dependencias): FastifyInstance {
+  return criarApi({ ...dependencias, portal: PORTAL_DO_CRM }, (app) => registrarRotas(app, dependencias));
+}
+
+/** A base das duas APIs: as regras de segurança de toda rota, as rotas do portal e as do login dele. */
+export function criarApi({ banco, origem, portal, agora = () => new Date() }: DependenciasDaApi, registrarRotasDoPortal: (app: FastifyInstance) => void): FastifyInstance {
   const app = Fastify({ logger: false, bodyLimit: LIMITE_DO_CORPO, trustProxy: PROXY_CONFIAVEL });
   const limiteDoLogin = criarLimitador(LIMITE_DO_LOGIN);
   const limiteDoUsuario = criarLimitador(LIMITE_DO_USUARIO);
@@ -45,16 +56,17 @@ export function criarApp({ foto, banco, origem, agora = () => new Date() }: Depe
   app.addHook("onRoute", (rota) => exigirAcessoDeclarado(app, rota));
   app.addHook("onRequest", async (requisicao, resposta) => {
     const { acesso, limite } = requisicao.routeOptions.config;
-    if (acesso === "admin") return resposta.code(404).send({ erro: "Não encontrado." });
+    // O acesso protegido do portal é o papel dele: "representante" no CRM, "admin" na administração.
+    if (acesso !== undefined && acesso !== "publico" && acesso !== portal.papel) return resposta.code(404).send({ erro: "Não encontrado." });
     if (!isDaPropriaOrigem(requisicao, origem)) return resposta.code(403).send({ erro: "Pedido de outra origem." });
     if (limite === "login" && !limiteDoLogin.permitir(requisicao.ip)) return resposta.code(429).send({ erro: MUITOS_PEDIDOS });
-    const token = lerTokenDoCookie(requisicao.headers.cookie);
-    const consulta = token ? usarSessao(banco, token, agora()) : SEM_SESSAO;
+    const token = lerTokenDoCookie(portal.cookie, requisicao.headers.cookie);
+    const consulta = token ? usarSessao(banco, { token, papel: portal.papel }, agora()) : SEM_SESSAO;
     requisicao.sessao = consulta.sessao;
-    if (acesso !== "representante") return;
+    if (acesso !== portal.papel) return;
     if (!consulta.sessao) {
       // O cookie de uma sessão que terminou sai junto: a tela de entrada explica o motivo uma vez só.
-      if (token) resposta.header("Set-Cookie", COOKIE_APAGADO);
+      if (token) resposta.header("Set-Cookie", cookieApagado(portal.cookie));
       return resposta.code(401).send({ erro: "Entre com a sua chave de acesso.", motivo: consulta.motivo });
     }
     if (!limiteDoUsuario.permitir(consulta.sessao.idDoUsuario)) return resposta.code(429).send({ erro: MUITOS_PEDIDOS });
@@ -65,8 +77,8 @@ export function criarApp({ foto, banco, origem, agora = () => new Date() }: Depe
   app.addHook("onResponse", async (requisicao, resposta) => registrarNoLog(requisicao, resposta));
   app.setErrorHandler(responderErro);
   app.setNotFoundHandler((_requisicao, resposta) => resposta.code(404).send({ erro: "Não encontrado." }));
-  registrarRotas(app, { foto, banco });
-  registrarRotasDoLogin(app, { banco, site: siteDaOrigem(origem), desafios: criarDesafios(), agora });
+  registrarRotasDoPortal(app);
+  registrarRotasDoLogin(app, { banco, site: siteDaOrigem(origem, portal.nome), portal, desafios: criarDesafios(), agora });
   return app;
 }
 

@@ -14,6 +14,9 @@ export type Evento =
   | "entrada_recusada"
   | "saida"
   | "chaves_revogadas"
+  | "chave_revogada"
+  | "sessoes_encerradas"
+  | "codigos_trocados"
   | "usuario_desativado"
   | "ficha_consultada";
 

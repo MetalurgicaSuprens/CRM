@@ -26,7 +26,7 @@ export type ChaveGravada = {
   revogada: boolean;
 };
 
-export type ResumoDaChave = { id: string; provedor: string; criadaEm: string; ultimoUso: string | null; revogada: boolean };
+export type ResumoDaChave = { id: string; provedor: string; sincronizada: boolean; criadaEm: string; ultimoUso: string | null; revogadaEm: string | null };
 
 /**
  * O provedor pelo AAGUID, a identificação do tipo de autenticador. Só os conhecidos; o resto, e o
@@ -91,19 +91,28 @@ export function chavesAtivasDo(banco: DatabaseSync, usuario: string): { id: stri
 
 export function resumoDasChavesDo(banco: DatabaseSync, usuario: string): ResumoDaChave[] {
   return banco
-    .prepare("SELECT id, provedor, criada_em, ultimo_uso, revogada_em FROM chaves WHERE usuario = ? ORDER BY criada_em")
+    .prepare("SELECT id, provedor, sincronizada, criada_em, ultimo_uso, revogada_em FROM chaves WHERE usuario = ? ORDER BY criada_em")
     .all(usuario)
     .map((linha) => ({
       id: String(linha.id),
       provedor: String(linha.provedor),
+      sincronizada: linha.sincronizada === 1,
       criadaEm: String(linha.criada_em),
       ultimoUso: linha.ultimo_uso === null ? null : String(linha.ultimo_uso),
-      revogada: linha.revogada_em !== null,
+      revogadaEm: linha.revogada_em === null ? null : String(linha.revogada_em),
     }));
 }
 
 export function registrarUsoDaChave(banco: DatabaseSync, { id, contador }: { id: string; contador: number }, agora: Date): void {
   banco.prepare("UPDATE chaves SET contador = ?, ultimo_uso = ? WHERE id = ?").run(contador, agora.toISOString(), id);
+}
+
+/** Revoga uma chave, se ela estava ativa; devolve o dono dela. */
+export function revogarChave(banco: DatabaseSync, id: string, agora: Date): string | null {
+  const linha = banco.prepare("SELECT usuario FROM chaves WHERE id = ? AND revogada_em IS NULL").get(id);
+  if (!linha) return null;
+  banco.prepare("UPDATE chaves SET revogada_em = ? WHERE id = ?").run(agora.toISOString(), id);
+  return String(linha.usuario);
 }
 
 /** Revoga todas as chaves ativas do usuário; devolve quantas. */

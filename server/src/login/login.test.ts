@@ -105,7 +105,7 @@ describe("convite", () => {
     const clientes = await ler("/api/clientes", cookieDa(resposta));
     expect(clientes.statusCode).toBe(200);
     expect(clientes.json().map((cliente: { codigo: string }) => cliente.codigo)).toContain(CLIENTE_DE_A);
-    expect(resumoDasChavesDo(banco, star.id)).toMatchObject([{ id: aparelho.idDaCredencial, provedor: "Google", revogada: false }]);
+    expect(resumoDasChavesDo(banco, star.id)).toMatchObject([{ id: aparelho.idDaCredencial, provedor: "Google", sincronizada: true, revogadaEm: null }]);
   });
 
   it("grava o cookie da sessão só com HttpOnly, Secure, SameSite=Strict e o prefixo __Host-", async () => {

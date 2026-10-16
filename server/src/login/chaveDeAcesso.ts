@@ -23,27 +23,29 @@ export type RespostaDeEntrada = AuthenticationResponseJSON;
 export type OpcoesDeCriacao = PublicKeyCredentialCreationOptionsJSON;
 export type OpcoesDeEntrada = PublicKeyCredentialRequestOptionsJSON;
 
-/** Onde o CRM está: a origem que o navegador declara e o domínio (rpID) a que a chave fica presa. */
-export type Site = { origem: string; rpId: string };
+/**
+ * O site que pede a chave: a origem que o navegador declara, o domínio (rpID) a que a chave fica
+ * presa e o nome que o gerenciador de chaves do aparelho mostra.
+ */
+export type Site = { origem: string; rpId: string; nome: string };
 
 /** O resultado de uma conferência: o motivo da recusa vai para a auditoria. */
 export type Conferencia<T> = { ok: true; valor: T } | { ok: false; motivo: string };
 
 export type DesafioValido = (desafio: string) => boolean;
 
-const NOME_DO_SITE = "CRM Suprens";
 /** ES256 e RS256, que todo autenticador de chave de acesso aceita. Os pós-quânticos ficam para quando saírem de teste no Node. */
 const ALGORITMOS = [-7, -257];
 const TEMPO_PARA_O_APARELHO_MS = 120_000;
 const TAMANHO_DO_MOTIVO = 200;
 
-export function siteDaOrigem(origem: string): Site {
-  return { origem, rpId: new URL(origem).hostname };
+export function siteDaOrigem(origem: string, nome: string): Site {
+  return { origem, rpId: new URL(origem).hostname, nome };
 }
 
 export function opcoesParaCriar(site: Site, usuario: Usuario, chavesAtivas: readonly { id: string; transportes: string[] }[]): Promise<OpcoesDeCriacao> {
   return generateRegistrationOptions({
-    rpName: NOME_DO_SITE,
+    rpName: site.nome,
     rpID: site.rpId,
     userName: usuario.nome,
     userDisplayName: usuario.nome,

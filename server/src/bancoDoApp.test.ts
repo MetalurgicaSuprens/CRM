@@ -22,7 +22,7 @@ describe("abrirBancoDoApp", () => {
     const arquivo = arquivoNovo();
     abrirBancoDoApp(arquivo).close();
     const banco = abrirBancoDoApp(arquivo);
-    expect(banco.prepare("PRAGMA user_version").get()?.user_version).toBe(1);
+    expect(banco.prepare("PRAGMA user_version").get()?.user_version).toBe(2);
     expect(banco.prepare("PRAGMA journal_mode").get()?.journal_mode).toBe("wal");
     expect(banco.prepare("PRAGMA foreign_keys").get()?.foreign_keys).toBe(1);
     banco.close();

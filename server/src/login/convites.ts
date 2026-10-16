@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { emTransacao } from "../bancoDoApp.ts";
 import { gerarToken, hashDoToken } from "./token.ts";
+import type { Papel } from "./usuarios.ts";
 
 /*
  * O convite que o admin manda ao representante (docs/plano.md, "Convite"): uso único, válido por
@@ -11,7 +12,7 @@ import { gerarToken, hashDoToken } from "./token.ts";
 export const VALIDADE_DO_CONVITE_MS = 48 * 60 * 60 * 1_000;
 
 export type ConsultaDoConvite =
-  | { estado: "valido"; usuario: string; nome: string; validoAte: string }
+  | { estado: "valido"; usuario: string; nome: string; papel: Papel; validoAte: string }
   /** "trocado": o admin mandou um convite mais novo, e só o último link vale. */
   | { estado: "expirado" | "usado" | "trocado" | "invalido" };
 
@@ -30,7 +31,7 @@ export function criarConvite(banco: DatabaseSync, { usuario, criadoPor }: { usua
 export function consultarConvite(banco: DatabaseSync, token: string, agora: Date): ConsultaDoConvite {
   const linha = banco
     .prepare(
-      `SELECT c.usuario, c.expira_em, c.usado_em, c.trocado_em, u.nome, u.ativo
+      `SELECT c.usuario, c.expira_em, c.usado_em, c.trocado_em, u.nome, u.papel, u.ativo
          FROM convites c JOIN usuarios u ON u.id = c.usuario WHERE c.hash = ?`,
     )
     .get(hashDoToken(token));
@@ -38,7 +39,7 @@ export function consultarConvite(banco: DatabaseSync, token: string, agora: Date
   if (linha.usado_em !== null) return { estado: "usado" };
   if (linha.trocado_em !== null) return { estado: "trocado" };
   if (String(linha.expira_em) <= agora.toISOString()) return { estado: "expirado" };
-  return { estado: "valido", usuario: String(linha.usuario), nome: String(linha.nome), validoAte: String(linha.expira_em) };
+  return { estado: "valido", usuario: String(linha.usuario), nome: String(linha.nome), papel: linha.papel as Papel, validoAte: String(linha.expira_em) };
 }
 
 /**
@@ -52,6 +53,21 @@ export function usarConvite(banco: DatabaseSync, token: string, agora: Date): bo
       .prepare("UPDATE convites SET usado_em = ? WHERE hash = ? AND usado_em IS NULL AND trocado_em IS NULL AND expira_em > ?")
       .run(momento, hashDoToken(token), momento).changes > 0
   );
+}
+
+export type ConviteDoLogin = { criadoEm: string; validoAte: string; estado: "valendo" | "usado" | "expirado" | "trocado"; usadoEm: string | null };
+
+/** Os convites do usuário, do mais novo ao mais velho, com o estado de cada um agora. */
+export function convitesDo(banco: DatabaseSync, usuario: string, agora: Date): ConviteDoLogin[] {
+  return banco
+    .prepare("SELECT criado_em, expira_em, usado_em, trocado_em FROM convites WHERE usuario = ? ORDER BY criado_em DESC")
+    .all(usuario)
+    .map((linha) => ({
+      criadoEm: String(linha.criado_em),
+      validoAte: String(linha.expira_em),
+      estado: linha.usado_em !== null ? "usado" : linha.trocado_em !== null ? "trocado" : String(linha.expira_em) <= agora.toISOString() ? "expirado" : "valendo",
+      usadoEm: linha.usado_em === null ? null : String(linha.usado_em),
+    }));
 }
 
 /** Os convites ainda não usados do usuário deixam de valer. */

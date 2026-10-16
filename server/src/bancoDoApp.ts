@@ -73,6 +73,10 @@ const MIGRACOES: readonly string[] = [
     resultado TEXT NOT NULL
   ) STRICT;
   `,
+  // 2. Administração (2026-10-16): o papel do login. O admin entra só no site da administração e não tem código.
+  `
+  ALTER TABLE usuarios ADD COLUMN papel TEXT NOT NULL DEFAULT 'representante' CHECK (papel IN ('representante', 'admin'));
+  `,
 ];
 
 /** Abre o app.db (cria a pasta e o arquivo na primeira vez) e aplica as migrações que faltam. ":memory:" nos testes. */
