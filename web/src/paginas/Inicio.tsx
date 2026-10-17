@@ -14,7 +14,7 @@ import { MESES_DO_RITMO, type BaseDaProjecao } from "dominio/projecao";
 import { carregarPainel, carregarSituacaoDosDados } from "../dados/api";
 import type { GrupoDestaque, PainelInicio } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarDiaPorExtenso, formatarMesAno, formatarNomeDoMes, formatarTempoDesde } from "../formato";
+import { formatarDiaPorExtenso, formatarLocalDoCliente, formatarMesAno, formatarNomeDoMes, formatarTempoDesde } from "../formato";
 import { BarrasMensais } from "../graficos/BarrasMensais";
 import { Carregando } from "./Carregando";
 import estilos from "./Inicio.module.css";
@@ -51,7 +51,7 @@ export function Inicio() {
             itens={painel.destaques.pararam.itens.map(({ cliente, valor }) => ({
               codigo: cliente.codigo,
               nome: cliente.nome,
-              detalhe: `${cliente.cidade}/${cliente.uf} · última compra ${cliente.ultimaCompra ? formatarTempoDesde(cliente.ultimaCompra, situacao.hoje) : "—"}`,
+              detalhe: `${formatarLocalDoCliente(cliente)} · última compra ${cliente.ultimaCompra ? formatarTempoDesde(cliente.ultimaCompra, situacao.hoje) : "—"}`,
               direita: (
                 <>
                   <Valor valor={valor} compacto comoPerda />
@@ -71,7 +71,7 @@ export function Inicio() {
             itens={painel.destaques.menos.itens.map(({ cliente, valor, variacao }) => ({
               codigo: cliente.codigo,
               nome: cliente.nome,
-              detalhe: `${cliente.cidade}/${cliente.uf}`,
+              detalhe: formatarLocalDoCliente(cliente),
               direita: (
                 <>
                   <Variacao razao={variacao} />

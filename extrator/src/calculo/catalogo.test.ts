@@ -20,6 +20,7 @@ function cliente(numero: number, mercado: ClienteDaCarteira["mercado"] = "PRACA"
     mercado,
     representante: "1401",
     status: "ativo",
+    grupo: null,
   };
 }
 

@@ -32,10 +32,14 @@ export type SituacaoDosDados = {
   representante: { nome: string; codigos: string[] };
 };
 
+/**
+ * Um cliente da carteira, ou um grupo do SGI: dois ou mais CNPJs do mesmo grupo na carteira do
+ * mesmo representante, mostrados como um cliente só, com os números deles somados.
+ */
 export type ClienteResumo = {
   /** Identificador do cliente no CRM: endereço da ficha e rascunhos. Não aparece na tela. */
   codigo: string;
-  /** Código do cliente no ERP, para mostrar e buscar. Nulo na pessoa física, em que ele é o CPF. */
+  /** Código do cliente no ERP, para mostrar e buscar. Nulo na pessoa física, em que ele é o CPF, e no grupo. */
   codigoErp: string | null;
   nome: string;
   cidade: string;
@@ -63,6 +67,12 @@ export type ClienteResumo = {
    * zigue-zague de quem compra a cada 2 ou 3 meses.
    */
   evolucao12m: number[];
+  /**
+   * No grupo: os CNPJs dele, do que mais fatura ao que menos, cada um com os próprios números. O
+   * grupo não tem cidade, município nem código do ERP: o mapa e o pedido usam os CNPJs. Null no
+   * cliente sozinho e no próprio CNPJ.
+   */
+  cnpjs: ClienteResumo[] | null;
 };
 
 export type FaturamentoMensal = {
@@ -99,6 +109,8 @@ export type StatusDoPedido = "faturado" | "em_aberto" | "enviado" | "rascunho";
 export type PedidoDaFicha = {
   /** Identifica a linha; não aparece na tela. */
   id: string;
+  /** Na ficha do grupo, o CNPJ do pedido; null na ficha de um cliente. */
+  cnpj: { codigo: string; nome: string } | null;
   /** O número do ERP ou, até o pedido chegar lá, o do CRM ("CRM-00106"); null no rascunho. */
   numero: string | null;
   status: StatusDoPedido;
@@ -131,8 +143,10 @@ export type FichaCliente = ClienteResumo & {
    * mesma faixa de porte (porte null = o mercado inteiro). null quando nem o mercado tem 20.
    */
   grupoDoMix: { porte: Porte | null } | null;
-  /** Os pedidos dos últimos 12 meses e do mês corrente, e os em aberto de qualquer data. */
+  /** Os pedidos dos últimos 12 meses e do mês corrente, e os em aberto de qualquer data; no grupo, os de todos os CNPJs. */
   pedidos: PedidoDaFicha[];
+  /** No CNPJ de um grupo: o grupo, para voltar à ficha dele. */
+  grupo: { codigo: string; nome: string } | null;
 };
 
 export type MesDoPainel = {

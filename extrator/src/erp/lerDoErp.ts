@@ -4,7 +4,7 @@ import { lerMomentoDoOracle, lerNomesDosRepresentantes } from "./cadastros.ts";
 import { lerCarteira, lerDatasDeCompra, lerVendasPorMes } from "./carteira.ts";
 import { lerPrecos, lerProdutosDasTabelas, lerProdutosJaComprados, lerTabelasDosClientes } from "./catalogo.ts";
 import { lerNotasRecentes, lerPedidosFaturados, lerVendasPorDia } from "./faturamento.ts";
-import { lerFamiliasDaSuprens, lerProdutosMaisComprados } from "./familias.ts";
+import { lerFamiliasDaSuprens, lerProdutosDoAno } from "./familias.ts";
 import { lerPedidosEmAberto } from "./pedidos.ts";
 import type { DadosDoErp } from "./tipos.ts";
 
@@ -32,7 +32,7 @@ export async function lerDadosDoErp(
     vendasDoMes: await etapa("vendas por mês", () => lerVendasPorMes(oracle, referencia, autorizados)),
     datasDeCompra: await etapa("datas de compra", () => lerDatasDeCompra(oracle, referencia, autorizados)),
     familias: await etapa("famílias da Suprens", () => lerFamiliasDaSuprens(oracle, referencia)),
-    produtos: await etapa("produtos", () => lerProdutosMaisComprados(oracle, referencia, autorizados)),
+    produtos: await etapa("produtos", () => lerProdutosDoAno(oracle, referencia, autorizados)),
     pedidos: await etapa("pedidos em aberto", () => lerPedidosEmAberto(oracle)),
     pedidosFaturados: await etapa("pedidos faturados", () => lerPedidosFaturados(oracle, referencia, autorizados)),
     notas: await etapa("notas recentes", () => lerNotasRecentes(oracle, referencia, autorizados)),

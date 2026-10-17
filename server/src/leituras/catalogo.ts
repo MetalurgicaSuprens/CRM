@@ -7,7 +7,8 @@ import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, numeroOuNulo, resumoDoCli
 /*
  * O catálogo do cliente para montar o pedido: os preços da lista dele, com a família, a medida e a
  * embalagem de cada produto e se o cliente já comprou. Só de cliente da carteira do login; o
- * cliente fora de ativo no cadastro não recebe pedido e não tem catálogo.
+ * cliente fora de ativo no cadastro não recebe pedido e não tem catálogo. O grupo também não: o
+ * pedido é sempre de um CNPJ.
  */
 
 /** Sem embalagem cadastrada (produto sem EAN), qualquer quantidade de peças. */
@@ -20,7 +21,7 @@ export function lerCatalogo(db: DatabaseSync, sessao: Sessao, codigoDoCliente: s
   const [cliente] = lerLinhas(
     db,
     `SELECT ${COLUNAS_DO_RESUMO}, c.tabela_preco, c.lista_de_precos
-       FROM cliente c WHERE c.cliente = ? AND c.representante IN (${marcas})`,
+       FROM cliente c WHERE c.cliente = ? AND c.cnpjs IS NULL AND c.representante IN (${marcas})`,
     [codigoDoCliente, ...codigos],
   );
   if (!cliente) return null;

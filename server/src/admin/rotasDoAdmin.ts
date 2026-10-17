@@ -133,8 +133,14 @@ function situacaoDaFoto(foto: FotoAtual): SituacaoDaAdministracao["foto"] {
   try {
     const banco = foto.abrir();
     const dados = banco.prepare("SELECT gerada_em, data_ref FROM foto").get();
-    const contar = (tabela: string) => Number(banco.prepare(`SELECT COUNT(*) AS quantos FROM ${tabela}`).get()?.quantos ?? 0);
-    return { geradaEm: String(dados?.gerada_em), dataRef: String(dados?.data_ref), representantes: contar("representante"), clientes: contar("cliente") };
+    const contar = (sql: string) => Number(banco.prepare(sql).get()?.quantos ?? 0);
+    return {
+      geradaEm: String(dados?.gerada_em),
+      dataRef: String(dados?.data_ref),
+      representantes: contar("SELECT COUNT(*) AS quantos FROM representante"),
+      // Os clientes são os CNPJs: a linha de um grupo do SGI não conta.
+      clientes: contar("SELECT COUNT(*) AS quantos FROM cliente WHERE cnpjs IS NULL"),
+    };
   } catch (erro) {
     if (erro instanceof FotoIndisponivel) return null;
     throw erro;

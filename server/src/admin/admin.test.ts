@@ -235,7 +235,8 @@ describe("representantes, situação e registro", () => {
   it("mostra quem está na administração e a foto do ERP", async () => {
     expect((await lerNoAdmin("/api/admin/situacao")).json()).toMatchObject({
       admin: { id: idDoAdmin, nome: "Admin de teste" },
-      foto: { dataRef: "2026-10-13", representantes: 2, clientes: 3 },
+      // Os 6 CNPJs da foto de teste; as linhas dos 2 grupos não contam.
+      foto: { dataRef: "2026-10-13", representantes: 2, clientes: 6 },
     });
   });
 

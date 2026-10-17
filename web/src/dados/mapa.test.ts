@@ -45,6 +45,7 @@ function cliente(codigo: string, municipio: string | null, faturamento12m: numbe
     variacao12m: null,
     quedaNoSemestre: null,
     evolucao12m: [],
+    cnpjs: null,
   };
 }
 
@@ -103,6 +104,21 @@ describe("aRecuperarPorCliente", () => {
     });
     expect(porCliente.get("p")).toBe(3_000);
     expect(porCliente.get("m")).toBe(1_000);
+  });
+
+  it("divide o valor do grupo entre os CNPJs pela parte de cada um no faturado, ou igual se ele não faturou", () => {
+    const grupo = { ...cliente("g", null, 40_000), cnpjs: [cliente("g1", "5208707", 30_000), cliente("g2", "5211909", 10_000)] };
+    const parado = { ...cliente("h", null, 0), cnpjs: [cliente("h1", "5208707", 0), cliente("h2", "5211909", 0)] };
+    const porCliente = aRecuperarPorCliente({
+      pararam: [{ cliente: parado, diasSemComprar: 200, cicloDias: 30, perdaMensal: 2_000 }],
+      menos: [{ cliente: grupo, semestre: 4_000, semestreAnoAnterior: 10_000, variacao: -0.6, variacaoPecas: null }],
+    });
+    expect([...porCliente.entries()].sort()).toEqual([
+      ["g1", 750],
+      ["g2", 250],
+      ["h1", 1_000],
+      ["h2", 1_000],
+    ]);
   });
 });
 

@@ -44,14 +44,44 @@ export function numeroOuNulo(linha: Linha, coluna: string): number | null {
   return valor === null || valor === undefined ? null : Number(valor);
 }
 
-/**
- * Colunas de `cliente` (alias c) que formam o ClienteResumo. A queda do semestre só existe em
- * `analise_ritmo` para quem está em risco: o extrator grava "menos" só nesse caso.
- */
+/** Colunas de `cliente` (alias c) que formam o ClienteResumo. */
 export const COLUNAS_DO_RESUMO = `c.cliente, c.codigo_erp, c.nome, c.cidade, c.uf, c.municipio_ibge, c.mercado, c.situacao, c.status, c.ultima_compra,
-  c.faturamento_12m, c.variacao_12m, c.evolucao_12m,
-  (SELECT r.variacao FROM analise_ritmo r WHERE r.cliente = c.cliente AND r.direcao = 'menos') AS queda_no_semestre`;
+  c.faturamento_12m, c.variacao_12m, c.evolucao_12m, c.queda_no_semestre, c.cnpjs`;
 
+/**
+ * Cada linha (lida com COLUNAS_DO_RESUMO) com o resumo do cliente, na mesma ordem; o do grupo traz
+ * os CNPJs dele. O CNPJ de um grupo é sempre do representante do grupo, e o filtro pelos códigos do
+ * login fica por segurança.
+ */
+export function comResumos(db: DatabaseSync, sessao: Sessao, linhas: readonly Linha[]): { linha: Linha; cliente: ClienteResumo }[] {
+  const grupos = linhas.filter((linha) => numeroOuNulo(linha, "cnpjs") !== null).map((linha) => texto(linha, "cliente"));
+  const cnpjs = cnpjsDosGrupos(db, sessao, grupos);
+  return linhas.map((linha) => {
+    const resumo = resumoDoCliente(linha);
+    return { linha, cliente: numeroOuNulo(linha, "cnpjs") === null ? resumo : { ...resumo, cnpjs: cnpjs.get(resumo.codigo) ?? [] } };
+  });
+}
+
+function cnpjsDosGrupos(db: DatabaseSync, sessao: Sessao, grupos: readonly string[]): Map<string, ClienteResumo[]> {
+  const porGrupo = new Map<string, ClienteResumo[]>();
+  if (grupos.length === 0) return porGrupo;
+  const { marcas, codigos } = escopo(sessao);
+  const linhas = lerLinhas(
+    db,
+    `SELECT ${COLUNAS_DO_RESUMO}, c.grupo FROM cliente c
+      WHERE c.grupo IN (${grupos.map(() => "?").join(", ")}) AND c.representante IN (${marcas})
+      ORDER BY c.faturamento_12m DESC`,
+    [...grupos, ...codigos],
+  );
+  for (const linha of linhas) {
+    const doGrupo = porGrupo.get(texto(linha, "grupo")) ?? [];
+    doGrupo.push(resumoDoCliente(linha));
+    porGrupo.set(texto(linha, "grupo"), doGrupo);
+  }
+  return porGrupo;
+}
+
+/** O resumo de uma linha só, sem os CNPJs do grupo: quem precisa deles usa `comResumos`. */
 export function resumoDoCliente(linha: Linha): ClienteResumo {
   return {
     codigo: texto(linha, "cliente"),
@@ -68,5 +98,6 @@ export function resumoDoCliente(linha: Linha): ClienteResumo {
     variacao12m: numeroOuNulo(linha, "variacao_12m"),
     evolucao12m: JSON.parse(texto(linha, "evolucao_12m")) as number[],
     quedaNoSemestre: numeroOuNulo(linha, "queda_no_semestre"),
+    cnpjs: null,
   };
 }

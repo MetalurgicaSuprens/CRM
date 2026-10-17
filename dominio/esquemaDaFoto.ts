@@ -2,9 +2,11 @@
  * Esquema da foto.db (docs/dados-por-tela.md, "Esquema proposto da foto"). O extrator grava, o
  * servidor só lê. Mudou o esquema, sobe a versão: o servidor recusa a foto de outra versão.
  * Todo cliente é o id opaco; o código do ERP só aparece em `cliente.codigo_erp`, e só de empresa.
+ * O grupo do SGI com dois ou mais CNPJs na carteira de um representante também é uma linha de
+ * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 9;
+export const VERSAO_DO_ESQUEMA = 10;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -43,9 +45,13 @@ CREATE TABLE cliente (
   evolucao_12m TEXT NOT NULL,
   grupo_mix TEXT,
   tabela_preco TEXT,
-  lista_de_precos INTEGER
+  lista_de_precos INTEGER,
+  queda_no_semestre REAL,
+  grupo TEXT,
+  cnpjs INTEGER
 ) STRICT;
 CREATE INDEX cliente_representante ON cliente (representante);
+CREATE INDEX cliente_grupo ON cliente (grupo);
 
 CREATE TABLE cliente_mes (
   cliente TEXT NOT NULL,
@@ -243,6 +249,12 @@ export type Foto = {
     tabela_preco: string | null;
     /** A lista de `lista_de_precos` do cliente; null sem catálogo. */
     lista_de_precos: number | null;
+    /** Só no cliente em risco: a variação do semestre que o pôs em risco (a de `analise_ritmo`, "menos"). */
+    queda_no_semestre: number | null;
+    /** No CNPJ de um grupo: a linha do grupo. Null no cliente sozinho e na linha do próprio grupo. */
+    grupo: string | null;
+    /** Na linha do grupo: quantos CNPJs ele tem na carteira. Null nas outras linhas. */
+    cnpjs: number | null;
   }[];
   cliente_mes: { cliente: string; mes: string; valor: number }[];
   cliente_familia: { cliente: string; familia: string; valor: number; participacao: number }[];
@@ -257,6 +269,7 @@ export type Foto = {
   produto_comprado: { cliente: string; produto: string }[];
   ficha_produto: { cliente: string; produto: string; pecas_12m: number; valor_12m: number; ultima_compra: string }[];
   cliente_mix: { cliente: string; familia: string; penetracao: number; ordem: number }[];
+  /** As listas das análises têm o grupo no lugar dos CNPJs dele. */
   analise_parado: { cliente: string; perda_mensal: number; ordem: number }[];
   analise_ritmo: {
     cliente: string;

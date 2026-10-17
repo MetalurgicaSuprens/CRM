@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { ItemDaFicha, ItemDoErp, ItemEmAberto, PainelDePedidos, PedidoDaFicha, StatusDoPedido } from "../../../web/src/dados/tipos.ts";
+import type { ClienteResumo, ItemDaFicha, ItemDoErp, ItemEmAberto, PainelDePedidos, PedidoDaFicha, StatusDoPedido } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, resumoDoCliente, texto, textoOuNulo, type Linha } from "./linhas.ts";
 
@@ -104,6 +104,7 @@ export function lerPedidosDaFicha(db: DatabaseSync, sessao: Sessao, codigoDoClie
     parametros,
   ).map((linha) => ({
     id: texto(linha, "pedido"),
+    cnpj: null,
     numero: texto(linha, "pedido"),
     status: texto(linha, "status") as StatusDoPedido,
     emissao: texto(linha, "emissao"),
@@ -111,6 +112,15 @@ export function lerPedidosDaFicha(db: DatabaseSync, sessao: Sessao, codigoDoClie
     itens: itens.get(texto(linha, "pedido")) ?? [],
     valor: numero(linha, "valor"),
   }));
+}
+
+/** O histórico da ficha do grupo: os pedidos de todos os CNPJs dele, cada um com o CNPJ, na mesma ordem. */
+export function lerPedidosDoGrupo(db: DatabaseSync, sessao: Sessao, cnpjs: readonly ClienteResumo[]): PedidoDaFicha[] {
+  return cnpjs
+    .flatMap((cnpj) =>
+      lerPedidosDaFicha(db, sessao, cnpj.codigo).map((pedido) => ({ ...pedido, cnpj: { codigo: cnpj.codigo, nome: cnpj.nome } })),
+    )
+    .sort((a, b) => b.emissao.localeCompare(a.emissao) || (b.numero ?? "").localeCompare(a.numero ?? ""));
 }
 
 /** Série e número: o número sozinho se repete entre séries. */

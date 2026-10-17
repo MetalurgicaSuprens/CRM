@@ -23,6 +23,11 @@ export type ClienteDaCarteira = {
   representante: string;
   /** Fora de ativo no cadastro do SGI, o cliente aparece, mas não recebe pedido (dominio/statusDoCadastro.ts). */
   status: StatusDoCadastro;
+  /**
+   * O campo Grupo do cadastro do SGI, em maiúsculas, só quando alguém o digitou; null quando ele
+   * tem o nome fantasia, que a tela grava sozinha com o campo vazio (erp/carteira.ts).
+   */
+  grupo: string | null;
 };
 
 export type VendaDoMes = { chave: string; mes: string; valor: number; pecas: number };
@@ -45,7 +50,7 @@ export type FamiliaDoCliente = {
   valor24m: number;
 };
 
-/** Os 8 produtos de maior valor do cliente nos 12 meses fechados. */
+/** Um produto que o cliente comprou nos 12 meses fechados; a ficha mostra os 8 de maior valor (calculo/clientes.ts). */
 export type ProdutoDoCliente = {
   chave: string;
   produto: string;

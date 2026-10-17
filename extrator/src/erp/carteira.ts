@@ -31,12 +31,14 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
   const lista = emLista("r", autorizados);
   const linhas = await oracle.consultar(
     `SELECT C.EMP_FIL, C.CLIENTE, TRIM(C.FIS_JURID), C.NOM_FANTAS, C.RAZ_SOCIAL || C.COMPLEM_RZ,
-            TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1, TRIM(G.CLI3_STA), C.RESERVADO7
+            TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1, TRIM(G.CLI3_STA), C.RESERVADO7,
+            UPPER(TRIM(G.CLI3_GRP))
        FROM ABC71.CRCL C
        LEFT JOIN ABC71.SGI5_TAB_VEN_CLI3 G ON G.CLI3_CLI = C.CLIENTE
       WHERE ${condicaoDaCarteira(lista.sql)}`,
     { ...lista.binds, inicio: referencia.inicioDaJanela },
   );
+  const digitados = await lerGruposDigitados(oracle);
   return linhas.map((linha) => ({
     chave: chaveDoCliente(numero(linha, 0), numero(linha, 1)),
     empresa: numero(linha, 0),
@@ -51,7 +53,32 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
     representante: String(numero(linha, 8)),
     status: statusDoCadastro(textoOuNulo(linha, 9)),
     municipio: municipioDoCadastro(textoOuNulo(linha, 10), texto(linha, 6)),
+    grupo: grupoDigitado(textoOuNulo(linha, 11), digitados),
   }));
+}
+
+/**
+ * O campo Grupo do cadastro do SGI (Vendas → Clientes). Com o campo vazio, a tela grava o nome
+ * fantasia (untVenCli_CliMov.pas:148-151), e nada o atualiza quando o fantasia muda no Omega: o
+ * texto só vale como grupo quando é diferente do fantasia de ao menos um cliente, isto é, quando
+ * alguém o digitou. Senão, empresas sem relação com o mesmo fantasia virariam um grupo. A leitura
+ * é do cadastro inteiro, porque quem digitou o grupo pode estar fora da carteira.
+ */
+async function lerGruposDigitados(oracle: Oracle): Promise<Set<string>> {
+  const linhas = await oracle.consultar(
+    `SELECT DISTINCT UPPER(TRIM(G.CLI3_GRP))
+       FROM ABC71.SGI5_TAB_VEN_CLI3 G
+       JOIN ABC71.CRCL C ON C.CLIENTE = G.CLI3_CLI
+      WHERE UPPER(TRIM(G.CLI3_GRP)) <> NVL(UPPER(TRIM(C.NOM_FANTAS)), '-')`,
+  );
+  return new Set(linhas.map((linha) => semEspacosSobrando(texto(linha, 0))));
+}
+
+/** O grupo do cliente quando alguém o digitou no SGI; null quando o campo tem só um nome fantasia. */
+export function grupoDigitado(grupo: string | null, digitados: ReadonlySet<string>): string | null {
+  if (grupo === null) return null;
+  const nome = semEspacosSobrando(grupo);
+  return digitados.has(nome) ? nome : null;
 }
 
 /** TIPO_CLI: M = montadora, E = exportação, o resto é praça (CRM-prototipo/REGRAS.md). */

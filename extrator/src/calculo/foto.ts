@@ -2,7 +2,7 @@ import { semestreDoRitmo } from "dominio/analises";
 import { diaUtilDoMes, diasUteisDoMes } from "dominio/calendario";
 import { VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
 import type { ClienteDaCarteira, DadosDoErp } from "../erp/tipos.ts";
-import { idDoCliente } from "../idDoCliente.ts";
+import { idDoCliente, idDoGrupo } from "../idDoCliente.ts";
 import { montarClientes } from "./clientes.ts";
 import { montarPainel } from "./painel.ts";
 import { montarPedidos, montarPedidosFaturados } from "./pedidos.ts";
@@ -19,7 +19,10 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
   const idPorChave = new Map(dados.carteira.map((cliente) => [cliente.chave, idDe(cliente)]));
   const idNaCarteira = (chave: string) => idPorChave.get(chave) ?? null;
   const pedidos = dados.pedidos.filter((pedido) => autorizados.includes(pedido.representante));
-  const clientes = montarClientes(dados, referencia, idDe);
+  const clientes = montarClientes(dados, referencia, {
+    doCliente: idDe,
+    doGrupo: (representante, nome) => idDoGrupo(chaveDoId, representante, nome),
+  });
   const semestre = semestreDoRitmo(referencia.mesAtual);
   return {
     foto: {

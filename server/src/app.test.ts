@@ -5,7 +5,19 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { criarApp } from "./app.ts";
 import { abrirBancoDoApp } from "./bancoDoApp.ts";
 import { criarFotoAtual, type FotoAtual } from "./foto/fotoAtual.ts";
-import { CLIENTE_DE_A, CLIENTE_DE_B, CLIENTE_INATIVO_DE_A, MARCAS_DE_B, gravarFotoDeTeste } from "./fotoDeTeste.ts";
+import type { Analises, ClienteResumo, FichaCliente } from "../../web/src/dados/tipos.ts";
+import {
+  CLIENTE_DE_A,
+  CLIENTE_DE_B,
+  CLIENTE_INATIVO_DE_A,
+  FILIAL_BAHIA_DE_A,
+  FILIAL_CURITIBA_DE_A,
+  FILIAL_DE_B,
+  GRUPO_DE_A,
+  GRUPO_DE_B,
+  MARCAS_DE_B,
+  gravarFotoDeTeste,
+} from "./fotoDeTeste.ts";
 import { entrarComo } from "./login/loginDeTeste.ts";
 
 const ORIGEM = "http://localhost:5175";
@@ -82,7 +94,7 @@ describe("escopo: o login A nunca vê os dados de B", () => {
   it("mostra a A a própria carteira e a ficha do cliente dele", async () => {
     const app = criarAppDeTeste();
     const clientes = await comoA(app, "/api/clientes");
-    expect(clientes.json()).toHaveLength(2);
+    expect(clientes.json()).toHaveLength(3);
     const ficha = await comoA(app, `/api/clientes/${CLIENTE_DE_A}`);
     expect(ficha.statusCode).toBe(200);
     expect(ficha.json()).toMatchObject({ nome: "CLIENTE DE A", codigoErp: "123456780001" });
@@ -95,6 +107,7 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     expect(pedidos).toEqual([
       {
         id: "100001",
+        cnpj: null,
         numero: "100001",
         status: "em_aberto",
         emissao: "2026-10-01",
@@ -107,6 +120,7 @@ describe("escopo: o login A nunca vê os dados de B", () => {
       },
       {
         id: "100003",
+        cnpj: null,
         numero: "100003",
         status: "faturado",
         emissao: "2026-09-02",
@@ -123,11 +137,11 @@ describe("escopo: o login A nunca vê os dados de B", () => {
   it("conta no Início o pedido do A para cliente de outra carteira, sem listá-lo", async () => {
     const app = criarAppDeTeste();
     const painel = await comoA(app, "/api/painel");
-    expect(painel.json().pedidosEmAberto).toEqual({ quantidade: 2, valor: 8_000 });
+    expect(painel.json().pedidosEmAberto).toEqual({ quantidade: 3, valor: 10_000 });
     // Faturado de outubro (1.000) mais o ritmo de A (1.000 por dia útil) nos 13 dias úteis que faltam.
     expect(painel.json().mesAtual.projecao).toEqual({ valor: 14_000, base: "ritmo" });
     const pedidos = await comoA(app, "/api/pedidos");
-    expect(pedidos.json().emAberto.map((pedido: { numero: string }) => pedido.numero)).toEqual(["100001"]);
+    expect(pedidos.json().emAberto.map((pedido: { numero: string }) => pedido.numero)).toEqual(["100001", "100004"]);
   });
 
   it("traz os itens de cada pedido e de cada nota de A, para a linha abrir na própria lista", async () => {
@@ -156,6 +170,7 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     expect(clientes.map(({ codigo, status }) => [codigo, status]).sort()).toEqual([
       [CLIENTE_DE_A, "ativo"],
       [CLIENTE_INATIVO_DE_A, "inativo"],
+      [GRUPO_DE_A, "ativo"],
     ]);
   });
 
@@ -185,5 +200,56 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     const app = criarAppDeTeste();
     const resposta = await comoA(app, "/api/clientes/591328580003");
     expect(resposta.statusCode).toBe(400);
+  });
+});
+
+describe("grupos do SGI: os CNPJs do mesmo grupo como um cliente só", () => {
+  it("lista o grupo no lugar dos CNPJs, com eles do que mais fatura ao que menos", async () => {
+    const clientes: ClienteResumo[] = (await comoA(criarAppDeTeste(), "/api/clientes")).json();
+    const grupo = clientes.find(({ codigo }) => codigo === GRUPO_DE_A);
+    expect(grupo).toMatchObject({ nome: "GRUPO DE A", codigoErp: null, faturamento12m: 30_000 });
+    expect(grupo?.cnpjs?.map(({ codigo, cnpjs }) => [codigo, cnpjs])).toEqual([
+      [FILIAL_CURITIBA_DE_A, null],
+      [FILIAL_BAHIA_DE_A, null],
+    ]);
+    expect(clientes.map(({ codigo }) => codigo)).not.toContain(FILIAL_BAHIA_DE_A);
+  });
+
+  it("dá na ficha do grupo os CNPJs e os pedidos de todos eles, cada um com o seu CNPJ", async () => {
+    const ficha: FichaCliente = (await comoA(criarAppDeTeste(), `/api/clientes/${GRUPO_DE_A}`)).json();
+    expect(ficha.cnpjs).toHaveLength(2);
+    expect(ficha.grupo).toBeNull();
+    expect(ficha.pedidos.map(({ numero, cnpj }) => [numero, cnpj?.nome])).toEqual([
+      ["100004", "FILIAL BAHIA DE A"],
+      ["100005", "FILIAL CURITIBA DE A"],
+    ]);
+  });
+
+  it("leva da ficha do CNPJ à do grupo", async () => {
+    const ficha: FichaCliente = (await comoA(criarAppDeTeste(), `/api/clientes/${FILIAL_BAHIA_DE_A}`)).json();
+    expect(ficha).toMatchObject({ nome: "FILIAL BAHIA DE A", cnpjs: null, grupo: { codigo: GRUPO_DE_A, nome: "GRUPO DE A" } });
+  });
+
+  it("traz nas análises o grupo, com os CNPJs dele", async () => {
+    const { novos }: Analises = (await comoA(criarAppDeTeste(), "/api/analises")).json();
+    expect(novos.map(({ cliente }) => [cliente.codigo, cliente.cnpjs?.length ?? null])).toEqual([
+      [CLIENTE_DE_A, null],
+      [GRUPO_DE_A, 2],
+    ]);
+  });
+
+  it("não dá catálogo ao grupo, porque o pedido é sempre de um CNPJ", async () => {
+    const app = criarAppDeTeste();
+    expect((await comoA(app, `/api/clientes/${GRUPO_DE_A}/catalogo`)).statusCode).toBe(404);
+    expect((await comoA(app, `/api/clientes/${FILIAL_BAHIA_DE_A}/catalogo`)).statusCode).toBe(200);
+  });
+
+  it("não mostra a A o grupo de B nem o CNPJ dele", async () => {
+    const app = criarAppDeTeste();
+    for (const codigo of [GRUPO_DE_B, FILIAL_DE_B]) {
+      for (const url of [`/api/clientes/${codigo}`, `/api/clientes/${codigo}/catalogo`]) {
+        expect((await comoA(app, url)).statusCode, url).toBe(404);
+      }
+    }
   });
 });

@@ -55,15 +55,28 @@ const MESES_DO_SEMESTRE = 6;
 
 /**
  * O que deixou de entrar por mês, por cliente: a média mensal perdida de quem parou de comprar e a
- * queda mensal de quem está comprando menos, as duas listas de Análises.
+ * queda mensal de quem está comprando menos, as duas listas de Análises. As análises tratam o grupo
+ * como um cliente só, e o mapa põe cada CNPJ no seu município: o valor do grupo se divide entre os
+ * CNPJs pela parte de cada um no faturado de 12 meses, ou em partes iguais se ele não faturou nada.
  */
 export function aRecuperarPorCliente(analises: Pick<Analises, "pararam" | "menos">): Map<string, number> {
   const porCliente = new Map<string, number>();
-  for (const { cliente, perdaMensal } of analises.pararam) porCliente.set(cliente.codigo, perdaMensal);
+  const anotar = (cliente: ClienteResumo, valor: number) => {
+    for (const { codigo, parte } of partesDosCnpjs(cliente)) porCliente.set(codigo, valor * parte);
+  };
+  for (const { cliente, perdaMensal } of analises.pararam) anotar(cliente, perdaMensal);
   for (const { cliente, semestre, semestreAnoAnterior } of analises.menos) {
-    porCliente.set(cliente.codigo, Math.max(0, semestreAnoAnterior - semestre) / MESES_DO_SEMESTRE);
+    anotar(cliente, Math.max(0, semestreAnoAnterior - semestre) / MESES_DO_SEMESTRE);
   }
   return porCliente;
+}
+
+/** O cliente sozinho fica com tudo; no grupo, cada CNPJ fica com a parte dele. */
+function partesDosCnpjs(cliente: ClienteResumo): { codigo: string; parte: number }[] {
+  const { cnpjs } = cliente;
+  if (!cnpjs) return [{ codigo: cliente.codigo, parte: 1 }];
+  const total = somar(cnpjs.map(({ faturamento12m }) => faturamento12m));
+  return cnpjs.map(({ codigo, faturamento12m }) => ({ codigo, parte: total > 0 ? faturamento12m / total : 1 / cnpjs.length }));
 }
 
 /** O estado com a carteira por cima: os municípios com cliente e todas as regiões imediatas, com o potencial. */

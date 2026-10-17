@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
 import {
   Boxes,
+  Building2,
   CalendarCheck,
   ChartNoAxesColumn,
   ClipboardList,
@@ -20,7 +21,7 @@ import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
-import { MotivoDoRisco, SituacaoCliente } from "../componentes/SituacaoCliente";
+import { MotivoDoRisco, SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { AvisoDePedidoBloqueado, SeloDoStatus } from "../componentes/StatusDoCliente";
 import { STATUS_DO_PEDIDO, SeloDoPedido } from "../componentes/StatusDoPedido";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
@@ -33,9 +34,17 @@ import { useOrdenacao } from "../componentes/useOrdenacao";
 import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
-import type { FichaCliente as Ficha, Mercado, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
+import type { ClienteResumo, FichaCliente as Ficha, Mercado, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarCodigoDoCliente, formatarData, formatarNumero, formatarParticipacao, formatarTempoDesde } from "../formato";
+import {
+  formatarCodigoDoCliente,
+  formatarContagem,
+  formatarData,
+  formatarLocalECodigo,
+  formatarNumero,
+  formatarParticipacao,
+  formatarTempoDesde,
+} from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
 import { BarrasMensais } from "../graficos/BarrasMensais";
 import { Carregando } from "./Carregando";
@@ -54,7 +63,7 @@ export function FichaCliente() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
-        antes={<Voltar para="/clientes" rotulo="Clientes" />}
+        antes={ficha.grupo ? <Voltar para={`/clientes/${ficha.grupo.codigo}`} rotulo={ficha.grupo.nome} /> : <Voltar para="/clientes" rotulo="Clientes" />}
         titulo={ficha.nome}
         selo={
           <>
@@ -78,6 +87,11 @@ export function FichaCliente() {
           altura={220}
         />
       </Cartao>
+      {ficha.cnpjs ? (
+        <Cartao titulo="Por CNPJ" icone={Building2} subtitulo="Os números de cada CNPJ do grupo; a linha abre a ficha dele">
+          <TabelaDosCnpjs cnpjs={ficha.cnpjs} faturamentoDoGrupo={ficha.faturamento12m} hoje={situacao.hoje} />
+        </Cartao>
+      ) : null}
       <div className={estilos.gradeDupla}>
         <Cartao titulo="Famílias compradas" icone={Boxes} subtitulo="Últimos 12 meses">
           <BarrasHorizontais
@@ -115,20 +129,29 @@ function NovoPedido({ ficha, aoBloquear }: { ficha: Ficha; aoBloquear: () => voi
       </button>
     );
   }
+  // O pedido é sempre de um CNPJ: no grupo, o botão leva à escolha entre os CNPJs dele.
   return (
-    <Link to={`/pedidos/novo?cliente=${ficha.codigo}`} className={classe}>
+    <Link to={ficha.cnpjs ? `/pedidos/novo?grupo=${ficha.codigo}` : `/pedidos/novo?cliente=${ficha.codigo}`} className={classe}>
       {rotulo}
     </Link>
   );
 }
 
-/** Cadastro do cliente em cartões, à direita do nome. */
+/** Cadastro do cliente em cartões, à direita do nome. O grupo não tem cidade nem código: mostra quantos CNPJs e municípios. */
 function DadosDoCliente({ ficha }: { ficha: Ficha }) {
+  const { cnpjs } = ficha;
   return (
     <dl className={estilos.dados}>
-      <Dado icone={MapPin} rotulo="Cidade" valor={`${ficha.cidade}/${ficha.uf}`} />
+      {cnpjs ? (
+        <>
+          <Dado icone={Building2} rotulo="CNPJs" valor={formatarNumero(cnpjs.length)} />
+          <Dado icone={MapPin} rotulo="Municípios" valor={formatarNumero(new Set(cnpjs.map(({ cidade, uf }) => `${cidade}/${uf}`)).size)} />
+        </>
+      ) : (
+        <Dado icone={MapPin} rotulo="Cidade" valor={`${ficha.cidade}/${ficha.uf}`} />
+      )}
       <Dado icone={Store} rotulo="Mercado" valor={ROTULOS_DE_MERCADO[ficha.mercado]} />
-      <Dado icone={Hash} rotulo="Código" valor={formatarCodigoDoCliente(ficha.codigoErp)} />
+      {cnpjs ? null : <Dado icone={Hash} rotulo="Código" valor={formatarCodigoDoCliente(ficha.codigoErp)} />}
       <Dado icone={Handshake} rotulo="Cliente desde" valor={ficha.clienteDesde === null ? "—" : String(ficha.clienteDesde)} />
     </dl>
   );
@@ -147,18 +170,27 @@ function Dado({ icone: Icone, rotulo, valor }: { icone: LucideIcon; rotulo: stri
 }
 
 /**
- * Embaixo do nome: a razão social, quando é outra, e o motivo do selo "Em risco". O motivo não vai
- * ao lado do selo porque alargaria a linha do título, que empurraria o cadastro ao lado.
+ * Embaixo do nome: o que é o grupo ou de que grupo é o CNPJ, a razão social, quando é outra, e o
+ * motivo do selo "Em risco". O motivo não vai ao lado do selo porque alargaria a linha do título,
+ * que empurraria o cadastro ao lado.
  */
 function descricaoDaFicha(ficha: Ficha, semestre: Semestre): ReactNode {
-  const razaoSocial = ficha.razaoSocial === ficha.nome ? null : ficha.razaoSocial;
-  if (!razaoSocial && ficha.quedaNoSemestre === null) return undefined;
+  const razaoSocial = ficha.razaoSocial && ficha.razaoSocial !== ficha.nome ? ficha.razaoSocial : null;
+  const grupo = descricaoDoGrupo(ficha);
+  if (!grupo && !razaoSocial && ficha.quedaNoSemestre === null) return undefined;
   return (
     <span className={estilos.descricao}>
+      {grupo ? <span>{grupo}</span> : null}
       {razaoSocial ? <span>{razaoSocial}</span> : null}
       <MotivoDoRisco queda={ficha.quedaNoSemestre} semestre={semestre} />
     </span>
   );
+}
+
+/** No grupo, o que ele é; no CNPJ de um grupo, de que grupo ele é. */
+function descricaoDoGrupo(ficha: Ficha): string | null {
+  if (ficha.cnpjs) return `Grupo do cadastro do SGI: ${formatarContagem(ficha.cnpjs.length, "CNPJ", "CNPJs")}, com os números somados`;
+  return ficha.grupo ? `CNPJ do grupo ${ficha.grupo.nome}` : null;
 }
 
 function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
@@ -289,12 +321,41 @@ function TabelaPedidos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
       ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
       parametroDaOrdem="ordem-pedidos"
       colunas={[
-        { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero ?? "—"} detalhe={null} /> },
+        // Na ficha do grupo, cada pedido diz de que CNPJ é.
+        { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero ?? "—"} detalhe={pedido.cnpj?.nome ?? null} /> },
         { titulo: "Status", largura: 9, ordenarPor: (pedido) => STATUS_DO_PEDIDO[pedido.status].rotulo, celula: (pedido) => <SeloDoPedido status={pedido.status} /> },
         { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
         { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => (pedido.entrega ? formatarData(pedido.entrega) : "—") },
         { titulo: "Itens", numerica: true, largura: 4.5, ordenarPor: (pedido) => pedido.itens.length, celula: (pedido) => pedido.itens.length },
         { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} /> },
+      ]}
+    />
+  );
+}
+
+/** A análise por CNPJ do grupo: os números de cada um e a parte dele no faturado do grupo. */
+function TabelaDosCnpjs({ cnpjs, faturamentoDoGrupo, hoje }: { cnpjs: ClienteResumo[]; faturamentoDoGrupo: number; hoje: string }) {
+  const parteDe = (cnpj: ClienteResumo) => (faturamentoDoGrupo > 0 ? cnpj.faturamento12m / faturamentoDoGrupo : 0);
+  return (
+    <TabelaResponsiva
+      descricao="CNPJs do grupo"
+      itens={cnpjs}
+      chaveDe={(cnpj) => cnpj.codigo}
+      linkDe={(cnpj) => `/clientes/${cnpj.codigo}`}
+      vazio="Nenhum CNPJ do grupo na sua carteira."
+      ordemInicial={{ coluna: "Faturado 12 meses", sentido: "decrescente" }}
+      parametroDaOrdem="ordem-cnpjs"
+      colunas={[
+        { titulo: "CNPJ", ordenarPor: (cnpj) => cnpj.nome, celula: (cnpj) => <Identificacao titulo={cnpj.nome} detalhe={formatarLocalECodigo(cnpj)} /> },
+        { titulo: "Situação", ordenarPor: (cnpj) => SITUACOES[cnpj.situacao].rotulo, celula: (cnpj) => <SituacaoCliente situacao={cnpj.situacao} /> },
+        {
+          titulo: "Última compra",
+          ordenarPor: (cnpj) => cnpj.ultimaCompra,
+          celula: (cnpj) => (cnpj.ultimaCompra ? formatarTempoDesde(cnpj.ultimaCompra, hoje) : "sem compras"),
+        },
+        { titulo: "Faturado 12 meses", numerica: true, ordenarPor: (cnpj) => cnpj.faturamento12m, celula: (cnpj) => <Valor valor={cnpj.faturamento12m} /> },
+        { titulo: "Parte", numerica: true, largura: 5, ordenarPor: parteDe, celula: (cnpj) => formatarParticipacao(parteDe(cnpj)) },
+        { titulo: "Variação", numerica: true, ordenarPor: (cnpj) => cnpj.variacao12m, celula: (cnpj) => <Variacao razao={cnpj.variacao12m} /> },
       ]}
     />
   );

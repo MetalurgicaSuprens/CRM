@@ -74,6 +74,7 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
   const rascunhosDoCliente = [...rascunhos.values()].filter(doCliente).map(
     (rascunho): PedidoDaFicha => ({
       id: rascunho.id,
+      cnpj: null,
       numero: null,
       status: "rascunho",
       emissao: dataDoMomento(rascunho.atualizadoEm),
@@ -89,6 +90,7 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
     return [
       {
         id: pedido.numero,
+        cnpj: null,
         numero,
         status,
         emissao: dataDoMomento(pedido.enviadoEm),
@@ -272,9 +274,9 @@ function itensEnviados(itens: ItemDoPedido[], catalogo: CatalogoDoCliente): Item
 }
 
 function resumoDe(ficha: FichaCliente): ClienteResumo {
-  const { codigo, codigoErp, nome, cidade, uf, municipio, mercado, situacao, status, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre } =
+  const { codigo, codigoErp, nome, cidade, uf, municipio, mercado, situacao, status, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs } =
     ficha;
-  return { codigo, codigoErp, nome, cidade, uf, municipio, mercado, situacao, status, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre };
+  return { codigo, codigoErp, nome, cidade, uf, municipio, mercado, situacao, status, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs };
 }
 
 function numeroCrm(numero: number): string {

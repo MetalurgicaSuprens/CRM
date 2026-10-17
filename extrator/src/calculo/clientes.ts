@@ -3,20 +3,26 @@ import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
 import type { Foto } from "dominio/esquemaDaFoto";
 import { evolucao12m, variacao12m } from "dominio/indicadores";
 import { sugerirMix, type ClienteNoMix, type SugestaoDeMix } from "dominio/mix";
-import type { ClienteDaCarteira, DadosDoErp, DatasDeCompra, FamiliaDoCliente, VendaDoMes } from "../erp/tipos.ts";
+import type { ClienteDaCarteira, DadosDoErp, FamiliaDoCliente, ProdutoDoCliente } from "../erp/tipos.ts";
 import { agruparPor } from "./agrupar.ts";
 import { montarCatalogo, type TabelaEListaDoCliente } from "./catalogo.ts";
+import { formarGrupos, juntarCompras, type Compras } from "./grupos.ts";
 import { nomeDoCliente } from "./nomeDoCliente.ts";
 import { SEM_FAMILIA, juntarProdutos } from "./produtos.ts";
 import { MESES_FECHADOS, type Referencia } from "./referencia.ts";
 
 /*
  * As tabelas dos clientes da carteira: cadastro, indicadores, ficha, análises e catálogo, com as
- * regras do módulo dominio (as mesmas do protótipo).
+ * regras do módulo dominio (as mesmas do protótipo). O grupo do SGI com dois ou mais CNPJs na
+ * carteira do mesmo representante ganha uma linha própria, com as compras dos CNPJs somadas: as
+ * análises e a lista de Clientes mostram o grupo no lugar deles, e cada CNPJ continua com a ficha
+ * dele, ligada ao grupo.
  */
 
 /** A Ficha mostra 24 meses fechados e o corrente. */
 const MESES_DA_FICHA = 25;
+/** A Ficha mostra os 8 produtos de maior valor nos 12 meses fechados. */
+const PRODUTOS_DA_FICHA = 8;
 
 export type TabelasDosClientes = Pick<
   Foto,
@@ -34,12 +40,18 @@ export type TabelasDosClientes = Pick<
   | "analise_mix"
 >;
 
+/** Os ids opacos da foto (extrator/src/idDoCliente.ts). */
+export type IdsDaFoto = {
+  doCliente: (cliente: ClienteDaCarteira) => string;
+  doGrupo: (representante: string, nome: string) => string;
+};
+
 type MesDoCliente = { mes: string; valor: number; pecas: number };
 
-/** Um cliente da carteira com o que as regras dizem dele. */
-type ClienteAnalisado = {
+/** O que as regras dizem de um cliente ou de um grupo, a partir das compras dele. */
+type Analisado = {
   id: string;
-  cliente: ClienteDaCarteira;
+  compras: Compras;
   /** Os 36 meses fechados e o corrente. */
   mensal: MesDoCliente[];
   historico: HistoricoDoCliente;
@@ -48,73 +60,105 @@ type ClienteAnalisado = {
   mix: SugestaoDeMix | null;
 };
 
-export function montarClientes(
-  dados: DadosDoErp,
-  referencia: Referencia,
-  idDe: (cliente: ClienteDaCarteira) => string,
-): TabelasDosClientes {
+type ClienteAnalisado = Analisado & { cliente: ClienteDaCarteira };
+
+type GrupoAnalisado = Analisado & { nome: string; representante: string; membros: ClienteAnalisado[] };
+
+export function montarClientes(dados: DadosDoErp, referencia: Referencia, ids: IdsDaFoto): TabelasDosClientes {
   const suprens = populacaoDoMix(dados.familias);
-  const vendas = agruparPor(dados.vendasDoMes, (venda) => venda.chave);
-  const familias = agruparPor(dados.familias, (familia) => familia.chave);
-  const comPedido = new Set(dados.pedidos.map((pedido) => pedido.chave));
-  const analisados = dados.carteira.flatMap((cliente) => {
-    const datas = dados.datasDeCompra.get(cliente.chave);
-    if (!datas) return [];
-    const base = analisar(datas, vendas.get(cliente.chave) ?? [], comPedido.has(cliente.chave), referencia);
-    const noMix = suprens.porChave.get(cliente.chave) ?? semComprasNoMix(cliente);
-    return [{ id: idDe(cliente), cliente, ...base, mix: sugerirMix(noMix, suprens.todos) }];
+  const comprasDe = comprasPorCliente(dados, suprens.porChave);
+  const clientes: ClienteAnalisado[] = dados.carteira.flatMap((cliente) => {
+    const compras = comprasDe(cliente);
+    return compras ? [{ id: ids.doCliente(cliente), cliente, ...analisar(compras, referencia, suprens.todos) }] : [];
   });
-  const idPorChave = new Map(analisados.map(({ id, cliente }) => [cliente.chave, id]));
-  const produtosDaFicha = dados.produtos.filter((produto) => idPorChave.has(produto.chave));
-  const catalogo = montarCatalogo(analisados, dados);
+  const grupos: GrupoAnalisado[] = formarGrupos(clientes).map(({ nome, representante, membros }) => {
+    const id = ids.doGrupo(representante, nome);
+    const compras = juntarCompras(id, membros.map((membro) => membro.compras));
+    return { id, nome, representante, membros, ...analisar(compras, referencia, suprens.todos) };
+  });
+  const grupoDe = new Map(grupos.flatMap(({ id, membros }) => membros.map((membro) => [membro.id, id] as const)));
+  /** Cada CNPJ e cada grupo tem a sua ficha. */
+  const comFicha: Analisado[] = [...clientes, ...grupos];
+  /** As análises listam o grupo no lugar dos CNPJs dele. */
+  const nasAnalises: Analisado[] = [...clientes.filter(({ id }) => !grupoDe.has(id)), ...grupos];
+  const produtosDaFicha = comFicha.flatMap(({ id, compras }) => maisComprados(compras.produtos).map((produto) => ({ ...produto, cliente: id })));
+  const catalogo = montarCatalogo(clientes, dados);
   return {
-    cliente: analisados.map((analisado) => linhaDoCliente(analisado, catalogo.porCliente.get(analisado.id))),
-    cliente_mes: analisados.flatMap(({ id, mensal }) => mensal.slice(-MESES_DA_FICHA).map(({ mes, valor }) => ({ cliente: id, mes, valor }))),
-    cliente_familia: analisados.flatMap(({ id, cliente }) => familiasDaFicha(id, familias.get(cliente.chave) ?? [])),
+    cliente: [
+      ...clientes.map((analisado) => linhaDoCliente(analisado, catalogo.porCliente.get(analisado.id), grupoDe.get(analisado.id) ?? null)),
+      ...grupos.map(linhaDoGrupo),
+    ],
+    cliente_mes: comFicha.flatMap(({ id, mensal }) => mensal.slice(-MESES_DA_FICHA).map(({ mes, valor }) => ({ cliente: id, mes, valor }))),
+    cliente_familia: comFicha.flatMap(({ id, compras }) => familiasDaFicha(id, compras.familias)),
     produto: juntarProdutos(catalogo.produtos, produtosDaFicha),
     lista_de_precos: catalogo.lista_de_precos,
     produto_comprado: catalogo.produto_comprado,
     ficha_produto: produtosDaFicha.map((produto) => ({
-      cliente: idPorChave.get(produto.chave) ?? "",
+      cliente: produto.cliente,
       produto: produto.produto,
       pecas_12m: produto.pecas,
       valor_12m: produto.valor,
       ultima_compra: produto.ultimaCompra,
     })),
-    cliente_mix: analisados.flatMap(({ id, mix }) =>
+    cliente_mix: comFicha.flatMap(({ id, mix }) =>
       (mix?.oportunidades ?? []).map((oportunidade, i) => ({ cliente: id, ...oportunidade, ordem: i + 1 })),
     ),
-    ...montarAnalises(analisados),
+    ...montarAnalises(nasAnalises),
   };
 }
 
-function analisar(datas: DatasDeCompra, vendas: VendaDoMes[], temPedidoEmAberto: boolean, referencia: Referencia) {
+/** As compras de cada cliente da carteira; null para quem não tem nota (não entra na foto). */
+function comprasPorCliente(dados: DadosDoErp, noMix: ReadonlyMap<string, ClienteNoMix>): (cliente: ClienteDaCarteira) => Compras | null {
+  const vendas = agruparPor(dados.vendasDoMes, (venda) => venda.chave);
+  const familias = agruparPor(dados.familias, (familia) => familia.chave);
+  const produtos = agruparPor(dados.produtos, (produto) => produto.chave);
+  const comPedido = new Set(dados.pedidos.map((pedido) => pedido.chave));
+  return (cliente) => {
+    const datas = dados.datasDeCompra.get(cliente.chave);
+    if (!datas) return null;
+    return {
+      datas,
+      vendas: vendas.get(cliente.chave) ?? [],
+      familias: familias.get(cliente.chave) ?? [],
+      produtos: produtos.get(cliente.chave) ?? [],
+      temPedidoEmAberto: comPedido.has(cliente.chave),
+      noMix: noMix.get(cliente.chave) ?? semComprasNoMix(cliente),
+    };
+  };
+}
+
+function analisar(compras: Compras, referencia: Referencia, populacaoDoMix: readonly ClienteNoMix[]): Omit<Analisado, "id"> {
   const mensal = referencia.meses.map((mes) => {
-    const venda = vendas.find((candidata) => candidata.mes === mes);
+    const venda = compras.vendas.find((candidata) => candidata.mes === mes);
     return { mes, valor: venda?.valor ?? 0, pecas: venda?.pecas ?? 0 };
   });
-  const compras = datas.ultimaAntesDaJanela ? [datas.ultimaAntesDaJanela, ...datas.datas] : datas.datas;
+  const { datas } = compras;
+  const datasDasCompras = datas.ultimaAntesDaJanela ? [datas.ultimaAntesDaJanela, ...datas.datas] : datas.datas;
   const historico: HistoricoDoCliente = {
     mensal: mensal.slice(0, MESES_FECHADOS),
-    compras,
+    compras: datasDasCompras,
     primeiraCompra: datas.primeiraCompra,
-    cicloDias: cicloTipico(comprasDasNotas(compras), referencia.hoje),
-    temPedidoEmAberto,
+    cicloDias: cicloTipico(comprasDasNotas(datasDasCompras), referencia.hoje),
+    temPedidoEmAberto: compras.temPedidoEmAberto,
   };
   return {
+    compras,
     mensal,
     historico,
     analise: analisarCliente(historico, referencia.hoje),
     evolucao: evolucao12m(historico.mensal.map((mes) => mes.valor)),
+    mix: sugerirMix(compras.noMix, populacaoDoMix),
   };
 }
 
 function linhaDoCliente(
-  { id, cliente, historico, analise, evolucao, mix }: ClienteAnalisado,
+  analisado: ClienteAnalisado,
   catalogo: TabelaEListaDoCliente | undefined,
+  grupo: string | null,
 ): Foto["cliente"][number] {
+  const { cliente } = analisado;
   return {
-    cliente: id,
+    cliente: analisado.id,
     codigo_erp: cliente.isPessoaFisica ? null : String(cliente.cliente),
     representante: cliente.representante,
     nome: nomeDoCliente(cliente.fantasia, cliente.razaoSocial),
@@ -123,8 +167,44 @@ function linhaDoCliente(
     uf: cliente.uf,
     municipio_ibge: cliente.municipio,
     mercado: cliente.mercado,
-    situacao: analise.situacao,
     status: cliente.status,
+    ...indicadores(analisado),
+    tabela_preco: catalogo?.tabela ?? null,
+    lista_de_precos: catalogo?.lista ?? null,
+    grupo,
+    cnpjs: null,
+  };
+}
+
+/**
+ * O grupo não tem cidade, código do ERP nem tabela de preço: o pedido é sempre de um CNPJ. O
+ * mercado é o do CNPJ que mais fatura, e o grupo está ativo se algum CNPJ estiver.
+ */
+function linhaDoGrupo(grupo: GrupoAnalisado): Foto["cliente"][number] {
+  const principal = grupo.membros.reduce((maior, membro) => ((membro.evolucao.at(-1) ?? 0) > (maior.evolucao.at(-1) ?? 0) ? membro : maior));
+  return {
+    cliente: grupo.id,
+    codigo_erp: null,
+    representante: grupo.representante,
+    nome: grupo.nome,
+    razao_social: "",
+    cidade: "",
+    uf: "",
+    municipio_ibge: null,
+    mercado: principal.cliente.mercado,
+    status: grupo.membros.some(({ cliente }) => cliente.status === "ativo") ? "ativo" : principal.cliente.status,
+    ...indicadores(grupo),
+    tabela_preco: null,
+    lista_de_precos: null,
+    grupo: null,
+    cnpjs: grupo.membros.length,
+  };
+}
+
+/** O que as regras dizem do cliente ou do grupo, nas colunas da linha dele. */
+function indicadores({ historico, analise, evolucao, mix }: Analisado) {
+  return {
+    situacao: analise.situacao,
     ultima_compra: historico.compras.at(-1) ?? null,
     cliente_desde: Number(historico.primeiraCompra.slice(0, 4)),
     ciclo_dias: historico.cicloDias,
@@ -132,9 +212,14 @@ function linhaDoCliente(
     variacao_12m: variacao12m(evolucao),
     evolucao_12m: JSON.stringify(evolucao),
     grupo_mix: mix ? (mix.porte ?? "mercado") : null,
-    tabela_preco: catalogo?.tabela ?? null,
-    lista_de_precos: catalogo?.lista ?? null,
+    // "Comprando menos" só vale para o cliente em risco (dominio/analises.ts): é a queda do selo.
+    queda_no_semestre: analise.ritmo?.direcao === "menos" ? analise.ritmo.variacao : null,
   };
+}
+
+/** Os produtos de maior valor nos 12 meses fechados; no empate, pela ordem do código. */
+function maisComprados(produtos: readonly ProdutoDoCliente[]): ProdutoDoCliente[] {
+  return [...produtos].sort((a, b) => b.valor - a.valor || a.produto.localeCompare(b.produto)).slice(0, PRODUTOS_DA_FICHA);
 }
 
 /** Famílias compradas nos 12 meses fechados, com a parte de cada uma no faturado. */
@@ -152,10 +237,7 @@ function familiasDaFicha(id: string, familias: FamiliaDoCliente[]): Foto["client
 }
 
 /** As listas das análises, cada uma na ordem da sua regra, numerada para toda a carteira. */
-function montarAnalises(analisados: ClienteAnalisado[]): Pick<
-  TabelasDosClientes,
-  "analise_parado" | "analise_ritmo" | "analise_novo" | "analise_mix"
-> {
+function montarAnalises(analisados: Analisado[]): Pick<TabelasDosClientes, "analise_parado" | "analise_ritmo" | "analise_novo" | "analise_mix"> {
   const diferenca = (linha: { semestre: number; semestre_ano_anterior: number }) => linha.semestre - linha.semestre_ano_anterior;
   const ritmo = (direcao: "menos" | "mais") =>
     analisados.flatMap(({ id, analise }) =>

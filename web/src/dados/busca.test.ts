@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { correspondeAoCliente, correspondeAoClienteOuCidade } from "./busca";
 
-const EMPRESA = { nome: "Retífica São Jorge", codigoErp: "591328580003", cidade: "Ribeirão Preto" };
+const EMPRESA = { nome: "Retífica São Jorge", codigoErp: "591328580003", cidade: "Ribeirão Preto", cnpjs: null };
 /** CNPJ 01.116.500/0001-xx: o código do ERP perdeu o zero da esquerda. */
-const COM_ZERO_NA_RAIZ = { nome: "Master Borrachas", codigoErp: "11165000001", cidade: "Goiânia" };
-const PESSOA_FISICA = { nome: "Rogério Tavares", codigoErp: null, cidade: "Bauru" };
+const COM_ZERO_NA_RAIZ = { nome: "Master Borrachas", codigoErp: "11165000001", cidade: "Goiânia", cnpjs: null };
+const PESSOA_FISICA = { nome: "Rogério Tavares", codigoErp: null, cidade: "Bauru", cnpjs: null };
 
 describe("correspondeAoCliente", () => {
   it("acha pelo nome, sem acento nem maiúscula", () => {
@@ -47,5 +47,15 @@ describe("correspondeAoClienteOuCidade", () => {
     expect(correspondeAoClienteOuCidade(EMPRESA, "ribeirao")).toBe(true);
     expect(correspondeAoClienteOuCidade(PESSOA_FISICA, "bauru")).toBe(true);
     expect(correspondeAoClienteOuCidade(PESSOA_FISICA, "campinas")).toBe(false);
+  });
+
+  it("acha o grupo pelo nome dele e pelo nome, pelo CNPJ ou pela cidade de um CNPJ dele", () => {
+    const bahia = { nome: "OVD BAHIA", codigoErp: "123456780012", cidade: "Salvador", cnpjs: null };
+    const grupo = { nome: "OVD", codigoErp: null, cidade: "", cnpjs: [bahia] };
+    expect(correspondeAoClienteOuCidade(grupo, "ovd")).toBe(true);
+    expect(correspondeAoClienteOuCidade(grupo, "bahia")).toBe(true);
+    expect(correspondeAoClienteOuCidade(grupo, "12.345.678/0012")).toBe(true);
+    expect(correspondeAoClienteOuCidade(grupo, "salvador")).toBe(true);
+    expect(correspondeAoClienteOuCidade(grupo, "curitiba")).toBe(false);
   });
 });

@@ -2,32 +2,38 @@ import type { DatabaseSync } from "node:sqlite";
 import type { Porte } from "dominio/tipos";
 import type { ClienteResumo, FichaCliente } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
-import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, numeroOuNulo, resumoDoCliente, texto, textoOuNulo } from "./linhas.ts";
-import { lerPedidosDaFicha } from "./pedidos.ts";
+import { COLUNAS_DO_RESUMO, comResumos, escopo, lerLinhas, numero, numeroOuNulo, texto, textoOuNulo } from "./linhas.ts";
+import { lerPedidosDaFicha, lerPedidosDoGrupo } from "./pedidos.ts";
 
-/** A carteira do login: os clientes de todos os códigos dele. */
+/** A carteira do login: os clientes de todos os códigos dele, com o grupo no lugar dos CNPJs dele. */
 export function lerCarteira(db: DatabaseSync, sessao: Sessao): ClienteResumo[] {
   const { marcas, codigos } = escopo(sessao);
-  return lerLinhas(
+  const linhas = lerLinhas(
     db,
-    `SELECT ${COLUNAS_DO_RESUMO} FROM cliente c WHERE c.representante IN (${marcas}) ORDER BY c.faturamento_12m DESC`,
+    `SELECT ${COLUNAS_DO_RESUMO} FROM cliente c WHERE c.grupo IS NULL AND c.representante IN (${marcas}) ORDER BY c.faturamento_12m DESC`,
     codigos,
-  ).map(resumoDoCliente);
+  );
+  return comResumos(db, sessao, linhas).map(({ cliente }) => cliente);
 }
 
-/** A ficha só sai para cliente da carteira do login; fora dela, null (a rota responde 404). */
+/**
+ * A ficha só sai para cliente da carteira do login; fora dela, null (a rota responde 404). A do
+ * grupo tem os números somados, os CNPJs e os pedidos de todos eles; a do CNPJ, o caminho de volta
+ * ao grupo.
+ */
 export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): FichaCliente | null {
   const { marcas, codigos } = escopo(sessao);
   const [linha] = lerLinhas(
     db,
-    `SELECT ${COLUNAS_DO_RESUMO}, c.razao_social, c.cliente_desde, c.ciclo_dias, c.grupo_mix
+    `SELECT ${COLUNAS_DO_RESUMO}, c.razao_social, c.cliente_desde, c.ciclo_dias, c.grupo_mix, c.grupo
        FROM cliente c WHERE c.cliente = ? AND c.representante IN (${marcas})`,
     [codigoDoCliente, ...codigos],
   );
-  if (!linha) return null;
+  const resumo = linha ? comResumos(db, sessao, [linha])[0]?.cliente : undefined;
+  if (!linha || !resumo) return null;
   const porCliente = (sql: string) => lerLinhas(db, sql, [codigoDoCliente]);
   return {
-    ...resumoDoCliente(linha),
+    ...resumo,
     razaoSocial: texto(linha, "razao_social"),
     clienteDesde: numeroOuNulo(linha, "cliente_desde"),
     cicloDias: numeroOuNulo(linha, "ciclo_dias"),
@@ -51,7 +57,8 @@ export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: stri
     })),
     oportunidades: lerOportunidades(db, codigoDoCliente),
     grupoDoMix: grupoDoMix(textoOuNulo(linha, "grupo_mix")),
-    pedidos: lerPedidosDaFicha(db, sessao, codigoDoCliente),
+    pedidos: resumo.cnpjs ? lerPedidosDoGrupo(db, sessao, resumo.cnpjs) : lerPedidosDaFicha(db, sessao, codigoDoCliente),
+    grupo: lerGrupo(db, sessao, textoOuNulo(linha, "grupo")),
   };
 }
 
@@ -65,4 +72,14 @@ export function lerOportunidades(db: DatabaseSync, codigoDoCliente: string): Fic
 export function grupoDoMix(grupo: string | null): FichaCliente["grupoDoMix"] {
   if (grupo === null) return null;
   return { porte: grupo === "mercado" ? null : (grupo as Porte) };
+}
+
+function lerGrupo(db: DatabaseSync, sessao: Sessao, codigoDoGrupo: string | null): FichaCliente["grupo"] {
+  if (codigoDoGrupo === null) return null;
+  const { marcas, codigos } = escopo(sessao);
+  const [linha] = lerLinhas(db, `SELECT c.cliente, c.nome FROM cliente c WHERE c.cliente = ? AND c.representante IN (${marcas})`, [
+    codigoDoGrupo,
+    ...codigos,
+  ]);
+  return linha ? { codigo: texto(linha, "cliente"), nome: texto(linha, "nome") } : null;
 }

@@ -21,7 +21,7 @@ import type {
   ClienteParado,
 } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarContagem, formatarParticipacao, formatarPeriodo, formatarSemestres } from "../formato";
+import { formatarContagem, formatarLocalDoCliente, formatarParticipacao, formatarPeriodo, formatarSemestres } from "../formato";
 import { Carregando } from "./Carregando";
 import estilos from "./Analises.module.css";
 
@@ -216,7 +216,7 @@ function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...pr
       chaveDe={(item) => item.cliente.codigo}
       linkDe={(item) => `/clientes/${item.cliente.codigo}`}
       colunas={[
-        { titulo: "Cliente", ordenarPor: (item) => item.cliente.nome, celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={`${item.cliente.cidade}/${item.cliente.uf}`} /> },
+        { titulo: "Cliente", ordenarPor: (item) => item.cliente.nome, celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={formatarLocalDoCliente(item.cliente)} /> },
         ...colunas,
       ]}
     />

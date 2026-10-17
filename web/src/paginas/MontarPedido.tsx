@@ -29,7 +29,7 @@ import { LIMITE_DA_OBSERVACAO, problemasDoPedido, totalDoPedido, valorDaLinha } 
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { CatalogoDoCliente, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarCodigoDoCliente, formatarContagem, formatarMomento, formatarNumero, normalizarParaBusca } from "../formato";
+import { formatarContagem, formatarLocalECodigo, formatarMomento, formatarNumero, normalizarParaBusca } from "../formato";
 import { Carregando } from "./Carregando";
 import estilos from "./MontarPedido.module.css";
 
@@ -38,13 +38,16 @@ const ESPERA_PARA_SALVAR_MS = 700;
 /** Tempo que o protótipo finge esperar o aparelho liberar a chave. */
 const ESPERA_SIMULADA_MS = 1_200;
 
-/** /pedidos/novo?cliente=... começa um pedido; /pedidos/rascunhos/:id continua um rascunho. */
+/**
+ * /pedidos/novo?cliente=... começa um pedido; /pedidos/novo?grupo=... escolhe antes o CNPJ do grupo;
+ * /pedidos/rascunhos/:id continua um rascunho.
+ */
 export function MontarPedido() {
   const { id } = useParams();
   const [parametros] = useSearchParams();
   if (id) return <ContinuarRascunho id={id} />;
   const codigoCliente = parametros.get("cliente");
-  return codigoCliente ? <Montagem codigoCliente={codigoCliente} inicial={null} /> : <EscolherCliente />;
+  return codigoCliente ? <Montagem codigoCliente={codigoCliente} inicial={null} /> : <EscolherCliente codigoDoGrupo={parametros.get("grupo")} />;
 }
 
 function ContinuarRascunho({ id }: { id: string }) {
@@ -378,15 +381,22 @@ function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo }: PropsDoEnvio)
 
 // ---------------------------------------------------------------- escolha do cliente
 
-function EscolherCliente() {
+/** O pedido é sempre de um CNPJ: o grupo entra pelos CNPJs dele, e com ?grupo= só eles aparecem. */
+function EscolherCliente({ codigoDoGrupo }: { codigoDoGrupo: string | null }) {
   const { dados: clientes } = useCarga("clientes", carregarClientes);
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   const [busca, setBusca] = useState("");
   if (!clientes || !situacao) return <Carregando />;
-  const visiveis = clientes.filter((cliente) => correspondeAoClienteOuCidade(cliente, busca));
+  const grupo = clientes.find((cliente) => cliente.codigo === codigoDoGrupo && cliente.cnpjs);
+  const cnpjs = grupo?.cnpjs ?? clientes.flatMap((cliente) => cliente.cnpjs ?? [cliente]);
+  const visiveis = cnpjs.filter((cliente) => correspondeAoClienteOuCidade(cliente, busca));
   return (
     <div className={estilos.pagina}>
-      <CabecalhoPagina antes={<Voltar para="/pedidos" rotulo="Pedidos" />} titulo="Novo pedido" descricao="Para qual cliente é o pedido?" />
+      <CabecalhoPagina
+        antes={grupo ? <Voltar para={`/clientes/${grupo.codigo}`} rotulo={grupo.nome} /> : <Voltar para="/pedidos" rotulo="Pedidos" />}
+        titulo="Novo pedido"
+        descricao={grupo ? `Para qual CNPJ de ${grupo.nome} é o pedido?` : "Para qual cliente é o pedido?"}
+      />
       <CampoDeBusca
         rotulo="Buscar cliente"
         valor={busca}
@@ -395,9 +405,9 @@ function EscolherCliente() {
         focarAoAbrir
         className={estilos.buscaDeCliente}
       />
-      <Cartao titulo="Clientes da carteira" icone={Users}>
+      <Cartao titulo={grupo ? `CNPJs de ${grupo.nome}` : "Clientes da carteira"} icone={Users}>
         <TabelaResponsiva
-          descricao="Clientes da carteira"
+          descricao={grupo ? `CNPJs de ${grupo.nome}` : "Clientes da carteira"}
           itens={visiveis}
           chaveDe={(cliente) => cliente.codigo}
           linkDe={(cliente) => `/pedidos/novo?cliente=${cliente.codigo}`}
@@ -407,7 +417,7 @@ function EscolherCliente() {
               titulo: "Cliente",
               ordenarPor: (cliente) => cliente.nome,
               celula: (cliente) => (
-                <Identificacao titulo={cliente.nome} detalhe={`${cliente.cidade}/${cliente.uf} · ${formatarCodigoDoCliente(cliente.codigoErp)}`} />
+                <Identificacao titulo={cliente.nome} detalhe={formatarLocalECodigo(cliente)} />
               ),
             },
             {

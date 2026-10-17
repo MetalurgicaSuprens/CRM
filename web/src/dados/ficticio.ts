@@ -471,6 +471,8 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
     variacao12m: variacao12m(evolucao),
     evolucao12m: evolucao,
     quedaNoSemestre: indicadores.quedaNoSemestre,
+    // Os grupos vêm do cadastro do SGI: a carteira fictícia não tem.
+    cnpjs: null,
   };
 }
 
@@ -490,6 +492,7 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     oportunidades: mix?.oportunidades ?? [],
     grupoDoMix: mix ? { porte: mix.porte } : null,
     pedidos: pedidosDaFicha(cliente, dados),
+    grupo: null,
   };
 }
 
@@ -497,6 +500,7 @@ function pedidosDaFicha(cliente: ClienteFicticio, contexto: Contexto): PedidoDaF
   const emAberto = cliente.pedidos.map(
     (pedido): PedidoDaFicha => ({
       id: pedido.numero,
+      cnpj: null,
       numero: pedido.numero,
       status: "em_aberto",
       emissao: pedido.emissao,
@@ -524,6 +528,7 @@ function pedidosFaturados(cliente: ClienteFicticio, { hoje, mesAtual }: Contexto
     numero += aleatorio.inteiro(50, 900);
     return {
       id: String(numero),
+      cnpj: null,
       numero: String(numero),
       status: "faturado",
       emissao: somarDias(data, -aleatorio.inteiro(2, 12)),

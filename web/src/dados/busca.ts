@@ -19,9 +19,19 @@ export function correspondeAoCliente(cliente: Pick<ClienteResumo, "nome" | "codi
   return normalizarParaBusca(cliente.nome).includes(normalizarParaBusca(termo));
 }
 
-/** Como `correspondeAoCliente`, e também pela cidade: a busca de Clientes e da escolha do cliente do pedido. */
-export function correspondeAoClienteOuCidade(cliente: Pick<ClienteResumo, "nome" | "codigoErp" | "cidade">, busca: string): boolean {
-  return correspondeAoCliente(cliente, busca) || normalizarParaBusca(cliente.cidade).includes(normalizarParaBusca(busca.trim()));
+/** O que a busca olha do cliente e, no grupo, de cada CNPJ dele. */
+type ClienteDaBusca = Pick<ClienteResumo, "nome" | "codigoErp" | "cidade"> & { cnpjs: readonly ClienteDaBusca[] | null };
+
+/**
+ * Como `correspondeAoCliente`, e também pela cidade; o grupo, também pelo nome, pelo CNPJ ou pela
+ * cidade de qualquer CNPJ dele. É a busca de Clientes e da escolha do cliente do pedido.
+ */
+export function correspondeAoClienteOuCidade(cliente: ClienteDaBusca, busca: string): boolean {
+  return (
+    correspondeAoCliente(cliente, busca) ||
+    normalizarParaBusca(cliente.cidade).includes(normalizarParaBusca(busca.trim())) ||
+    (cliente.cnpjs ?? []).some((cnpj) => correspondeAoClienteOuCidade(cnpj, busca))
+  );
 }
 
 function correspondeAoCnpj(codigoErp: string | null, termo: string): boolean {

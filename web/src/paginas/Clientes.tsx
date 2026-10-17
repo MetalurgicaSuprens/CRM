@@ -16,7 +16,7 @@ import { correspondeAoClienteOuCidade } from "../dados/busca";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { ClienteResumo, Semestre, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarCodigoDoCliente, formatarData, formatarTempoDesde } from "../formato";
+import { formatarData, formatarLocalECodigo, formatarTempoDesde } from "../formato";
 import { AmostraReferencia, Sparkline } from "../graficos/Sparkline";
 import { Carregando } from "./Carregando";
 import estilos from "./Clientes.module.css";
@@ -136,9 +136,7 @@ function LinhaCliente({ cliente, hoje, semestre }: { cliente: ClienteResumo; hoj
     <Link to={`/clientes/${cliente.codigo}`} className={cliente.status === "ativo" ? estilos.linha : `${estilos.linha} ${estilos.foraDeAtivo}`}>
       <span className={estilos.identificacao}>
         <span className={estilos.nome}>{cliente.nome}</span>
-        <span className={estilos.local}>
-          {cliente.cidade}/{cliente.uf} · {formatarCodigoDoCliente(cliente.codigoErp)}
-        </span>
+        <span className={estilos.local}>{formatarLocalECodigo(cliente)}</span>
       </span>
       <span className={estilos.status}>
         <StatusDoCliente status={cliente.status} />

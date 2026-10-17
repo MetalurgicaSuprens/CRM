@@ -48,7 +48,9 @@ export function Mapa() {
   const { dados: analises } = useCarga("analises", carregarAnalises);
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   const { dados: brasil, erro: erroDoBrasil } = useCarga("mapa:brasil", carregarMapaDoBrasil);
-  const ufs = useMemo(() => ufsDaCarteira(clientes ?? []), [clientes]);
+  // O mapa põe cada CNPJ no seu município: o grupo, que não tem cidade, entra pelos CNPJs dele.
+  const cnpjs = useMemo(() => (clientes ?? []).flatMap((cliente) => cliente.cnpjs ?? [cliente]), [clientes]);
+  const ufs = useMemo(() => ufsDaCarteira(cnpjs), [cnpjs]);
   const { dados: mapas, erro: erroDosMapas } = useCarga(`mapa:${ufs.map(({ uf }) => uf).join(",")}`, () =>
     Promise.all(ufs.map(({ uf }) => carregarMapaDaUf(uf))),
   );
@@ -63,7 +65,7 @@ export function Mapa() {
   const uf = ufs.find((item) => item.uf === parametros.get("uf"))?.uf ?? ufs[0]?.uf ?? "";
   const mapa = mapas.find((item) => item.uf === uf);
   if (!mapa) return <Carregando />;
-  const territorio = montarTerritorio(mapa, clientes, aRecuperarPorCliente(analises));
+  const territorio = montarTerritorio(mapa, cnpjs, aRecuperarPorCliente(analises));
   const escolhaDoEstado = escolha?.uf === uf ? escolha : null;
   const alterar = (chave: string, valor: string, padrao: string) => {
     const proximos = new URLSearchParams(parametros);
@@ -112,7 +114,7 @@ export function Mapa() {
             uf={uf}
             visao={visaoDa(mapa, escolhaDoEstado)}
             classeDaRegiao={lente === "crescer" ? classesDasRegioes(territorio) : undefined}
-            comCliente={new Set(clientes.flatMap((cliente) => (cliente.municipio ? [cliente.municipio] : [])))}
+            comCliente={new Set(cnpjs.flatMap((cliente) => (cliente.municipio ? [cliente.municipio] : [])))}
             circulos={circulosDa(territorio, lente)}
             tom={lente === "receita" ? "receita" : "perda"}
             rotulos={rotulosDa(territorio, lente)}

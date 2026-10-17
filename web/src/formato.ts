@@ -1,5 +1,5 @@
 import { dataDoMomento, diasEntre, horaDoMomento, paraDiaUtc, somarMeses } from "dominio/datas";
-import type { Semestre } from "./dados/tipos";
+import type { ClienteResumo, Semestre } from "./dados/tipos";
 
 const REAIS = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -132,6 +132,17 @@ function comRotulo(itens: string[], singular: string, plural: string): string {
 /** O código do ERP do cliente. A pessoa física aparece sem ele, porque lá o código é o CPF. */
 export function formatarCodigoDoCliente(codigoErp: string | null): string {
   return codigoErp ?? "Pessoa física";
+}
+
+/** A linha de baixo do nome: "Campinas/SP" ou, no grupo, que não tem cidade, "Grupo de 8 CNPJs". */
+export function formatarLocalDoCliente(cliente: Pick<ClienteResumo, "cidade" | "uf" | "cnpjs">): string {
+  return cliente.cnpjs ? `Grupo de ${formatarContagem(cliente.cnpjs.length, "CNPJ", "CNPJs")}` : `${cliente.cidade}/${cliente.uf}`;
+}
+
+/** O local e o código do ERP: "Campinas/SP · 591328580003"; o grupo não tem código. */
+export function formatarLocalECodigo(cliente: Pick<ClienteResumo, "cidade" | "uf" | "cnpjs" | "codigoErp">): string {
+  const local = formatarLocalDoCliente(cliente);
+  return cliente.cnpjs ? local : `${local} · ${formatarCodigoDoCliente(cliente.codigoErp)}`;
 }
 
 /** "1 cliente", "9 clientes". */
