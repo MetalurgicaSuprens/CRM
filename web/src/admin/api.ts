@@ -3,8 +3,8 @@ import type {
   ConviteGerado,
   DetalheDoLogin,
   LoginNaGestao,
+  ListaDeAutorizados,
   PaginaDoRegistro,
-  RepresentanteAutorizado,
   SituacaoDaAdministracao,
 } from "./tipos";
 
@@ -17,7 +17,7 @@ import type {
 export const carregarSituacao = () => ler<SituacaoDaAdministracao>("/api/admin/situacao");
 export const carregarLogins = () => ler<LoginNaGestao[]>("/api/admin/logins");
 export const carregarLogin = (id: string) => ler<DetalheDoLogin>(`/api/admin/logins/${encodeURIComponent(id)}`);
-export const carregarRepresentantes = () => ler<RepresentanteAutorizado[]>("/api/admin/representantes");
+export const carregarRepresentantes = () => ler<ListaDeAutorizados>("/api/admin/representantes");
 
 export function carregarRegistro({ antes, login }: { antes?: number; login?: string } = {}): Promise<PaginaDoRegistro> {
   const busca = new URLSearchParams();

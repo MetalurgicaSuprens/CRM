@@ -55,7 +55,19 @@ export type EventoDoRegistro = {
 export type PaginaDoRegistro = { eventos: EventoDoRegistro[]; temMais: boolean };
 
 /** Um código da lista de autorizados da foto e o login ativo que já o usa, se houver. */
-export type RepresentanteAutorizado = { codigo: string; nome: string; login: { id: string; nome: string } | null };
+export type RepresentanteAutorizado = {
+  codigo: string;
+  nome: string;
+  login: { id: string; nome: string } | null;
+  /** O faturado nos 12 meses fechados, pelas vendas atribuídas ao código (a visão do representante, a do Início). */
+  faturado12m: number | null;
+};
+
+export type ListaDeAutorizados = {
+  /** Os 12 meses fechados do faturado, de "2025-10" a "2026-09"; nulo sem foto. */
+  periodo: { inicio: string; fim: string } | null;
+  representantes: RepresentanteAutorizado[];
+};
 
 export type SituacaoDaAdministracao = {
   admin: { id: string; nome: string };

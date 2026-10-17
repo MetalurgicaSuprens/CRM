@@ -36,13 +36,13 @@ export function NovoLogin() {
 }
 
 function Formulario({ aoCriar }: { aoCriar: (convite: ConviteGerado) => void }) {
-  const { dados: representantes, erro: erroDaLista } = useCarga("admin:representantes", carregarRepresentantes);
+  const { dados: lista, erro: erroDaLista } = useCarga("admin:representantes", carregarRepresentantes);
   const [nome, setNome] = useState("");
   const [codigos, setCodigos] = useState<Set<string>>(new Set());
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   if (erroDaLista) return <Mensagem recado={{ tom: "erro", texto: erroDaLista.message }} />;
-  if (!representantes) return <Carregando />;
+  if (!lista) return <Carregando />;
 
   const pronto = nome.trim() !== "" && codigos.size > 0;
   const enviar = (evento: FormEvent) => {
@@ -67,7 +67,7 @@ function Formulario({ aoCriar }: { aoCriar: (convite: ConviteGerado) => void }) 
         <fieldset className={estilos.campo}>
           <legend className={estilos.rotulo}>Códigos de representante</legend>
           <span className={estilos.ajuda}>O login vê a carteira e os pedidos de todos os códigos marcados, somados. Cada código fica em um login só.</span>
-          <EscolhaDeCodigos representantes={representantes} escolhidos={codigos} aoMudar={setCodigos} doLogin={null} />
+          <EscolhaDeCodigos lista={lista} escolhidos={codigos} aoMudar={setCodigos} doLogin={null} />
         </fieldset>
         {erro ? <Mensagem recado={{ tom: "erro", texto: erro }} /> : null}
         <div className={estilos.botoes}>

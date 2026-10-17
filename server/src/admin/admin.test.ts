@@ -220,12 +220,16 @@ describe("logins", () => {
 });
 
 describe("representantes, situação e registro", () => {
-  it("lista os códigos da foto com o login ativo que já usa cada um", async () => {
+  it("lista os códigos da foto com o login ativo que já usa cada um e o faturado nos 12 meses fechados", async () => {
     const { id } = await criarStar();
-    expect((await lerNoAdmin("/api/admin/representantes")).json()).toEqual([
-      { codigo: "1401", nome: "STAR VENDAS", login: { id, nome: "Star Vendas" } },
-      { codigo: "9999", nome: "OUTRA REPRESENTACAO", login: null },
-    ]);
+    // Foto de outubro de 2026: de janeiro a setembro, 1.000 por mês; de outubro a dezembro de 2025, 900.
+    expect((await lerNoAdmin("/api/admin/representantes")).json()).toEqual({
+      periodo: { inicio: "2025-10", fim: "2026-09" },
+      representantes: [
+        { codigo: "1401", nome: "STAR VENDAS", login: { id, nome: "Star Vendas" }, faturado12m: 9 * 1_000 + 3 * 900 },
+        { codigo: "9999", nome: "OUTRA REPRESENTACAO", login: null, faturado12m: 9 * 1_000 + 3 * 900 },
+      ],
+    });
   });
 
   it("mostra quem está na administração e a foto do ERP", async () => {

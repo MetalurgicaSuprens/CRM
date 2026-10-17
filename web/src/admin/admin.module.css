@@ -95,9 +95,21 @@
   gap: var(--esp-3);
 }
 
+/*
+ * A busca cresce na linha das ferramentas (flex: 1 1 240px); nesta coluna, isso viraria a altura
+ * dela. O ".escolha >" vence a regra do componente em qualquer ordem do CSS montado.
+ */
+.escolha > .buscaDosCodigos {
+  flex: none;
+}
+
+/*
+ * A lista rola por dentro, com o cabeçalho grudado no alto. Cabeçalho e linhas dividem as mesmas
+ * colunas: a caixa de marcar, o código, o nome e o faturado. Cada linha é uma grade própria; o
+ * faturado, a última coluna, vai até a borda, e por isso fica alinhado ao título com qualquer largura.
+ */
 .codigos {
-  display: flex;
-  flex-direction: column;
+  --colunas-dos-codigos: 1.05rem 4.5rem minmax(0, 1fr) auto;
   max-height: 22rem;
   overflow-y: auto;
   border: 1px solid var(--cor-linha);
@@ -105,16 +117,41 @@
   background: var(--cor-superficie);
 }
 
+.cabecalhoDosCodigos,
+.codigo {
+  display: grid;
+  grid-template-columns: var(--colunas-dos-codigos);
+  align-items: center;
+  gap: var(--esp-3);
+  padding: 10px var(--esp-3);
+}
+
+/* Como o cabeçalho das tabelas do CRM (componentes/TabelaResponsiva.module.css) */
+.cabecalhoDosCodigos {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-top: var(--esp-2);
+  padding-bottom: var(--esp-2);
+  border-bottom: 1px solid var(--cor-linha);
+  background: var(--cor-superficie);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-2);
+}
+
+.tituloDoFaturado {
+  text-align: right;
+}
+
 .codigos li + li {
   border-top: 1px solid var(--cor-linha);
 }
 
 .codigo {
-  display: grid;
-  grid-template-columns: auto 4.5rem minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--esp-3);
-  padding: 10px var(--esp-3);
   cursor: pointer;
   transition: background-color var(--transicao);
 }
@@ -145,14 +182,29 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* O nome encolhe com reticências; a nota de outro login fica inteira, ao lado dele */
 .nomeDoCodigo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--esp-2);
+  min-width: 0;
+}
+
+.textoDoNome {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .notaDoCodigo {
+  flex-shrink: 0;
   font-size: var(--tam-pequeno);
+}
+
+.faturadoDoCodigo {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* ------------------------------------------------ convite gerado */
@@ -296,11 +348,32 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .codigo {
-    grid-template-columns: auto 4rem minmax(0, 1fr);
+  .codigos {
+    --colunas-dos-codigos: 1.05rem 3.5rem minmax(0, 1fr) auto;
   }
 
-  .notaDoCodigo {
+  .cabecalhoDosCodigos,
+  .codigo {
+    gap: 2px var(--esp-2);
+  }
+
+  /*
+   * O código e o faturado ficam na primeira linha; o nome desce para a segunda, com a largura toda,
+   * e a nota de outro login, para baixo dele. O título "Representante" sairia sobre o vazio.
+   */
+  .nomeDoCodigo {
+    grid-row: 2;
     grid-column: 2 / -1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .faturadoDoCodigo {
+    grid-column: 4;
+  }
+
+  .tituloDoNome {
+    visibility: hidden;
   }
 }

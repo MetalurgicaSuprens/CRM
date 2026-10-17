@@ -177,7 +177,7 @@ function Acao({ nome, explicacao, children }: { nome: string; explicacao: string
 
 function Codigos({ login, agir }: { login: Detalhe; agir: (acao: () => Promise<string>) => void }) {
   const [editando, setEditando] = useState(false);
-  const { dados: representantes } = useCarga("admin:representantes", carregarRepresentantes);
+  const { dados: lista } = useCarga("admin:representantes", carregarRepresentantes);
   const [escolhidos, setEscolhidos] = useState<Set<string>>(() => new Set(login.codigos.map(({ codigo }) => codigo)));
   const podeEditar = login.situacao !== "desativado";
   const salvar = () =>
@@ -199,9 +199,9 @@ function Codigos({ login, agir }: { login: Detalhe; agir: (acao: () => Promise<s
         ) : null
       }
     >
-      {editando && representantes ? (
+      {editando && lista ? (
         <div className={estilos.escolha}>
-          <EscolhaDeCodigos representantes={representantes} escolhidos={escolhidos} aoMudar={setEscolhidos} doLogin={login.id} />
+          <EscolhaDeCodigos lista={lista} escolhidos={escolhidos} aoMudar={setEscolhidos} doLogin={login.id} />
           <div className={estilos.botoes}>
             <button type="button" className={botoes.primario} disabled={escolhidos.size === 0} onClick={salvar}>
               Salvar os códigos

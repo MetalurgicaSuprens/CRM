@@ -1,11 +1,12 @@
 import type { DatabaseSync } from "node:sqlite";
+import { somarMeses } from "dominio/datas";
 import type {
   ConviteGerado,
   DetalheDoLogin,
   EventoDoRegistro,
+  ListaDeAutorizados,
   LoginNaGestao,
   PaginaDoRegistro,
-  RepresentanteAutorizado,
   SituacaoDoLogin,
 } from "../../../web/src/admin/tipos.ts";
 import { auditar, LINHA_DE_COMANDO } from "../auditoria.ts";
@@ -145,10 +146,19 @@ export function verLogin(contexto: Contexto, id: string): DetalheDoLogin | null 
   };
 }
 
-/** A lista de autorizados da foto, com o login ativo que já usa cada código. */
-export function verRepresentantes(contexto: Contexto): RepresentanteAutorizado[] {
+/** A lista de autorizados da foto, com o login ativo que já usa cada código e o faturado de cada um em 12 meses. */
+export function verRepresentantes(contexto: Contexto): ListaDeAutorizados {
   const ligados = loginsAtivosPorCodigo(contexto.banco);
-  return [...nomesDosRepresentantes(contexto)].map(([codigo, nome]) => ({ codigo, nome, login: ligados.get(codigo) ?? null }));
+  const { periodo, porCodigo } = faturadoEm12Meses(contexto);
+  return {
+    periodo,
+    representantes: [...nomesDosRepresentantes(contexto)].map(([codigo, nome]) => ({
+      codigo,
+      nome,
+      login: ligados.get(codigo) ?? null,
+      faturado12m: porCodigo.get(codigo) ?? null,
+    })),
+  };
 }
 
 /** O registro de acessos, do mais novo ao mais velho, de 100 em 100; com o login, só o que é dele ou foi feito nele. */
@@ -257,6 +267,28 @@ function nomesDosRepresentantes(contexto: Contexto): Map<string, string> {
     return representantesDa(contexto.foto());
   } catch (erro) {
     if (erro instanceof FotoIndisponivel) return new Map();
+    throw erro;
+  }
+}
+
+/**
+ * O faturado de cada código nos 12 meses fechados antes do mês da foto, pelas vendas atribuídas a ele
+ * (painel_mes, a mesma conta do Início): do ano corrente, os meses antes do da foto; dali em diante,
+ * o mesmo mês do ano anterior. Em outubro de 2026, de outubro de 2025 a setembro de 2026.
+ */
+function faturadoEm12Meses(contexto: Contexto): Pick<ListaDeAutorizados, "periodo"> & { porCodigo: Map<string, number> } {
+  try {
+    const foto = contexto.foto();
+    const mesAtual = String(foto.prepare("SELECT mes_atual FROM foto").get()?.mes_atual);
+    const linhas = foto
+      .prepare("SELECT representante, SUM(CASE WHEN mes < ? THEN COALESCE(faturado, 0) ELSE ano_anterior END) AS faturado FROM painel_mes GROUP BY representante")
+      .all(mesAtual);
+    return {
+      periodo: { inicio: somarMeses(mesAtual, -12), fim: somarMeses(mesAtual, -1) },
+      porCodigo: new Map(linhas.map((linha) => [String(linha.representante), Number(linha.faturado)])),
+    };
+  } catch (erro) {
+    if (erro instanceof FotoIndisponivel) return { periodo: null, porCodigo: new Map() };
     throw erro;
   }
 }

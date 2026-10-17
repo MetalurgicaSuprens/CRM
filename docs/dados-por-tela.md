@@ -564,7 +564,7 @@ Pedido do Lucas em 2026-10-16: gerenciar os acessos por uma tela, não por coman
 | Dado | O que a tela mostra | Regra | Origem | Onde é calculado |
 |---|---|---|---|---|
 | Logins | Lista com a situação, os códigos, as chaves, o último acesso e o convite; números do alto: ativos, convites pendentes, chaves ativas, sessões abertas | Situação: ativo (chave que vale), convite pendente (sem chave, com convite valendo), sem acesso, desativado | app.db | servidor |
-| Novo login | Nome e os códigos marcados na lista de autorizados; o link do convite, para copiar | Os códigos vêm da tabela `representante` da foto; o que já está em outro login ativo aparece bloqueado | (foto: representante) | servidor |
+| Novo login e troca de códigos | Nome e os códigos marcados na lista de autorizados, com o faturado de cada código em 12 meses; o link do convite, para copiar | Os códigos vêm da tabela `representante` da foto; o que já está em outro login ativo aparece bloqueado. Faturado: a soma de `painel_mes` nos 12 meses fechados antes do mês da foto, pelas vendas atribuídas ao código (a conta do Início); em outubro de 2026, de out/25 a set/26 | (foto: representante, painel_mes) | servidor |
 | Chaves | Provedor, sincronizada ou não, criada, último uso, bloqueada; "Bloquear" uma a uma | Uma chave sincronizada vale em todos os aparelhos da conta Google ou Apple | app.db | servidor |
 | Convites | Gerado, situação (valendo, usado, venceu, trocado) e quando | 48 horas, uma vez só; o novo troca o anterior | app.db | servidor |
 | Sessões | As últimas 20: aberta, último uso, chave e por que terminou | As regras da entrada: 60 minutos sem uso, 12 horas | app.db | servidor |
@@ -580,7 +580,7 @@ Pedido do Lucas em 2026-10-16: gerenciar os acessos por uma tela, não por coman
   - As ações que tiram o acesso pedem confirmação. O admin não age no próprio login pela tela, para não se trancar para fora.
 - **Exceção à regra 4 do CLAUDE.md (decidida em 2026-10-13).** As rotas que ligam códigos a um login (criar o login e trocar os códigos) são as únicas que recebem do navegador o código do representante. Elas só existem na API da administração, conferem o código contra a tabela `representante` da foto e gravam auditoria.
 - **Lista dos representantes autorizados.** É a tabela `representante` da foto, que o extrator monta a partir de `data/representantes-autorizados.txt`.
-- **Sem dados comerciais.** Não há perfil "vê tudo" (plano.md:23). A administração mostra só nomes de login, códigos, chaves e o registro.
+- **Dados comerciais: só o faturado de cada código.** Não há perfil "vê tudo" (plano.md:23). A administração mostra nomes de login, códigos, chaves e o registro. O único número de venda é o faturado de cada código em 12 meses, na escolha de códigos, que o Lucas pediu em 2026-10-17 para montar os logins.
 - **Na produção, proposta a confirmar com o Lucas.** A administração fica só no servidor, em 127.0.0.1, e o Lucas a abre por um túnel SSH até ele, em http://localhost:5179.
   - Não é preciso porta nova nem certificado: o firewall já só deixa o SSH vir do IP dele.
   - A chave de acesso aceita "localhost" sem https.
@@ -591,6 +591,10 @@ Pedido do Lucas em 2026-10-16: gerenciar os acessos por uma tela, não por coman
   - a administração mostra o login ativo; bloquear as chaves derruba a sessão do CRM, com o motivo;
   - o registro mostra tudo com nomes;
   - as quatro telas cabem no celular, sem rolagem para o lado.
+- **Conferido em 2026-10-17**, com os 22 representantes ativos da foto real:
+  - a coluna do faturado fica alinhada ao título no Novo login e na troca de códigos, no desktop e no celular;
+  - no celular, o nome desce para a segunda linha, e nenhum é cortado;
+  - a busca da lista, que só aparece com mais de 8 códigos, tem a altura certa (antes saía com 240 px).
 
 ## Esquema proposto da foto
 
