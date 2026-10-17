@@ -136,6 +136,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 |---|---|---|---|---|
 | Carteira | "N clientes na carteira" (Clientes.tsx:71) | Clientes com `VEND_1` igual ao código da sessão (decidido em 2026-10-09) | `CRCL.EMP_FIL`, `CLIENTE`, `VEND_1` | extrator |
 | Código | "Ribeirão Preto/SP · 123456780001" ou "Bauru/SP · Pessoa física" (Clientes.tsx:140; formato.ts:133) e busca | Empresa: o código do ERP. Pessoa física: nenhum, porque o código dela é o CPF (decisão do Lucas em 2026-10-13). O código é a raiz do CNPJ e a filial, sem os verificadores, e o ERP o guarda como número: perde os zeros da esquerda (61 dos 178 clientes da Star Vendas têm 10 ou 11 dígitos, em 2026-10-15). A busca completa os zeros | `CRCL.CLIENTE`, só com `FIS_JURID = 'J'` | extrator |
+| Grupo | Uma linha só, com o nome do grupo e "Grupo de 8 CNPJs" no lugar da cidade e do código; os números são a soma dos CNPJs (Clientes.tsx; formato.ts, `formatarLocalECodigo`). A busca acha o grupo também pelo nome, pelo CNPJ ou pela cidade de um CNPJ dele (dados/busca.ts) | Ver "Grupos do SGI", abaixo | `SGI5_TAB_VEN_CLI3.CLI3_GRP` | extrator |
 | Identificador | URL `/clientes/:codigo`, rascunhos e pedidos | Id opaco para todos os clientes (decidido em 2026-10-13); nunca aparece na tela | nenhuma; gerado na LAN | extrator |
 | Nome | Título da linha, busca, ordem A–Z | Fantasia; se vazio, razão social; razão completa quando o fantasia vem cortado | `CRCL.NOM_FANTAS`, `RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
 | Cidade e UF | "Ribeirão Preto/SP" | `TRIM(CIDADE)`, cortada em 20 letras. Proposta: o nome do IBGE pelo código de `RESERVADO7`, confirmado em 2026-10-15 (pergunta 5). Exterior: "EX" | `CRCL.CIDADE`, `ESTADO` | extrator |
@@ -177,6 +178,13 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
   - O código vai para a foto desde a versão 9 (`cliente.municipio_ibge`), para o Mapa. É um dado público do município, não do cliente.
   - Cliente do exterior vem com `ESTADO='EX'` e o país em `COD_PAIS`, que é um número (licoes.md:98; omega/ABC71-CR.md:1079). Proposta: a tela mostra "EX" na UF. Se a pergunta 5 decidir mostrar o país, o nome vem de `ABC71.TGPA.NOME_PAIS` por `COD_PAIS` (omega/ABC71-TG.md:437-455). A confirmar na F2: qual EMPRESA/FILIAL usar e se 12 = Uruguai e 10 = Paraguai (licoes.md:98).
 - **Variação.** O piso de R$ 2 mil que deixa a variação nula existe só no fictício (ficticio.ts:437). O plano diz só "dados insuficientes" (plano.md:243).
+- **Grupos do SGI (pedido do Lucas em 2026-10-17).**
+  - O grupo é o campo Grupo da tela Vendas → Clientes do SGI, gravado em `SGI5_TAB_VEN_CLI3.CLI3_GRP` (untVenCli_CliMov.pas:148-151 e 183). Os campos de grupo do Omega (`CRCL.GRUPO_1`, `SUB_GRUPO_1`, `SEGMENTO`) estão zerados.
+  - Com o campo vazio, a tela grava o nome fantasia, e nada atualiza o campo quando o fantasia muda no Omega. Em 17/10, 17.629 dos 17.834 clientes tinham o próprio fantasia no grupo. Por isso o texto só vale como grupo quando é diferente do fantasia de ao menos um cliente, isto é, quando alguém o digitou (extrator/src/erp/carteira.ts, `grupoDigitado`). Senão, empresas sem relação com o mesmo fantasia virariam um grupo, como 6 lojas "CASA DOS PARAFUSOS".
+  - O grupo existe dentro da carteira de cada código: com dois ou mais CNPJs do mesmo grupo no mesmo código, eles viram uma linha só, com as compras somadas e analisada como um cliente (extrator/src/calculo/grupos.ts). Com um CNPJ só no código, o cliente aparece sozinho.
+  - Os CNPJs do grupo que estão com outro representante ficam de fora, porque são clientes de outra carteira (CLAUDE.md, regra 4). Em 17/10: a OVD tem 8 CNPJs no 1302 e 1 no 1310, que aparece sozinho lá.
+  - A conta é por código, porque o extrator não conhece os logins: um grupo com CNPJs em dois códigos do mesmo login apareceria duas vezes. Em 17/10, nenhum grupo dividia os códigos de um login.
+  - Na foto de 17/10, 8 grupos: ARICAN, MORELATE e UNIFORT (1109), FW (1120), OVD (1302), FG (1310), MOBIT (1502) e NORTE COM VAREJ (1603).
 - **Tendência.** Exige 24 meses fechados de notas.
 
 ## 4. Ficha do cliente
@@ -185,6 +193,8 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 |---|---|---|---|---|
 | Nome e situação | Título e selos: a situação e, no cliente fora de ativo, o status, "Inativo" ou "Substituído" (FichaCliente.tsx:58-64) | Como em Clientes | (ver Clientes) | extrator |
 | Razão social e motivo do risco | Embaixo do nome: a razão social, que some quando é igual a ele, como na pessoa física, e o motivo do selo "Em risco", como em Clientes. O motivo não vai ao lado do selo porque a linha do título empurraria o cadastro (FichaCliente.tsx:65 e 149-162) | `RAZ_SOCIAL` + `COMPLEM_RZ`; motivo: ver Clientes | `CRCL.RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
+| Grupo | No grupo: "Grupo do cadastro do SGI: 8 CNPJs, com os números somados" embaixo do nome, e os cartões CNPJs e Municípios no lugar de Cidade e Código. No CNPJ de um grupo: "CNPJ do grupo OVD" embaixo do nome, e o "Voltar" leva ao grupo (FichaCliente.tsx) | Ver Clientes, "Grupos do SGI". Todos os números do grupo são a soma dos CNPJs: faturado, meses, famílias, produtos, ciclo e situação | `SGI5_TAB_VEN_CLI3.CLI3_GRP` | extrator |
+| Por CNPJ | Só no grupo, depois do faturamento mensal: cada CNPJ com cidade e código, situação, última compra, faturado em 12 meses, a parte dele no faturado do grupo e a variação; a linha abre a ficha do CNPJ (FichaCliente.tsx, `TabelaDosCnpjs`) | Os números de cada CNPJ, como se ele estivesse sozinho; a situação é a dele (pedido do Lucas em 2026-10-17) | (ver Clientes) | extrator; a parte, no navegador |
 | Cidade, Mercado e Código | Cartões (FichaCliente.tsx:129-131) | Mercado: M = montadora, E = exportação, o resto é praça. Código: como em Clientes, "Pessoa física" sem número | `CRCL.TIPO_CLI`; código: `CRCL.CLIENTE` só de empresa | extrator |
 | Cliente desde | Só o ano (FichaCliente.tsx:132) | Ano da primeira nota válida da história; nulo se nunca comprou | `MIN(NFME.DT_EMISSAO)` com a RF | extrator; vai só o ano |
 | Faturado em 12 meses | Indicador, com "vs 12 meses anteriores" | Como em Clientes | NFME, NFDE | extrator |
@@ -193,11 +203,11 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Pedidos em aberto (indicador) | Soma e "N pedidos", ou "Nenhum" (FichaCliente.tsx:165-166 e 188-193) | Soma dos pedidos com status Em aberto do histórico abaixo: os do cliente atribuídos ao representante | VEPM, VEPD | navegador |
 | Faturamento mensal | 24 meses fechados e o mês corrente | RF por mês; mês sem compra = 0 | NFME, NFDE | extrator |
 | Famílias compradas | Barras com valor e % (12 meses), do maior valor para o menor (FichaCliente.tsx:85) | RF por família nos mesmos 12 meses do faturado | NFDE, família do produto | extrator |
-| Produtos mais comprados | Produto, família, peças, valor, última compra (FichaCliente.tsx:263-271) | Os 8 maiores em valor nos 12 meses | Peças: `TRIM(NFDE.C_PROD)`, `QTDE`, `UNIDADE`. Valor: `NFDE.VLR_TOTAL − Z_FRANCA_DESC` com a RF. Última compra: `NFME.DT_EMISSAO`. Família: `PAC_GRC` → `GRP_DES` | extrator, já com o corte em 8 |
+| Produtos mais comprados | Produto, família, peças, valor, última compra (FichaCliente.tsx:263-271) | Os 8 maiores em valor nos 12 meses; no grupo, os 8 maiores da soma dos CNPJs. O extrator lê todos os produtos do ano e corta em 8 depois de somar | Peças: `TRIM(NFDE.C_PROD)`, `QTDE`, `UNIDADE`. Valor: `NFDE.VLR_TOTAL − Z_FRANCA_DESC` com a RF. Última compra: `NFME.DT_EMISSAO`. Família: `PAC_GRC` → `GRP_DES` | extrator, já com o corte em 8 |
 | Pedidos (histórico) | Cartão "Pedidos", no lugar de "Pedidos em aberto" (pedido do Lucas em 2026-10-15): pedido, status, emissão, entrega, itens e valor, do mais recente ao mais antigo, ordenados no navegador; a linha abre como nas abas de Pedidos: o resumo por família e os itens, com a entrega de cada um no pedido em aberto; no rascunho, "Continuar o rascunho" e, no enviado, "Ver o andamento" (FichaCliente.tsx:95-97 e 280-301; DetalhesDosPedidos.tsx:70-96) | Os pedidos do cliente atribuídos ao representante: os faturados com nota nos 12 meses fechados e no corrente, e os em aberto de qualquer data. Status: Faturado, Em aberto, Enviado pelo CRM e Rascunho (componentes/StatusDoPedido.tsx). Faturado: o valor e os produtos das notas do pedido no período, e a entrega é a última nota. O pedido do CRM é "Enviado pelo CRM" até chegar ao ERP e, de lá em diante, tem o status de lá; recusado e cancelado não aparecem (pedido.ts:86-100). Rascunho: sem número, com a data do último salvamento | NFME, NFDE e VEPM no faturado; VEPM e VEPD no em aberto | extrator (`pedido_faturado` e `pedido_faturado_item`, `pedido_aberto` e `pedido_aberto_item`); rascunho e enviado: app.db (F3 e F5), hoje só no fictício |
 | Oportunidades de mix | Família e "X% dos clientes parecidos compram" | Ver Análises | NFDE, CRCL | extrator |
 | Com quem comparou | "mercado Praça, porte médio" ou "Poucos clientes parecidos" | Ver Análises | CRCL, NFDE | extrator |
-| Novo pedido | Botão para Montar pedido; no cliente fora de ativo, o botão fica e mostra o aviso do status, para falar com a equipe de vendas da Suprens (FichaCliente.tsx:69-71 e 102-123) | Leva o id do cliente. Só o cliente ativo no cadastro recebe pedido (decisões do Lucas em 2026-10-14 e 2026-10-15) | nenhuma | navegador |
+| Novo pedido | Botão para Montar pedido; no cliente fora de ativo, o botão fica e mostra o aviso do status, para falar com a equipe de vendas da Suprens (FichaCliente.tsx:69-71 e 102-123) | Leva o id do cliente. Só o cliente ativo no cadastro recebe pedido (decisões do Lucas em 2026-10-14 e 2026-10-15). O pedido é sempre de um CNPJ: no grupo, o botão leva à escolha entre os CNPJs dele | nenhuma | navegador |
 
 - **Razão social.** O SGI concatena `TRIM(A.RAZ_SOCIAL||A.COMPLEM_RZ)` (`untDmCrmCli.dfm:32`). Como `RAZ_SOCIAL` é CHAR(35), o extrator junta direto só quando ela ocupa os 35 caracteres. Nos outros casos, separa com um espaço. Quando a razão é igual ao nome mostrado, a ficha pode omitir a linha.
 - **Família do produto.**
@@ -212,6 +222,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 - **Cliente sem compra em 12 meses.** Famílias e produtos ficam vazios. O fictício usa 1/3 dos 36 meses (ficticio.ts:448), o que é só um marcador de lugar.
 - **Cliente que nunca comprou.** Ele existe na carteira como perdido (dominio/analises.ts:76), e Clientes já mostra "sem compras" (Clientes.tsx:152). Corrigido em 2026-10-09: a Ficha quebrava com a primeira compra nula. Agora o contrato leva só o ano, `clienteDesde: number | null` (tipos.ts:121-122), e o cartão mostra "—" quando ele é nulo (FichaCliente.tsx:132).
 - **Ciclo.** Pelo plano (plano.md:221), o extrator usa os intervalos em dias entre eventos. Exige pelo menos 4 compras. Fora de 30 a 180 dias, o valor é nulo (irregular). O fictício prende o valor entre 30 e 180 e conta meses × 30,4 (ficticio.ts:409-418).
+- **Pedidos do grupo.** O histórico da ficha do grupo junta os pedidos de todos os CNPJs, e cada linha diz de qual CNPJ é, embaixo do número (servidor: `lerPedidosDoGrupo`).
 - **Pedidos em aberto (decidido em 2026-10-09, pergunta 22).** A ficha mostra só os pedidos do cliente atribuídos ao representante da sessão, como em Pedidos. O pedido do cliente atribuído a outro representante não aparece. Pela proposta da pergunta 26, ele ainda impede "parado" (ver Análises). Por isso a ficha pode mostrar "Nenhum" em pedidos em aberto num cliente que não está parado. O histórico de pedidos da ficha (2026-10-15) segue a mesma regra, também nos faturados.
 - **Auditoria.** Abrir a ficha é evento auditado (plano.md:153). O registro leva o código opaco, nunca o nome.
 
@@ -276,13 +287,11 @@ Regras:
   - Sugere a família comprada em 12 meses por pelo menos 50% dos parecidos e que o cliente não compra há 24 meses. A ordem é da maior penetração para a menor, com empate pelo nome.
   - A conta usa todos os clientes da Suprens, na LAN. Para a foto vão só a família, o percentual e a faixa usada.
   - A lista de mix leva quem está fora de parado e perdido e tem sugestão, ordenada pelo faturado em 12 meses (`ficticio.ts:647-652`).
-- **Grupos (regra do plano.md:244; o tratamento das filiais em carteiras diferentes é proposta a decidir, pergunta 19):**
-  - Filiais da mesma raiz de CNPJ são analisadas juntas, para a compra que muda de filial não virar "parado" nem "novo".
-  - A raiz é calculada na LAN e não vai para a foto.
-  - O extrator e `analises.ts` precisam da mesma regra, com teste.
-  - O valor somado do grupo (faturado, primeira compra) só aparece numa filial quando todas as filiais do grupo estão na carteira do mesmo representante. Senão, mostrar ao representante A o valor do grupo revela as compras da filial que é de B, o que vai além da visão do cliente (plano.md:206).
-  - Nos outros casos, a filial mostra só os próprios números, e o grupo serve só para não marcar parado, novo ou reativado.
-  - A conta é por código, porque o extrator não conhece os logins. Um grupo com filiais no 1401 e no 1402 do mesmo login não soma. É o caminho mais seguro; se fizer falta, a F2 revê.
+- **Grupos (decidido em 2026-10-17; ver Clientes, "Grupos do SGI"):**
+  - As listas têm o grupo no lugar dos CNPJs dele, analisado pelas compras somadas: a compra que muda de CNPJ não vira "parado" nem "novo". Em 17/10, o NORTE COM VAREJ (1603) tinha 3 CNPJs parados e 1 novo, e o grupo estava ativo.
+  - A regra das análises é a mesma (dominio/analises.ts): o extrator só junta as compras antes (extrator/src/calculo/grupos.ts, `juntarCompras`, com teste em clientes.test.ts).
+  - Cada CNPJ continua com a própria situação, que a ficha dele e a parte "Por CNPJ" mostram.
+  - O grupo soma só os CNPJs da carteira do mesmo código. Assim, o representante nunca vê as compras do CNPJ que é de outro (plano.md:206).
 - **Alerta rápido de queda (plano.md:233):** não tem tela, campo em `tipos.ts` nem implementação. Fica fora da foto até haver tela.
 - **Sem tela:** `ClienteParado.diasSemComprar` (tipos.ts:167) não aparece em nenhuma tela e sai do contrato.
 
@@ -374,7 +383,7 @@ Abaixo dos cartões, a busca de cliente filtra as quatro abas pelo nome fantasia
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Escolha do cliente | Nome, código do ERP (ou "Pessoa física"), cidade, status, situação e última compra. Escolher o cliente fora de ativo abre o aviso do status, para falar com a equipe de vendas, e não o catálogo (MontarPedido.tsx:61 e 428-435). Até 2026-10-14, a escolha mostrava e buscava pelo id do cliente, que não deve aparecer na tela. Abre na ordem recebida, sem coluna marcada, e o representante reordena por Cliente, Status, Situação e Última compra (MontarPedido.tsx:405-421) | Clientes da carteira | (ver Clientes) | extrator; ordem de abertura: servidor, por `faturamento_12m` decrescente; busca e reordenação: navegador (MontarPedido.tsx:386 e 405-421) |
+| Escolha do cliente | O pedido é sempre de um CNPJ: o grupo aparece pelos CNPJs dele, e o "Novo pedido" da ficha do grupo abre a escolha só entre eles ("Para qual CNPJ de OVD é o pedido?", `/pedidos/novo?grupo=`). O catálogo do grupo responde 404. Nome, código do ERP (ou "Pessoa física"), cidade, status, situação e última compra. Escolher o cliente fora de ativo abre o aviso do status, para falar com a equipe de vendas, e não o catálogo (MontarPedido.tsx:61 e 428-435). Até 2026-10-14, a escolha mostrava e buscava pelo id do cliente, que não deve aparecer na tela. Abre na ordem recebida, sem coluna marcada, e o representante reordena por Cliente, Status, Situação e Última compra (MontarPedido.tsx:405-421) | Clientes da carteira | (ver Clientes) | extrator; ordem de abertura: servidor, por `faturamento_12m` decrescente; busca e reordenação: navegador (MontarPedido.tsx:386 e 405-421) |
 | Cliente do pedido | Nome e cidade/UF no cabeçalho e no diálogo de envio (MontarPedido.tsx:107 e 162) | Cliente da carteira, pelo código da URL ou do rascunho | (ver Clientes) | extrator |
 | Tabela de preço | O nome da tabela no cabeçalho e em "Preços da …" (MontarPedido.tsx:107 e 120). O fictício junta o mercado ao nome ("Tabela 23 · Praça", pedidosFicticios.ts:41); a tela real mostra só `cliente.tabela_preco` | Uma por cliente, escolhida pelo extrator, nunca pelo navegador: a principal; sem ela, a que não é secundária. Só em real; na montadora, só a ativa (extrator/src/calculo/catalogo.ts). Na Star Vendas, em 14/10: "PADRAO - FEV" para 177 clientes e "MITSUBISHI CATA" para 1 | `SGI5_TAB_VEN_CLI.CLI_TAB` e `CLI_STA`; `SGI5_TAB_VEN_TP1.TP1_NOM`, `TP1_MOE`, `TP1_STA` | extrator |
 | Catálogo | Abas "Já comprados" e "Todos", com contagem | Só produto vendável e com preço para o cliente. Clientes com a mesma tabela e os mesmos descontos dividem uma lista de preços: em 14/10, 50 listas para os 178 clientes da Star Vendas | view de preço líquido, ESTQ, view de produto sem árvore | extrator; servidor, por `/api/clientes/:codigo/catalogo`, só de cliente do login e nunca do cliente fora de ativo (409) |
@@ -512,6 +521,7 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
   - "Onde crescer": as regiões pelo potencial que falta, em 4 tons de verde, e o que dá para recuperar, em círculos vermelhos.
 - **Por estado.** Os botões mostram os estados da carteira, com o número de clientes, e a página abre no que tem mais (`uf=`). Os outros estados da carteira aparecem em volta, mais claros.
 - **Escolha.** A lista mostra as 8 primeiras regiões e o "Ver todas". A região escolhida na lista é aproximada no mapa. O clique ou o toque num município mostra os clientes dele, cada um com o caminho para a ficha. O mouse mostra a dica do município.
+- **Grupos.** O mapa põe cada CNPJ do grupo no seu município, com os números dele. O que dá para recuperar de um grupo parado ou comprando menos se divide entre os CNPJs pela parte de cada um no faturado de 12 meses, ou em partes iguais se ele não faturou nada (dados/mapa.ts, `aRecuperarPorCliente`, com teste).
 - **Nomes no mapa.** Os 5 municípios que mais pesam têm o nome ao lado do círculo. O nome passa para a esquerda quando à direita encostaria em outro ou sairia do quadro. Se não cabe de nenhum lado, fica de fora (`web/src/graficos/nomesNoMapa.ts`, com teste).
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
@@ -610,7 +620,7 @@ Convenções:
 |---|---|---|---|
 | `foto` | Uma linha | `versao_esquema`, `gerada_em`, `data_ref`, `mes_atual`, `dia_util`, `dias_uteis`, `semestre_inicio`, `semestre_fim` | todas, Admin |
 | `representante` | Representante autorizado; PK `codigo` | `codigo`, `nome` (o da CRVN, para o Admin escolher os códigos) | Admin |
-| `cliente` | Cliente (filial) da carteira de um autorizado; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `status`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (código IBGE do município, para o Mapa) | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
+| `cliente` | Cliente (filial) da carteira de um autorizado, e o grupo do SGI com dois ou mais CNPJs no mesmo código; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física e no grupo), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `status`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (código IBGE do município, para o Mapa), `queda_no_semestre`, `grupo`, `cnpjs` | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
 | `cliente_mes` | Cliente × mês (24 fechados + o corrente); PK (`cliente`, `mes`) | `cliente`, `mes`, `valor` | Ficha |
 | `cliente_familia` | Cliente × família nos 12 meses fechados; PK (`cliente`, `familia`) | `cliente`, `familia`, `valor`, `participacao` | Ficha |
 | `ficha_produto` | Cliente × produto, só os 8 maiores em valor nos 12 meses fechados; PK (`cliente`, `produto`) | `cliente`, `produto`, `pecas_12m`, `valor_12m`, `ultima_compra` | Ficha |
@@ -634,6 +644,8 @@ Convenções:
 
 Colunas que pedem nota:
 - `cliente.evolucao_12m`: texto JSON com 13 números, do mais antigo ao mais recente.
+- `cliente.grupo` e `cliente.cnpjs` (versão 10, 2026-10-17): no CNPJ de um grupo, `grupo` é o id da linha do grupo; na linha do grupo, `cnpjs` diz quantos CNPJs ele tem. A linha do grupo não tem cidade, município, código do ERP nem tabela de preço, e o id dela é um HMAC do código do representante e do nome do grupo, estável entre fotos. As listas das análises (`analise_*`) têm o grupo no lugar dos CNPJs; a ficha (`cliente_mes`, `cliente_familia`, `ficha_produto`, `cliente_mix`) existe para os dois.
+- `cliente.queda_no_semestre` (versão 10): a variação do semestre do cliente em risco. Antes, o servidor a tirava de `analise_ritmo`, que não tem mais o CNPJ de um grupo.
 - `cliente.grupo_mix`: 'pequeno', 'medio' ou 'grande'. 'mercado' quando a comparação usou o mercado inteiro. Nulo quando nem o mercado tem 20 clientes.
 - `cliente.situacao`, `ciclo_dias` e `variacao_12m`: nulos conforme as regras de Análises e Clientes.
 - `cliente.status`: o status do cadastro do SGI, 'ativo', 'inativo' ou 'substituido'. Até a versão 5, a foto levava só a marca de fora de ativo (`negativo`); desde 2026-10-15, a coluna Status mostra o status de todo cliente.
@@ -950,7 +962,7 @@ O login de verdade, com a chave de acesso, aprovado pelo Lucas em 2026-10-15 com
         - cada nota tem o próprio pedido no SGI: 320 notas e 320 pedidos.
     - Saem `TIPO_CAD` diferente de 'C' e cliente sem compra há N anos? O cliente fora de ativo no `CLI3_STA` fica (decidido em 2026-10-14).
     - `VEND_2` e `VEND_3` têm uso?
-19. **Grupos por raiz de CNPJ (plano.md:244).**
+19. **Grupos: decidido em 2026-10-17.** O grupo é o campo Grupo do SGI, e a lista e as análises mostram o grupo, com os números somados; ver Clientes, "Grupos do SGI". As perguntas abaixo ficam como histórico.
     - A lista mostra a filial ou o grupo?
     - Que nome, cidade e mercado tem o grupo?
     - De quem é um grupo com filiais de representantes diferentes?
