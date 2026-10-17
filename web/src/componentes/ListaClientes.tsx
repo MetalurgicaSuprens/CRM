@@ -4,7 +4,7 @@ import estilos from "./ListaClientes.module.css";
 
 export type ItemDaLista = {
   codigo: string;
-  nome: string;
+  nome: ReactNode;
   detalhe: ReactNode;
   direita: ReactNode;
 };

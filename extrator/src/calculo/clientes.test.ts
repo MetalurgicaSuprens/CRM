@@ -133,6 +133,13 @@ describe("montarClientes: grupos do SGI", () => {
     ]);
   });
 
+  it("leva à ficha 60 meses fechados e o corrente: o gráfico de 48 meses com a média móvel de 12", () => {
+    const meses = tabelas.cliente_mes.filter(({ cliente }) => cliente === "cliente-4");
+    expect(meses).toHaveLength(61);
+    expect(meses[0]).toEqual({ cliente: "cliente-4", mes: "2021-10", valor: 0 });
+    expect(meses.at(-1)?.mes).toBe("2026-10");
+  });
+
   it("não muda o cliente sem grupo", () => {
     expect(linha("cliente-4")).toMatchObject({ nome: "CLIENTE 4", grupo: null, cnpjs: null, situacao: "ativo" });
   });

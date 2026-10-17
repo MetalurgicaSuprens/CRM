@@ -49,3 +49,10 @@
   color: var(--cor-pendente);
   background: var(--cor-pendente-fundo);
 }
+
+/* O grupo não é um estado do cliente: contorno, sem a cor de fundo das situações */
+.grupo {
+  color: var(--cor-texto);
+  background: var(--cor-superficie);
+  box-shadow: inset 0 0 0 1px var(--cor-linha-forte);
+}

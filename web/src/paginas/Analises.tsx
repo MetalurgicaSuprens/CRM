@@ -4,6 +4,7 @@ import { somarMeses } from "dominio/datas";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Filtros } from "../componentes/Filtros";
 import { ANALISES, CartaoDaAnalise, type TipoDeAnalise } from "../componentes/IdentidadeDaAnalise";
+import { NomeDoCliente } from "../componentes/NomeDoCliente";
 import { DataRelativa } from "../componentes/Quando";
 import { Selo } from "../componentes/Selo";
 import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
@@ -216,7 +217,7 @@ function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...pr
       chaveDe={(item) => item.cliente.codigo}
       linkDe={(item) => `/clientes/${item.cliente.codigo}`}
       colunas={[
-        { titulo: "Cliente", ordenarPor: (item) => item.cliente.nome, celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={formatarLocalDoCliente(item.cliente)} /> },
+        { titulo: "Cliente", ordenarPor: (item) => item.cliente.nome, celula: (item) => <Identificacao titulo={<NomeDoCliente cliente={item.cliente} />} detalhe={formatarLocalDoCliente(item.cliente)} /> },
         ...colunas,
       ]}
     />

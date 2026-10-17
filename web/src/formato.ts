@@ -74,6 +74,20 @@ export function formatarMesAno(mesIso: string): string {
   return `${formatarMesCurto(mesIso)}/${mesIso.slice(2, 4)}`;
 }
 
+/** "2026-07" → "3º tri/26": o trimestre do mês, no eixo do gráfico. */
+export function formatarTrimestre(mesIso: string): string {
+  return `${trimestreDoMes(mesIso)}º tri/${mesIso.slice(2, 4)}`;
+}
+
+/** "2026-07" → "3º trimestre de 2026" */
+export function formatarTrimestrePorExtenso(mesIso: string): string {
+  return `${trimestreDoMes(mesIso)}º trimestre de ${mesIso.slice(0, 4)}`;
+}
+
+function trimestreDoMes(mesIso: string): number {
+  return Math.floor((Number(mesIso.slice(5, 7)) - 1) / 3) + 1;
+}
+
 /** "2026-04" a "2026-09" → "abr–set/26"; com anos diferentes, "nov/25–abr/26". */
 export function formatarPeriodo(inicioIso: string, fimIso: string): string {
   const inicio = inicioIso.slice(0, 4) === fimIso.slice(0, 4) ? formatarMesCurto(inicioIso) : formatarMesAno(inicioIso);
@@ -134,9 +148,9 @@ export function formatarCodigoDoCliente(codigoErp: string | null): string {
   return codigoErp ?? "Pessoa física";
 }
 
-/** A linha de baixo do nome: "Campinas/SP" ou, no grupo, que não tem cidade, "Grupo de 8 CNPJs". */
+/** A linha de baixo do nome: "Campinas/SP" ou, no grupo, que não tem cidade e leva o selo ao lado do nome, "8 CNPJs". */
 export function formatarLocalDoCliente(cliente: Pick<ClienteResumo, "cidade" | "uf" | "cnpjs">): string {
-  return cliente.cnpjs ? `Grupo de ${formatarContagem(cliente.cnpjs.length, "CNPJ", "CNPJs")}` : `${cliente.cidade}/${cliente.uf}`;
+  return cliente.cnpjs ? formatarContagem(cliente.cnpjs.length, "CNPJ", "CNPJs") : `${cliente.cidade}/${cliente.uf}`;
 }
 
 /** O local e o código do ERP: "Campinas/SP · 591328580003"; o grupo não tem código. */

@@ -19,8 +19,6 @@ import { MESES_FECHADOS, type Referencia } from "./referencia.ts";
  * dele, ligada ao grupo.
  */
 
-/** A Ficha mostra 24 meses fechados e o corrente. */
-const MESES_DA_FICHA = 25;
 /** A Ficha mostra os 8 produtos de maior valor nos 12 meses fechados. */
 const PRODUTOS_DA_FICHA = 8;
 
@@ -88,7 +86,7 @@ export function montarClientes(dados: DadosDoErp, referencia: Referencia, ids: I
       ...clientes.map((analisado) => linhaDoCliente(analisado, catalogo.porCliente.get(analisado.id), grupoDe.get(analisado.id) ?? null)),
       ...grupos.map(linhaDoGrupo),
     ],
-    cliente_mes: comFicha.flatMap(({ id, mensal }) => mensal.slice(-MESES_DA_FICHA).map(({ mes, valor }) => ({ cliente: id, mes, valor }))),
+    cliente_mes: comFicha.flatMap(({ id, compras }) => faturadoPorMes(compras, referencia.mesesDaFicha).map(({ mes, valor }) => ({ cliente: id, mes, valor }))),
     cliente_familia: comFicha.flatMap(({ id, compras }) => familiasDaFicha(id, compras.familias)),
     produto: juntarProdutos(catalogo.produtos, produtosDaFicha),
     lista_de_precos: catalogo.lista_de_precos,
@@ -215,6 +213,12 @@ function indicadores({ historico, analise, evolucao, mix }: Analisado) {
     // "Comprando menos" só vale para o cliente em risco (dominio/analises.ts): é a queda do selo.
     queda_no_semestre: analise.ritmo?.direcao === "menos" ? analise.ritmo.variacao : null,
   };
+}
+
+/** O faturado de cada mês, com zero no mês sem compra. */
+function faturadoPorMes(compras: Compras, meses: readonly string[]): { mes: string; valor: number }[] {
+  const porMes = new Map(compras.vendas.map(({ mes, valor }) => [mes, valor]));
+  return meses.map((mes) => ({ mes, valor: porMes.get(mes) ?? 0 }));
 }
 
 /** Os produtos de maior valor nos 12 meses fechados; no empate, pela ordem do código. */

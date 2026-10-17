@@ -486,7 +486,7 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     // Na carteira fictícia todo cliente já comprou um dia; o null fica para a foto de verdade.
     clienteDesde: Number(cliente.primeiraCompra.slice(0, 4)),
     cicloDias: cliente.indicadores.cicloDias,
-    mensal: cliente.mensal.slice(ULTIMO_FECHADO - 23).map(({ mes, valor }) => ({ mes, valor })),
+    mensal: cliente.mensal.map(({ mes, valor }) => ({ mes, valor })),
     familias,
     produtos: produtosDoCliente(cliente, familias),
     oportunidades: mix?.oportunidades ?? [],

@@ -9,6 +9,7 @@ import { Indicador } from "../componentes/Indicador";
 import { ListaClientes } from "../componentes/ListaClientes";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
+import { NomeDoCliente } from "../componentes/NomeDoCliente";
 import { dataDoMomento, horaDoMomento } from "dominio/datas";
 import { MESES_DO_RITMO, type BaseDaProjecao } from "dominio/projecao";
 import { carregarPainel, carregarSituacaoDosDados } from "../dados/api";
@@ -50,7 +51,7 @@ export function Inicio() {
             vazio="Nenhum cliente parado."
             itens={painel.destaques.pararam.itens.map(({ cliente, valor }) => ({
               codigo: cliente.codigo,
-              nome: cliente.nome,
+              nome: <NomeDoCliente cliente={cliente} />,
               detalhe: `${formatarLocalDoCliente(cliente)} · última compra ${cliente.ultimaCompra ? formatarTempoDesde(cliente.ultimaCompra, situacao.hoje) : "—"}`,
               direita: (
                 <>
@@ -70,7 +71,7 @@ export function Inicio() {
             vazio="Nenhuma queda relevante no semestre."
             itens={painel.destaques.menos.itens.map(({ cliente, valor, variacao }) => ({
               codigo: cliente.codigo,
-              nome: cliente.nome,
+              nome: <NomeDoCliente cliente={cliente} />,
               detalhe: formatarLocalDoCliente(cliente),
               direita: (
                 <>

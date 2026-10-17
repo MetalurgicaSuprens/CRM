@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import {
   Boxes,
   Building2,
@@ -21,6 +21,9 @@ import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
+import { SeloDoGrupo } from "../componentes/NomeDoCliente";
+import { rotuloDaTela, useOrigem } from "../componentes/navegacao";
+import { Segmentos, type Segmento } from "../componentes/Segmentos";
 import { MotivoDoRisco, SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { AvisoDePedidoBloqueado, SeloDoStatus } from "../componentes/StatusDoCliente";
 import { STATUS_DO_PEDIDO, SeloDoPedido } from "../componentes/StatusDoPedido";
@@ -28,12 +31,13 @@ import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
-import { Voltar } from "../componentes/Voltar";
+import { Voltar, VoltarAoAnterior } from "../componentes/Voltar";
 import type { ColunaOrdenavel } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
 import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
+import { montarSerieDoFaturamento, type Periodo, type Resolucao } from "../dados/serieDoFaturamento";
 import type { ClienteResumo, FichaCliente as Ficha, Mercado, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import {
@@ -44,9 +48,11 @@ import {
   formatarNumero,
   formatarParticipacao,
   formatarTempoDesde,
+  formatarTrimestre,
+  formatarTrimestrePorExtenso,
 } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
-import { BarrasMensais } from "../graficos/BarrasMensais";
+import { BarrasMensais, type BarraMensal } from "../graficos/BarrasMensais";
 import { Carregando } from "./Carregando";
 import { DetalheDoPedidoDaFicha } from "./DetalhesDosPedidos";
 import estilos from "./FichaCliente.module.css";
@@ -63,10 +69,11 @@ export function FichaCliente() {
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
-        antes={ficha.grupo ? <Voltar para={`/clientes/${ficha.grupo.codigo}`} rotulo={ficha.grupo.nome} /> : <Voltar para="/clientes" rotulo="Clientes" />}
+        antes={<VoltarDaFicha ficha={ficha} />}
         titulo={ficha.nome}
         selo={
           <>
+            {ficha.cnpjs ? <SeloDoGrupo tamanho="grande" /> : null}
             <SituacaoCliente situacao={ficha.situacao} tamanho="grande" />
             <SeloDoStatus status={ficha.status} tamanho="grande" />
           </>
@@ -79,14 +86,7 @@ export function FichaCliente() {
         <AvisoDePedidoBloqueado texto={AVISO_DE_PEDIDO_BLOQUEADO[ficha.status]} />
       ) : null}
       <Indicadores ficha={ficha} hoje={situacao.hoje} />
-      <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo="Últimos 24 meses e o mês atual">
-        <BarrasMensais
-          descricao={`Faturamento mensal de ${ficha.nome} nos últimos 24 meses`}
-          rotulos={{ valor: "Faturado" }}
-          barras={ficha.mensal.map((mes) => ({ mes: mes.mes, valor: mes.valor }))}
-          altura={220}
-        />
-      </Cartao>
+      <Faturamento ficha={ficha} hoje={situacao.hoje} />
       {ficha.cnpjs ? (
         <Cartao titulo="Por CNPJ" icone={Building2} subtitulo="Os números de cada CNPJ do grupo; a linha abre a ficha dele">
           <TabelaDosCnpjs cnpjs={ficha.cnpjs} faturamentoDoGrupo={ficha.faturamento12m} hoje={situacao.hoje} />
@@ -111,6 +111,80 @@ export function FichaCliente() {
       </Cartao>
     </div>
   );
+}
+
+const PERIODOS: readonly Segmento<`${Periodo}`>[] = [
+  { valor: "12", rotulo: "12 meses" },
+  { valor: "24", rotulo: "24 meses" },
+  { valor: "48", rotulo: "48 meses" },
+];
+
+const RESOLUCOES: readonly Segmento<Resolucao>[] = [
+  { valor: "mensal", rotulo: "Mensal" },
+  { valor: "trimestral", rotulo: "Trimestral" },
+  { valor: "anual", rotulo: "Anual" },
+];
+
+const POR_BARRA: Readonly<Record<Resolucao, string>> = { mensal: "por mês", trimestral: "por trimestre", anual: "por ano" };
+
+/**
+ * O faturamento no tempo, no período e na resolução escolhidos, com a média de 12 meses. A escolha
+ * fica no endereço, como as outras da tela, e o "Voltar" do navegador a traz de volta.
+ */
+function Faturamento({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
+  const [parametros, setParametros] = useSearchParams();
+  const periodo = PERIODOS.find(({ valor }) => valor === parametros.get("meses"))?.valor ?? "24";
+  const resolucao = RESOLUCOES.find(({ valor }) => valor === parametros.get("resolucao"))?.valor ?? "mensal";
+  const alterar = (chave: string, valor: string, padrao: string) => {
+    const proximos = new URLSearchParams(parametros);
+    if (valor === padrao) proximos.delete(chave);
+    else proximos.set(chave, valor);
+    setParametros(proximos, { replace: true });
+  };
+  const barras = montarSerieDoFaturamento(ficha.mensal, hoje.slice(0, 7), { periodo: Number(periodo) as Periodo, resolucao });
+  return (
+    <Cartao titulo="Faturamento" icone={ChartNoAxesColumn} subtitulo={`Os últimos ${periodo} meses e o atual, ${POR_BARRA[resolucao]}`}>
+      <div className={estilos.escolhasDoGrafico}>
+        <Segmentos rotulo="Período do gráfico" opcoes={PERIODOS} selecionado={periodo} aoEscolher={(valor) => alterar("meses", valor, "24")} />
+        <Segmentos rotulo="Resolução das barras" opcoes={RESOLUCOES} selecionado={resolucao} aoEscolher={(valor) => alterar("resolucao", valor, "mensal")} />
+      </div>
+      <BarrasMensais
+        descricao={`Faturamento de ${ficha.nome} ${POR_BARRA[resolucao]} nos últimos ${periodo} meses, com a média de 12 meses`}
+        rotulos={{ valor: "Faturado", media: "Média de 12 meses" }}
+        barras={barras.map(
+          ({ mes, valor, media, isCorrente }): BarraMensal => ({ mes, valor, media, parcial: isCorrente, periodo: periodoDaBarra(mes, resolucao) }),
+        )}
+        altura={220}
+      />
+      <p className={estilos.notaDoGrafico}>A média de cada barra é a dos 12 meses fechados até ela, inclusive, na escala da barra.</p>
+    </Cartao>
+  );
+}
+
+/** O rótulo e o título da barra de trimestre ou de ano; a de mês o gráfico rotula sozinho. */
+function periodoDaBarra(mes: string, resolucao: Resolucao): BarraMensal["periodo"] {
+  if (resolucao === "trimestral") return { rotulo: formatarTrimestre(mes), titulo: formatarTrimestrePorExtenso(mes) };
+  if (resolucao === "anual") return { rotulo: mes.slice(0, 4), titulo: mes.slice(0, 4) };
+  return undefined;
+}
+
+/**
+ * Volta para a tela de onde se veio, como ela estava: a análise na mesma aba e na mesma altura, ou o
+ * grupo do CNPJ. Sem origem conhecida (a ficha aberta direto ou recarregada), vai para o grupo ou
+ * para Clientes.
+ */
+function VoltarDaFicha({ ficha }: { ficha: Ficha }) {
+  const origem = useOrigem();
+  const rotulo = origem ? rotuloDaOrigem(origem.pathname, ficha) : null;
+  if (rotulo) return <VoltarAoAnterior rotulo={rotulo} />;
+  if (ficha.grupo) return <Voltar para={`/clientes/${ficha.grupo.codigo}`} rotulo={ficha.grupo.nome} />;
+  return <Voltar para="/clientes" rotulo="Clientes" />;
+}
+
+/** O nome da tela de origem: uma do menu ou, no CNPJ, a ficha do grupo dele. */
+function rotuloDaOrigem(caminho: string, ficha: Ficha): string | null {
+  if (ficha.grupo && caminho === `/clientes/${ficha.grupo.codigo}`) return ficha.grupo.nome;
+  return rotuloDaTela(caminho);
 }
 
 /** No cliente fora de ativo no cadastro, o botão continua, mas mostra o aviso no lugar de abrir o pedido. */

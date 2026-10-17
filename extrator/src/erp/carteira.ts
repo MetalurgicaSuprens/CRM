@@ -123,6 +123,7 @@ export function statusDoCadastro(valorNoSgi: string | null): StatusDoCadastro {
   return status;
 }
 
+/** Faturado e peças de cada cliente por mês, desde o começo dos meses da ficha, que cobrem a janela das análises. */
 export async function lerVendasPorMes(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<VendaDoMes[]> {
   const lista = emLista("r", autorizados);
   const linhas = await oracle.consultar(
@@ -130,7 +131,7 @@ export async function lerVendasPorMes(oracle: Oracle, referencia: Referencia, au
      ${ITENS_DAS_NOTAS}
       WHERE ${NOTA_DE_VENDA} AND M.DT_EMISSAO >= ${data("inicio")} AND ${daCarteira(lista.sql)}
       GROUP BY M.EMP_FIL, M.FORNEC, ${textoDaData("M.DT_EMISSAO", "YYYY-MM")}`,
-    { ...lista.binds, inicio: referencia.inicioDaJanela },
+    { ...lista.binds, inicio: referencia.inicioDaFicha },
   );
   return linhas.map((linha) => ({
     chave: chaveDoCliente(numero(linha, 0), numero(linha, 1)),

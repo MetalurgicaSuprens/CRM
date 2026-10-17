@@ -1,28 +1,19 @@
 import { useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
-import { ChartColumn, ClipboardList, Clock, Eye, EyeOff, House, LogOut, MapIcon, Users } from "lucide-react";
+import { Clock, Eye, EyeOff, LogOut } from "lucide-react";
 import { login } from "../acesso/login";
 import { useValores } from "../contexto/valores";
 import { carregarSituacaoDosDados, isDadosReais } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigosDoRepresentante, formatarMomento } from "../formato";
+import { NAVEGACAO, ProvedorDaOrigem, useMemoriaDaNavegacao } from "./navegacao";
 import estilos from "./Layout.module.css";
-
-const NAVEGACAO = [
-  { para: "/", rotulo: "Início", Icone: House },
-  { para: "/clientes", rotulo: "Clientes", Icone: Users },
-  { para: "/analises", rotulo: "Análises", Icone: ChartColumn },
-  { para: "/pedidos", rotulo: "Pedidos", Icone: ClipboardList },
-  { para: "/mapa", rotulo: "Mapa", Icone: MapIcon },
-] as const;
 
 export function Layout() {
   const { pathname } = useLocation();
   const { dados: situacao, recarregar } = useCarga("situacao", carregarSituacaoDosDados);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+  const origem = useMemoriaDaNavegacao();
 
   // O Layout fica montado entre as telas: sem isto, o relógio e a hora da foto na barra param.
   useEffect(() => {
@@ -70,7 +61,9 @@ export function Layout() {
           <BotaoValores />
         </header>
         <main className={estilos.conteudo}>
-          <Outlet />
+          <ProvedorDaOrigem value={origem}>
+            <Outlet />
+          </ProvedorDaOrigem>
         </main>
       </div>
 

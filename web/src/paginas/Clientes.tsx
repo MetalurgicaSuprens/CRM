@@ -4,6 +4,7 @@ import { Users } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Filtros, type Filtro } from "../componentes/Filtros";
+import { NomeDoCliente } from "../componentes/NomeDoCliente";
 import { MotivoDoRisco, SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { StatusDoCliente } from "../componentes/StatusDoCliente";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
@@ -135,7 +136,9 @@ function LinhaCliente({ cliente, hoje, semestre }: { cliente: ClienteResumo; hoj
   return (
     <Link to={`/clientes/${cliente.codigo}`} className={cliente.status === "ativo" ? estilos.linha : `${estilos.linha} ${estilos.foraDeAtivo}`}>
       <span className={estilos.identificacao}>
-        <span className={estilos.nome}>{cliente.nome}</span>
+        <span className={estilos.nome}>
+          <NomeDoCliente cliente={cliente} />
+        </span>
         <span className={estilos.local}>{formatarLocalECodigo(cliente)}</span>
       </span>
       <span className={estilos.status}>

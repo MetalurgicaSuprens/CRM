@@ -9,3 +9,13 @@
 .voltar:hover {
   color: var(--cor-texto);
 }
+
+/* O mesmo visual do link, num botão */
+.botao {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}

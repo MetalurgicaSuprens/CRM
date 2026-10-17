@@ -184,7 +184,7 @@ function pixelsPorRem(): number {
 }
 
 /** Título em negrito e um detalhe embaixo: cliente e cidade, pedido e cliente. */
-export function Identificacao({ titulo, detalhe }: { titulo: string; detalhe: ReactNode }) {
+export function Identificacao({ titulo, detalhe }: { titulo: ReactNode; detalhe: ReactNode }) {
   return (
     <>
       <span className={estilos.titulo}>{titulo}</span>

@@ -48,6 +48,13 @@
   background: var(--cor-comparacao);
 }
 
+.amostraMedia {
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--cor-texto);
+}
+
 .alternar {
   display: inline-flex;
   align-items: center;
@@ -120,6 +127,30 @@
   fill: var(--cor-superficie-2);
 }
 
+/* A média passa por cima das barras: o contorno da cor do fundo a separa delas */
+.haloMedia,
+.linhaMedia {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.haloMedia {
+  stroke: var(--cor-superficie);
+  stroke-width: 5;
+}
+
+.linhaMedia {
+  stroke: var(--cor-texto);
+  stroke-width: 2;
+}
+
+.pontoMedia {
+  fill: var(--cor-texto);
+  stroke: var(--cor-superficie);
+  stroke-width: 2;
+}
+
 .alvo {
   fill: transparent;
   cursor: default;
@@ -176,7 +207,8 @@
 
 .chaveValor,
 .chaveAFaturar,
-.chaveComparacao {
+.chaveComparacao,
+.chaveMedia {
   flex-shrink: 0;
   width: 12px;
   height: 3px;
@@ -193,6 +225,11 @@
 
 .chaveComparacao {
   background: var(--cor-comparacao);
+}
+
+.chaveMedia {
+  height: 2px;
+  background: var(--cor-texto);
 }
 
 .tabelaRolagem {
