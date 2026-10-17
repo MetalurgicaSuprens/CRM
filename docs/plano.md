@@ -243,7 +243,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
   - a conta é feita pelo extrator na LAN. Para a foto vão só a família, o percentual e a faixa usada, nada dos clientes dos outros representantes;
   - quando Vendas entregar a classificação por ramo de atividade (ver Pendências), "parecidos" passa a ser do mesmo ramo.
 - **Baixo volume:** mostra "dados insuficientes" em vez de percentuais exagerados.
-- **Grupos (decidido em 2026-10-17):** os CNPJs com o mesmo grupo digitado no cadastro do SGI (campo Grupo, `SGI5_TAB_VEN_CLI3.CLI3_GRP`) e na carteira do mesmo código aparecem como um cliente só, com os números somados, para a compra que muda de filial não parecer cliente perdido. A ficha do grupo tem a análise por CNPJ. Detalhes em dados-por-tela.md, Clientes.
+- **Grupos (decidido em 2026-10-17):** os CNPJs com o mesmo texto no campo Grupo do cadastro do SGI (`SGI5_TAB_VEN_CLI3.CLI3_GRP`), digitado ou o nome fantasia que a tela grava com o campo vazio, e na carteira do mesmo código aparecem como um cliente só, com os números somados, para a compra que muda de filial não parecer cliente perdido. A ficha do grupo tem a análise por CNPJ. Detalhes em dados-por-tela.md, Clientes.
 
 ## Identidade visual
 

@@ -3,7 +3,9 @@ import type { ClienteDaCarteira, DatasDeCompra, FamiliaDoCliente, ProdutoDoClien
 import { agruparPor } from "./agrupar.ts";
 
 /*
- * Os grupos do SGI na carteira (o campo Grupo do cadastro de clientes, erp/carteira.ts). O grupo
+ * Os grupos do SGI na carteira: os clientes com o mesmo texto no campo Grupo do cadastro
+ * (erp/carteira.ts), digitado ou não. Duas empresas sem relação com o mesmo nome fantasia também
+ * viram um grupo, e quem as separa é o cadastro do SGI (decisão do Lucas em 2026-10-17). O grupo
  * existe dentro da carteira de cada representante: os CNPJs dele que estão com outro representante
  * são clientes de outra carteira e ficam de fora (CLAUDE.md, regra 4). Com um CNPJ só na carteira,
  * não há grupo, e o cliente aparece sozinho, como os outros.

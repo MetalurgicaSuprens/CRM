@@ -180,11 +180,13 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 - **Variação.** O piso de R$ 2 mil que deixa a variação nula existe só no fictício (ficticio.ts:437). O plano diz só "dados insuficientes" (plano.md:243).
 - **Grupos do SGI (pedido do Lucas em 2026-10-17).**
   - O grupo é o campo Grupo da tela Vendas → Clientes do SGI, gravado em `SGI5_TAB_VEN_CLI3.CLI3_GRP` (untVenCli_CliMov.pas:148-151 e 183). Os campos de grupo do Omega (`CRCL.GRUPO_1`, `SUB_GRUPO_1`, `SEGMENTO`) estão zerados.
-  - Com o campo vazio, a tela grava o nome fantasia, e nada atualiza o campo quando o fantasia muda no Omega. Em 17/10, 17.629 dos 17.834 clientes tinham o próprio fantasia no grupo. Por isso o texto só vale como grupo quando é diferente do fantasia de ao menos um cliente, isto é, quando alguém o digitou (extrator/src/erp/carteira.ts, `grupoDigitado`). Senão, empresas sem relação com o mesmo fantasia virariam um grupo, como 6 lojas "CASA DOS PARAFUSOS".
+  - Com o campo vazio, a tela grava o nome fantasia, e nada atualiza o campo quando o fantasia muda no Omega. Em 17/10, 17.629 dos 17.834 clientes tinham o próprio fantasia no grupo.
+  - Os clientes com o mesmo texto no campo são um grupo, digitado ou não (decisão do Lucas em 2026-10-17, ao ver as duas Valmont separadas; extrator/src/calculo/grupos.ts). Antes, só valia o texto que alguém digitou, diferente do fantasia de ao menos um cliente.
+  - Por isso, empresas sem relação com o mesmo fantasia também viram um grupo, e quem as separa é o cadastro do SGI, com outro texto no campo. Na foto de 17/10, os grupos novos com razão social e raiz de CNPJ diferentes eram CASA DOS PARAFUSOS (1302), CELSAO AUTO PECAS (1120), FRESH CAR PRODUTOS AUTOMO (1310), MILVO PADILHA (1211) e as duas MACEDO (1600).
   - O grupo existe dentro da carteira de cada código: com dois ou mais CNPJs do mesmo grupo no mesmo código, eles viram uma linha só, com as compras somadas e analisada como um cliente (extrator/src/calculo/grupos.ts). Com um CNPJ só no código, o cliente aparece sozinho.
   - Os CNPJs do grupo que estão com outro representante ficam de fora, porque são clientes de outra carteira (CLAUDE.md, regra 4). Em 17/10: a OVD tem 8 CNPJs no 1302 e 1 no 1310, que aparece sozinho lá.
-  - A conta é por código, porque o extrator não conhece os logins: um grupo com CNPJs em dois códigos do mesmo login apareceria duas vezes. Em 17/10, nenhum grupo dividia os códigos de um login.
-  - Na foto de 17/10, 8 grupos: ARICAN, MORELATE e UNIFORT (1109), FW (1120), OVD (1302), FG (1310), MOBIT (1502) e NORTE COM VAREJ (1603).
+  - A conta é por código, porque o extrator não conhece os logins: um grupo com CNPJs em dois códigos do mesmo login apareceria duas vezes. Em 17/10, já com o critério novo, nenhum texto de grupo tinha clientes nos dois códigos de uma representação (CORENO, MARKA, STAR VENDAS e VALDEZ).
+  - Na foto de 17/10, 104 grupos, com 292 dos 3.233 CNPJs da carteira, em 16 códigos; 14 juntam mais de uma raiz de CNPJ. Só com o texto digitado eram 8: ARICAN, MORELATE e UNIFORT (1109), FW (1120), OVD (1302), FG (1310), MOBIT (1502) e NORTE COM VAREJ (1603).
 - **Tendência.** Exige 24 meses fechados de notas.
 
 ## 4. Ficha do cliente

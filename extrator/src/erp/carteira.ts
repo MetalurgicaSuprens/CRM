@@ -38,7 +38,6 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
       WHERE ${condicaoDaCarteira(lista.sql)}`,
     { ...lista.binds, inicio: referencia.inicioDaJanela },
   );
-  const digitados = await lerGruposDigitados(oracle);
   return linhas.map((linha) => ({
     chave: chaveDoCliente(numero(linha, 0), numero(linha, 1)),
     empresa: numero(linha, 0),
@@ -53,32 +52,17 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
     representante: String(numero(linha, 8)),
     status: statusDoCadastro(textoOuNulo(linha, 9)),
     municipio: municipioDoCadastro(textoOuNulo(linha, 10), texto(linha, 6)),
-    grupo: grupoDigitado(textoOuNulo(linha, 11), digitados),
+    grupo: grupoDoCadastro(textoOuNulo(linha, 11)),
   }));
 }
 
 /**
- * O campo Grupo do cadastro do SGI (Vendas → Clientes). Com o campo vazio, a tela grava o nome
- * fantasia (untVenCli_CliMov.pas:148-151), e nada o atualiza quando o fantasia muda no Omega: o
- * texto só vale como grupo quando é diferente do fantasia de ao menos um cliente, isto é, quando
- * alguém o digitou. Senão, empresas sem relação com o mesmo fantasia virariam um grupo. A leitura
- * é do cadastro inteiro, porque quem digitou o grupo pode estar fora da carteira.
+ * O campo Grupo do cadastro do SGI (Vendas → Clientes), como está: o texto digitado ou o nome
+ * fantasia, que a tela grava com o campo vazio (untVenCli_CliMov.pas:148-151) e que nada atualiza
+ * quando o fantasia muda no Omega.
  */
-async function lerGruposDigitados(oracle: Oracle): Promise<Set<string>> {
-  const linhas = await oracle.consultar(
-    `SELECT DISTINCT UPPER(TRIM(G.CLI3_GRP))
-       FROM ABC71.SGI5_TAB_VEN_CLI3 G
-       JOIN ABC71.CRCL C ON C.CLIENTE = G.CLI3_CLI
-      WHERE UPPER(TRIM(G.CLI3_GRP)) <> NVL(UPPER(TRIM(C.NOM_FANTAS)), '-')`,
-  );
-  return new Set(linhas.map((linha) => semEspacosSobrando(texto(linha, 0))));
-}
-
-/** O grupo do cliente quando alguém o digitou no SGI; null quando o campo tem só um nome fantasia. */
-export function grupoDigitado(grupo: string | null, digitados: ReadonlySet<string>): string | null {
-  if (grupo === null) return null;
-  const nome = semEspacosSobrando(grupo);
-  return digitados.has(nome) ? nome : null;
+export function grupoDoCadastro(grupo: string | null): string | null {
+  return grupo === null ? null : semEspacosSobrando(grupo);
 }
 
 /** TIPO_CLI: M = montadora, E = exportação, o resto é praça (CRM-prototipo/REGRAS.md). */

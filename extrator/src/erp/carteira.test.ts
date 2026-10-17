@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { grupoDigitado, municipioDoCadastro, statusDoCadastro } from "./carteira.ts";
+import { grupoDoCadastro, municipioDoCadastro, statusDoCadastro } from "./carteira.ts";
 
 describe("statusDoCadastro", () => {
   it("traz os três status do SGI com os nomes do CRM", () => {
@@ -30,20 +30,14 @@ describe("municipioDoCadastro", () => {
   });
 });
 
-describe("grupoDigitado", () => {
-  const digitados = new Set(["OVD", "MORELATE"]);
-
-  it("traz o grupo que alguém digitou no SGI", () => {
-    expect(grupoDigitado("OVD", digitados)).toBe("OVD");
-  });
-
-  it("deixa sem grupo o nome fantasia que a tela grava com o campo vazio", () => {
-    expect(grupoDigitado("CASA DOS PARAFUSOS", digitados)).toBeNull();
-    expect(grupoDigitado(null, digitados)).toBeNull();
+describe("grupoDoCadastro", () => {
+  it("traz o texto do campo, também quando é o nome fantasia que a tela grava com o campo vazio", () => {
+    expect(grupoDoCadastro("VALMONT")).toBe("VALMONT");
+    expect(grupoDoCadastro(null)).toBeNull();
   });
 
   it("junta os espaços repetidos, como no nome fantasia", () => {
-    expect(grupoDigitado("MORELATE ", new Set(["MORELATE"]))).toBe("MORELATE");
-    expect(grupoDigitado("NORTE  COM", new Set(["NORTE COM"]))).toBe("NORTE COM");
+    expect(grupoDoCadastro("MORELATE ")).toBe("MORELATE");
+    expect(grupoDoCadastro("NORTE  COM")).toBe("NORTE COM");
   });
 });
