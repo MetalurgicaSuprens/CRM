@@ -553,7 +553,7 @@ Pedido do Lucas em 2026-10-16: gerenciar os acessos por uma tela, não por coman
 **Como funciona**
 - É um site à parte, que nunca vai junto com o do CRM e nunca fica na internet.
   - Entrada em `web/admin`, telas em `web/src/admin`, montado por `web/vite.admin.config.ts` em `web/dist-admin`.
-  - Neste computador: `abrir-administracao.bat`, ou `npm run dev:admin`, em http://localhost:5179.
+  - Neste computador: `abrir-administracao.bat`, ou `npm run dev:admin`, em http://localhost:5179. O .bat abre também o site do CRM, em http://localhost:5175, porque é lá que abre o link do convite.
 - A API dela é um segundo ouvinte do servidor, em 127.0.0.1:5178 (`server/src/admin`).
   - Ela usa as mesmas regras de segurança da do CRM (`criarApi`, em app.ts).
   - Tem cookie próprio (`__Host-crm-admin`) e aceita só login de admin.
