@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 10;
+export const VERSAO_DO_ESQUEMA = 11;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -65,6 +65,7 @@ CREATE TABLE cliente_familia (
   familia TEXT NOT NULL,
   valor REAL NOT NULL,
   participacao REAL NOT NULL,
+  pecas REAL NOT NULL,
   PRIMARY KEY (cliente, familia)
 ) STRICT;
 
@@ -257,7 +258,8 @@ export type Foto = {
     cnpjs: number | null;
   }[];
   cliente_mes: { cliente: string; mes: string; valor: number }[];
-  cliente_familia: { cliente: string; familia: string; valor: number; participacao: number }[];
+  /** Os 12 meses fechados: o valor, a parte no faturado e as peças (versão 11). */
+  cliente_familia: { cliente: string; familia: string; valor: number; participacao: number; pecas: number }[];
   /** Medida ("14–22 mm") e embalagem (peças) só nos produtos de alguma lista de preços. */
   produto: { produto: string; familia: string; medida: string | null; embalagem: number | null }[];
   /**

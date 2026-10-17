@@ -7,13 +7,14 @@ import type { FamiliaDoCliente, ProdutoDoCliente } from "./tipos.ts";
 
 /**
  * Faturado por cliente e família nos 24 meses fechados, de toda a Suprens: base do mix. Fica na
- * LAN; a foto leva só as famílias sugeridas e as da carteira.
+ * LAN; a foto leva só as famílias sugeridas e as da carteira, com o valor e as peças de 12 meses.
  */
 export async function lerFamiliasDaSuprens(oracle: Oracle, referencia: Referencia): Promise<FamiliaDoCliente[]> {
   const linhas = await oracle.consultar(
     `SELECT M.EMP_FIL, M.FORNEC, MAX(TRIM(C.TIPO_CLI)), TRIM(G.GRP_DES),
             SUM(CASE WHEN M.DT_EMISSAO >= ${data("inicio12")} THEN ${VALOR_DO_ITEM} ELSE 0 END),
-            SUM(${VALOR_DO_ITEM})
+            SUM(${VALOR_DO_ITEM}),
+            SUM(CASE WHEN M.DT_EMISSAO >= ${data("inicio12")} THEN ${PECAS_DO_ITEM} ELSE 0 END)
      ${ITENS_DAS_NOTAS}
        LEFT JOIN ABC71.CRCL C ON C.EMP_FIL = M.EMP_FIL AND C.CLIENTE = M.FORNEC
      ${FAMILIA_DO_ITEM}
@@ -28,6 +29,7 @@ export async function lerFamiliasDaSuprens(oracle: Oracle, referencia: Referenci
     familia: textoOuNulo(linha, 3),
     valor12m: numero(linha, 4),
     valor24m: numero(linha, 5),
+    pecas12m: numero(linha, 6),
   }));
 }
 

@@ -84,6 +84,8 @@ export type FamiliaComprada = {
   familia: string;
   valor: number;
   participacao: number;
+  /** Peças nos mesmos 12 meses, com o cento já em peças. */
+  pecas: number;
 };
 
 export type ProdutoComprado = {

@@ -40,7 +40,7 @@ export type DatasDeCompra = {
   datas: string[];
 };
 
-/** Faturado por família nos 24 meses fechados, de qualquer cliente da Suprens (para o mix). */
+/** Faturado por família nos 24 meses fechados, de qualquer cliente da Suprens (para o mix e a ficha). */
 export type FamiliaDoCliente = {
   chave: string;
   mercado: Mercado;
@@ -48,6 +48,8 @@ export type FamiliaDoCliente = {
   familia: string | null;
   valor12m: number;
   valor24m: number;
+  /** Peças nos 12 meses fechados, com o cento já em peças (erp/sql.ts, `emPecas`). */
+  pecas12m: number;
 };
 
 /** Um produto que o cliente comprou nos 12 meses fechados; a ficha mostra os 8 de maior valor (calculo/clientes.ts). */

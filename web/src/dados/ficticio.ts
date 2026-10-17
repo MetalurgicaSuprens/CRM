@@ -542,7 +542,10 @@ function pedidosFaturados(cliente: ClienteFicticio, { hoje, mesAtual }: Contexto
 function distribuirPorFamilia(cliente: ClienteFicticio, base: number) {
   const totalPesos = [...cliente.pesosFamilias.values()].reduce((soma, peso) => soma + peso, 0);
   return [...cliente.pesosFamilias.entries()]
-    .map(([familia, peso]) => ({ familia, valor: Math.round((base * peso) / totalPesos), participacao: peso / totalPesos }))
+    .map(([familia, peso]) => {
+      const valor = Math.round((base * peso) / totalPesos);
+      return { familia, valor, participacao: peso / totalPesos, pecas: Math.round(valor / cliente.precoMedioPeca) };
+    })
     .sort((a, b) => b.valor - a.valor);
 }
 

@@ -97,7 +97,11 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     expect(clientes.json()).toHaveLength(3);
     const ficha = await comoA(app, `/api/clientes/${CLIENTE_DE_A}`);
     expect(ficha.statusCode).toBe(200);
-    expect(ficha.json()).toMatchObject({ nome: "CLIENTE DE A", codigoErp: "123456780001" });
+    expect(ficha.json()).toMatchObject({
+      nome: "CLIENTE DE A",
+      codigoErp: "123456780001",
+      familias: [{ familia: "FLEXIL", valor: 12_000, participacao: 1, pecas: 4_000 }],
+    });
   });
 
   it("dá na ficha os pedidos em aberto e os faturados do cliente, só os atribuídos a A", async () => {

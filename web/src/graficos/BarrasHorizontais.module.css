@@ -1,3 +1,9 @@
+.barras {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+}
+
 .lista {
   display: flex;
   flex-direction: column;
@@ -6,11 +12,22 @@
 
 .linha {
   display: grid;
-  grid-template-columns: minmax(96px, 9rem) 1fr 3rem 5.5rem;
+  grid-template-columns: minmax(96px, 9rem) 1fr 3rem 5.5rem 5.5rem;
   align-items: center;
   gap: var(--esp-3);
   font-size: var(--tam-pequeno);
   font-variant-numeric: tabular-nums;
+}
+
+/* Como o cabeçalho das tabelas do CRM (componentes/TabelaResponsiva.module.css) */
+.cabecalho {
+  padding-bottom: var(--esp-2);
+  border-bottom: 1px solid var(--cor-linha);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-2);
 }
 
 .rotulo {
@@ -38,7 +55,8 @@
   color: var(--cor-texto-2);
 }
 
-.valor {
+.valor,
+.pecas {
   text-align: right;
   color: var(--cor-texto-2);
   white-space: nowrap;
@@ -46,7 +64,7 @@
 
 @media (max-width: 480px) {
   .linha {
-    grid-template-columns: 6.5rem 1fr 2.75rem;
+    grid-template-columns: 6.5rem 1fr 2.75rem 4.5rem;
   }
 
   .valor {

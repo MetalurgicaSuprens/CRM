@@ -95,8 +95,9 @@ export function FichaCliente() {
       <div className={estilos.gradeDupla}>
         <Cartao titulo="Famílias compradas" icone={Boxes} subtitulo="Últimos 12 meses">
           <BarrasHorizontais
-            descricao="Participação de cada família no faturamento dos últimos 12 meses"
-            barras={ficha.familias.map((f) => ({ rotulo: f.familia, valor: f.valor, participacao: f.participacao }))}
+            descricao="Participação de cada família no faturamento dos últimos 12 meses, com as peças"
+            tituloDoRotulo="Família"
+            barras={ficha.familias.map((f) => ({ rotulo: f.familia, valor: f.valor, participacao: f.participacao, pecas: f.pecas }))}
           />
         </Cartao>
         <Cartao titulo="Oportunidades de mix" icone={Lightbulb} subtitulo="Famílias que clientes parecidos compram e este não">

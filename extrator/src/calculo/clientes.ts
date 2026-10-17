@@ -226,18 +226,19 @@ function maisComprados(produtos: readonly ProdutoDoCliente[]): ProdutoDoCliente[
   return [...produtos].sort((a, b) => b.valor - a.valor || a.produto.localeCompare(b.produto)).slice(0, PRODUTOS_DA_FICHA);
 }
 
-/** Famílias compradas nos 12 meses fechados, com a parte de cada uma no faturado. */
+/** Famílias compradas nos 12 meses fechados: o valor, a parte de cada uma no faturado e as peças. */
 function familiasDaFicha(id: string, familias: FamiliaDoCliente[]): Foto["cliente_familia"] {
   const total = familias.reduce((soma, familia) => soma + familia.valor12m, 0);
   if (total <= 0) return [];
-  const porNome = new Map<string, number>();
-  for (const { familia, valor12m } of familias) {
+  const porNome = new Map<string, { valor: number; pecas: number }>();
+  for (const { familia, valor12m, pecas12m } of familias) {
     const nome = familia ?? SEM_FAMILIA;
-    porNome.set(nome, (porNome.get(nome) ?? 0) + valor12m);
+    const somado = porNome.get(nome) ?? { valor: 0, pecas: 0 };
+    porNome.set(nome, { valor: somado.valor + valor12m, pecas: somado.pecas + pecas12m });
   }
   return [...porNome.entries()]
-    .filter(([, valor]) => valor > 0)
-    .map(([familia, valor]) => ({ cliente: id, familia, valor, participacao: valor / total }));
+    .filter(([, { valor }]) => valor > 0)
+    .map(([familia, { valor, pecas }]) => ({ cliente: id, familia, valor, participacao: valor / total, pecas }));
 }
 
 /** As listas das análises, cada uma na ordem da sua regra, numerada para toda a carteira. */

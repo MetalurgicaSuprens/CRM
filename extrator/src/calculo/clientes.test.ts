@@ -68,7 +68,11 @@ function dadosDaCarteira(): DadosDoErp {
     ],
     vendasDoMes: [...compras.values()].flatMap(({ vendas }) => vendas),
     datasDeCompra: new Map([...compras.entries()].map(([numero, { datas }]) => [`1/${numero}`, datas])),
-    familias: [],
+    familias: [
+      { chave: "1/1", mercado: "PRACA", familia: "FLEXIL", valor12m: 400, valor24m: 900, pecas12m: 40 },
+      { chave: "1/2", mercado: "PRACA", familia: "FLEXIL", valor12m: 800, valor24m: 800, pecas12m: 80 },
+      { chave: "1/2", mercado: "PRACA", familia: "MICRO", valor12m: 400, valor24m: 400, pecas12m: 200 },
+    ],
     produtos: [produto(1, "F-100", 500), produto(2, "F-100", 600), produto(2, "P-200", 900), produto(4, "F-100", 300)],
     pedidos: [],
     pedidosFaturados: [],
@@ -130,6 +134,13 @@ describe("montarClientes: grupos do SGI", () => {
     expect(tabelas.ficha_produto.filter(({ cliente }) => cliente === "grupo-1302-OVD")).toEqual([
       { cliente: "grupo-1302-OVD", produto: "F-100", pecas_12m: 110, valor_12m: 1_100, ultima_compra: "2026-09-15" },
       { cliente: "grupo-1302-OVD", produto: "P-200", pecas_12m: 90, valor_12m: 900, ultima_compra: "2026-09-15" },
+    ]);
+  });
+
+  it("dá as famílias do grupo pela soma dos CNPJs: o valor, a parte no faturado e as peças", () => {
+    expect(tabelas.cliente_familia.filter(({ cliente }) => cliente === "grupo-1302-OVD")).toEqual([
+      { cliente: "grupo-1302-OVD", familia: "FLEXIL", valor: 1_200, participacao: 0.75, pecas: 120 },
+      { cliente: "grupo-1302-OVD", familia: "MICRO", valor: 400, participacao: 0.25, pecas: 200 },
     ]);
   });
 
