@@ -1,17 +1,4 @@
-.figura {
-  display: flex;
-  flex-direction: column;
-  gap: var(--esp-3);
-  min-width: 0;
-}
-
-.topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--esp-3);
-  flex-wrap: wrap;
-}
+/* As barras, a legenda e as linhas da dica; a moldura comum está em moldura.module.css */
 
 .legenda {
   display: flex;
@@ -48,61 +35,6 @@
   background: var(--cor-comparacao);
 }
 
-.amostraMedia {
-  width: 14px;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--cor-texto);
-}
-
-.alternar {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border: 1px solid var(--cor-linha);
-  border-radius: var(--raio-pequeno);
-  background: var(--cor-superficie);
-  font-size: var(--tam-pequeno);
-  color: var(--cor-texto-2);
-}
-
-.alternar:hover {
-  background: var(--cor-superficie-2);
-  color: var(--cor-texto);
-}
-
-.desenho {
-  position: relative;
-  min-width: 0;
-  width: 100%;
-}
-
-.svg {
-  display: block;
-  overflow: visible;
-  font-family: var(--fonte-texto);
-}
-
-.linhaGrade {
-  stroke: var(--cor-grade);
-  stroke-width: 1;
-  shape-rendering: crispEdges;
-}
-
-.linhaBase {
-  stroke: var(--cor-eixo);
-  stroke-width: 1;
-  shape-rendering: crispEdges;
-}
-
-.rotuloEixo,
-.rotuloMes {
-  fill: var(--cor-texto-suave);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
 .barra {
   fill: var(--cor-dado);
 }
@@ -125,63 +57,6 @@
 
 .realce {
   fill: var(--cor-superficie-2);
-}
-
-/* A média passa por cima das barras: o contorno da cor do fundo a separa delas */
-.haloMedia,
-.linhaMedia {
-  fill: none;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-.haloMedia {
-  stroke: var(--cor-superficie);
-  stroke-width: 5;
-}
-
-.linhaMedia {
-  stroke: var(--cor-texto);
-  stroke-width: 2;
-}
-
-.pontoMedia {
-  fill: var(--cor-texto);
-  stroke: var(--cor-superficie);
-  stroke-width: 2;
-}
-
-.alvo {
-  fill: transparent;
-  cursor: default;
-  outline: none;
-}
-
-.alvo:focus-visible {
-  stroke: var(--cor-dado);
-  stroke-width: 2;
-}
-
-/* left e transform vêm do componente, que mantém a dica dentro do desenho */
-.dica {
-  position: absolute;
-  top: 0;
-  width: max-content;
-  padding: var(--esp-2) var(--esp-3);
-  background: var(--cor-superficie);
-  border: 1px solid var(--cor-borda);
-  border-radius: var(--raio-pequeno);
-  box-shadow: var(--sombra-3);
-  pointer-events: none;
-  font-size: var(--tam-pequeno);
-  white-space: nowrap;
-  z-index: 2;
-}
-
-.dicaTitulo {
-  margin-bottom: 6px;
-  color: var(--cor-texto-2);
-  font-weight: 500;
 }
 
 .dicaLinhas {
@@ -207,8 +82,7 @@
 
 .chaveValor,
 .chaveAFaturar,
-.chaveComparacao,
-.chaveMedia {
+.chaveComparacao {
   flex-shrink: 0;
   width: 12px;
   height: 3px;
@@ -225,39 +99,4 @@
 
 .chaveComparacao {
   background: var(--cor-comparacao);
-}
-
-.chaveMedia {
-  height: 2px;
-  background: var(--cor-texto);
-}
-
-.tabelaRolagem {
-  overflow-x: auto;
-}
-
-.tabela {
-  font-size: var(--tam-pequeno);
-  font-variant-numeric: tabular-nums;
-}
-
-.tabela th,
-.tabela td {
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--cor-linha);
-  text-align: right;
-  white-space: nowrap;
-}
-
-.tabela th:first-child {
-  text-align: left;
-}
-
-.tabela thead th {
-  color: var(--cor-texto-2);
-  font-weight: 600;
-}
-
-.tabela tbody th {
-  font-weight: 500;
 }

@@ -80,11 +80,21 @@
 
 /* Cartões da mesma linha esticam até a mesma altura: as bases ficam alinhadas */
 /* Período e resolução do gráfico: lado a lado, e um embaixo do outro quando não cabem */
-.escolhasDoGrafico {
+/* A tendência e o mês a mês, lado a lado com a mesma largura; um embaixo do outro quando não cabem */
+.gradeDosGraficos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-4);
+}
+
+.resumoDoGrafico {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--esp-2) var(--esp-3);
+  align-items: baseline;
+  gap: 4px var(--esp-2);
   margin-bottom: var(--esp-3);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 .notaDoGrafico {
@@ -187,7 +197,8 @@
 }
 
 @container (max-width: 860px) {
-  .gradeDupla {
+  .gradeDupla,
+  .gradeDosGraficos {
     grid-template-columns: minmax(0, 1fr);
   }
 }

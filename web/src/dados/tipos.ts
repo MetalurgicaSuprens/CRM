@@ -136,8 +136,8 @@ export type FichaCliente = ClienteResumo & {
   /** Ciclo típico de compra em dias; null para cliente irregular. */
   cicloDias: number | null;
   /**
-   * Os 60 meses fechados e o corrente, parcial. O gráfico mostra até 48, e a média móvel de 12 meses
-   * do primeiro usa os 11 anteriores. Na carteira fictícia, são 36.
+   * Os 60 meses fechados e o corrente, parcial. A tendência soma os 12 meses até cada um dos últimos
+   * 48, e a soma do primeiro usa os 11 anteriores. Na carteira fictícia, são 36.
    */
   mensal: FaturamentoMensal[];
   familias: FamiliaComprada[];

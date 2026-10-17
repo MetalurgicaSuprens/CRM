@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useParams } from "react-router";
 import {
   Boxes,
   Building2,
@@ -15,6 +15,7 @@ import {
   ReceiptText,
   Repeat,
   Store,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import botoes from "../componentes/Botao.module.css";
@@ -23,7 +24,6 @@ import { Cartao } from "../componentes/Cartao";
 import { Indicador } from "../componentes/Indicador";
 import { SeloDoGrupo } from "../componentes/NomeDoCliente";
 import { rotuloDaTela, useOrigem } from "../componentes/navegacao";
-import { Segmentos, type Segmento } from "../componentes/Segmentos";
 import { MotivoDoRisco, SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { AvisoDePedidoBloqueado, SeloDoStatus } from "../componentes/StatusDoCliente";
 import { STATUS_DO_PEDIDO, SeloDoPedido } from "../componentes/StatusDoPedido";
@@ -37,7 +37,7 @@ import { useOrdenacao } from "../componentes/useOrdenacao";
 import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
-import { montarSerieDoFaturamento, type Periodo, type Resolucao } from "../dados/serieDoFaturamento";
+import { aFaturarNoMes, montarMesAMes, montarTendencia, resumirATendencia, resumirOAno, type ResumoDoAno } from "../dados/faturamentoDoCliente";
 import type { ClienteResumo, FichaCliente as Ficha, Mercado, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import {
@@ -45,14 +45,15 @@ import {
   formatarContagem,
   formatarData,
   formatarLocalECodigo,
+  formatarMesAno,
+  formatarNomeDoMes,
   formatarNumero,
   formatarParticipacao,
   formatarTempoDesde,
-  formatarTrimestre,
-  formatarTrimestrePorExtenso,
 } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
-import { BarrasMensais, type BarraMensal } from "../graficos/BarrasMensais";
+import { BarrasMensais } from "../graficos/BarrasMensais";
+import { LinhaDeTendencia } from "../graficos/LinhaDeTendencia";
 import { Carregando } from "./Carregando";
 import { DetalheDoPedidoDaFicha } from "./DetalhesDosPedidos";
 import estilos from "./FichaCliente.module.css";
@@ -114,59 +115,59 @@ export function FichaCliente() {
   );
 }
 
-const PERIODOS: readonly Segmento<`${Periodo}`>[] = [
-  { valor: "12", rotulo: "12 meses" },
-  { valor: "24", rotulo: "24 meses" },
-  { valor: "48", rotulo: "48 meses" },
-];
-
-const RESOLUCOES: readonly Segmento<Resolucao>[] = [
-  { valor: "mensal", rotulo: "Mensal" },
-  { valor: "trimestral", rotulo: "Trimestral" },
-  { valor: "anual", rotulo: "Anual" },
-];
-
-const POR_BARRA: Readonly<Record<Resolucao, string>> = { mensal: "por mês", trimestral: "por trimestre", anual: "por ano" };
-
 /**
- * O faturamento no tempo, no período e na resolução escolhidos, com a média de 12 meses. A escolha
- * fica no endereço, como as outras da tela, e o "Voltar" do navegador a traz de volta.
+ * O faturamento em dois gráficos, cada um com uma pergunta e sem nada para escolher: a tendência (o
+ * cliente cresce ou encolhe?) e o mês a mês do ano contra o anterior (em que meses ele compra, e como
+ * está indo?), no mesmo desenho do Início.
  */
 function Faturamento({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
-  const [parametros, setParametros] = useSearchParams();
-  const periodo = PERIODOS.find(({ valor }) => valor === parametros.get("meses"))?.valor ?? "24";
-  const resolucao = RESOLUCOES.find(({ valor }) => valor === parametros.get("resolucao"))?.valor ?? "mensal";
-  const alterar = (chave: string, valor: string, padrao: string) => {
-    const proximos = new URLSearchParams(parametros);
-    if (valor === padrao) proximos.delete(chave);
-    else proximos.set(chave, valor);
-    setParametros(proximos, { replace: true });
-  };
-  const barras = montarSerieDoFaturamento(ficha.mensal, hoje.slice(0, 7), { periodo: Number(periodo) as Periodo, resolucao });
+  const mesAtual = hoje.slice(0, 7);
+  const ano = Number(mesAtual.slice(0, 4));
+  const tendencia = montarTendencia(ficha.mensal, mesAtual);
+  const andamento = resumirATendencia(tendencia);
+  const resumo = resumirOAno(ficha.mensal, mesAtual);
   return (
-    <Cartao titulo="Faturamento" icone={ChartNoAxesColumn} subtitulo={`Os últimos ${periodo} meses e o atual, ${POR_BARRA[resolucao]}`}>
-      <div className={estilos.escolhasDoGrafico}>
-        <Segmentos rotulo="Período do gráfico" opcoes={PERIODOS} selecionado={periodo} aoEscolher={(valor) => alterar("meses", valor, "24")} />
-        <Segmentos rotulo="Resolução das barras" opcoes={RESOLUCOES} selecionado={resolucao} aoEscolher={(valor) => alterar("resolucao", valor, "mensal")} />
-      </div>
-      <BarrasMensais
-        descricao={`Faturamento de ${ficha.nome} ${POR_BARRA[resolucao]} nos últimos ${periodo} meses, com a média de 12 meses`}
-        rotulos={{ valor: "Faturado", media: "Média de 12 meses" }}
-        barras={barras.map(
-          ({ mes, valor, media, isCorrente }): BarraMensal => ({ mes, valor, media, parcial: isCorrente, periodo: periodoDaBarra(mes, resolucao) }),
-        )}
-        altura={220}
-      />
-      <p className={estilos.notaDoGrafico}>A média de cada barra é a dos 12 meses fechados até ela, inclusive, na escala da barra.</p>
-    </Cartao>
+    <div className={estilos.gradeDosGraficos}>
+      <Cartao titulo="Tendência" icone={TrendingUp} subtitulo="Faturado nos 12 meses até cada mês, nos últimos 4 anos">
+        {andamento ? (
+          <p className={estilos.resumoDoGrafico}>
+            <span>Desde {formatarMesAno(andamento.desde)}:</span>
+            <Variacao razao={andamento.variacao} referencia="no faturado em 12 meses" />
+          </p>
+        ) : null}
+        <LinhaDeTendencia
+          descricao={`Faturado de ${ficha.nome} nos 12 meses até cada mês, nos últimos 4 anos`}
+          rotulo="Faturado em 12 meses"
+          pontos={tendencia}
+          altura={220}
+        />
+        <p className={estilos.notaDoGrafico}>Somar 12 meses tira o vaivém dos pedidos e a época do ano. O último ponto é o faturado em 12 meses do alto da ficha.</p>
+      </Cartao>
+      <Cartao titulo="Mês a mês" icone={ChartNoAxesColumn} subtitulo={`${ano}, comparado a ${ano - 1}`}>
+        {resumo ? <AnoAteAgora resumo={resumo} /> : null}
+        <BarrasMensais
+          descricao={`Faturamento mensal de ${ficha.nome} em ${ano}, comparado a ${ano - 1}`}
+          rotulos={{ valor: String(ano), comparacao: String(ano - 1), aFaturar: "A faturar no mês" }}
+          barras={montarMesAMes(ficha.mensal, mesAtual, aFaturarNoMes(ficha.pedidos, mesAtual))}
+          altura={220}
+        />
+      </Cartao>
+    </div>
   );
 }
 
-/** O rótulo e o título da barra de trimestre ou de ano; a de mês o gráfico rotula sozinho. */
-function periodoDaBarra(mes: string, resolucao: Resolucao): BarraMensal["periodo"] {
-  if (resolucao === "trimestral") return { rotulo: formatarTrimestre(mes), titulo: formatarTrimestrePorExtenso(mes) };
-  if (resolucao === "anual") return { rotulo: mes.slice(0, 4), titulo: mes.slice(0, 4) };
-  return undefined;
+/** "2026 até setembro: R$ 412 mil, +12% vs o mesmo período de 2025": o ano até o último mês fechado. */
+function AnoAteAgora({ resumo }: { resumo: ResumoDoAno }) {
+  const ano = Number(resumo.inicio.slice(0, 4));
+  const variacao = resumo.anoAnterior > 0 ? resumo.valor / resumo.anoAnterior - 1 : null;
+  return (
+    <p className={estilos.resumoDoGrafico}>
+      <span>
+        {ano} até {formatarNomeDoMes(resumo.fim)}: <Valor valor={resumo.valor} compacto />
+      </span>
+      <Variacao razao={variacao} referencia={`vs o mesmo período de ${ano - 1}`} />
+    </p>
+  );
 }
 
 /**

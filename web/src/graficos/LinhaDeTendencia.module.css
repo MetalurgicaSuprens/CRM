@@ -1,0 +1,57 @@
+/* A linha, a área, os dois pontos marcados e a dica; a moldura comum está em moldura.module.css */
+
+.area {
+  fill: var(--cor-dado);
+  fill-opacity: 0.1;
+}
+
+.linha {
+  fill: none;
+  stroke: var(--cor-dado);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* O cursor da dica: uma linha fina, como a grade */
+.cursor {
+  stroke: var(--cor-eixo);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+/* O anel da cor do fundo separa o ponto da linha */
+.marco,
+.pontoAtivo {
+  fill: var(--cor-dado);
+  stroke: var(--cor-superficie);
+  stroke-width: 2;
+}
+
+.marcoVazado {
+  fill: var(--cor-superficie);
+  stroke: var(--cor-dado);
+  stroke-width: 2;
+}
+
+.rotuloDoMarco {
+  fill: var(--cor-texto-2);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--cor-superficie);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.dicaValor {
+  font-size: var(--tam-texto);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.vazio {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}

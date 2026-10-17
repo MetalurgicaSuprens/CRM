@@ -7,8 +7,6 @@ import {
   formatarData,
   formatarDiaPorExtenso,
   formatarMesAno,
-  formatarTrimestre,
-  formatarTrimestrePorExtenso,
   formatarMomento,
   formatarPedidosDaNota,
   formatarPeriodo,
@@ -157,13 +155,5 @@ describe("formatarCodigoDoCliente", () => {
 
   it("mostra a pessoa física sem código, porque o código dela no ERP é o CPF", () => {
     expect(formatarCodigoDoCliente(null)).toBe("Pessoa física");
-  });
-});
-
-describe("formatarTrimestre", () => {
-  it("dá o trimestre do calendário do mês, curto no eixo e por extenso na dica", () => {
-    expect(formatarTrimestre("2026-01")).toBe("1º tri/26");
-    expect(formatarTrimestre("2026-09")).toBe("3º tri/26");
-    expect(formatarTrimestrePorExtenso("2025-12")).toBe("4º trimestre de 2025");
   });
 });

@@ -7,8 +7,8 @@ import { somarDias, somarMeses, ultimoDiaDoMes } from "dominio/datas";
 /** Meses fechados de história: as análises olham até 12 meses antes de uma compra de 24 meses atrás. */
 export const MESES_FECHADOS = 36;
 /**
- * Meses fechados do gráfico da ficha: ele mostra até 48, e a média móvel de 12 meses do primeiro
- * usa os 11 anteriores. No trimestre e no ano, o primeiro período começa no início dele.
+ * Meses fechados dos gráficos da ficha: a tendência soma os 12 meses até cada um dos últimos 48, e
+ * a soma do primeiro usa os 11 anteriores.
  */
 const MESES_FECHADOS_DA_FICHA = 60;
 const DIAS_DOS_FATURADOS = 45;

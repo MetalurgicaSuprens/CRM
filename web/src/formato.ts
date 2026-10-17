@@ -74,19 +74,6 @@ export function formatarMesAno(mesIso: string): string {
   return `${formatarMesCurto(mesIso)}/${mesIso.slice(2, 4)}`;
 }
 
-/** "2026-07" → "3º tri/26": o trimestre do mês, no eixo do gráfico. */
-export function formatarTrimestre(mesIso: string): string {
-  return `${trimestreDoMes(mesIso)}º tri/${mesIso.slice(2, 4)}`;
-}
-
-/** "2026-07" → "3º trimestre de 2026" */
-export function formatarTrimestrePorExtenso(mesIso: string): string {
-  return `${trimestreDoMes(mesIso)}º trimestre de ${mesIso.slice(0, 4)}`;
-}
-
-function trimestreDoMes(mesIso: string): number {
-  return Math.floor((Number(mesIso.slice(5, 7)) - 1) / 3) + 1;
-}
 
 /** "2026-04" a "2026-09" → "abr–set/26"; com anos diferentes, "nov/25–abr/26". */
 export function formatarPeriodo(inicioIso: string, fimIso: string): string {
