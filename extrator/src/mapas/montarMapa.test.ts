@@ -17,17 +17,23 @@ const MALHA = {
   ],
 };
 const POPULACAO = { "go|goiania": 1_437_237, "go|aparecida de goiania": 527_550 };
+/** O PIB da agropecuária e da indústria em R$, pelo código do IBGE; Aparecida de Goiânia ficou de fora. */
+const MERCADO = { "5208707": 8_559_353_447, "5218805": 9_100_000_000 };
 
 describe("montarMapaDaUf", () => {
-  const { mapa, semPopulacao } = montarMapaDaUf(lerMalha(MALHA), lerMunicipios(LISTA), POPULACAO);
+  const { mapa, semPopulacao, semMercado } = montarMapaDaUf(lerMalha(MALHA), lerMunicipios(LISTA), { populacao: POPULACAO, mercado: MERCADO });
 
-  it("traz o estado com o nome do IBGE e cada município com a região imediata e a população", () => {
+  it("traz o estado com o nome do IBGE e cada município com a região imediata, a população e o mercado", () => {
     expect(mapa).toMatchObject({ uf: "GO", nome: "Goiás" });
-    expect(mapa.municipios.map(({ codigo, nome, regiao, populacao }) => [codigo, nome, regiao, populacao])).toEqual([
-      ["5201405", "Aparecida de Goiânia", "520001", 527_550],
-      ["5208707", "Goiânia", "520001", 1_437_237],
-      ["5218805", "Rio Verde", "520002", null],
+    expect(mapa.municipios.map(({ codigo, nome, regiao, populacao, mercado }) => [codigo, nome, regiao, populacao, mercado])).toEqual([
+      ["5201405", "Aparecida de Goiânia", "520001", 527_550, null],
+      ["5208707", "Goiânia", "520001", 1_437_237, 8_559_353_447],
+      ["5218805", "Rio Verde", "520002", null, 9_100_000_000],
     ]);
+  });
+
+  it("aponta o município que ficou fora da base do PIB", () => {
+    expect(semMercado).toEqual(["Aparecida de Goiânia"]);
   });
 
   it("junta os vizinhos da mesma região num contorno só, sem a divisa entre eles", () => {

@@ -536,23 +536,29 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
 | Município do cliente | Círculo e área com cliente | Código IBGE de 7 dígitos que começa pelo código da UF do cliente. Fora disso, nulo, e o cliente fica fora do mapa (`municipioDoCadastro`, com teste) | `CRCL.RESERVADO7` | extrator |
-| Desenho, nome, região imediata e população | Contornos, nomes e potencial | Malha municipal do IBGE, lista dos municípios com a região imediata e Censo 2022, em arquivos estáticos (ver abaixo) | não é ERP | gerador do extrator, uma vez |
+| Desenho, nome, região imediata, população e PIB | Contornos, nomes, habitantes e potencial | Malha municipal do IBGE, lista dos municípios com a região imediata, Censo 2022 e PIB dos Municípios de 2021, em arquivos estáticos (ver abaixo) | não é ERP | gerador do extrator, uma vez |
 | Faturado do município e da região | Círculos, lista e indicadores | Soma do faturado em 12 meses dos clientes da carteira | (foto: `cliente.faturamento_12m`) | navegador |
 | Concentração | "N municípios fazem 80% da receita no estado" | Os municípios que mais faturam, somados até 80% | (derivado) | navegador |
 | Área | As regiões que entram no potencial | As regiões imediatas com cliente da carteira e as vizinhas delas, no mesmo estado | (derivado; as vizinhas vêm no arquivo do estado) | navegador |
-| Potencial e lacuna | Verde do mapa, "Potencial por ano", "Maior oportunidade" e lista "Onde crescer" | Potencial: receita por habitante na área × população da região. Lacuna: o que falta para o potencial. Fora da área, os dois são 0. Os tons de verde seguem os quartis das lacunas | (derivado) | navegador |
+| Potencial e lacuna | Verde do mapa, "Potencial por ano", "Maior oportunidade", lista "Onde crescer" e "Na sua média pelo PIB" | Potencial: o faturado da área por real do PIB agro + indústria dela × o PIB agro + indústria da região. Lacuna: o que falta para o potencial. Fora da área, os dois são 0. Os tons de verde seguem os quartis das lacunas | (derivado) | navegador |
+| PIB agro + indústria | Lista "Onde crescer", detalhe da região, dica e cidades sem cliente | O valor adicionado da agropecuária e da indústria do município em 2021, somado por região. Na cidade em que a atividade principal é energia ou extração, só a agropecuária. É dado público e aparece mesmo com os valores ocultos | não é ERP (IBGE) | gerador do extrator, uma vez; a soma, navegador |
 | Em jogo por mês ("Onde agir") | Círculos, lista, indicador e a coluna dos clientes | A perda mensal de quem parou, a queda por mês de quem compra menos (as listas de Análises) e a média mensal (faturado em 12 meses ÷ 12) do cliente ativo que passou do próprio ciclo de compra | (foto: `analise_parado`, `analise_ritmo`, `cliente.ciclo_dias`, `ultima_compra`) | navegador |
 | Motivo ("Onde agir") | "Parou há 120 dias", "Comprando menos: −45% no semestre", "44 dias sem comprar; costuma a cada 33", "Mix: FLEXIL, MICRO", "Novo desde ago/26" | Parado e comprando menos: as listas de Análises. Fora do ciclo: o cliente ativo com mais dias sem comprar que o ciclo dele, que não está parado nem em risco. Mix e novo: as listas de Análises | (foto: as análises e `cliente.ciclo_dias`) | navegador |
 | Direção ("Receita") | Cor do círculo e variação na lista e na dica | O faturado em 12 meses dos clientes do município contra os 12 meses anteriores (o primeiro ponto de `evolucao_12m`), com 10% de folga: o percentual inteiro, o mesmo que a tela escreve | (foto: `cliente.evolucao_12m`) | navegador |
 | Tempo sem contato ("Esquecidas") | Cor do município, lista e indicadores | Dias desde o último contato com o município: a compra mais recente de algum cliente dele ou a visita mais recente do login. Esquecida: mais de 90 dias, ou nenhum dos dois | (foto: `cliente.ultima_compra`; app.db: `visitas`) | navegador |
 | Última visita (Mapa) | Coluna dos clientes em "Onde agir" e em "Esquecidas", e linha da dica do município | A visita mais recente do login ao cliente, ou a algum cliente do município | (app.db: `visitas`) | servidor; o município, navegador |
-| Cidades sem cliente ("Onde crescer") | Indicador e a lista da região escolhida, das mais populosas | Os municípios da área sem cliente da carteira | (derivado) | navegador |
+| Cidades sem cliente ("Onde crescer") | Indicador e a lista da região escolhida, das de maior PIB agro + indústria, com o PIB e os habitantes de cada uma | Os municípios da área sem cliente da carteira | (derivado) | navegador |
 
 - **Por que a área (2026-10-15).**
   - Com a régua do estado inteiro, a região de São Paulo dominava o fictício: 20,7 milhões de habitantes e nenhum cliente.
   - A média do estado inteiro também diluía a régua com regiões que o representante não atende.
   - Na área, a régua é a média dele onde ele atua, e a região distante, sem cliente por perto, fica de fora.
-- **Com os dados reais da Star Vendas (15/10).**
+- **Por que o PIB agro + indústria (2026-10-18).**
+  - A população mede o tamanho da cidade, não o do mercado: a cidade grande com pouca lavoura e pouca fábrica pesava mais que a cidade agrícola menor.
+  - O Lucas escolheu o valor adicionado da agropecuária e da indústria, do PIB dos Municípios do IBGE, no lugar da população.
+  - Na cidade em que a atividade principal é usina ("Eletricidade e gás...") ou extração ("Indústrias extrativas"), conta só a agropecuária, porque essa indústria não compra o que a Suprens vende. São 211 municípios. Sem a regra, os R$ 11,5 bi de indústria de Foz do Iguaçu, quase toda da Itaipu, inflavam o potencial da região.
+- **Com o PIB, nos códigos 1302 e 1109 (18/10).** No Paraná, as maiores oportunidades são Guarapuava, Telêmaco Borba, Ponta Grossa e Paranaguá. São 21 regiões abaixo da média e 281 cidades sem cliente na área; as de maior PIB são Ortigueira e Tibagi.
+- **Com os dados reais da Star Vendas (15/10, ainda pela população).**
   - Em Goiás, as 22 regiões estão na área, e Goiânia faz 88% da receita.
   - A maior oportunidade é Luziânia: 738 mil habitantes, 2 clientes e +R$ 448 mil por ano. Em seguida vem Águas Lindas de Goiás.
   - No estado sem faturado (MT, 1 cliente), a tela diz que não há média para medir, em vez de "todas na média".
@@ -567,12 +573,12 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
 - **Valores ocultos.** A dica, a lista, os indicadores e a legenda escrevem os valores pelo mesmo componente das outras telas, que obedece "Ocultar valores". Os nomes vêm da lista atual do IBGE, o que resolve os nomes antigos do protótipo.
 - **Arquivos do mapa.**
   - `web/public/mapas/<UF>.json` leva:
-    - cada município: o caminho SVG, a região imediata, a população e o centro;
+    - cada município: o caminho SVG, a região imediata, a população, o PIB agro + indústria (`mercado`) e o centro;
     - cada região: o contorno, a caixa e as vizinhas;
     - o contorno do estado.
   - `brasil.json` traz o contorno de cada estado.
-  - A projeção é Mercator, em décimos de km. São 2,2 MB no total, mas a tela baixa só o Brasil e os estados da carteira.
-  - Gerados por `npm run mapas --workspace extrator -- <pasta do IBGE> <população> <pasta de saída>` (`extrator/src/mapas/gerarMapas.ts`, com as fontes no cabeçalho). Os 5.570 municípios acharam a população do Censo.
+  - A projeção é Mercator, em décimos de km. São 2,3 MB no total, mas a tela baixa só o Brasil e os estados da carteira.
+  - Gerados por `npm run mapas --workspace extrator -- <pasta do IBGE> <população> <PIB agro + indústria> <pasta de saída>` (`extrator/src/mapas/gerarMapas.ts`, com as fontes e a regra da usina e da extração no cabeçalho). Os 5.570 municípios acharam a população do Censo e o PIB.
 - **Na foto.** `cliente.municipio_ibge` (versão 9). Na Star Vendas, em 15/10: os 178 clientes com município, em 42 municípios.
 - **Pendente.** A lista de Clientes ainda mostra o `CRCL.CIDADE`, cortado em 20 letras. Com o código confirmado, o nome pode vir do IBGE (pergunta 5).
 

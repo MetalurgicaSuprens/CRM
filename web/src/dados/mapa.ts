@@ -6,8 +6,9 @@ import type { Analises, ClienteResumo, UltimasVisitas } from "./tipos";
  * O mapa da carteira, por estado. A pergunta principal é "para onde eu vou, e o que faço lá?": os
  * clientes que pedem ação e o dinheiro em jogo em cada cidade. As outras são como está o território
  * (a receita e se ela cresce), as cidades esquecidas e onde crescer. O potencial só se mede na área
- * do representante, as regiões com cliente e as vizinhas delas, e a régua é a receita por habitante
- * dele nessa área: a região distante, sem cliente por perto, não entra na conta.
+ * do representante, as regiões com cliente e as vizinhas delas, e a régua é o quanto ele fatura por
+ * real do PIB da agropecuária e da indústria dessa área (escolha do Lucas em 2026-10-18, no lugar da
+ * população): a região distante, sem cliente por perto, não entra na conta.
  */
 
 /** O que pede ação num cliente; no grupo, cada CNPJ fica com a parte dele no dinheiro. */
@@ -56,13 +57,15 @@ export type MunicipioNoTerritorio = {
 export type RegiaoNoTerritorio = {
   regiao: RegiaoDoMapa;
   populacao: number;
+  /** O PIB da agropecuária e da indústria da região, em R$ (MunicipioDoMapa.mercado). */
+  mercado: number;
   receita: number;
   receitaAnoAntes: number;
   /** Parte da receita do estado que vem da região. */
   participacao: number;
   /** A região tem cliente ou faz divisa com uma que tem. */
   isDaArea: boolean;
-  /** O que a região faturaria se comprasse, por habitante, a média do representante na área; fora dela, 0. */
+  /** O que a região faturaria na média do representante na área, pelo PIB agro + indústria dela; fora da área, 0. */
   potencial: number;
   /** O que falta para essa média; 0 na região que já passa dela e na de fora da área. */
   lacuna: number;
@@ -70,7 +73,7 @@ export type RegiaoNoTerritorio = {
   clientes: number;
   /** Só os municípios com cliente, do que mais fatura ao que menos fatura. */
   municipios: readonly MunicipioNoTerritorio[];
-  /** Os municípios sem cliente da carteira, do mais populoso ao menos. */
+  /** Os municípios sem cliente da carteira, do maior PIB agro + indústria ao menor. */
   semCliente: readonly MunicipioDoMapa[];
 };
 
@@ -79,8 +82,8 @@ export type Territorio = {
   nome: string;
   receita: number;
   receitaAnoAntes: number;
-  /** A régua do potencial: a receita pela população das regiões da área. */
-  receitaPorHabitante: number;
+  /** A régua do potencial: o faturado da carteira por real do PIB agro + indústria das regiões da área. */
+  receitaPorMercado: number;
   /** Por código IBGE, só os municípios com cliente. */
   municipios: ReadonlyMap<string, MunicipioNoTerritorio>;
   regioes: readonly RegiaoNoTerritorio[];
@@ -185,16 +188,16 @@ export function montarTerritorio(
   const presencas = [...municipios.values()];
   const receita = somar(presencas.map((presenca) => presenca.receita));
   const area = regioesDaArea(mapa, presencas);
-  const populacaoDaArea = somar(mapa.municipios.filter((municipio) => area.has(municipio.regiao)).map((municipio) => municipio.populacao ?? 0));
-  const receitaPorHabitante = populacaoDaArea > 0 ? receita / populacaoDaArea : 0;
-  const estado: EstadoDaCarteira = { mapa, municipios, area, receita, receitaPorHabitante };
+  const mercadoDaArea = somar(mapa.municipios.filter((municipio) => area.has(municipio.regiao)).map((municipio) => municipio.mercado ?? 0));
+  const receitaPorMercado = mercadoDaArea > 0 ? receita / mercadoDaArea : 0;
+  const estado: EstadoDaCarteira = { mapa, municipios, area, receita, receitaPorMercado };
   const doEstado = presencas.flatMap((presenca) => presenca.clientes);
   return {
     uf: mapa.uf,
     nome: mapa.nome,
     receita,
     receitaAnoAntes: somar(presencas.map((presenca) => presenca.receitaAnoAntes)),
-    receitaPorHabitante,
+    receitaPorMercado,
     municipios,
     regioes: mapa.regioes.map((regiao) => regiaoNoTerritorio(regiao, estado)),
     clientes: doEstado.length,
@@ -292,19 +295,20 @@ type EstadoDaCarteira = {
   municipios: ReadonlyMap<string, MunicipioNoTerritorio>;
   area: ReadonlySet<string>;
   receita: number;
-  receitaPorHabitante: number;
+  receitaPorMercado: number;
 };
 
 function regiaoNoTerritorio(regiao: RegiaoDoMapa, estado: EstadoDaCarteira): RegiaoNoTerritorio {
   const daRegiao = estado.mapa.municipios.filter((municipio) => municipio.regiao === regiao.codigo);
   const presencas = daRegiao.flatMap((municipio) => estado.municipios.get(municipio.codigo) ?? []).sort((a, b) => b.receita - a.receita);
-  const populacao = somar(daRegiao.map((municipio) => municipio.populacao ?? 0));
+  const mercado = somar(daRegiao.map((municipio) => municipio.mercado ?? 0));
   const receita = somar(presencas.map((presenca) => presenca.receita));
   const isDaArea = estado.area.has(regiao.codigo);
-  const potencial = isDaArea ? populacao * estado.receitaPorHabitante : 0;
+  const potencial = isDaArea ? mercado * estado.receitaPorMercado : 0;
   return {
     regiao,
-    populacao,
+    populacao: somar(daRegiao.map((municipio) => municipio.populacao ?? 0)),
+    mercado,
     receita,
     receitaAnoAntes: somar(presencas.map((presenca) => presenca.receitaAnoAntes)),
     participacao: estado.receita > 0 ? receita / estado.receita : 0,
@@ -314,7 +318,7 @@ function regiaoNoTerritorio(regiao: RegiaoDoMapa, estado: EstadoDaCarteira): Reg
     acoes: somarResumos(presencas.map((presenca) => presenca.acoes)),
     clientes: somar(presencas.map((presenca) => presenca.clientes.length)),
     municipios: presencas,
-    semCliente: daRegiao.filter((municipio) => !estado.municipios.has(municipio.codigo)).sort((a, b) => (b.populacao ?? 0) - (a.populacao ?? 0)),
+    semCliente: daRegiao.filter((municipio) => !estado.municipios.has(municipio.codigo)).sort((a, b) => (b.mercado ?? 0) - (a.mercado ?? 0)),
   };
 }
 

@@ -29,9 +29,10 @@ export function formatarReaisCompacto(valor: number): string {
   return `${sinal}R$ ${formatarCompacto(Math.abs(valor))}`;
 }
 
-/** Número sem moeda, para eixos de gráfico: "950", "48,5 mil", "1,2 mi". */
+/** Número sem moeda, para eixos de gráfico: "950", "48,5 mil", "1,2 mi", "17,7 bi" (o PIB de uma região, no Mapa). */
 export function formatarCompacto(valor: number): string {
   const absoluto = Math.abs(valor);
+  if (absoluto >= 999_950_000) return `${UMA_CASA.format(absoluto / 1_000_000_000)} bi`;
   if (absoluto >= 999_500) return `${UMA_CASA.format(absoluto / 1_000_000)} mi`;
   if (absoluto >= 999.5) {
     const emMil = absoluto / 1_000;

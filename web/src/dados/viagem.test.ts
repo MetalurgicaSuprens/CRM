@@ -3,7 +3,7 @@ import { projetar, type MapaDaUf, type MunicipioDoMapa } from "dominio/mapa";
 import { gravarRoteiro, lerRoteiro, linkDoGoogleMaps, municipioMaisPerto, ordenarParadas, pertoDe, trechosDoRoteiro } from "./viagem";
 
 function municipio(codigo: string, nome: string, longitude: number, latitude: number): MunicipioDoMapa {
-  return { codigo, nome, regiao: "410001", populacao: 100_000, d: "", centro: projetar(longitude, latitude) };
+  return { codigo, nome, regiao: "410001", populacao: 100_000, mercado: null, d: "", centro: projetar(longitude, latitude) };
 }
 
 const CURITIBA = municipio("4106902", "Curitiba", -49.27, -25.43);

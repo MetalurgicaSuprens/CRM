@@ -4,8 +4,9 @@ import { acoesDaCarteira, classeDaLacuna, direcaoDaReceita, emJogoPorMes, faixaD
 import type { Analises, ClienteResumo } from "./tipos";
 
 /**
- * Quatro regiões: Goiânia (1,4 milhão de habitantes, com a cidade vizinha) e Rio Verde (250 mil), com
- * clientes; Anápolis (400 mil), sem cliente, mas vizinha de Goiânia; e Posse (100 mil), longe de todos.
+ * Quatro regiões: Goiânia (1,4 milhão de habitantes, com a cidade vizinha) e Rio Verde (250 mil, mas
+ * com o maior PIB agro + indústria), com clientes; Anápolis (400 mil), sem cliente, mas vizinha de
+ * Goiânia; e Posse (100 mil), longe de todos.
  */
 const MAPA: MapaDaUf = {
   uf: "GO",
@@ -19,15 +20,15 @@ const MAPA: MapaDaUf = {
     { codigo: "520004", nome: "Posse", contorno: "", caixa: [50, 0, 100, 50], vizinhas: [] },
   ],
   municipios: [
-    { codigo: "5208707", nome: "Goiânia", regiao: "520001", populacao: 1_200_000, d: "", centro: [10, 10] },
-    { codigo: "5201405", nome: "Aparecida de Goiânia", regiao: "520001", populacao: 200_000, d: "", centro: [20, 20] },
-    { codigo: "5218805", nome: "Rio Verde", regiao: "520002", populacao: 250_000, d: "", centro: [70, 70] },
-    { codigo: "5201108", nome: "Anápolis", regiao: "520003", populacao: 400_000, d: "", centro: [20, 70] },
-    { codigo: "5218300", nome: "Posse", regiao: "520004", populacao: 100_000, d: "", centro: [70, 20] },
+    { codigo: "5208707", nome: "Goiânia", regiao: "520001", populacao: 1_200_000, mercado: 6_000, d: "", centro: [10, 10] },
+    { codigo: "5201405", nome: "Aparecida de Goiânia", regiao: "520001", populacao: 200_000, mercado: 2_000, d: "", centro: [20, 20] },
+    { codigo: "5218805", nome: "Rio Verde", regiao: "520002", populacao: 250_000, mercado: 8_000, d: "", centro: [70, 70] },
+    { codigo: "5201108", nome: "Anápolis", regiao: "520003", populacao: 400_000, mercado: 4_000, d: "", centro: [20, 70] },
+    { codigo: "5218300", nome: "Posse", regiao: "520004", populacao: 100_000, mercado: 500, d: "", centro: [70, 20] },
   ],
 };
-/** 1,05 milhão de receita para os 2,05 milhões de habitantes da área: Goiânia, Rio Verde e Anápolis. */
-const RECEITA_POR_HABITANTE = 1_050_000 / 2_050_000;
+/** 1,05 milhão de receita para os 20 mil de PIB agro + indústria da área: Goiânia, Rio Verde e Anápolis. */
+const RECEITA_POR_MERCADO = 1_050_000 / 20_000;
 const HOJE = "2026-10-18";
 
 function cliente(codigo: string, municipio: string | null, faturamento12m: number, outros: Partial<ClienteResumo> = {}): ClienteResumo {
@@ -95,16 +96,17 @@ describe("montarTerritorio", () => {
     expect(territorio.acoes).toMatchObject({ emJogoPorMes: 2_500, parados: 1, atrasados: 1, comMix: 1, emRisco: 0, novos: 0 });
   });
 
-  it("mede o potencial pela receita por habitante da área: a região fraca fica com a lacuna", () => {
-    expect(territorio.receitaPorHabitante).toBeCloseTo(RECEITA_POR_HABITANTE);
-    expect(regiao("520002")?.potencial).toBeCloseTo(250_000 * RECEITA_POR_HABITANTE);
-    expect(regiao("520002")?.lacuna).toBeCloseTo(250_000 * RECEITA_POR_HABITANTE - 50_000);
+  it("mede o potencial pelo PIB agro + indústria da área, não pela população: Rio Verde, com pouca gente, fica com a maior lacuna", () => {
+    expect(territorio.receitaPorMercado).toBeCloseTo(RECEITA_POR_MERCADO);
+    expect(regiao("520002")).toMatchObject({ populacao: 250_000, mercado: 8_000 });
+    expect(regiao("520002")?.potencial).toBeCloseTo(8_000 * RECEITA_POR_MERCADO);
+    expect(regiao("520002")?.lacuna).toBeCloseTo(8_000 * RECEITA_POR_MERCADO - 50_000);
     expect(regiao("520001")?.lacuna).toBe(0);
   });
 
   it("põe na área a vizinha sem cliente, com todo o potencial a conquistar e as cidades sem cliente", () => {
     expect(regiao("520003")).toMatchObject({ isDaArea: true, receita: 0, clientes: 0 });
-    expect(regiao("520003")?.lacuna).toBeCloseTo(400_000 * RECEITA_POR_HABITANTE);
+    expect(regiao("520003")?.lacuna).toBeCloseTo(4_000 * RECEITA_POR_MERCADO);
     expect(regiao("520003")?.semCliente.map((municipio) => municipio.nome)).toEqual(["Anápolis"]);
   });
 

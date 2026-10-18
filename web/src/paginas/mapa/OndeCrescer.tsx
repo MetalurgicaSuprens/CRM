@@ -5,16 +5,18 @@ import { DataRelativa } from "../../componentes/Quando";
 import { SituacaoCliente } from "../../componentes/SituacaoCliente";
 import { Valor } from "../../componentes/Valor";
 import { classeDaLacuna, type RegiaoNoTerritorio, type Territorio } from "../../dados/mapa";
-import { formatarCompacto, formatarContagem } from "../../formato";
+import { formatarCompacto, formatarContagem, formatarReaisCompacto } from "../../formato";
 import estilos from "../Mapa.module.css";
 import type { ContextoDaLente, LenteDoMapa } from "./lente";
 
 /*
  * "Onde crescer": as regiões da área pelo potencial que falta, que pedem prospecção, e as cidades sem
- * cliente nelas. Recuperar cliente parado é outra ação e está em "Onde agir".
+ * cliente nelas. O potencial mede pelo PIB da agropecuária e da indústria, que acompanha o mercado da
+ * Suprens melhor que a população (dados/mapa.ts). Recuperar cliente parado está em "Onde agir". O PIB
+ * é dado público do IBGE e aparece mesmo com os valores ocultos.
  */
 
-/** Quantas cidades sem cliente a região escolhida lista, das mais populosas. */
+/** Quantas cidades sem cliente a região escolhida lista, das de maior PIB agro + indústria. */
 const CIDADES_SEM_CLIENTE = 8;
 
 export const ONDE_CRESCER: LenteDoMapa = {
@@ -23,7 +25,7 @@ export const ONDE_CRESCER: LenteDoMapa = {
   lista: {
     titulo: "Onde crescer",
     icone: Sprout,
-    subtitulo: "Onde você tem cliente e as regiões vizinhas, pelo que faturariam na sua média por habitante",
+    subtitulo: "Onde você tem cliente e as regiões vizinhas, pelo que faturariam na sua média pelo PIB agro + indústria",
     barra: estilos.barraDePotencial,
     vazio: ({ territorio }) =>
       territorio.receita > 0 ? "Todas as regiões estão na sua média ou acima." : "Sem faturado em 12 meses neste estado para medir o potencial.",
@@ -50,7 +52,7 @@ export const ONDE_CRESCER: LenteDoMapa = {
       nome: regiao.regiao.nome,
       valor: <Valor valor={regiao.lacuna} compacto comSinal />,
       parte: regiao.lacuna / maior,
-      detalhe: `${formatarCompacto(regiao.populacao)} habitantes · ${
+      detalhe: `PIB agro + indústria de ${formatarReaisCompacto(regiao.mercado)} · ${
         regiao.clientes > 0 ? formatarContagem(regiao.clientes, "cliente", "clientes") : "nenhum cliente ainda"
       }`,
     }));
@@ -72,7 +74,7 @@ function cidadesSemClienteNaArea(territorio: Territorio): MunicipioDoMapa[] {
   return territorio.regioes
     .filter(({ isDaArea }) => isDaArea)
     .flatMap(({ semCliente }) => semCliente)
-    .sort((a, b) => (b.populacao ?? 0) - (a.populacao ?? 0));
+    .sort((a, b) => (b.mercado ?? 0) - (a.mercado ?? 0));
 }
 
 function Indicadores({ territorio }: ContextoDaLente) {
@@ -86,7 +88,7 @@ function Indicadores({ territorio }: ContextoDaLente) {
         rotulo="Potencial por ano"
         icone={Sprout}
         valor={<Valor valor={comLacuna.reduce((soma, { lacuna }) => soma + lacuna, 0)} compacto />}
-        detalhe={`${formatarContagem(comLacuna.length, "região abaixo", "regiões abaixo")} da sua média por habitante`}
+        detalhe={`${formatarContagem(comLacuna.length, "região abaixo", "regiões abaixo")} da sua média pelo PIB agro + indústria`}
       />
       <Indicador
         rotulo="Maior oportunidade"
@@ -108,7 +110,7 @@ function Indicadores({ territorio }: ContextoDaLente) {
         rotulo="Cidades sem cliente"
         icone={MapPinPlus}
         valor={formatarContagem(semCliente.length, "cidade", "cidades")}
-        detalhe={semCliente.length > 0 ? `na sua área; as maiores, ${semCliente.slice(0, 2).map(({ nome }) => nome).join(" e ")}` : "na sua área"}
+        detalhe={semCliente.length > 0 ? `na sua área; as de maior PIB, ${semCliente.slice(0, 2).map(({ nome }) => nome).join(" e ")}` : "na sua área"}
       />
     </div>
   );
@@ -142,8 +144,15 @@ function Dica({ territorio, municipio }: ContextoDaLente & { municipio: Municipi
   const regiao = territorio.regioes.find(({ regiao: daRegiao }) => daRegiao.codigo === municipio.regiao);
   return (
     <>
-      {!territorio.municipios.has(municipio.codigo) && municipio.populacao ? (
-        <p className={estilos.linhaDaDica}>{formatarCompacto(municipio.populacao)} habitantes</p>
+      {!territorio.municipios.has(municipio.codigo) ? (
+        <p className={estilos.linhaDaDica}>
+          {[
+            municipio.mercado ? `PIB agro + indústria de ${formatarReaisCompacto(municipio.mercado)}` : null,
+            municipio.populacao ? `${formatarCompacto(municipio.populacao)} habitantes` : null,
+          ]
+            .filter((parte) => parte !== null)
+            .join(" · ")}
+        </p>
       ) : null}
       {regiao && regiao.lacuna > 0 ? (
         <p className={estilos.linhaDaDica}>
@@ -160,8 +169,8 @@ function SobreARegiao({ regiao }: ContextoDaLente & { regiao: RegiaoNoTerritorio
     <>
       <dl className={estilos.numeros}>
         <div>
-          <dt>Habitantes</dt>
-          <dd>{formatarCompacto(regiao.populacao)}</dd>
+          <dt>PIB agro + indústria</dt>
+          <dd>{formatarReaisCompacto(regiao.mercado)}</dd>
         </div>
         <div>
           <dt>Faturado em 12 meses</dt>
@@ -170,7 +179,7 @@ function SobreARegiao({ regiao }: ContextoDaLente & { regiao: RegiaoNoTerritorio
           </dd>
         </div>
         <div>
-          <dt>Na sua média por habitante</dt>
+          <dt>Na sua média pelo PIB</dt>
           <dd>
             <Valor valor={regiao.potencial} compacto />
           </dd>
@@ -183,12 +192,14 @@ function SobreARegiao({ regiao }: ContextoDaLente & { regiao: RegiaoNoTerritorio
       {semCliente.length > 0 ? (
         <div className={estilos.semCliente}>
           <p className={estilos.tituloSemCliente}>
-            Cidades sem cliente{regiao.semCliente.length > CIDADES_SEM_CLIENTE ? `, as ${CIDADES_SEM_CLIENTE} maiores de ${regiao.semCliente.length}` : ""}
+            Cidades sem cliente
+            {regiao.semCliente.length > CIDADES_SEM_CLIENTE ? `, as ${CIDADES_SEM_CLIENTE} de maior PIB agro + indústria de ${regiao.semCliente.length}` : ""}
           </p>
           <ul>
             {semCliente.map((municipio) => (
               <li key={municipio.codigo}>
                 {municipio.nome}
+                {municipio.mercado ? <span> · {formatarReaisCompacto(municipio.mercado)}</span> : null}
                 {municipio.populacao ? <span> · {formatarCompacto(municipio.populacao)} hab.</span> : null}
               </li>
             ))}

@@ -6,7 +6,7 @@ import { posicionarNomes } from "./nomesNoMapa";
 const CONTEXTO = { vista: { x: 0, y: 0, largura: 400, altura: 200 }, escala: 1, raioDe: () => 10 };
 
 function municipio(nome: string, centro: [number, number]): MunicipioDoMapa {
-  return { codigo: nome, nome, regiao: "", populacao: null, d: "", centro };
+  return { codigo: nome, nome, regiao: "", populacao: null, mercado: null, d: "", centro };
 }
 
 describe("posicionarNomes", () => {

@@ -50,6 +50,12 @@ export type MunicipioDoMapa = {
   regiao: string;
   /** Censo 2022; null quando o município não está na base de população. */
   populacao: number | null;
+  /**
+   * O mercado do município, a régua do potencial em "Onde crescer": o valor adicionado da agropecuária
+   * e da indústria em 2021, em R$ (IBGE, PIB dos Municípios), sem a indústria da cidade de usina ou de
+   * extração (extrator/src/mapas/gerarMapas.ts). null quando o município não está na base.
+   */
+  mercado: number | null;
   /** Caminho SVG do município. */
   d: string;
   /** Onde fica o círculo do município: o centro do maior pedaço dele. */

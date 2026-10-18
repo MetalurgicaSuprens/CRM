@@ -31,16 +31,19 @@ describe("formatarReais", () => {
 });
 
 describe("formatarReaisCompacto", () => {
-  it("abrevia milhares e milhões", () => {
+  it("abrevia milhares, milhões e bilhões", () => {
     expect(formatarReaisCompacto(950)).toBe("R$ 950");
     expect(formatarReaisCompacto(48_520)).toBe("R$ 48,5 mil");
     expect(formatarReaisCompacto(182_340)).toBe("R$ 182 mil");
     expect(formatarReaisCompacto(1_234_000)).toBe("R$ 1,2 mi");
+    expect(formatarReaisCompacto(17_658_216_726)).toBe("R$ 17,7 bi");
   });
 
-  it("não mostra 1.000 mil na virada para milhão", () => {
+  it("não mostra 1.000 mil na virada para milhão, nem 1.000 mi na virada para bilhão", () => {
     expect(formatarCompacto(999_600)).toBe("1 mi");
     expect(formatarCompacto(99_970)).toBe("100 mil");
+    expect(formatarCompacto(999_960_000)).toBe("1 bi");
+    expect(formatarCompacto(999_900_000)).toBe("999,9 mi");
   });
 });
 
