@@ -37,10 +37,9 @@ export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: stri
     razaoSocial: texto(linha, "razao_social"),
     clienteDesde: numeroOuNulo(linha, "cliente_desde"),
     cicloDias: numeroOuNulo(linha, "ciclo_dias"),
-    mensal: porCliente("SELECT mes, valor, pecas FROM cliente_mes WHERE cliente = ? ORDER BY mes").map((mes) => ({
+    mensal: porCliente("SELECT mes, valor FROM cliente_mes WHERE cliente = ? ORDER BY mes").map((mes) => ({
       mes: texto(mes, "mes"),
       valor: numero(mes, "valor"),
-      pecas: numero(mes, "pecas"),
     })),
     familias: porCliente("SELECT familia, valor, participacao, pecas FROM cliente_familia WHERE cliente = ? ORDER BY valor DESC").map(
       (familia) => ({

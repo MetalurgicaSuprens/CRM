@@ -78,7 +78,6 @@ export type ClienteResumo = {
 export type FaturamentoMensal = {
   mes: string;
   valor: number;
-  pecas: number;
 };
 
 export type FamiliaComprada = {

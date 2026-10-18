@@ -101,6 +101,8 @@ const PERFIS: readonly (readonly [Perfil, number])[] = [
 
 type Contexto = { hoje: string; mesAtual: string; diaUtil: number; diasUteis: number };
 
+type MesFicticio = FaturamentoMensal & { pecas: number };
+
 type ClienteFicticio = {
   codigo: string;
   codigoErp: string | null;
@@ -113,7 +115,7 @@ type ClienteFicticio = {
   status: StatusDoCadastro;
   precoMedioPeca: number;
   pesosFamilias: Map<string, number>;
-  mensal: FaturamentoMensal[];
+  mensal: MesFicticio[];
   datasCompra: string[];
   primeiraCompra: string;
   pedidos: PedidoEmAberto[];
@@ -351,7 +353,7 @@ function gerarHistorico(
   const mesesDeVida = aleatorio.inteiro(3, 10);
   // Só quem voltou sorteia a pausa: a sequência dos outros perfis não muda.
   const pausa = perfil === "voltou" ? { mesesDesdeAVolta: aleatorio.inteiro(2, 9), duracao: aleatorio.inteiro(13, 18) } : null;
-  const mensal: FaturamentoMensal[] = [];
+  const mensal: MesFicticio[] = [];
   const datasCompra: string[] = [];
   for (let indice = 0; indice <= MESES_FECHADOS; indice++) {
     const mesesAtras = MESES_FECHADOS - indice;
@@ -484,7 +486,7 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     // Na carteira fictícia todo cliente já comprou um dia; o null fica para a foto de verdade.
     clienteDesde: Number(cliente.primeiraCompra.slice(0, 4)),
     cicloDias: cliente.indicadores.cicloDias,
-    mensal: cliente.mensal.map(({ mes, valor, pecas }) => ({ mes, valor, pecas })),
+    mensal: cliente.mensal.map(({ mes, valor }) => ({ mes, valor })),
     familias,
     produtos: produtosDoCliente(cliente, familias),
     oportunidades: mix?.oportunidades ?? [],
@@ -722,7 +724,7 @@ function somarMes(dados: Carteira, indice: number): number {
   return somar(dados.clientes.map((c) => c.mensal[indice]?.valor ?? 0));
 }
 
-function somarValores(mensal: FaturamentoMensal[], inicio: number, fim: number): number {
+function somarValores(mensal: MesFicticio[], inicio: number, fim: number): number {
   return somar(mensal.slice(Math.max(0, inicio), fim + 1).map((mes) => mes.valor));
 }
 

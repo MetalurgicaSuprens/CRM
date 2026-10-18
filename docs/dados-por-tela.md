@@ -625,7 +625,7 @@ Convenções:
 | `foto` | Uma linha | `versao_esquema`, `gerada_em`, `data_ref`, `mes_atual`, `dia_util`, `dias_uteis`, `semestre_inicio`, `semestre_fim` | todas, Admin |
 | `representante` | Representante autorizado; PK `codigo` | `codigo`, `nome` (o da CRVN, para o Admin escolher os códigos) | Admin |
 | `cliente` | Cliente (filial) da carteira de um autorizado, e o grupo do SGI com dois ou mais CNPJs no mesmo código; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física e no grupo), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `status`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (código IBGE do município, para o Mapa), `queda_no_semestre`, `grupo`, `cnpjs` | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
-| `cliente_mes` | Cliente × mês (60 fechados + o corrente: a tendência soma os 12 meses até cada um dos últimos 48); PK (`cliente`, `mes`) | `cliente`, `mes`, `valor`, `pecas` (versão 12, para os blocos de 12 meses em peças) | Ficha |
+| `cliente_mes` | Cliente × mês (60 fechados + o corrente: a tendência soma os 12 meses até cada um dos últimos 48); PK (`cliente`, `mes`) | `cliente`, `mes`, `valor` | Ficha |
 | `cliente_familia` | Cliente × família nos 12 meses fechados; PK (`cliente`, `familia`) | `cliente`, `familia`, `valor`, `participacao`, `pecas` (versão 11) | Ficha |
 | `ficha_produto` | Cliente × produto, só os 8 maiores em valor nos 12 meses fechados; PK (`cliente`, `produto`) | `cliente`, `produto`, `pecas_12m`, `valor_12m`, `ultima_compra` | Ficha |
 | `cliente_mix` | Cliente × família sugerida; PK (`cliente`, `familia`) | `cliente`, `familia`, `penetracao`, `ordem` | Ficha, Análises |
@@ -648,6 +648,7 @@ Convenções:
 
 Colunas que pedem nota:
 - `cliente.evolucao_12m`: texto JSON com 13 números, do mais antigo ao mais recente.
+- `cliente_mes` (versão 13, 2026-10-18): a versão 12 levou as peças de cada mês, para um modelo da tendência que o Lucas não escolheu, e a 13 as tirou. As duas vistas que ficaram usam só o valor.
 - `cliente.grupo` e `cliente.cnpjs` (versão 10, 2026-10-17): no CNPJ de um grupo, `grupo` é o id da linha do grupo; na linha do grupo, `cnpjs` diz quantos CNPJs ele tem. A linha do grupo não tem cidade, município, código do ERP nem tabela de preço, e o id dela é um HMAC do código do representante e do nome do grupo, estável entre fotos. As listas das análises (`analise_*`) têm o grupo no lugar dos CNPJs; a ficha (`cliente_mes`, `cliente_familia`, `ficha_produto`, `cliente_mix`) existe para os dois.
 - `cliente.queda_no_semestre` (versão 10): a variação do semestre do cliente em risco. Antes, o servidor a tirava de `analise_ritmo`, que não tem mais o CNPJ de um grupo.
 - `cliente.grupo_mix`: 'pequeno', 'medio' ou 'grande'. 'mercado' quando a comparação usou o mercado inteiro. Nulo quando nem o mercado tem 20 clientes.

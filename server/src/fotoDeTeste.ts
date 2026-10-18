@@ -90,7 +90,7 @@ function doGrupo(id: string, representante: string, nome: string, idDoGrupo: str
 
 function porCliente(id: string) {
   return {
-    cliente_mes: [{ cliente: id, mes: "2026-09", valor: 1_000, pecas: 300 }],
+    cliente_mes: [{ cliente: id, mes: "2026-09", valor: 1_000 }],
     cliente_familia: [{ cliente: id, familia: "FLEXIL", valor: 12_000, participacao: 1, pecas: 4_000 }],
     ficha_produto: [{ cliente: id, produto: "F-100", pecas_12m: 500, valor_12m: 12_000, ultima_compra: "2026-05-01" }],
     cliente_mix: [{ cliente: id, familia: "PRESIL", penetracao: 0.6, ordem: 1 }],

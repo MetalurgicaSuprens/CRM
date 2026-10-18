@@ -5,7 +5,7 @@ import type { FaturamentoMensal, PedidoDaFicha } from "./tipos";
 
 /** Os 60 meses fechados antes de `mesAtual` e ele, com o valor de cada um dado por `valorDe`. */
 function historia(mesAtual: string, valorDe: (mes: string) => number = () => 100): FaturamentoMensal[] {
-  return Array.from({ length: 61 }, (_, i) => somarMeses(mesAtual, i - 60)).map((mes) => ({ mes, valor: valorDe(mes), pecas: valorDe(mes) / 10 }));
+  return Array.from({ length: 61 }, (_, i) => somarMeses(mesAtual, i - 60)).map((mes) => ({ mes, valor: valorDe(mes) }));
 }
 
 function pedido(status: PedidoDaFicha["status"], itens: { valor: number; entrega: string | null }[]): PedidoDaFicha {
