@@ -115,11 +115,11 @@ describe("montarClientes: grupos do SGI", () => {
     expect(linha("grupo-1302-OVD")).toMatchObject({ situacao: "ativo", ultima_compra: "2026-09-15", cliente_desde: 2024 });
   });
 
-  it("soma o faturado dos CNPJs nos 12 meses fechados e mês a mês", () => {
+  it("soma o faturado dos CNPJs nos 12 meses fechados, e o faturado e as peças mês a mês", () => {
     // Curitiba: outubro a janeiro; Bahia: fevereiro a setembro.
     expect(linha("grupo-1302-OVD")?.faturamento_12m).toBe(12_000);
     expect(tabelas.cliente_mes.filter((mes) => mes.cliente === "grupo-1302-OVD" && mes.mes === "2026-09")).toEqual([
-      { cliente: "grupo-1302-OVD", mes: "2026-09", valor: 1_000 },
+      { cliente: "grupo-1302-OVD", mes: "2026-09", valor: 1_000, pecas: 100 },
     ]);
   });
 
@@ -147,7 +147,7 @@ describe("montarClientes: grupos do SGI", () => {
   it("leva à ficha 60 meses fechados e o corrente: o gráfico de 48 meses com a média móvel de 12", () => {
     const meses = tabelas.cliente_mes.filter(({ cliente }) => cliente === "cliente-4");
     expect(meses).toHaveLength(61);
-    expect(meses[0]).toEqual({ cliente: "cliente-4", mes: "2021-10", valor: 0 });
+    expect(meses[0]).toEqual({ cliente: "cliente-4", mes: "2021-10", valor: 0, pecas: 0 });
     expect(meses.at(-1)?.mes).toBe("2026-10");
   });
 
