@@ -274,9 +274,9 @@ function itensEnviados(itens: ItemDoPedido[], catalogo: CatalogoDoCliente): Item
 }
 
 function resumoDe(ficha: FichaCliente): ClienteResumo {
-  const { codigo, codigoErp, nome, cidade, uf, municipio, mercado, situacao, status, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs } =
+  const { codigo, codigoErp, nome, cidade, uf, municipio, mercado, situacao, status, ultimaCompra, cicloDias, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs } =
     ficha;
-  return { codigo, codigoErp, nome, cidade, uf, municipio, mercado, situacao, status, ultimaCompra, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs };
+  return { codigo, codigoErp, nome, cidade, uf, municipio, mercado, situacao, status, ultimaCompra, cicloDias, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs };
 }
 
 function numeroCrm(numero: number): string {

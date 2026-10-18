@@ -35,27 +35,45 @@
   opacity: 0.55;
 }
 
-/* O município com cliente; na lente "onde crescer", a região da área que já está na média (classe 0) */
+/* O município com cliente; em "Onde crescer", a região da área que já está na média */
 .estadoEscolhido path[data-classe="cliente"],
 .estadoVizinho path[data-classe="cliente"],
-.estadoEscolhido path[data-classe="0"] {
+.estadoEscolhido path[data-classe="potencial-0"] {
   fill: var(--cor-mapa-com-cliente);
 }
 
-.estadoEscolhido path[data-classe="1"] {
+/* "Onde crescer": o potencial que falta em cada região da área, do menor ao maior */
+.estadoEscolhido path[data-classe="potencial-1"] {
   fill: var(--cor-potencial-1);
 }
 
-.estadoEscolhido path[data-classe="2"] {
+.estadoEscolhido path[data-classe="potencial-2"] {
   fill: var(--cor-potencial-2);
 }
 
-.estadoEscolhido path[data-classe="3"] {
+.estadoEscolhido path[data-classe="potencial-3"] {
   fill: var(--cor-potencial-3);
 }
 
-.estadoEscolhido path[data-classe="4"] {
+.estadoEscolhido path[data-classe="potencial-4"] {
   fill: var(--cor-potencial-4);
+}
+
+/* "Esquecidas": há quanto tempo alguém compra no município, de 30 dias a mais de 180 */
+.estadoEscolhido path[data-classe="recencia-1"] {
+  fill: var(--cor-recencia-1);
+}
+
+.estadoEscolhido path[data-classe="recencia-2"] {
+  fill: var(--cor-recencia-2);
+}
+
+.estadoEscolhido path[data-classe="recencia-3"] {
+  fill: var(--cor-recencia-3);
+}
+
+.estadoEscolhido path[data-classe="recencia-4"] {
+  fill: var(--cor-recencia-4);
 }
 
 .estadoEscolhido path[data-municipio] {
@@ -93,18 +111,33 @@
 .circulos circle {
   stroke: var(--cor-superficie);
   stroke-width: 1px;
+  fill-opacity: 0.85;
   cursor: pointer;
   transition: fill-opacity var(--transicao);
 }
 
-.receita .circulos circle {
-  fill: var(--cor-dado);
-  fill-opacity: 0.82;
+.circulos circle[data-tom="critico"] {
+  fill: var(--cor-mapa-critico);
 }
 
-.perda .circulos circle {
-  fill: var(--cor-queda);
-  fill-opacity: 0.8;
+.circulos circle[data-tom="atencao"] {
+  fill: var(--cor-mapa-atencao);
+}
+
+.circulos circle[data-tom="oportunidade"] {
+  fill: var(--cor-mapa-oportunidade);
+}
+
+.circulos circle[data-tom="alta"] {
+  fill: var(--cor-mapa-alta);
+}
+
+.circulos circle[data-tom="estavel"] {
+  fill: var(--cor-mapa-estavel);
+}
+
+.circulos circle[data-tom="queda"] {
+  fill: var(--cor-mapa-queda);
 }
 
 .circulos circle:hover {

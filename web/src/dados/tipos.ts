@@ -51,6 +51,8 @@ export type ClienteResumo = {
   /** Fora de ativo no cadastro do SGI, o cliente aparece com o status e não recebe pedido. */
   status: StatusDoCadastro;
   ultimaCompra: string | null;
+  /** Ciclo típico de compra em dias; null para cliente irregular. */
+  cicloDias: number | null;
   /** Soma dos últimos 12 meses fechados. */
   faturamento12m: number;
   /** Variação contra os 12 meses anteriores; null quando a base é pequena demais. */
@@ -133,8 +135,6 @@ export type FichaCliente = ClienteResumo & {
   razaoSocial: string;
   /** Só o ano da primeira compra (a data completa fica na LAN); null para quem nunca comprou. */
   clienteDesde: number | null;
-  /** Ciclo típico de compra em dias; null para cliente irregular. */
-  cicloDias: number | null;
   /**
    * Os 60 meses fechados e o corrente, parcial. A tendência soma os 12 meses até cada um dos últimos
    * 48, e a soma do primeiro usa os 11 anteriores. Na carteira fictícia, são 36.

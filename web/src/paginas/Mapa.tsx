@@ -1,45 +1,45 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router";
-import { ChartPie, ChevronDown, ChevronUp, CirclePause, Map as IconeDoMapa, MapPinned, ReceiptText, Sprout, Target, Users, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, Map as IconeDoMapa, MapPinned, Users, X } from "lucide-react";
 import type { Caixa, MapaDaUf, MunicipioDoMapa } from "dominio/mapa";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
-import { Indicador } from "../componentes/Indicador";
-import { DataRelativa } from "../componentes/Quando";
-import { Segmentos, type Segmento } from "../componentes/Segmentos";
-import { SituacaoCliente } from "../componentes/SituacaoCliente";
+import { Segmentos } from "../componentes/Segmentos";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarAnalises, carregarClientes, carregarSituacaoDosDados } from "../dados/api";
-import { aRecuperarPorCliente, classeDaLacuna, montarTerritorio, type RegiaoNoTerritorio, type Territorio } from "../dados/mapa";
+import { acoesDaCarteira, montarTerritorio, type Territorio } from "../dados/mapa";
 import { carregarMapaDaUf, carregarMapaDoBrasil } from "../dados/mapas";
 import type { ClienteResumo } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarCompacto, formatarContagem, formatarParticipacao } from "../formato";
+import { formatarCompacto, formatarContagem } from "../formato";
 import { MapaDoTerritorio, type CirculoDoMapa } from "../graficos/MapaDoTerritorio";
 import { Carregando } from "./Carregando";
+import { ESQUECIDAS } from "./mapa/Esquecidas";
+import type { ContextoDaLente, ItemDaLista, LenteDoMapa } from "./mapa/lente";
+import { ONDE_AGIR } from "./mapa/OndeAgir";
+import { ONDE_CRESCER } from "./mapa/OndeCrescer";
+import { RECEITA } from "./mapa/Receita";
 import estilos from "./Mapa.module.css";
 
 /*
- * O mapa da carteira, por estado: de onde vem a receita (um círculo por município, do tamanho do
- * faturado em 12 meses) e onde dá para crescer (as regiões imediatas do IBGE pelo potencial que falta e
- * os clientes que pararam ou estão comprando menos). O potencial só se mede onde o representante tem
- * cliente e nas regiões vizinhas (dados/mapa.ts). Mais tarde, as rotas de visita saem daqui.
+ * O mapa da carteira, por estado. A função dele é responder "para onde eu vou, e o que faço lá?", e,
+ * a médio prazo, "como está meu território?". Cada visão (paginas/mapa) dá os números, o desenho, a
+ * legenda e a lista dela; esta página monta o resto igual.
  */
 
-type Lente = "receita" | "crescer";
+const LENTES = { agir: ONDE_AGIR, receita: RECEITA, esquecidas: ESQUECIDAS, crescer: ONDE_CRESCER } as const satisfies Record<string, LenteDoMapa>;
+type ChaveDaLente = keyof typeof LENTES;
+const PADRAO: ChaveDaLente = "agir";
+const OPCOES = (Object.keys(LENTES) as ChaveDaLente[]).map((chave) => ({ valor: chave, rotulo: LENTES[chave].rotulo }));
+
 type Escolha = { uf: string; tipo: "regiao" | "municipio"; codigo: string };
 
-const LENTES: readonly Segmento<Lente>[] = [
-  { valor: "receita", rotulo: "De onde vem a receita" },
-  { valor: "crescer", rotulo: "Onde crescer" },
-];
 /** Quantos municípios, dos que mais pesam, têm o nome escrito no mapa. */
 const MUNICIPIOS_COM_NOME = 5;
-/** Quantas regiões a lista mostra antes do "Ver todas": cabem na altura do mapa ao lado. */
-const REGIOES_NA_LISTA = 8;
-const SEM_FATURADO = "sem faturado em 12 meses";
+/** Quantas linhas a lista mostra antes do "Ver todas": cabem na altura do mapa ao lado. */
+const LINHAS_DA_LISTA = 8;
 /** A folga em volta do estado ou da região, para o contorno não encostar na borda. */
 const FOLGA_DA_VISAO = 0.06;
 
@@ -51,6 +51,10 @@ export function Mapa() {
   // O mapa põe cada CNPJ no seu município: o grupo, que não tem cidade, entra pelos CNPJs dele.
   const cnpjs = useMemo(() => (clientes ?? []).flatMap((cliente) => cliente.cnpjs ?? [cliente]), [clientes]);
   const ufs = useMemo(() => ufsDaCarteira(cnpjs), [cnpjs]);
+  const acoes = useMemo(
+    () => (clientes && analises && situacao ? acoesDaCarteira(clientes, analises, situacao.hoje) : new Map()),
+    [clientes, analises, situacao],
+  );
   const { dados: mapas, erro: erroDosMapas } = useCarga(`mapa:${ufs.map(({ uf }) => uf).join(",")}`, () =>
     Promise.all(ufs.map(({ uf }) => carregarMapaDaUf(uf))),
   );
@@ -61,24 +65,28 @@ export function Mapa() {
   if (!clientes || !analises || !situacao || !brasil || !mapas) return <Carregando />;
   if (ufs.length === 0) return <Aviso texto="Nenhum cliente da carteira tem o município no cadastro da Suprens." />;
 
-  const lente: Lente = parametros.get("visao") === "crescer" ? "crescer" : "receita";
+  const chave = chaveDaLente(parametros.get("visao"));
+  const lente: LenteDoMapa = LENTES[chave];
   const uf = ufs.find((item) => item.uf === parametros.get("uf"))?.uf ?? ufs[0]?.uf ?? "";
   const mapa = mapas.find((item) => item.uf === uf);
   if (!mapa) return <Carregando />;
-  const territorio = montarTerritorio(mapa, cnpjs, aRecuperarPorCliente(analises));
+  const territorio = montarTerritorio(mapa, cnpjs, acoes);
+  const contexto: ContextoDaLente = { territorio, hoje: situacao.hoje };
+  const circulos = lente.circulos(territorio);
+  const semMunicipio = cnpjs.filter((cliente) => !cliente.municipio).length;
   const escolhaDoEstado = escolha?.uf === uf ? escolha : null;
-  const alterar = (chave: string, valor: string, padrao: string) => {
+  const alterar = (nome: string, valor: string, padrao: string) => {
     const proximos = new URLSearchParams(parametros);
-    if (valor === padrao) proximos.delete(chave);
-    else proximos.set(chave, valor);
+    if (valor === padrao) proximos.delete(nome);
+    else proximos.set(nome, valor);
     setParametros(proximos, { replace: true });
   };
 
   return (
     <div className={estilos.pagina}>
-      <CabecalhoPagina titulo="Mapa" descricao="De onde vem a sua receita e onde ainda dá para crescer" />
+      <CabecalhoPagina titulo="Mapa" descricao="Para onde ir, de onde vem a receita e onde ainda dá para crescer" />
       <div className={estilos.controles}>
-        <Segmentos rotulo="O que o mapa mostra" opcoes={LENTES} selecionado={lente} aoEscolher={(valor) => alterar("visao", valor, "receita")} />
+        <Segmentos rotulo="O que o mapa mostra" opcoes={OPCOES} selecionado={chave} aoEscolher={(valor) => alterar("visao", valor, PADRAO)} />
         {ufs.length > 1 ? (
           <Segmentos
             rotulo="Estado"
@@ -88,16 +96,19 @@ export function Mapa() {
           />
         ) : null}
       </div>
-      <Indicadores lente={lente} territorio={territorio} />
+      {semMunicipio > 0 ? (
+        <p className={estilos.aviso}>
+          <Info size={15} aria-hidden="true" />
+          {formatarContagem(semMunicipio, "cliente da carteira está", "clientes da carteira estão")} sem o município no cadastro e{" "}
+          {semMunicipio === 1 ? "fica" : "ficam"} fora do mapa.
+        </p>
+      ) : null}
+      <lente.Indicadores {...contexto} />
       <div className={estilos.principal}>
         <Cartao
           titulo={territorio.nome}
           icone={IconeDoMapa}
-          subtitulo={
-            lente === "receita"
-              ? "Cada círculo é o faturado do município em 12 meses"
-              : "Em verde, o potencial que falta onde você tem cliente e nas regiões vizinhas; em vermelho, o que dá para recuperar"
-          }
+          subtitulo={lente.subtitulo}
           acoes={
             escolhaDoEstado?.tipo === "regiao" ? (
               <button type="button" className={botoes.secundario} onClick={() => setEscolha(null)}>
@@ -108,140 +119,73 @@ export function Mapa() {
           className={estilos.cartaoDoMapa}
         >
           <MapaDoTerritorio
-            descricao={`Mapa de ${territorio.nome}: ${lente === "receita" ? "faturado por município" : "potencial por região e o que dá para recuperar"}`}
+            descricao={`Mapa de ${territorio.nome}: ${lente.subtitulo}`}
             brasil={brasil}
             mapas={mapas}
             uf={uf}
             visao={visaoDa(mapa, escolhaDoEstado)}
-            classeDaRegiao={lente === "crescer" ? classesDasRegioes(territorio) : undefined}
+            classes={lente.classes(contexto)}
             comCliente={new Set(cnpjs.flatMap((cliente) => (cliente.municipio ? [cliente.municipio] : [])))}
-            circulos={circulosDa(territorio, lente)}
-            tom={lente === "receita" ? "receita" : "perda"}
-            rotulos={rotulosDa(territorio, lente)}
+            circulos={circulos}
+            rotulos={rotulosDe(circulos)}
             municipioEscolhido={escolhaDoEstado?.tipo === "municipio" ? escolhaDoEstado.codigo : null}
             regiaoEscolhida={escolhaDoEstado?.tipo === "regiao" ? escolhaDoEstado.codigo : null}
-            dicaDe={(municipio) => <DicaDoMunicipio municipio={municipio} territorio={territorio} lente={lente} />}
+            dicaDe={(municipio) => <DicaDoMunicipio municipio={municipio} lente={lente} contexto={contexto} />}
             aoEscolher={(municipio) => setEscolha({ uf, tipo: "municipio", codigo: municipio.codigo })}
           />
-          <Legenda lente={lente} territorio={territorio} />
+          <lente.Legenda {...contexto} />
         </Cartao>
-        <Ranking
-          key={`${lente}:${uf}`}
+        <Lista
+          key={`${chave}:${uf}`}
           lente={lente}
-          territorio={territorio}
-          regiaoEscolhida={escolhaDoEstado?.tipo === "regiao" ? escolhaDoEstado.codigo : null}
-          aoEscolher={(codigo) => setEscolha({ uf, tipo: "regiao", codigo })}
+          contexto={contexto}
+          escolhido={escolhaDoEstado?.codigo ?? null}
+          aoEscolher={({ tipo, codigo }) => setEscolha({ uf, tipo, codigo })}
         />
       </div>
-      {escolhaDoEstado ? (
-        <DetalheDaEscolha escolha={escolhaDoEstado} territorio={territorio} hoje={situacao.hoje} aoFechar={() => setEscolha(null)} />
-      ) : null}
+      {escolhaDoEstado ? <DetalheDaEscolha escolha={escolhaDoEstado} lente={lente} contexto={contexto} aoFechar={() => setEscolha(null)} /> : null}
     </div>
   );
 }
 
-function Indicadores({ lente, territorio }: { lente: Lente; territorio: Territorio }) {
-  if (lente === "crescer") {
-    const comLacuna = territorio.regioes.filter((regiao) => regiao.lacuna > 0);
-    const maior = [...comLacuna].sort((a, b) => b.lacuna - a.lacuna)[0];
-    return (
-      <div className={estilos.indicadores}>
-        <Indicador
-          destaque
-          rotulo="A recuperar por mês"
-          icone={CirclePause}
-          valor={<Valor valor={territorio.aRecuperarPorMes} compacto comoPerda />}
-          detalhe={`${formatarContagem(territorio.clientesARecuperar, "cliente parado ou comprando menos", "clientes parados ou comprando menos")}`}
-        />
-        <Indicador
-          rotulo="Potencial por ano"
-          icone={Sprout}
-          valor={<Valor valor={comLacuna.reduce((soma, regiao) => soma + regiao.lacuna, 0)} compacto />}
-          detalhe={`${formatarContagem(comLacuna.length, "região abaixo", "regiões abaixo")} da sua média por habitante`}
-        />
-        <Indicador
-          rotulo="Maior oportunidade"
-          icone={Target}
-          valor={maior ? maior.regiao.nome : "—"}
-          detalhe={maior ? <>potencial de <Valor valor={maior.lacuna} compacto comSinal /> por ano</> : semMaiorOportunidade(territorio)}
-        />
-      </div>
-    );
-  }
-  const principal = [...territorio.regioes].sort((a, b) => b.receita - a.receita)[0];
-  return (
-    <div className={estilos.indicadores}>
-      <Indicador
-        destaque
-        rotulo="Faturado em 12 meses"
-        icone={ReceiptText}
-        valor={<Valor valor={territorio.receita} compacto />}
-        detalhe={`${formatarContagem(territorio.clientes, "cliente", "clientes")} em ${formatarContagem(territorio.municipios.size, "município", "municípios")}`}
-      />
-      <Indicador
-        rotulo="Concentração"
-        icone={ChartPie}
-        valor={territorio.receita > 0 ? formatarContagem(territorio.municipiosPara80, "município", "municípios") : "—"}
-        detalhe={territorio.receita > 0 ? "fazem 80% da receita no estado" : SEM_FATURADO}
-      />
-      <Indicador
-        rotulo="Região que mais fatura"
-        icone={MapPinned}
-        valor={principal && principal.receita > 0 ? principal.regiao.nome : "—"}
-        detalhe={principal && principal.receita > 0 ? `${formatarParticipacao(principal.participacao)} da receita no estado` : SEM_FATURADO}
-      />
-    </div>
-  );
+function chaveDaLente(valor: string | null): ChaveDaLente {
+  return valor !== null && valor in LENTES ? (valor as ChaveDaLente) : PADRAO;
 }
 
-type PropsDoRanking = { lente: Lente; territorio: Territorio; regiaoEscolhida: string | null; aoEscolher: (codigo: string) => void };
+type PropsDaLista = { lente: LenteDoMapa; contexto: ContextoDaLente; escolhido: string | null; aoEscolher: (item: ItemDaLista) => void };
 
-/** A lista que acompanha o mapa: as regiões que mais faturam, ou as que mais têm para crescer. */
-function Ranking({ lente, territorio, regiaoEscolhida, aoEscolher }: PropsDoRanking) {
+/** A lista que acompanha o mapa, na ordem da visão; a linha escolhida é a que o mapa aproxima. */
+function Lista({ lente, contexto, escolhido, aoEscolher }: PropsDaLista) {
   const [isCompleta, setIsCompleta] = useState(false);
-  const regioes =
-    lente === "receita"
-      ? territorio.regioes.filter((regiao) => regiao.receita > 0).sort((a, b) => b.receita - a.receita)
-      : territorio.regioes.filter((regiao) => regiao.lacuna > 0 || regiao.aRecuperarPorMes > 0).sort((a, b) => b.lacuna - a.lacuna);
-  const maior = Math.max(1, ...regioes.map((regiao) => (lente === "receita" ? regiao.receita : regiao.lacuna)));
+  const itens = lente.itens(contexto);
+  const { titulo, icone, subtitulo, barra, vazio } = lente.lista;
   return (
-    <Cartao
-      titulo={lente === "receita" ? "Regiões que mais faturam" : "Onde crescer"}
-      icone={lente === "receita" ? ReceiptText : Sprout}
-      subtitulo={
-        lente === "receita"
-          ? "Regiões imediatas do IBGE: a cidade-polo e o entorno"
-          : "Onde você tem cliente e as regiões vizinhas, pelo que faturariam na sua média por habitante"
-      }
-      className={estilos.cartaoDoRanking}
-    >
-      {regioes.length === 0 ? (
-        <p className={estilos.vazio}>{lente === "receita" ? "Nenhum faturado nos últimos 12 meses." : semRegiaoParaCrescer(territorio)}</p>
+    <Cartao titulo={titulo} icone={icone} subtitulo={subtitulo} className={estilos.cartaoDoRanking}>
+      {itens.length === 0 ? (
+        <p className={estilos.vazio}>{vazio(contexto)}</p>
       ) : (
         <ol className={estilos.ranking}>
-          {(isCompleta ? regioes : regioes.slice(0, REGIOES_NA_LISTA)).map((regiao) => (
-            <li key={regiao.regiao.codigo}>
+          {(isCompleta ? itens : itens.slice(0, LINHAS_DA_LISTA)).map((item) => (
+            <li key={item.codigo}>
               <button
                 type="button"
                 className={estilos.itemDoRanking}
-                aria-pressed={regiao.regiao.codigo === regiaoEscolhida}
-                onClick={() => aoEscolher(regiao.regiao.codigo)}
-                style={{ "--parte": (lente === "receita" ? regiao.receita : regiao.lacuna) / maior } as CSSProperties}
+                aria-pressed={item.codigo === escolhido}
+                onClick={() => aoEscolher(item)}
+                style={{ "--parte": item.parte } as CSSProperties}
               >
-                <span className={estilos.nomeDaRegiao}>{regiao.regiao.nome}</span>
-                <span className={estilos.valorDaRegiao}>
-                  {lente === "receita" ? <Valor valor={regiao.receita} compacto /> : regiao.lacuna > 0 ? <Valor valor={regiao.lacuna} compacto comSinal /> : "—"}
-                </span>
-                <span className={`${estilos.barra} ${lente === "receita" ? estilos.barraDeReceita : estilos.barraDePotencial}`} aria-hidden="true" />
-                <span className={estilos.detalheDaRegiao}>{detalheDaRegiao(regiao, lente)}</span>
+                <span className={estilos.nomeDaRegiao}>{item.nome}</span>
+                <span className={estilos.valorDaRegiao}>{item.valor}</span>
+                <span className={`${estilos.barra} ${barra}`} aria-hidden="true" />
+                <span className={estilos.detalheDaRegiao}>{item.detalhe}</span>
               </button>
             </li>
           ))}
         </ol>
       )}
-      {regioes.length > REGIOES_NA_LISTA ? (
+      {itens.length > LINHAS_DA_LISTA ? (
         <button type="button" className={estilos.verTodas} aria-expanded={isCompleta} onClick={() => setIsCompleta(!isCompleta)}>
-          {isCompleta ? `Ver só as ${REGIOES_NA_LISTA} primeiras` : `Ver todas (${regioes.length})`}
+          {isCompleta ? `Ver só as ${LINHAS_DA_LISTA} primeiras` : `Ver todas (${itens.length})`}
           {isCompleta ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
         </button>
       ) : null}
@@ -249,75 +193,10 @@ function Ranking({ lente, territorio, regiaoEscolhida, aoEscolher }: PropsDoRank
   );
 }
 
-/** Sem faturado no estado, não há média por habitante para medir o potencial. */
-function semMaiorOportunidade(territorio: Territorio): string {
-  return territorio.receita > 0 ? "todas as regiões na média" : `${SEM_FATURADO} para medir`;
-}
-
-function semRegiaoParaCrescer(territorio: Territorio): string {
-  return territorio.receita > 0 ? "Todas as regiões estão na sua média ou acima." : "Sem faturado em 12 meses neste estado para medir o potencial.";
-}
-
-function detalheDaRegiao(regiao: RegiaoNoTerritorio, lente: Lente): ReactNode {
-  if (lente === "receita") {
-    return `${formatarParticipacao(regiao.participacao)} da receita · ${formatarContagem(regiao.clientes, "cliente", "clientes")}`;
-  }
-  const habitantes = `${formatarCompacto(regiao.populacao)} habitantes`;
-  if (regiao.aRecuperarPorMes > 0) {
-    return (
-      <>
-        {habitantes} · <Valor valor={regiao.aRecuperarPorMes} compacto comoPerda /> por mês a recuperar
-      </>
-    );
-  }
-  return regiao.clientes > 0 ? `${habitantes} · ${formatarContagem(regiao.clientes, "cliente", "clientes")}` : `${habitantes} · nenhum cliente ainda`;
-}
-
-function Legenda({ lente, territorio }: { lente: Lente; territorio: Territorio }) {
-  if (lente === "crescer") {
-    return (
-      <div className={estilos.legenda}>
-        <span className={estilos.itemDaLegenda}>
-          <span className={estilos.amostraNeutra} aria-hidden="true" />
-          longe dos seus clientes
-        </span>
-        <span className={estilos.itemDaLegenda}>
-          <span className={estilos.amostraComCliente} aria-hidden="true" />
-          na sua média ou acima
-        </span>
-        <span className={estilos.itemDaLegenda}>
-          <span className={estilos.rampa} aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-          </span>
-          potencial por ano, do menor ao maior
-        </span>
-        <span className={estilos.itemDaLegenda}>
-          <span className={`${estilos.bolinha} ${estilos.bolinhaDePerda}`} aria-hidden="true" />a recuperar por mês
-        </span>
-      </div>
-    );
-  }
-  const maior = Math.max(0, ...[...territorio.municipios.values()].map((presenca) => presenca.receita));
-  return (
-    <div className={estilos.legenda}>
-      <span className={estilos.itemDaLegenda}>
-        <span className={`${estilos.bolinha} ${estilos.bolinhaDeReceita}`} aria-hidden="true" />
-        faturado em 12 meses; o maior círculo, <Valor valor={maior} compacto />
-      </span>
-      <span className={estilos.itemDaLegenda}>
-        <span className={estilos.amostraComCliente} aria-hidden="true" />
-        município com cliente
-      </span>
-    </div>
-  );
-}
-
-function DicaDoMunicipio({ municipio, territorio, lente }: { municipio: MunicipioDoMapa; territorio: Territorio; lente: Lente }) {
-  const presenca = territorio.municipios.get(municipio.codigo);
-  const regiao = territorio.regioes.find((item) => item.regiao.codigo === municipio.regiao);
+/** O que toda dica tem (o nome, o faturado e a região) em volta do que é só da visão. */
+function DicaDoMunicipio({ municipio, lente, contexto }: { municipio: MunicipioDoMapa; lente: LenteDoMapa; contexto: ContextoDaLente }) {
+  const presenca = contexto.territorio.municipios.get(municipio.codigo);
+  const regiao = contexto.territorio.regioes.find((item) => item.regiao.codigo === municipio.regiao);
   return (
     <>
       <p className={estilos.tituloDaDica}>{municipio.nome}</p>
@@ -330,38 +209,26 @@ function DicaDoMunicipio({ municipio, territorio, lente }: { municipio: Municipi
           "Sem cliente da carteira"
         )}
       </p>
-      {lente === "crescer" && presenca && presenca.aRecuperarPorMes > 0 ? (
-        <p className={estilos.linhaDaDica}>
-          <Valor valor={presenca.aRecuperarPorMes} compacto comoPerda /> por mês a recuperar
-        </p>
-      ) : null}
-      {regiao ? (
-        <p className={estilos.regiaoDaDica}>
-          Região de {regiao.regiao.nome}
-          {lente === "crescer" && regiao.lacuna > 0 ? (
-            <>
-              {" "}
-              · potencial <Valor valor={regiao.lacuna} compacto comSinal />/ano
-            </>
-          ) : null}
-        </p>
-      ) : null}
+      <lente.Dica {...contexto} municipio={municipio} />
+      {regiao ? <p className={estilos.regiaoDaDica}>Região de {regiao.regiao.nome}</p> : null}
     </>
   );
 }
 
-type PropsDoDetalhe = { escolha: Escolha; territorio: Territorio; hoje: string; aoFechar: () => void };
+type PropsDoDetalhe = { escolha: Escolha; lente: LenteDoMapa; contexto: ContextoDaLente; aoFechar: () => void };
 
-/** A região ou o município escolhido: os números e os clientes, cada um com o caminho para a ficha. */
-function DetalheDaEscolha({ escolha, territorio, hoje, aoFechar }: PropsDoDetalhe) {
+/** A região ou o município escolhido: o que a visão diz dele e os clientes, cada um com o caminho para a ficha. */
+function DetalheDaEscolha({ escolha, lente, contexto, aoFechar }: PropsDoDetalhe) {
+  const { territorio } = contexto;
   const regiao =
     escolha.tipo === "regiao"
       ? territorio.regioes.find((item) => item.regiao.codigo === escolha.codigo)
-      : territorio.regioes.find((item) => item.municipios.some((presenca) => presenca.municipio.codigo === escolha.codigo));
+      : territorio.regioes.find((item) => item.regiao.codigo === municipioDaEscolha(territorio, escolha)?.regiao);
   const presenca = escolha.tipo === "municipio" ? territorio.municipios.get(escolha.codigo) : undefined;
-  const municipioSemCliente = escolha.tipo === "municipio" && !presenca;
-  const clientes = (presenca ? presenca.clientes : (regiao?.municipios.flatMap((item) => item.clientes) ?? [])).slice().sort((a, b) => b.faturamento12m - a.faturamento12m);
-  const titulo = escolha.tipo === "regiao" ? (regiao?.regiao.nome ?? "") : (presenca?.municipio.nome ?? "Município sem cliente");
+  const clientes = (presenca ? presenca.clientes : (regiao?.municipios.flatMap((item) => item.clientes) ?? []))
+    .slice()
+    .sort((a, b) => b.faturamento12m - a.faturamento12m);
+  const titulo = escolha.tipo === "regiao" ? (regiao?.regiao.nome ?? "") : (municipioDaEscolha(territorio, escolha)?.nome ?? "Município");
   return (
     <Cartao
       titulo={titulo}
@@ -373,55 +240,35 @@ function DetalheDaEscolha({ escolha, territorio, hoje, aoFechar }: PropsDoDetalh
         </button>
       }
     >
-      {escolha.tipo === "regiao" && regiao ? <NumerosDaRegiao regiao={regiao} /> : null}
-      {municipioSemCliente ? (
-        <p className={estilos.vazio}>Nenhum cliente da carteira neste município ainda.</p>
-      ) : (
-        <TabelaResponsiva
-          descricao={`Clientes de ${titulo}`}
-          itens={clientes}
-          chaveDe={(cliente) => cliente.codigo}
-          linkDe={(cliente) => `/clientes/${cliente.codigo}`}
-          vazio={regiao ? `Nenhum cliente da carteira nesta região: ${formatarCompacto(regiao.populacao)} habitantes para conquistar.` : "Nenhum cliente."}
-          ordemInicial={{ coluna: "Faturado 12 meses", sentido: "decrescente" }}
-          parametroDaOrdem="ordem-mapa"
-          colunas={[
-            { titulo: "Cliente", ordenarPor: (cliente) => cliente.nome, celula: (cliente) => <Identificacao titulo={cliente.nome} detalhe={`${cliente.cidade}/${cliente.uf}`} /> },
-            { titulo: "Situação", ordenarPor: (cliente) => cliente.situacao, celula: (cliente) => <SituacaoCliente situacao={cliente.situacao} /> },
-            { titulo: "Faturado 12 meses", numerica: true, largura: 8, ordenarPor: (cliente) => cliente.faturamento12m, celula: (cliente) => <Valor valor={cliente.faturamento12m} /> },
-            { titulo: "Última compra", ordenarPor: (cliente) => cliente.ultimaCompra, celula: (cliente) => <DataRelativa data={cliente.ultimaCompra} hoje={hoje} /> },
-          ]}
-        />
-      )}
+      {escolha.tipo === "regiao" && regiao && lente.SobreARegiao ? <lente.SobreARegiao {...contexto} regiao={regiao} /> : null}
+      <TabelaResponsiva
+        descricao={`Clientes de ${titulo}`}
+        itens={clientes}
+        chaveDe={(cliente) => cliente.codigo}
+        linkDe={(cliente) => `/clientes/${cliente.codigo}`}
+        vazio={vazioDaEscolha(escolha, regiao?.populacao)}
+        ordemInicial={lente.ordemInicial}
+        parametroDaOrdem="ordem-mapa"
+        colunas={[
+          { titulo: "Cliente", ordenarPor: (cliente) => cliente.nome, celula: (cliente) => <Identificacao titulo={cliente.nome} detalhe={`${cliente.cidade}/${cliente.uf}`} /> },
+          ...lente.colunas(contexto),
+        ]}
+      />
     </Cartao>
   );
 }
 
-function NumerosDaRegiao({ regiao }: { regiao: RegiaoNoTerritorio }) {
+function municipioDaEscolha(territorio: Territorio, escolha: Escolha): MunicipioDoMapa | undefined {
+  if (escolha.tipo !== "municipio") return undefined;
   return (
-    <dl className={estilos.numeros}>
-      <div>
-        <dt>Habitantes</dt>
-        <dd>{formatarCompacto(regiao.populacao)}</dd>
-      </div>
-      <div>
-        <dt>Faturado em 12 meses</dt>
-        <dd>
-          <Valor valor={regiao.receita} compacto />
-        </dd>
-      </div>
-      <div>
-        <dt>Na sua média por habitante</dt>
-        <dd>
-          <Valor valor={regiao.potencial} compacto />
-        </dd>
-      </div>
-      <div>
-        <dt>A recuperar por mês</dt>
-        <dd>{regiao.aRecuperarPorMes > 0 ? <Valor valor={regiao.aRecuperarPorMes} compacto comoPerda /> : "—"}</dd>
-      </div>
-    </dl>
+    territorio.municipios.get(escolha.codigo)?.municipio ??
+    territorio.regioes.flatMap(({ semCliente }) => semCliente).find((municipio) => municipio.codigo === escolha.codigo)
   );
+}
+
+function vazioDaEscolha(escolha: Escolha, populacao: number | undefined): string {
+  if (escolha.tipo === "municipio") return "Nenhum cliente da carteira neste município ainda.";
+  return populacao ? `Nenhum cliente da carteira nesta região: ${formatarCompacto(populacao)} habitantes para conquistar.` : "Nenhum cliente.";
 }
 
 function Aviso({ texto }: { texto: string }) {
@@ -447,24 +294,11 @@ function visaoDa(mapa: MapaDaUf, escolha: Escolha | null): Caixa {
   return [x0 - folga, y0 - folga, x1 + folga, y1 + folga];
 }
 
-/** Só as regiões da área ganham classe: a de fora fica com a cor de fundo dos municípios. */
-function classesDasRegioes(territorio: Territorio): Map<string, number> {
-  const daArea = territorio.regioes.filter((regiao) => regiao.isDaArea);
-  const lacunas = daArea.map((regiao) => regiao.lacuna);
-  return new Map(daArea.map((regiao) => [regiao.regiao.codigo, classeDaLacuna(regiao.lacuna, lacunas)]));
-}
-
-function circulosDa(territorio: Territorio, lente: Lente): CirculoDoMapa[] {
-  return [...territorio.municipios.values()].map((presenca) => ({
-    municipio: presenca.municipio,
-    valor: lente === "receita" ? presenca.receita : presenca.aRecuperarPorMes,
-  }));
-}
-
-function rotulosDa(territorio: Territorio, lente: Lente): MunicipioDoMapa[] {
-  return circulosDa(territorio, lente)
-    .filter((circulo) => circulo.valor > 0)
+/** O nome vai ao lado dos maiores círculos com valor. */
+function rotulosDe(circulos: readonly CirculoDoMapa[]): MunicipioDoMapa[] {
+  return circulos
+    .filter(({ valor }) => valor > 0)
     .sort((a, b) => b.valor - a.valor)
     .slice(0, MUNICIPIOS_COM_NOME)
-    .map((circulo) => circulo.municipio);
+    .map(({ municipio }) => municipio);
 }

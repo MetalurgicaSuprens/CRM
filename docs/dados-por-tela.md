@@ -520,12 +520,16 @@ Feitas com a chave de acesso de verdade no modo de dados reais em 2026-10-15 (F3
 
 Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele poderia atender melhor e de onde vem a receita dele, sem copiar o mapa antigo. Mais tarde, as rotas de visita saem daqui. Tela em `web/src/paginas/Mapa.tsx`; as regras em `web/src/dados/mapa.ts`, com teste.
 
-- **Duas visões**, nos botões do alto e no endereço (`visao=crescer`):
-  - "De onde vem a receita": um círculo por município, do tamanho do faturado em 12 meses, e as regiões que mais faturam;
-  - "Onde crescer": as regiões pelo potencial que falta, em 4 tons de verde, e o que dá para recuperar, em círculos vermelhos.
+- **A função do mapa (2026-10-18).** O tempo na estrada é o que o representante tem de mais escasso. O mapa responde "para onde eu vou, e o que faço lá?" e, a médio prazo, "como está meu território?". Valor exato e evolução no tempo ficam em Clientes e Análises.
+- **Quatro visões**, nos botões do alto e no endereço (`visao=`), cada uma em `web/src/paginas/mapa/` com os números, o desenho, a legenda, a dica, a lista e as colunas dela:
+  - "Onde agir", a que abre: em cada cidade, um círculo do tamanho do dinheiro em jogo por mês nos clientes que pedem ação, vermelho com parado, âmbar com comprando menos ou fora do ciclo, e um ponto azul onde só há mix ou cliente novo. A lista dá as regiões pelo dinheiro em jogo, e a escolha, os clientes com o motivo;
+  - "Receita": o círculo é o faturado em 12 meses, e a cor diz se o município cresce (verde), está estável (cinza) ou cai (vermelho) 10% ou mais contra os 12 meses anteriores. Um círculo grande e vermelho é um mercado grande encolhendo;
+  - "Esquecidas": a cidade com cliente pintada pelo tempo desde a última compra de algum cliente dela (até 30, 90 e 180 dias, e mais), e a lista das cidades da mais esquecida à mais recente;
+  - "Onde crescer": as regiões da área pelo potencial que falta, em 4 tons de verde, e as cidades sem cliente. A recuperação de cliente parado foi para "Onde agir".
+- **Fora do mapa.** O cliente sem o município no cadastro não entra; a página diz quantos são.
 - **Por estado.** Os botões mostram os estados da carteira, com o número de clientes, e a página abre no que tem mais (`uf=`). Os outros estados da carteira aparecem em volta, mais claros.
 - **Escolha.** A lista mostra as 8 primeiras regiões e o "Ver todas". A região escolhida na lista é aproximada no mapa. O clique ou o toque num município mostra os clientes dele, cada um com o caminho para a ficha. O mouse mostra a dica do município.
-- **Grupos.** O mapa põe cada CNPJ do grupo no seu município, com os números dele. O que dá para recuperar de um grupo parado ou comprando menos se divide entre os CNPJs pela parte de cada um no faturado de 12 meses, ou em partes iguais se ele não faturou nada (dados/mapa.ts, `aRecuperarPorCliente`, com teste).
+- **Grupos.** O mapa põe cada CNPJ do grupo no seu município, com os números dele. O dinheiro em jogo de um grupo parado ou comprando menos se divide entre os CNPJs pela parte de cada um no faturado de 12 meses, ou em partes iguais se ele não faturou nada; o mix e o novo valem para todos os CNPJs, e o atraso no ciclo é de cada um (dados/mapa.ts, `acoesDaCarteira`, com teste).
 - **Nomes no mapa.** Os 5 municípios que mais pesam têm o nome ao lado do círculo. O nome passa para a esquerda quando à direita encostaria em outro ou sairia do quadro. Se não cabe de nenhum lado, fica de fora (`web/src/graficos/nomesNoMapa.ts`, com teste).
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
@@ -536,7 +540,11 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
 | Concentração | "N municípios fazem 80% da receita no estado" | Os municípios que mais faturam, somados até 80% | (derivado) | navegador |
 | Área | As regiões que entram no potencial | As regiões imediatas com cliente da carteira e as vizinhas delas, no mesmo estado | (derivado; as vizinhas vêm no arquivo do estado) | navegador |
 | Potencial e lacuna | Verde do mapa, "Potencial por ano", "Maior oportunidade" e lista "Onde crescer" | Potencial: receita por habitante na área × população da região. Lacuna: o que falta para o potencial. Fora da área, os dois são 0. Os tons de verde seguem os quartis das lacunas | (derivado) | navegador |
-| A recuperar por mês | Círculos vermelhos e indicador | A perda mensal de quem parou e a queda por mês de quem compra menos, as listas de Análises | (foto: `analise_parado`, `analise_ritmo`) | navegador |
+| Em jogo por mês ("Onde agir") | Círculos, lista, indicador e a coluna dos clientes | A perda mensal de quem parou, a queda por mês de quem compra menos (as listas de Análises) e a média mensal (faturado em 12 meses ÷ 12) do cliente ativo que passou do próprio ciclo de compra | (foto: `analise_parado`, `analise_ritmo`, `cliente.ciclo_dias`, `ultima_compra`) | navegador |
+| Motivo ("Onde agir") | "Parou há 120 dias", "Comprando menos: −45% no semestre", "44 dias sem comprar; costuma a cada 33", "Mix: FLEXIL, MICRO", "Novo desde ago/26" | Parado e comprando menos: as listas de Análises. Fora do ciclo: o cliente ativo com mais dias sem comprar que o ciclo dele, que não está parado nem em risco. Mix e novo: as listas de Análises | (foto: as análises e `cliente.ciclo_dias`) | navegador |
+| Direção ("Receita") | Cor do círculo e variação na lista e na dica | O faturado em 12 meses dos clientes do município contra os 12 meses anteriores (o primeiro ponto de `evolucao_12m`), com 10% de folga: o percentual inteiro, o mesmo que a tela escreve | (foto: `cliente.evolucao_12m`) | navegador |
+| Tempo sem compra ("Esquecidas") | Cor do município, lista e indicadores | Dias desde a compra mais recente de algum cliente do município. Esquecida: mais de 90 dias, ou nenhum cliente comprou | (foto: `cliente.ultima_compra`) | navegador |
+| Cidades sem cliente ("Onde crescer") | Indicador e a lista da região escolhida, das mais populosas | Os municípios da área sem cliente da carteira | (derivado) | navegador |
 
 - **Por que a área (2026-10-15).**
   - Com a régua do estado inteiro, a região de São Paulo dominava o fictício: 20,7 milhões de habitantes e nenhum cliente.

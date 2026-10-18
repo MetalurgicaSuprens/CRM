@@ -12,6 +12,19 @@
   gap: var(--esp-3);
 }
 
+/* Quantos clientes ficam fora do mapa por falta do município no cadastro */
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.aviso svg {
+  flex-shrink: 0;
+}
+
 .indicadores {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -106,6 +119,14 @@
   background: var(--cor-potencial-3);
 }
 
+.barraDePerda::after {
+  background: var(--cor-mapa-critico);
+}
+
+.barraDeRecencia::after {
+  background: var(--cor-recencia-3);
+}
+
 .detalheDaRegiao {
   grid-area: detalhe;
   font-size: var(--tam-pequeno);
@@ -146,18 +167,66 @@
   gap: var(--esp-2);
 }
 
+/* As bolinhas da legenda e do motivo têm as cores dos círculos do mapa (data-tom) */
 .bolinha {
   width: 12px;
   height: 12px;
   border-radius: 50%;
 }
 
-.bolinhaDeReceita {
-  background: var(--cor-dado);
+.bolinhaPequena {
+  width: 8px;
+  height: 8px;
 }
 
-.bolinhaDePerda {
-  background: var(--cor-queda);
+.bolinha[data-tom="critico"],
+.pontoDoMotivo[data-tom="critico"] {
+  background: var(--cor-mapa-critico);
+}
+
+.bolinha[data-tom="atencao"],
+.pontoDoMotivo[data-tom="atencao"] {
+  background: var(--cor-mapa-atencao);
+}
+
+.bolinha[data-tom="oportunidade"],
+.pontoDoMotivo[data-tom="oportunidade"] {
+  background: var(--cor-mapa-oportunidade);
+}
+
+.bolinha[data-tom="alta"] {
+  background: var(--cor-mapa-alta);
+}
+
+.bolinha[data-tom="estavel"] {
+  background: var(--cor-mapa-estavel);
+}
+
+.bolinha[data-tom="queda"] {
+  background: var(--cor-mapa-queda);
+}
+
+/* As faixas de "Esquecidas", com as cores dos municípios (data-classe) */
+.amostra {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.amostra[data-classe="recencia-1"] {
+  background: var(--cor-recencia-1);
+}
+
+.amostra[data-classe="recencia-2"] {
+  background: var(--cor-recencia-2);
+}
+
+.amostra[data-classe="recencia-3"] {
+  background: var(--cor-recencia-3);
+}
+
+.amostra[data-classe="recencia-4"] {
+  background: var(--cor-recencia-4);
 }
 
 .amostraNeutra,
@@ -248,6 +317,47 @@
 .vazio {
   color: var(--cor-texto-suave);
   font-size: var(--tam-pequeno);
+}
+
+/* O motivo de agir, na lista de clientes de "Onde agir" */
+.motivo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--esp-2);
+}
+
+.pontoDoMotivo {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translateY(-1px);
+}
+
+.emDia {
+  color: var(--cor-texto-suave);
+}
+
+/* As cidades sem cliente da região escolhida, em "Onde crescer" */
+.semCliente {
+  margin-bottom: var(--esp-4);
+  font-size: var(--tam-pequeno);
+}
+
+.tituloSemCliente {
+  margin-bottom: var(--esp-2);
+  font-weight: 600;
+  color: var(--cor-texto-2);
+}
+
+.semCliente ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-1) var(--esp-4);
+}
+
+.semCliente li span {
+  color: var(--cor-texto-suave);
 }
 
 /* ------------------------------------------------ larguras menores */

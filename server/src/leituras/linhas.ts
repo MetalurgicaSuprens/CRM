@@ -46,7 +46,7 @@ export function numeroOuNulo(linha: Linha, coluna: string): number | null {
 
 /** Colunas de `cliente` (alias c) que formam o ClienteResumo. */
 export const COLUNAS_DO_RESUMO = `c.cliente, c.codigo_erp, c.nome, c.cidade, c.uf, c.municipio_ibge, c.mercado, c.situacao, c.status, c.ultima_compra,
-  c.faturamento_12m, c.variacao_12m, c.evolucao_12m, c.queda_no_semestre, c.cnpjs`;
+  c.ciclo_dias, c.faturamento_12m, c.variacao_12m, c.evolucao_12m, c.queda_no_semestre, c.cnpjs`;
 
 /**
  * Cada linha (lida com COLUNAS_DO_RESUMO) com o resumo do cliente, na mesma ordem; o do grupo traz
@@ -94,6 +94,7 @@ export function resumoDoCliente(linha: Linha): ClienteResumo {
     situacao: texto(linha, "situacao") as Situacao,
     status: texto(linha, "status") as StatusDoCadastro,
     ultimaCompra: textoOuNulo(linha, "ultima_compra"),
+    cicloDias: numeroOuNulo(linha, "ciclo_dias"),
     faturamento12m: numero(linha, "faturamento_12m"),
     variacao12m: numeroOuNulo(linha, "variacao_12m"),
     evolucao12m: JSON.parse(texto(linha, "evolucao_12m")) as number[],

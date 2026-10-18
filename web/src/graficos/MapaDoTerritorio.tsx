@@ -7,10 +7,15 @@ import estilos from "./MapaDoTerritorio.module.css";
 /*
  * O mapa da carteira em SVG, desenhado à mão como os outros gráficos: o Brasil de fundo, os estados da
  * carteira com os municípios, as regiões imediatas do estado escolhido e um círculo por município, do
- * tamanho do valor. A dica sai ao passar o mouse; o toque escolhe o município.
+ * tamanho do valor e no tom que a visão dá a ele. A dica sai ao passar o mouse; o toque escolhe o
+ * município.
  */
 
-export type CirculoDoMapa = { municipio: MunicipioDoMapa; valor: number };
+/** As cores dos círculos (tokens.css, --cor-mapa-*): as ações de "Onde agir" e a direção da receita. */
+export type TomDoCirculo = "critico" | "atencao" | "oportunidade" | "alta" | "estavel" | "queda";
+
+/** O círculo de valor 0 aparece no tamanho mínimo: o lugar que tem algo, mas sem dinheiro para medir. */
+export type CirculoDoMapa = { municipio: MunicipioDoMapa; valor: number; tom: TomDoCirculo };
 
 type Props = {
   descricao: string;
@@ -21,13 +26,13 @@ type Props = {
   /** A parte do mapa à vista; a troca é animada. */
   visao: Caixa;
   /**
-   * Na lente "onde crescer", a classe de 0 a 4 de cada região da área; a de fora fica sem cor. Sem a
-   * lente, a cor mostra onde há cliente.
+   * A cor de cada município do estado escolhido, pelo código IBGE (as classes de MapaDoTerritorio.module.css);
+   * o que não está aqui fica com a cor de fundo.
    */
-  classeDaRegiao?: ReadonlyMap<string, number>;
+  classes: ReadonlyMap<string, string>;
+  /** Nos estados vizinhos da carteira, a cor só mostra onde há cliente. */
   comCliente: ReadonlySet<string>;
   circulos: readonly CirculoDoMapa[];
-  tom: "receita" | "perda";
   /** Os municípios que podem ter o nome ao lado do círculo, do que mais pesa ao que menos (nomesNoMapa.ts). */
   rotulos: readonly MunicipioDoMapa[];
   municipioEscolhido: string | null;
@@ -44,7 +49,7 @@ const RAIO_MINIMO = 3.5;
 const DURACAO_DA_ANIMACAO_MS = 450;
 
 export function MapaDoTerritorio(props: Props) {
-  const { descricao, brasil, mapas, uf, visao, classeDaRegiao, comCliente, circulos, tom, rotulos, municipioEscolhido, regiaoEscolhida, dicaDe, aoEscolher } = props;
+  const { descricao, brasil, mapas, uf, visao, classes, comCliente, circulos, rotulos, municipioEscolhido, regiaoEscolhida, dicaDe, aoEscolher } = props;
   const { referencia, largura } = useLargura<HTMLDivElement>();
   const caixa = useVisaoAnimada(visao);
   const [sobre, setSobre] = useState<{ municipio: MunicipioDoMapa; x: number; y: number } | null>(null);
@@ -56,7 +61,7 @@ export function MapaDoTerritorio(props: Props) {
   const escala = largura > 0 ? vista.largura / largura : 1;
   const raioMaximo = largura < 520 ? RAIO_MAXIMO.estreito : RAIO_MAXIMO.largo;
   const maiorValor = Math.max(0, ...circulos.map((circulo) => circulo.valor));
-  const raioEmPx = (valor: number) => (maiorValor > 0 ? Math.max(RAIO_MINIMO, Math.sqrt(valor / maiorValor) * raioMaximo) : 0);
+  const raioEmPx = (valor: number) => (maiorValor > 0 && valor > 0 ? Math.max(RAIO_MINIMO, Math.sqrt(valor / maiorValor) * raioMaximo) : RAIO_MINIMO);
   const valorDe = new Map(circulos.map((circulo) => [circulo.municipio.codigo, circulo.valor]));
   const nomes = posicionarNomes(rotulos, { vista, escala, raioDe: (municipio) => raioEmPx(valorDe.get(municipio.codigo) ?? 0) });
 
@@ -74,7 +79,7 @@ export function MapaDoTerritorio(props: Props) {
     <div ref={referencia} className={estilos.quadro}>
       {largura > 0 ? (
         <svg
-          className={`${estilos.mapa} ${estilos[tom]}`}
+          className={estilos.mapa}
           width={largura}
           height={altura}
           viewBox={`${vista.x} ${vista.y} ${vista.largura} ${vista.altura}`}
@@ -96,20 +101,20 @@ export function MapaDoTerritorio(props: Props) {
           {mapas
             .filter((mapa) => mapa.uf !== uf)
             .map((mapa) => (
-              <Estado key={mapa.uf} mapa={mapa} isEscolhido={false} comCliente={comCliente} />
+              <Estado key={mapa.uf} mapa={mapa} isEscolhido={false} classeDe={(codigo) => (comCliente.has(codigo) ? "cliente" : undefined)} />
             ))}
-          {escolhido ? <Estado mapa={escolhido} isEscolhido comCliente={comCliente} classeDaRegiao={classeDaRegiao} /> : null}
+          {escolhido ? <Estado mapa={escolhido} isEscolhido classeDe={(codigo) => classes.get(codigo)} /> : null}
           {regiaoEscolhida && escolhido ? (
             <path className={estilos.regiaoEscolhida} d={escolhido.regioes.find((regiao) => regiao.codigo === regiaoEscolhida)?.contorno} />
           ) : null}
           <g className={estilos.circulos}>
             {[...circulos]
-              .filter((circulo) => circulo.valor > 0)
               .sort((a, b) => b.valor - a.valor)
-              .map(({ municipio, valor }) => (
+              .map(({ municipio, valor, tom }) => (
                 <circle
                   key={municipio.codigo}
                   data-municipio={municipio.codigo}
+                  data-tom={tom}
                   cx={municipio.centro[0]}
                   cy={municipio.centro[1]}
                   r={raioEmPx(valor) * escala}
@@ -136,21 +141,15 @@ export function MapaDoTerritorio(props: Props) {
 type PropsDoEstado = {
   mapa: MapaDaUf;
   isEscolhido: boolean;
-  comCliente: ReadonlySet<string>;
-  classeDaRegiao?: ReadonlyMap<string, number>;
+  classeDe: (codigoDoMunicipio: string) => string | undefined;
 };
 
 /** Os municípios do estado, as divisas das regiões (só no escolhido) e o contorno. */
-function Estado({ mapa, isEscolhido, comCliente, classeDaRegiao }: PropsDoEstado) {
+function Estado({ mapa, isEscolhido, classeDe }: PropsDoEstado) {
   return (
     <g className={isEscolhido ? estilos.estadoEscolhido : estilos.estadoVizinho}>
       {mapa.municipios.map((municipio) => (
-        <path
-          key={municipio.codigo}
-          d={municipio.d}
-          data-municipio={municipio.codigo}
-          data-classe={classeDaRegiao?.get(municipio.regiao) ?? (comCliente.has(municipio.codigo) ? "cliente" : undefined)}
-        />
+        <path key={municipio.codigo} d={municipio.d} data-municipio={municipio.codigo} data-classe={classeDe(municipio.codigo)} />
       ))}
       {isEscolhido ? <path className={estilos.regioes} d={mapa.regioes.map((regiao) => regiao.contorno).join("")} /> : null}
       <path className={estilos.contornoDoEstado} d={mapa.contorno} />

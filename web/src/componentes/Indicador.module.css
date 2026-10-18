@@ -65,11 +65,15 @@
 }
 
 /* Encolhe só o necessário para caber ao lado da fatia nos blocos mais estreitos */
+/* Um nome longo como valor (a cidade, a região) termina em reticências em vez de passar do bloco */
 .valor {
+  min-width: 0;
+  overflow: hidden;
   font-size: clamp(1.375rem, calc(var(--largura) * 0.125), var(--tam-numero));
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.01em;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

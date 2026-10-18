@@ -467,6 +467,7 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
     situacao: indicadores.situacao,
     status: cliente.status,
     ultimaCompra: indicadores.ultimaCompra,
+    cicloDias: indicadores.cicloDias,
     faturamento12m: indicadores.faturamento12m,
     variacao12m: variacao12m(evolucao),
     evolucao12m: evolucao,
@@ -485,7 +486,6 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     razaoSocial: cliente.razaoSocial,
     // Na carteira fictícia todo cliente já comprou um dia; o null fica para a foto de verdade.
     clienteDesde: Number(cliente.primeiraCompra.slice(0, 4)),
-    cicloDias: cliente.indicadores.cicloDias,
     mensal: cliente.mensal.map(({ mes, valor }) => ({ mes, valor })),
     familias,
     produtos: produtosDoCliente(cliente, familias),

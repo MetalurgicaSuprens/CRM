@@ -25,7 +25,7 @@ export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: stri
   const { marcas, codigos } = escopo(sessao);
   const [linha] = lerLinhas(
     db,
-    `SELECT ${COLUNAS_DO_RESUMO}, c.razao_social, c.cliente_desde, c.ciclo_dias, c.grupo_mix, c.grupo
+    `SELECT ${COLUNAS_DO_RESUMO}, c.razao_social, c.cliente_desde, c.grupo_mix, c.grupo
        FROM cliente c WHERE c.cliente = ? AND c.representante IN (${marcas})`,
     [codigoDoCliente, ...codigos],
   );
@@ -36,7 +36,6 @@ export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: stri
     ...resumo,
     razaoSocial: texto(linha, "razao_social"),
     clienteDesde: numeroOuNulo(linha, "cliente_desde"),
-    cicloDias: numeroOuNulo(linha, "ciclo_dias"),
     mensal: porCliente("SELECT mes, valor FROM cliente_mes WHERE cliente = ? ORDER BY mes").map((mes) => ({
       mes: texto(mes, "mes"),
       valor: numero(mes, "valor"),

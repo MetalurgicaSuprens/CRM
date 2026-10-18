@@ -52,6 +52,23 @@
   --cor-potencial-2: #6aa580;
   --cor-potencial-3: #44855e;
   --cor-potencial-4: #2b5f3f;
+  /*
+   * Os círculos do mapa. "Onde agir": parado em vermelho, em risco e atrasado em âmbar, mix e novo no
+   * azul do dado; os três passam no validador como categóricos, em todos os pares, e o âmbar (2,1:1
+   * sobre o branco) tem a legenda, a dica e a lista. "Receita": a direção, com o verde mais claro que o
+   * vermelho para quem não distingue os dois (CVD 18,3) e o cinza do ano anterior no meio.
+   */
+  --cor-mapa-critico: #b8321f;
+  --cor-mapa-atencao: #f0a020;
+  --cor-mapa-oportunidade: var(--cor-dado);
+  --cor-mapa-alta: #4cbb79;
+  --cor-mapa-estavel: var(--cor-comparacao);
+  --cor-mapa-queda: var(--cor-mapa-critico);
+  /* "Esquecidas": calor semântico, com legenda, de quem comprou há pouco ao que ninguém compra há mais de 180 dias */
+  --cor-recencia-1: #cfe0f3;
+  --cor-recencia-2: #f3d58a;
+  --cor-recencia-3: #ea9a3e;
+  --cor-recencia-4: var(--cor-mapa-critico);
   --cor-eixo: #cfcfcc;
 
   /* Destaque da interface (ícones, escolha neutra, botão principal, foco): o grafite da Suprens */
