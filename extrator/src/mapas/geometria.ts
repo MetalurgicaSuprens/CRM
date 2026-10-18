@@ -1,24 +1,12 @@
-import type { Caixa } from "dominio/mapa";
+import type { Caixa, Ponto } from "dominio/mapa";
 
 /*
- * A geometria dos arquivos do mapa: a projeção, o caminho SVG e o contorno da união de municípios.
+ * A geometria dos arquivos do mapa: o caminho SVG e o contorno da união de municípios. A projeção está
+ * em dominio/mapa.ts, porque a tela também usa ("Perto de mim" e o roteiro).
  */
 
-export type Ponto = readonly [number, number];
 /** Anel aberto: o último ponto não repete o primeiro. */
 export type Anel = readonly Ponto[];
-
-const RAIO_DA_TERRA_KM = 6371;
-/** Décimos de km: a malha mínima do IBGE vem com 4 casas (uns 11 m), e o mapa não precisa de mais. */
-const UNIDADES_POR_KM = 10;
-
-/** Mercator, que preserva a forma, como os mapas do dia a dia; o y cresce para o sul, como no SVG. */
-export function projetar(longitude: number, latitude: number): Ponto {
-  const escala = RAIO_DA_TERRA_KM * UNIDADES_POR_KM;
-  const lambda = (longitude * Math.PI) / 180;
-  const phi = (latitude * Math.PI) / 180;
-  return [Math.round(escala * lambda), Math.round(-escala * Math.log(Math.tan(Math.PI / 4 + phi / 2)))];
-}
 
 /**
  * Sem o ponto repetido em seguida, que o arredondamento cria, e sem o fechamento. O vizinho, com os

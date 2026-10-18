@@ -1,25 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { caixaDosAneis, caminhoDosAneis, centroDoMaiorAnel, contornoDaUniao, limparAnel, projetar, vizinhosPorDivisa, type Anel } from "./geometria.ts";
+import { caixaDosAneis, caminhoDosAneis, centroDoMaiorAnel, contornoDaUniao, limparAnel, vizinhosPorDivisa, type Anel } from "./geometria.ts";
 
 const QUADRADO_A: Anel = [[0, 0], [10, 0], [10, 10], [0, 10]];
 /** Vizinho à direita do A: a divisa de x = 10 vai no sentido contrário. */
 const QUADRADO_B: Anel = [[10, 0], [20, 0], [20, 10], [10, 10]];
-
-describe("projetar", () => {
-  it("põe o cruzamento do equador com Greenwich na origem", () => {
-    expect(projetar(0, 0)).toEqual([0, 0]);
-  });
-
-  it("mede em décimos de km: um grau no equador são uns 111 km", () => {
-    expect(projetar(1, 0)[0]).toBe(1112);
-  });
-
-  it("faz o y crescer para o sul, como no SVG", () => {
-    const [, goiania] = projetar(-49.25, -16.68);
-    const [, brasilia] = projetar(-47.88, -15.79);
-    expect(goiania).toBeGreaterThan(brasilia);
-  });
-});
 
 describe("limparAnel", () => {
   it("tira o ponto repetido em seguida e o fechamento do GeoJSON", () => {

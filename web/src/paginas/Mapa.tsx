@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { useSearchParams } from "react-router";
-import { ChevronDown, ChevronUp, Info, Map as IconeDoMapa, MapPinned, Users, X } from "lucide-react";
-import type { Caixa, MapaDaUf, MunicipioDoMapa } from "dominio/mapa";
+import { Check, ChevronDown, ChevronUp, Info, LocateFixed, Map as IconeDoMapa, MapPinned, Plus, Users, X } from "lucide-react";
+import { unidadesDoMapa, type Caixa, type MapaDaUf, type MunicipioDoMapa, type Ponto } from "dominio/mapa";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
@@ -13,6 +13,7 @@ import { acoesDaCarteira, montarTerritorio, type Territorio } from "../dados/map
 import { carregarMapaDaUf, carregarMapaDoBrasil } from "../dados/mapas";
 import type { ClienteResumo } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
+import { municipioMaisPerto, ordenarParadas, pertoDe } from "../dados/viagem";
 import { formatarCompacto, formatarContagem } from "../formato";
 import { MapaDoTerritorio, type CirculoDoMapa } from "../graficos/MapaDoTerritorio";
 import { Carregando } from "./Carregando";
@@ -20,13 +21,15 @@ import { ESQUECIDAS } from "./mapa/Esquecidas";
 import type { ContextoDaLente, ItemDaLista, LenteDoMapa } from "./mapa/lente";
 import { ONDE_AGIR } from "./mapa/OndeAgir";
 import { ONDE_CRESCER } from "./mapa/OndeCrescer";
+import { PertoDeVoce, RAIO_DO_PERTO_KM, useLocalizacao } from "./mapa/PertoDeMim";
 import { RECEITA } from "./mapa/Receita";
+import { CartaoDoRoteiro, useRoteiro, type ParadaNoMapa } from "./mapa/Roteiro";
 import estilos from "./Mapa.module.css";
 
 /*
  * O mapa da carteira, por estado. A função dele é responder "para onde eu vou, e o que faço lá?", e,
  * a médio prazo, "como está meu território?". Cada visão (paginas/mapa) dá os números, o desenho, a
- * legenda e a lista dela; esta página monta o resto igual.
+ * legenda e a lista dela; esta página monta o resto igual, com o "Perto de mim" e o roteiro.
  */
 
 const LENTES = { agir: ONDE_AGIR, receita: RECEITA, esquecidas: ESQUECIDAS, crescer: ONDE_CRESCER } as const satisfies Record<string, LenteDoMapa>;
@@ -58,8 +61,26 @@ export function Mapa() {
   const { dados: mapas, erro: erroDosMapas } = useCarga(`mapa:${ufs.map(({ uf }) => uf).join(",")}`, () =>
     Promise.all(ufs.map(({ uf }) => carregarMapaDaUf(uf))),
   );
+  // Os municípios com cliente de todos os estados da carteira: o "perto" e o roteiro passam das divisas.
+  const presencas = useMemo(
+    () => (mapas ?? []).flatMap((umMapa) => [...montarTerritorio(umMapa, cnpjs, acoes).municipios.values()].map((presenca) => ({ ...presenca, uf: umMapa.uf }))),
+    [mapas, cnpjs, acoes],
+  );
   const [parametros, setParametros] = useSearchParams();
   const [escolha, setEscolha] = useState<Escolha | null>(null);
+  const roteiro = useRoteiro();
+  const alterar = (nome: string, valor: string, padrao: string) => {
+    const proximos = new URLSearchParams(parametros);
+    if (valor === padrao) proximos.delete(nome);
+    else proximos.set(nome, valor);
+    setParametros(proximos, { replace: true });
+  };
+  const { localizacao, buscar, esquecer } = useLocalizacao((posicao) => {
+    // O mapa vai para o estado de onde o aparelho está, se ele for da carteira.
+    const perto = municipioMaisPerto(posicao, mapas ?? []);
+    if (perto && perto.uf !== parametros.get("uf")) alterar("uf", perto.uf, ufs[0]?.uf ?? "");
+    setEscolha(null);
+  });
 
   if (erroDoBrasil || erroDosMapas) return <Aviso texto="O mapa não carregou. Recarregue a página para tentar de novo." />;
   if (!clientes || !analises || !situacao || !brasil || !mapas) return <Carregando />;
@@ -75,18 +96,30 @@ export function Mapa() {
   const circulos = lente.circulos(territorio);
   const semMunicipio = cnpjs.filter((cliente) => !cliente.municipio).length;
   const escolhaDoEstado = escolha?.uf === uf ? escolha : null;
-  const alterar = (nome: string, valor: string, padrao: string) => {
-    const proximos = new URLSearchParams(parametros);
-    if (valor === padrao) proximos.delete(nome);
-    else proximos.set(nome, valor);
-    setParametros(proximos, { replace: true });
+  const posicao = localizacao.estado === "achou" ? localizacao.posicao : null;
+  const paradas = ordenarParadas(paradasDoRoteiro(roteiro.codigos, mapas, presencas), posicao);
+  const escolherMunicipio = (codigo: string, ufDoMunicipio: string) => {
+    if (ufDoMunicipio !== uf) alterar("uf", ufDoMunicipio, ufs[0]?.uf ?? "");
+    setEscolha({ uf: ufDoMunicipio, tipo: "municipio", codigo });
   };
 
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina titulo="Mapa" descricao="Para onde ir, de onde vem a receita e onde ainda dá para crescer" />
       <div className={estilos.controles}>
-        <Segmentos rotulo="O que o mapa mostra" opcoes={OPCOES} selecionado={chave} aoEscolher={(valor) => alterar("visao", valor, PADRAO)} />
+        <div className={estilos.grupoDeControles}>
+          <Segmentos rotulo="O que o mapa mostra" opcoes={OPCOES} selecionado={chave} aoEscolher={(valor) => alterar("visao", valor, PADRAO)} />
+          <button
+            type="button"
+            className={botoes.secundario}
+            onClick={buscar}
+            disabled={localizacao.estado === "buscando"}
+            aria-pressed={localizacao.estado === "achou"}
+          >
+            <LocateFixed size={16} aria-hidden="true" />
+            {localizacao.estado === "buscando" ? "Procurando…" : "Perto de mim"}
+          </button>
+        </div>
         {ufs.length > 1 ? (
           <Segmentos
             rotulo="Estado"
@@ -96,6 +129,12 @@ export function Mapa() {
           />
         ) : null}
       </div>
+      {localizacao.estado === "erro" ? (
+        <p className={estilos.aviso} role="alert">
+          <Info size={15} aria-hidden="true" />
+          {localizacao.mensagem}
+        </p>
+      ) : null}
       {semMunicipio > 0 ? (
         <p className={estilos.aviso}>
           <Info size={15} aria-hidden="true" />
@@ -123,27 +162,58 @@ export function Mapa() {
             brasil={brasil}
             mapas={mapas}
             uf={uf}
-            visao={visaoDa(mapa, escolhaDoEstado)}
+            visao={visaoDa(mapa, escolhaDoEstado, posicao)}
             classes={lente.classes(contexto)}
             comCliente={new Set(cnpjs.flatMap((cliente) => (cliente.municipio ? [cliente.municipio] : [])))}
             circulos={circulos}
             rotulos={rotulosDe(circulos)}
             municipioEscolhido={escolhaDoEstado?.tipo === "municipio" ? escolhaDoEstado.codigo : null}
             regiaoEscolhida={escolhaDoEstado?.tipo === "regiao" ? escolhaDoEstado.codigo : null}
+            posicao={posicao}
+            roteiro={paradas.map(({ municipio }) => municipio)}
             dicaDe={(municipio) => <DicaDoMunicipio municipio={municipio} lente={lente} contexto={contexto} />}
             aoEscolher={(municipio) => setEscolha({ uf, tipo: "municipio", codigo: municipio.codigo })}
           />
           <lente.Legenda {...contexto} />
         </Cartao>
-        <Lista
-          key={`${chave}:${uf}`}
+        {posicao ? (
+          <PertoDeVoce
+            lugares={pertoDe(posicao, presencas, RAIO_DO_PERTO_KM)}
+            ufAtual={uf}
+            isNoRoteiro={roteiro.isNoRoteiro}
+            isRoteiroCheio={roteiro.isCheio}
+            alternarNoRoteiro={(lugar) => roteiro.alternar(lugar.municipio.codigo)}
+            aoEscolher={(lugar) => escolherMunicipio(lugar.municipio.codigo, lugar.uf)}
+            aoFechar={esquecer}
+          />
+        ) : (
+          <Lista
+            key={`${chave}:${uf}`}
+            lente={lente}
+            contexto={contexto}
+            escolhido={escolhaDoEstado?.codigo ?? null}
+            aoEscolher={({ tipo, codigo }) => setEscolha({ uf, tipo, codigo })}
+          />
+        )}
+      </div>
+      {paradas.length > 0 ? (
+        <CartaoDoRoteiro
+          paradas={paradas}
+          partida={posicao}
+          aoTirar={roteiro.alternar}
+          aoLimpar={roteiro.limpar}
+          aoEscolher={(parada) => escolherMunicipio(parada.municipio.codigo, parada.uf)}
+        />
+      ) : null}
+      {escolhaDoEstado ? (
+        <DetalheDaEscolha
+          escolha={escolhaDoEstado}
           lente={lente}
           contexto={contexto}
-          escolhido={escolhaDoEstado?.codigo ?? null}
-          aoEscolher={({ tipo, codigo }) => setEscolha({ uf, tipo, codigo })}
+          roteiro={roteiro}
+          aoFechar={() => setEscolha(null)}
         />
-      </div>
-      {escolhaDoEstado ? <DetalheDaEscolha escolha={escolhaDoEstado} lente={lente} contexto={contexto} aoFechar={() => setEscolha(null)} /> : null}
+      ) : null}
     </div>
   );
 }
@@ -215,10 +285,19 @@ function DicaDoMunicipio({ municipio, lente, contexto }: { municipio: MunicipioD
   );
 }
 
-type PropsDoDetalhe = { escolha: Escolha; lente: LenteDoMapa; contexto: ContextoDaLente; aoFechar: () => void };
+type PropsDoDetalhe = {
+  escolha: Escolha;
+  lente: LenteDoMapa;
+  contexto: ContextoDaLente;
+  roteiro: Pick<ReturnType<typeof useRoteiro>, "isNoRoteiro" | "isCheio" | "alternar">;
+  aoFechar: () => void;
+};
 
-/** A região ou o município escolhido: o que a visão diz dele e os clientes, cada um com o caminho para a ficha. */
-function DetalheDaEscolha({ escolha, lente, contexto, aoFechar }: PropsDoDetalhe) {
+/**
+ * A região ou o município escolhido: o que a visão diz dele e os clientes, cada um com o caminho para
+ * a ficha. O município também entra e sai do roteiro daqui.
+ */
+function DetalheDaEscolha({ escolha, lente, contexto, roteiro, aoFechar }: PropsDoDetalhe) {
   const { territorio } = contexto;
   const regiao =
     escolha.tipo === "regiao"
@@ -235,9 +314,23 @@ function DetalheDaEscolha({ escolha, lente, contexto, aoFechar }: PropsDoDetalhe
       icone={escolha.tipo === "regiao" ? MapPinned : Users}
       subtitulo={escolha.tipo === "regiao" ? "Região imediata do IBGE" : regiao ? `Região de ${regiao.regiao.nome}` : undefined}
       acoes={
-        <button type="button" className={botoes.icone} onClick={aoFechar} aria-label={`Fechar ${titulo}`}>
-          <X size={18} aria-hidden="true" />
-        </button>
+        <>
+          {escolha.tipo === "municipio" ? (
+            <button
+              type="button"
+              className={botoes.secundario}
+              onClick={() => roteiro.alternar(escolha.codigo)}
+              disabled={!roteiro.isNoRoteiro(escolha.codigo) && roteiro.isCheio}
+              aria-pressed={roteiro.isNoRoteiro(escolha.codigo)}
+            >
+              {roteiro.isNoRoteiro(escolha.codigo) ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
+              {roteiro.isNoRoteiro(escolha.codigo) ? "No roteiro" : roteiro.isCheio ? "Roteiro cheio" : "Pôr no roteiro"}
+            </button>
+          ) : null}
+          <button type="button" className={botoes.icone} onClick={aoFechar} aria-label={`Fechar ${titulo}`}>
+            <X size={18} aria-hidden="true" />
+          </button>
+        </>
       }
     >
       {escolha.tipo === "regiao" && regiao && lente.SobreARegiao ? <lente.SobreARegiao {...contexto} regiao={regiao} /> : null}
@@ -287,11 +380,26 @@ function ufsDaCarteira(clientes: readonly ClienteResumo[]): { uf: string; client
   return [...porUf.entries()].map(([uf, quantos]) => ({ uf, clientes: quantos })).sort((a, b) => b.clientes - a.clientes);
 }
 
-function visaoDa(mapa: MapaDaUf, escolha: Escolha | null): Caixa {
+/** A parte do mapa à vista: a região escolhida, a volta do aparelho no "Perto de mim" ou o estado todo. */
+function visaoDa(mapa: MapaDaUf, escolha: Escolha | null, posicao: Ponto | null): Caixa {
   const regiao = escolha?.tipo === "regiao" ? mapa.regioes.find((item) => item.codigo === escolha.codigo) : undefined;
+  if (!regiao && posicao) {
+    const raio = unidadesDoMapa(RAIO_DO_PERTO_KM, posicao[1]);
+    return [posicao[0] - raio, posicao[1] - raio, posicao[0] + raio, posicao[1] + raio];
+  }
   const [x0, y0, x1, y1] = regiao?.caixa ?? mapa.caixa;
   const folga = Math.max(x1 - x0, y1 - y0) * FOLGA_DA_VISAO;
   return [x0 - folga, y0 - folga, x1 + folga, y1 + folga];
+}
+
+/** As cidades do roteiro que estão nos mapas carregados, com o que a carteira tem nelas. */
+function paradasDoRoteiro(codigos: readonly string[], mapas: readonly MapaDaUf[], presencas: readonly ParadaNoMapa["presenca"][]): ParadaNoMapa[] {
+  return codigos.flatMap((codigo) =>
+    mapas.flatMap((umMapa) => {
+      const municipio = umMapa.municipios.find((candidato) => candidato.codigo === codigo);
+      return municipio ? [{ municipio, uf: umMapa.uf, presenca: presencas.find((presenca) => presenca?.municipio.codigo === codigo) }] : [];
+    }),
+  );
 }
 
 /** O nome vai ao lado dos maiores círculos com valor. */

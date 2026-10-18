@@ -109,6 +109,7 @@ Rede:
 Apache:
 - Certificado via mod_md, sem porta 80.
 - HSTS, CSP (`default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`), nosniff, `Referrer-Policy: no-referrer`, COOP/CORP.
+- `Permissions-Policy` com tudo desligado, menos `geolocation=(self)`: o "Perto de mim" do Mapa pede a posição ao aparelho, e ela fica no navegador (2026-10-18).
 - `ServerTokens Prod`, `TraceEnable off`, `mod_reqtimeout`.
 - Apaga o `X-Forwarded-For` vindo do cliente.
 

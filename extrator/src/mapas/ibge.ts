@@ -1,4 +1,5 @@
-import { limparAnel, projetar, type Anel } from "./geometria.ts";
+import { projetar } from "dominio/mapa";
+import { limparAnel, type Anel } from "./geometria.ts";
 
 /*
  * As bases públicas do IBGE, baixadas uma vez: a lista dos municípios (api/v1/localidades/municipios)

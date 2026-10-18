@@ -158,6 +158,69 @@
   pointer-events: none;
 }
 
+/* O roteiro: o caminho tracejado em grafite e as paradas numeradas por cima dos círculos */
+.roteiro {
+  pointer-events: none;
+}
+
+.caminhoDoRoteiro {
+  fill: none;
+  stroke: var(--cor-acento);
+  stroke-width: 2px;
+  stroke-dasharray: 6 5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.parada circle {
+  fill: var(--cor-acento);
+  stroke: var(--cor-superficie);
+  stroke-width: 2px;
+}
+
+.parada text {
+  fill: var(--cor-superficie);
+  font-family: var(--fonte-texto);
+  font-weight: 700;
+}
+
+/* "Perto de mim": o ponto azul do aparelho, com o halo que pulsa (parado para quem pede menos movimento) */
+.aquiEstou {
+  pointer-events: none;
+}
+
+.pontoDoAquiEstou {
+  fill: var(--cor-mapa-oportunidade);
+  stroke: var(--cor-superficie);
+  stroke-width: 2.5px;
+}
+
+.haloDoAquiEstou {
+  fill: var(--cor-mapa-oportunidade);
+  fill-opacity: 0.18;
+  stroke: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .haloDoAquiEstou {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: pulsar 1.8s ease-out infinite;
+  }
+}
+
+@keyframes pulsar {
+  from {
+    transform: scale(0.4);
+    fill-opacity: 0.35;
+  }
+
+  to {
+    transform: scale(1.3);
+    fill-opacity: 0;
+  }
+}
+
 /* O nome ao lado dos maiores círculos, com um halo branco para não sumir sobre as divisas */
 .rotulos text {
   fill: var(--cor-texto);

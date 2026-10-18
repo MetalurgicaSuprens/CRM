@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import type { Caixa, MapaDaUf, MapaDoBrasil, MunicipioDoMapa } from "dominio/mapa";
+import type { Caixa, MapaDaUf, MapaDoBrasil, MunicipioDoMapa, Ponto } from "dominio/mapa";
 import { posicionarNomes, type Vista } from "./nomesNoMapa";
 import { useLargura } from "./useLargura";
 import estilos from "./MapaDoTerritorio.module.css";
@@ -37,6 +37,10 @@ type Props = {
   rotulos: readonly MunicipioDoMapa[];
   municipioEscolhido: string | null;
   regiaoEscolhida: string | null;
+  /** Onde o aparelho está ("Perto de mim"); null sem a localização. */
+  posicao: Ponto | null;
+  /** As paradas do roteiro, na ordem, numeradas a partir de 1 e ligadas pelo caminho. */
+  roteiro: readonly MunicipioDoMapa[];
   dicaDe: (municipio: MunicipioDoMapa) => ReactNode;
   aoEscolher: (municipio: MunicipioDoMapa) => void;
 };
@@ -46,10 +50,13 @@ const ALTURA_MAXIMA = 620;
 /** O raio do maior círculo, em px, no desenho largo e no estreito. */
 const RAIO_MAXIMO = { largo: 30, estreito: 20 };
 const RAIO_MINIMO = 3.5;
+/** O raio do círculo numerado de cada parada do roteiro, em px. */
+const RAIO_DA_PARADA = 10;
 const DURACAO_DA_ANIMACAO_MS = 450;
 
 export function MapaDoTerritorio(props: Props) {
-  const { descricao, brasil, mapas, uf, visao, classes, comCliente, circulos, rotulos, municipioEscolhido, regiaoEscolhida, dicaDe, aoEscolher } = props;
+  const { descricao, brasil, mapas, uf, visao, classes, comCliente, circulos, rotulos, municipioEscolhido, regiaoEscolhida, posicao, roteiro, dicaDe, aoEscolher } =
+    props;
   const { referencia, largura } = useLargura<HTMLDivElement>();
   const caixa = useVisaoAnimada(visao);
   const [sobre, setSobre] = useState<{ municipio: MunicipioDoMapa; x: number; y: number } | null>(null);
@@ -124,6 +131,8 @@ export function MapaDoTerritorio(props: Props) {
           {municipioEscolhido && porCodigo.get(municipioEscolhido) ? (
             <path className={estilos.municipioEscolhido} d={porCodigo.get(municipioEscolhido)?.d} />
           ) : null}
+          <Roteiro paradas={roteiro} partida={posicao} escala={escala} />
+          {posicao ? <AquiEstou posicao={posicao} escala={escala} /> : null}
           <g className={estilos.rotulos} fontSize={12 * escala} strokeWidth={3.5 * escala}>
             {nomes.map(({ municipio, x, y, isAEsquerda }) => (
               <text key={municipio.codigo} x={x} y={y} textAnchor={isAEsquerda ? "end" : "start"}>
@@ -153,6 +162,35 @@ function Estado({ mapa, isEscolhido, classeDe }: PropsDoEstado) {
       ))}
       {isEscolhido ? <path className={estilos.regioes} d={mapa.regioes.map((regiao) => regiao.contorno).join("")} /> : null}
       <path className={estilos.contornoDoEstado} d={mapa.contorno} />
+    </g>
+  );
+}
+
+/** O caminho do roteiro, tracejado, de onde o aparelho está até a última parada, e o número de cada parada. */
+function Roteiro({ paradas, partida, escala }: { paradas: readonly MunicipioDoMapa[]; partida: Ponto | null; escala: number }) {
+  if (paradas.length === 0) return null;
+  const pontos = [...(partida ? [partida] : []), ...paradas.map(({ centro }) => centro)];
+  return (
+    <g className={estilos.roteiro}>
+      {pontos.length > 1 ? <polyline className={estilos.caminhoDoRoteiro} points={pontos.map(([x, y]) => `${x},${y}`).join(" ")} /> : null}
+      {paradas.map(({ codigo, centro: [x, y] }, i) => (
+        <g key={codigo} className={estilos.parada}>
+          <circle cx={x} cy={y} r={RAIO_DA_PARADA * escala} />
+          <text x={x} y={y} dy="0.35em" textAnchor="middle" fontSize={11 * escala}>
+            {i + 1}
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+}
+
+/** Onde o aparelho está: o ponto azul com o halo que pulsa, como nos mapas do celular. */
+function AquiEstou({ posicao: [x, y], escala }: { posicao: Ponto; escala: number }) {
+  return (
+    <g className={estilos.aquiEstou} aria-hidden="true">
+      <circle className={estilos.haloDoAquiEstou} cx={x} cy={y} r={16 * escala} />
+      <circle className={estilos.pontoDoAquiEstou} cx={x} cy={y} r={6.5 * escala} />
     </g>
   );
 }

@@ -554,6 +554,12 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
   - Em Goiás, as 22 regiões estão na área, e Goiânia faz 88% da receita.
   - A maior oportunidade é Luziânia: 738 mil habitantes, 2 clientes e +R$ 448 mil por ano. Em seguida vem Águas Lindas de Goiás.
   - No estado sem faturado (MT, 1 cliente), a tela diz que não há média para medir, em vez de "todas na média".
+- **Perto de mim (2026-10-18).** O botão pede a posição ao aparelho. O mapa vai para o estado e para a volta dela (150 km), com o ponto azul, e o cartão "Perto de você" lista as cidades com cliente nesse raio, da mais perto à mais longe, com o que pede ação em cada uma (paginas/mapa/PertoDeMim.tsx).
+  - A posição fica só na memória da aba: não vai ao servidor, ao endereço da página nem ao armazenamento do navegador, e some ao recarregar. Sem a permissão, a tela diz como liberar.
+  - As distâncias são em linha reta, pela mesma projeção dos arquivos do mapa (dominio/mapa.ts, `distanciaEmKm`, com teste).
+- **Roteiro (2026-10-18).** A cidade entra no roteiro pelo "Perto de você" ou pela escolha do município, até 10 cidades (o limite do link do Google Maps). O cartão "Roteiro" põe as cidades na ordem do vizinho mais perto, de onde o aparelho está ou da primeira escolhida, com os km em linha reta e o que pede ação em cada uma. O mapa numera as paradas e liga o caminho (dados/viagem.ts, com teste).
+  - O roteiro fica só neste aparelho (localStorage, `crm:roteiro`), e são códigos de município, dado público.
+  - "Abrir no Google Maps" leva só os nomes das cidades, sem a origem: o Google parte de onde o aparelho estiver, e a posição não sai do CRM.
 - **Só a carteira** (decidido em 2026-10-09, pergunta 34). Nada de outros representantes entra no mapa, nem para dizer que uma região já é atendida.
 - **Visão do cliente** (plano.md:206). O faturado é o histórico dos clientes da carteira, de qualquer representante, como em Clientes.
 - **Valores ocultos.** A dica, a lista, os indicadores e a legenda escrevem os valores pelo mesmo componente das outras telas, que obedece "Ocultar valores". Os nomes vêm da lista atual do IBGE, o que resolve os nomes antigos do protótipo.
