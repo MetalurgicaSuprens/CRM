@@ -99,6 +99,54 @@
   font-weight: 500;
 }
 
+/*
+ * A entrada do desenho: as barras crescem da base, a linha se traça e o resto aparece. Só uma vez,
+ * quando o gráfico monta; quem pede menos movimento ao sistema vê o desenho pronto. A linha que se
+ * traça precisa de pathLength="1".
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .crescer {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: crescer 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .tracar {
+    stroke-dasharray: 1;
+    animation: tracar 900ms cubic-bezier(0.3, 0.6, 0.2, 1) both;
+  }
+
+  .surgir {
+    animation: surgir 500ms ease-out both;
+  }
+
+  .surgirDepois {
+    animation: surgir 400ms ease-out 450ms both;
+  }
+}
+
+@keyframes crescer {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes tracar {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes surgir {
+  from {
+    opacity: 0;
+  }
+}
+
 .tabelaRolagem {
   overflow-x: auto;
 }

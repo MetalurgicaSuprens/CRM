@@ -1,8 +1,14 @@
 /* A linha, a área, os dois pontos marcados e a dica; a moldura comum está em moldura.module.css */
 
-.area {
-  fill: var(--cor-dado);
-  fill-opacity: 0.1;
+/* A área embaixo da linha: o azul do dado esmaecendo até a base, uma aguada que não vira bloco */
+.areaNoTopo {
+  stop-color: var(--cor-dado);
+  stop-opacity: 0.24;
+}
+
+.areaNaBase {
+  stop-color: var(--cor-dado);
+  stop-opacity: 0.02;
 }
 
 .linha {

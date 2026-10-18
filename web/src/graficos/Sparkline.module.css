@@ -3,7 +3,7 @@
   overflow: visible;
 }
 
-/* Aço do dado e cinza do ano anterior, como nos gráficos mensais */
+/* O azul do dado e o cinza do ano anterior, como nos gráficos mensais */
 .linha {
   fill: none;
   stroke: var(--cor-dado);

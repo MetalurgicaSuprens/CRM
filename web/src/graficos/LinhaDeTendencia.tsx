@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ChartLine, Table2 } from "lucide-react";
 import { useFormatoDeReais } from "../contexto/valores";
 import { Valor } from "../componentes/Valor";
@@ -63,14 +63,21 @@ function Desenho({ pontos, rotulo, descricao, altura }: Required<Pick<Props, "al
   const ultimo = pontos.length - 1;
   const umAnoAntes = ultimo - MESES_DO_ANO >= 0 ? ultimo - MESES_DO_ANO : null;
   const pontoAtivo = ativo === null ? undefined : pontos[ativo];
+  const idDaArea = `area-${useId().replace(/[^\w-]/g, "")}`;
 
   return (
     <div ref={referencia} className={moldura.desenho}>
       {largura > 0 ? (
         <svg width={largura} height={altura} role="img" aria-label={descricao} className={moldura.svg}>
+          <defs>
+            <linearGradient id={idDaArea} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" className={estilos.areaNoTopo} />
+              <stop offset="1" className={estilos.areaNaBase} />
+            </linearGradient>
+          </defs>
           <GradeDoEixo eixo={eixo} y={y} inicio={MARGEM.esquerda} fim={largura - MARGEM.direita} rotular={formato.eixo} />
-          <path className={estilos.area} d={`${linha} L${x(ultimo)},${y(0)} L${x(0)},${y(0)} Z`} />
-          <path className={estilos.linha} d={linha} />
+          <path className={moldura.surgir} fill={`url(#${idDaArea})`} d={`${linha} L${x(ultimo)},${y(0)} L${x(0)},${y(0)} Z`} />
+          <path className={`${estilos.linha} ${moldura.tracar}`} d={linha} pathLength={1} />
           {pontos.map((ponto, i) =>
             ponto.mes.endsWith("-01") ? (
               <text key={ponto.mes} className={moldura.rotulo} x={x(i)} y={altura - 8} textAnchor="middle">
@@ -110,7 +117,7 @@ function Desenho({ pontos, rotulo, descricao, altura }: Required<Pick<Props, "al
 /** Um dos dois pontos com o valor escrito em cima: o último, cheio, e o de 1 ano antes, vazado. */
 function Marco({ x, y, texto, vazado = false, ancora = "middle" }: { x: number; y: number; texto: string; vazado?: boolean; ancora?: "middle" | "end" }) {
   return (
-    <g>
+    <g className={moldura.surgirDepois}>
       <circle className={vazado ? estilos.marcoVazado : estilos.marco} cx={x} cy={y} r={4} />
       <text className={estilos.rotuloDoMarco} x={ancora === "end" ? x + 4 : x} y={y - 12} textAnchor={ancora}>
         {texto}

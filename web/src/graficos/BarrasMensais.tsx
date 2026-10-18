@@ -141,10 +141,12 @@ function Coluna({ barra, cx, largura, y, base }: PropsColuna) {
   const topoValor = y(valor);
   return (
     <g>
-      {valor > 0 ? <path className={estilos.barra} d={caminhoColuna(x, topoValor, base, largura, aFaturar > 0 ? 0 : RAIO)} /> : null}
-      {aFaturar > 0 ? (
-        <path className={estilos.aFaturar} d={caminhoColuna(x, y(valor + aFaturar), valor > 0 ? topoValor - VAO : base, largura, RAIO)} />
-      ) : null}
+      <g className={moldura.crescer}>
+        {valor > 0 ? <path className={estilos.barra} d={caminhoColuna(x, topoValor, base, largura, aFaturar > 0 ? 0 : RAIO)} /> : null}
+        {aFaturar > 0 ? (
+          <path className={estilos.aFaturar} d={caminhoColuna(x, y(valor + aFaturar), valor > 0 ? topoValor - VAO : base, largura, RAIO)} />
+        ) : null}
+      </g>
       {barra.comparacao ? <MarcaComparacao cx={cx} y={y(barra.comparacao)} largura={largura} /> : null}
     </g>
   );
@@ -153,7 +155,7 @@ function Coluna({ barra, cx, largura, y, base }: PropsColuna) {
 function MarcaComparacao({ cx, y, largura }: { cx: number; y: number; largura: number }) {
   const meia = largura / 2 + 5;
   return (
-    <g>
+    <g className={moldura.surgirDepois}>
       <line className={estilos.anelComparacao} x1={cx - meia} x2={cx + meia} y1={y} y2={y} />
       <line className={estilos.comparacao} x1={cx - meia} x2={cx + meia} y1={y} y2={y} />
     </g>

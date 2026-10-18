@@ -29,16 +29,21 @@
   --traco-da-marca: linear-gradient(90deg, var(--cor-marca), #f0643f);
 
   /*
-   * Gráficos em aço, como na identidade da Suprens. Sem matiz, o dado se separa do ano anterior
-   * pela claridade e pela forma (barra e traço); por isso o validador de paleta acusa o piso de
-   * croma, que vale para séries identificadas só pela cor. O aço fica na faixa de claridade dele,
-   * um tom acima do aço da marca (#5c5f63), que em 24 barras pesava.
+   * Gráficos: o dado em azul, numa rampa de uma matiz só, a da skill dataviz. Ela passa no validador
+   * como rampa ordinal: a claridade cresce em passos visíveis e o passo mais claro fica a 2,06:1 sobre
+   * o cartão. O aço anterior, que o Lucas achou "muito cinza, muito morto" em 2026-10-18, está na tag
+   * graficos-aco. O cinza fica com o que é contexto, como o ano anterior: um matiz só para o dado e
+   * cinza para o resto é o padrão de ênfase da skill.
    */
-  --cor-dado: #6f7276;
-  /* O "a faturar" empilhado: mais claro que o dado, mas com 2:1 contra o cartão (validador, rampa ordinal) */
-  --cor-dado-claro: #b2b4b7;
+  --cor-dado-1: #86b6ef;
+  --cor-dado-2: #5598e7;
+  --cor-dado-3: #2a78d6;
+  --cor-dado-4: #1c5cab;
+  --cor-dado-5: #0d366b;
+  --cor-dado: var(--cor-dado-3);
+  /* O "a faturar" empilhado: o passo mais claro da rampa */
+  --cor-dado-claro: var(--cor-dado-1);
   --cor-comparacao: #a7a8a3;
-  --cor-tendencia: #8c8d88;
   --cor-grade: #ebebea;
   /*
    * O mapa: o resto do Brasil, os municípios e, num tom do aço, os que têm cliente (na lente de crescer, as
