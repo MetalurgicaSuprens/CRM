@@ -9,13 +9,14 @@
 }
 
 /*
- * Título, o "ao lado" no espaço livre do meio e as ações na ponta direita, na mesma linha. Em
- * larguras médias o "ao lado" desce para a linha de baixo (as ações continuam com o título); no
+ * Título, o "ao lado" no espaço livre do meio e as ações na ponta direita, na mesma linha. O título
+ * ocupa até 45% da linha e quebra depois disso: o nome longo de cliente não cobre os cartões do lado.
+ * Em larguras médias o "ao lado" desce para a linha de baixo (as ações continuam com o título); no
  * celular, tudo vira uma coluna, com as ações por último.
  */
 .linha {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: fit-content(45%) minmax(0, 1fr) auto;
   grid-template-areas: "textos aoLado acoes";
   align-items: center;
   column-gap: var(--esp-5);
