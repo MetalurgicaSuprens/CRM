@@ -1,20 +1,17 @@
 import { somarMeses } from "dominio/datas";
 import type { BarraMensal } from "../graficos/BarrasMensais";
-import type { BlocoDe12Meses } from "../graficos/BlocosDe12Meses";
-import type { AnoAcumulado } from "../graficos/LinhasPorAno";
-import type { AnoNoMapa } from "../graficos/MapaDeCalor";
 import type { FaturamentoMensal, PedidoDaFicha } from "./tipos";
 
 /*
- * Os gráficos de faturamento da ficha. A tendência cobre os últimos 4 anos e, até o Lucas escolher
- * (pedido de 2026-10-18), tem quatro modelos: os blocos de 12 meses em R$ e em peças, o acumulado de
- * cada ano, o mapa de calor dos meses e a linha do faturado nos 12 meses até cada mês. O mês a mês é
- * o ano corrente contra o anterior, como no Início.
+ * Os gráficos de faturamento da ficha. A tendência cobre os últimos 4 anos em duas vistas: o
+ * faturado nos 12 meses até cada mês, que tira a sazonalidade e o vaivém dos pedidos (o último ponto é
+ * o "Faturado em 12 meses" do alto da ficha), e o faturado de cada mês. O mês a mês é o ano corrente
+ * contra o anterior, como no Início.
  */
 
-const ANOS_DA_TENDENCIA = 4;
+/** A tendência cobre os últimos 4 anos. */
+const MESES_DA_TENDENCIA = 48;
 const MESES_DO_ANO = 12;
-const MESES_DA_TENDENCIA = ANOS_DA_TENDENCIA * MESES_DO_ANO;
 
 type HistoriaPorMes = ReadonlyMap<string, FaturamentoMensal>;
 
@@ -30,13 +27,10 @@ export type PontoDaTendencia = {
 /** Um ponto por mês fechado, dos últimos 48; o ponto sem 12 meses de história fica de fora. */
 export function montarTendencia(mensal: readonly FaturamentoMensal[], mesAtual: string): PontoDaTendencia[] {
   const historia = porMes(mensal);
-  const pontos: PontoDaTendencia[] = [];
-  for (let distancia = MESES_DA_TENDENCIA; distancia >= 1; distancia--) {
-    const mes = somarMeses(mesAtual, -distancia);
-    const valor = somarOsDozeMeses(historia, mes, "valor");
-    if (valor !== null) pontos.push({ mes, valor, anoAntes: somarOsDozeMeses(historia, somarMeses(mes, -MESES_DO_ANO), "valor") });
-  }
-  return pontos;
+  return mesesDaTendencia(mesAtual).flatMap((mes) => {
+    const valor = somarOsDozeMeses(historia, mes);
+    return valor === null ? [] : [{ mes, valor, anoAntes: somarOsDozeMeses(historia, somarMeses(mes, -MESES_DO_ANO)) }];
+  });
 }
 
 /** De quando a tendência parte e quanto ela andou do primeiro ponto ao último; null sem dois pontos. */
@@ -47,67 +41,12 @@ export function resumirATendencia(pontos: readonly PontoDaTendencia[]): { desde:
   return { desde: primeiro.mes, variacao: primeiro.valor > 0 ? ultimo.valor / primeiro.valor - 1 : null };
 }
 
-/**
- * Os blocos de 12 meses fechados dos últimos 4 anos, do mais antigo ao mais recente: o último termina
- * no mês passado, e cada um começa onde o anterior acaba. O bloco sem a história inteira fica de fora.
- */
-export function montarBlocosDe12Meses(mensal: readonly FaturamentoMensal[], mesAtual: string): BlocoDe12Meses[] {
+/** O faturado de cada um dos mesmos 48 meses da tendência; o mês que a história não alcança fica de fora. */
+export function montarFaturadoPorMes(mensal: readonly FaturamentoMensal[], mesAtual: string): BarraMensal[] {
   const historia = porMes(mensal);
-  const blocos: BlocoDe12Meses[] = [];
-  for (let anos = ANOS_DA_TENDENCIA - 1; anos >= 0; anos--) {
-    const fim = somarMeses(mesAtual, -1 - anos * MESES_DO_ANO);
-    const valor = somarOsDozeMeses(historia, fim, "valor");
-    const pecas = somarOsDozeMeses(historia, fim, "pecas");
-    if (valor !== null && pecas !== null) blocos.push({ inicio: somarMeses(fim, 1 - MESES_DO_ANO), fim, valor, pecas });
-  }
-  return blocos;
-}
-
-/** O faturado de cada ano somado de janeiro até cada mês; o ano que a história não cobre inteiro fica de fora. */
-export function montarAcumulados(mensal: readonly FaturamentoMensal[], mesAtual: string): AnoAcumulado[] {
-  const historia = porMes(mensal);
-  return anosDaTendencia(mesAtual).flatMap(({ ano, ultimoMes }) => {
-    const doAno = mesesDe(`${ano}-01`, ultimoMes).map((mes) => historia.get(mes));
-    if (doAno.some((mes) => mes === undefined)) return [];
-    let soma = 0;
-    return [{ ano, acumulado: doAno.map((mes) => (soma += mes?.valor ?? 0)) }];
-  });
-}
-
-export type ComparacaoNoMesmoMes = {
-  ano: number;
-  /** Até que mês do ano, de 1 a 12. */
-  mes: number;
-  /** Contra cada ano anterior, do mais recente ao mais antigo; null quando o anterior não tinha faturado. */
-  comparacoes: { ano: number; razao: number | null }[];
-};
-
-/** O ano mais recente contra cada um dos anteriores, todos somados até o mesmo mês. */
-export function compararNoMesmoMes(anos: readonly AnoAcumulado[]): ComparacaoNoMesmoMes | null {
-  const recente = anos.at(-1);
-  const ate = recente?.acumulado.length ?? 0;
-  if (!recente || ate === 0) return null;
-  const atual = recente.acumulado[ate - 1] ?? 0;
-  const comparacoes = anos
-    .slice(0, -1)
-    .reverse()
-    .map(({ ano, acumulado }) => {
-      const anterior = acumulado[ate - 1] ?? 0;
-      return { ano, razao: anterior > 0 ? atual / anterior - 1 : null };
-    });
-  return { ano: recente.ano, mes: ate, comparacoes };
-}
-
-/**
- * Os 4 anos com o faturado de cada mês e quantos meses tiveram compra, entre os que fecharam. O mês
- * que ainda não fechou, ou que a história não alcança, fica null.
- */
-export function montarMapaDeCalor(mensal: readonly FaturamentoMensal[], mesAtual: string): AnoNoMapa[] {
-  const historia = porMes(mensal);
-  return anosDaTendencia(mesAtual).map(({ ano, ultimoMes }) => {
-    const meses = mesesDe(`${ano}-01`, `${ano}-12`).map((mes) => (mes <= ultimoMes ? (historia.get(mes)?.valor ?? null) : null));
-    const fechados = meses.filter((valor) => valor !== null);
-    return { ano, meses, mesesComCompra: fechados.filter((valor) => valor > 0).length, mesesFechados: fechados.length };
+  return mesesDaTendencia(mesAtual).flatMap((mes) => {
+    const doMes = historia.get(mes);
+    return doMes ? [{ mes, valor: doMes.valor }] : [];
   });
 }
 
@@ -143,14 +82,9 @@ export function resumirOAno(mensal: readonly FaturamentoMensal[], mesAtual: stri
   return { inicio, fim, valor: somarDe(inicio, fim), anoAnterior: somarDe(somarMeses(inicio, -MESES_DO_ANO), somarMeses(fim, -MESES_DO_ANO)) };
 }
 
-/** Os 4 anos do calendário até o do mês passado: os anteriores inteiros e o último até o mês passado. */
-function anosDaTendencia(mesAtual: string): { ano: number; ultimoMes: string }[] {
-  const ultimoFechado = somarMeses(mesAtual, -1);
-  const anoFinal = Number(ultimoFechado.slice(0, 4));
-  return Array.from({ length: ANOS_DA_TENDENCIA }, (_, i) => {
-    const ano = anoFinal - ANOS_DA_TENDENCIA + 1 + i;
-    return { ano, ultimoMes: ano === anoFinal ? ultimoFechado : `${ano}-12` };
-  });
+/** Os 48 meses fechados até o mês passado. */
+function mesesDaTendencia(mesAtual: string): string[] {
+  return mesesDe(somarMeses(mesAtual, -MESES_DA_TENDENCIA), somarMeses(mesAtual, -1));
 }
 
 function porMes(mensal: readonly FaturamentoMensal[]): HistoriaPorMes {
@@ -165,12 +99,12 @@ function mesesDe(inicio: string, fim: string): string[] {
 }
 
 /** A soma dos 12 meses até `fim`, inclusive; null se algum deles não está na história. */
-function somarOsDozeMeses(historia: HistoriaPorMes, fim: string, medida: "valor" | "pecas"): number | null {
+function somarOsDozeMeses(historia: HistoriaPorMes, fim: string): number | null {
   let soma = 0;
   for (const mes of mesesDe(somarMeses(fim, 1 - MESES_DO_ANO), fim)) {
     const doMes = historia.get(mes);
     if (!doMes) return null;
-    soma += doMes[medida];
+    soma += doMes.valor;
   }
   return soma;
 }

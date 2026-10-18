@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eixoRedondo, escalarAltura, passoNaRampa } from "./escala";
+import { eixoRedondo, escalarAltura } from "./escala";
 
 describe("eixoRedondo", () => {
   it("escolhe passos redondos e um teto que cobre o maior valor", () => {
@@ -16,15 +16,5 @@ describe("escalarAltura", () => {
   it("é proporcional e nunca negativa", () => {
     expect(escalarAltura(50, 200, 240)).toBe(60);
     expect(escalarAltura(-10, 200, 240)).toBe(0);
-  });
-});
-
-describe("passoNaRampa", () => {
-  it("dá 0 ao zero e divide o resto em 5 faixas iguais até o maior", () => {
-    expect(passoNaRampa(0, 1_000)).toBe(0);
-    expect(passoNaRampa(1, 1_000)).toBe(1);
-    expect(passoNaRampa(200, 1_000)).toBe(1);
-    expect(passoNaRampa(201, 1_000)).toBe(2);
-    expect(passoNaRampa(1_000, 1_000)).toBe(5);
   });
 });

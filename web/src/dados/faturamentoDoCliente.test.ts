@@ -1,16 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { somarMeses } from "dominio/datas";
-import {
-  aFaturarNoMes,
-  compararNoMesmoMes,
-  montarAcumulados,
-  montarBlocosDe12Meses,
-  montarMapaDeCalor,
-  montarMesAMes,
-  montarTendencia,
-  resumirATendencia,
-  resumirOAno,
-} from "./faturamentoDoCliente";
+import { aFaturarNoMes, montarFaturadoPorMes, montarMesAMes, montarTendencia, resumirATendencia, resumirOAno } from "./faturamentoDoCliente";
 import type { FaturamentoMensal, PedidoDaFicha } from "./tipos";
 
 /** Os 60 meses fechados antes de `mesAtual` e ele, com o valor de cada um dado por `valorDe`. */
@@ -63,87 +53,19 @@ describe("resumirATendencia", () => {
   });
 });
 
-describe("montarBlocosDe12Meses", () => {
-  it("soma o faturado e as peças em 4 blocos de 12 meses fechados, o último até o mês passado", () => {
-    const valorDe = (mes: string) => (mes >= "2025-10" ? 200 : 100);
-    const blocos = montarBlocosDe12Meses(historia("2026-10", valorDe), "2026-10");
-    expect(blocos.map(({ inicio, fim }) => `${inicio} a ${fim}`)).toEqual([
-      "2022-10 a 2023-09",
-      "2023-10 a 2024-09",
-      "2024-10 a 2025-09",
-      "2025-10 a 2026-09",
-    ]);
-    expect(blocos[0]).toEqual({ inicio: "2022-10", fim: "2023-09", valor: 1_200, pecas: 120 });
-    expect(blocos.at(-1)).toEqual({ inicio: "2025-10", fim: "2026-09", valor: 2_400, pecas: 240 });
+describe("montarFaturadoPorMes", () => {
+  it("dá o faturado de cada um dos 48 meses fechados, o período da tendência", () => {
+    const barras = montarFaturadoPorMes(historia("2026-10", (mes) => (mes === "2024-03" ? 0 : 100)), "2026-10");
+    expect(barras).toHaveLength(48);
+    expect(barras[0]).toEqual({ mes: "2022-10", valor: 100 });
+    expect(barras.find(({ mes }) => mes === "2024-03")?.valor).toBe(0);
+    expect(barras.at(-1)).toEqual({ mes: "2026-09", valor: 100 });
   });
 
-  it("deixa de fora o bloco que a história não cobre inteiro, como na carteira fictícia, de 36 meses", () => {
-    expect(montarBlocosDe12Meses(historia("2026-10").slice(-37), "2026-10")).toHaveLength(3);
-  });
-});
-
-describe("montarAcumulados", () => {
-  it("soma cada um dos 4 anos de janeiro em diante, e o ano corrente só até o mês passado", () => {
-    const anos = montarAcumulados(historia("2026-10"), "2026-10");
-    expect(anos.map(({ ano, acumulado }) => [ano, acumulado.length])).toEqual([
-      [2023, 12],
-      [2024, 12],
-      [2025, 12],
-      [2026, 9],
-    ]);
-    expect(anos[0]?.acumulado.slice(0, 3)).toEqual([100, 200, 300]);
-    expect(anos.at(-1)?.acumulado.at(-1)).toBe(900);
-  });
-
-  it("em janeiro, sem mês fechado no ano, mostra os 4 anos inteiros até o que acabou", () => {
-    expect(montarAcumulados(historia("2027-01"), "2027-01").map(({ ano, acumulado }) => [ano, acumulado.length])).toEqual([
-      [2023, 12],
-      [2024, 12],
-      [2025, 12],
-      [2026, 12],
-    ]);
-  });
-
-  it("deixa de fora o ano que a história não cobre inteiro", () => {
-    expect(montarAcumulados(historia("2026-10").slice(-37), "2026-10").map(({ ano }) => ano)).toEqual([2024, 2025, 2026]);
-  });
-});
-
-describe("compararNoMesmoMes", () => {
-  it("compara o ano mais recente com cada anterior, somados até o mesmo mês", () => {
-    const anos = [
-      { ano: 2024, acumulado: [100, 200, 300] },
-      { ano: 2025, acumulado: [50, 100, 150] },
-      { ano: 2026, acumulado: [100, 300] },
-    ];
-    expect(compararNoMesmoMes(anos)).toEqual({
-      ano: 2026,
-      mes: 2,
-      comparacoes: [
-        { ano: 2025, razao: 2 },
-        { ano: 2024, razao: 0.5 },
-      ],
-    });
-  });
-
-  it("não calcula a variação contra o ano que não faturou até o mesmo mês", () => {
-    expect(compararNoMesmoMes([{ ano: 2025, acumulado: [0, 0] }, { ano: 2026, acumulado: [100, 300] }])?.comparacoes).toEqual([{ ano: 2025, razao: null }]);
-  });
-});
-
-describe("montarMapaDeCalor", () => {
-  const sem = (mes: string) => (mes === "2024-03" || mes === "2026-02" ? 0 : 100);
-
-  it("põe o faturado de cada mês dos 4 anos no lugar, e null nos meses que ainda não fecharam", () => {
-    const mapa = montarMapaDeCalor(historia("2026-10", sem), "2026-10");
-    expect(mapa.map(({ ano }) => ano)).toEqual([2023, 2024, 2025, 2026]);
-    expect(mapa[1]?.meses[2]).toBe(0);
-    expect(mapa[3]?.meses.slice(8)).toEqual([100, null, null, null]);
-  });
-
-  it("conta os meses com compra entre os que fecharam", () => {
-    const mapa = montarMapaDeCalor(historia("2026-10", sem), "2026-10");
-    expect(mapa.map(({ mesesComCompra, mesesFechados }) => `${mesesComCompra} de ${mesesFechados}`)).toEqual(["12 de 12", "11 de 12", "12 de 12", "8 de 9"]);
+  it("deixa de fora o mês que a história não alcança, como na carteira fictícia, de 36 meses", () => {
+    const barras = montarFaturadoPorMes(historia("2026-10").slice(-37), "2026-10");
+    expect(barras).toHaveLength(36);
+    expect(barras[0]?.mes).toBe("2023-10");
   });
 });
 

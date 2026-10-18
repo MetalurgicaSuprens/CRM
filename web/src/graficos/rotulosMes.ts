@@ -1,16 +1,12 @@
-import { formatarMesAno, formatarMesCurto } from "../formato";
+import { formatarMesCurto } from "../formato";
+
+const MESES_DO_ANO = 12;
 
 /**
- * Rótulos do eixo de meses: um a cada `intervalo` meses (null nos demais).
- * Com `comAno`, o ano aparece no primeiro rótulo e sempre que muda em relação ao rótulo anterior.
+ * Rótulos do eixo de meses (null onde não há rótulo). Num ano, um mês a cada `intervalo`. Em vários
+ * anos, só cada janeiro, com o ano, como na linha da tendência.
  */
-export function rotularMeses(meses: string[], intervalo: number, comAno: boolean): (string | null)[] {
-  let anoDoRotuloAnterior = "";
-  return meses.map((mes, indice) => {
-    if (indice % intervalo !== 0) return null;
-    const ano = mes.slice(0, 4);
-    const rotulo = comAno && ano !== anoDoRotuloAnterior ? formatarMesAno(mes) : formatarMesCurto(mes);
-    anoDoRotuloAnterior = ano;
-    return rotulo;
-  });
+export function rotularMeses(meses: string[], intervalo: number): (string | null)[] {
+  if (meses.length > MESES_DO_ANO) return meses.map((mes) => (mes.endsWith("-01") ? mes.slice(0, 4) : null));
+  return meses.map((mes, indice) => (indice % intervalo === 0 ? formatarMesCurto(mes) : null));
 }

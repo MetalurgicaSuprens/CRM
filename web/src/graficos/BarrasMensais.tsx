@@ -82,7 +82,7 @@ function Desenho({ barras, rotulos, descricao, altura }: Required<Pick<Props, "a
   const y = (valor: number) => MARGEM.topo + alturaPlot - escalarAltura(valor, eixo.maximo, alturaPlot);
   const centro = (indice: number) => MARGEM.esquerda + faixa * indice + faixa / 2;
   const intervaloRotulos = Math.max(1, Math.ceil(ESPACO_MINIMO_ROTULO / Math.max(faixa, 1)));
-  const rotulosMes = rotularMeses(barras.map((barra) => barra.mes), intervaloRotulos, barras.length > 12);
+  const rotulosMes = rotularMeses(barras.map((barra) => barra.mes), intervaloRotulos);
   const barraAtiva = ativo === null ? undefined : barras[ativo];
 
   return (
