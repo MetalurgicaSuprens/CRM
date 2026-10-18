@@ -16,12 +16,19 @@ export function lerCarteira(db: DatabaseSync, sessao: Sessao): ClienteResumo[] {
   return comResumos(db, sessao, linhas).map(({ cliente }) => cliente);
 }
 
+/** O cliente sozinho ou o CNPJ de um grupo, da carteira do login: onde a visita acontece. O grupo, não. */
+export function isClienteDaCarteira(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): boolean {
+  const { marcas, codigos } = escopo(sessao);
+  return lerLinhas(db, `SELECT 1 FROM cliente c WHERE c.cliente = ? AND c.cnpjs IS NULL AND c.representante IN (${marcas})`, [codigoDoCliente, ...codigos]).length > 0;
+}
+
 /**
  * A ficha só sai para cliente da carteira do login; fora dela, null (a rota responde 404). A do
  * grupo tem os números somados, os CNPJs e os pedidos de todos eles; a do CNPJ, o caminho de volta
  * ao grupo.
  */
-export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): FichaCliente | null {
+/** A ficha com o que vem da foto; as visitas, que vêm do app.db, a rota junta (rotas.ts). */
+export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): Omit<FichaCliente, "visitas"> | null {
   const { marcas, codigos } = escopo(sessao);
   const [linha] = lerLinhas(
     db,

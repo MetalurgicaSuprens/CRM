@@ -18,7 +18,9 @@ export type Evento =
   | "sessoes_encerradas"
   | "codigos_trocados"
   | "usuario_desativado"
-  | "ficha_consultada";
+  | "ficha_consultada"
+  | "visita_registrada"
+  | "visita_desfeita";
 
 /** Quem fez: o id do usuário ou, nas ações de admin pela linha de comando, esta marca. */
 export const LINHA_DE_COMANDO = "linha-de-comando";

@@ -5,10 +5,11 @@ import { unidadesDoMapa, type Caixa, type MapaDaUf, type MunicipioDoMapa, type P
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
+import { DataRelativa } from "../componentes/Quando";
 import { Segmentos } from "../componentes/Segmentos";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
-import { carregarAnalises, carregarClientes, carregarSituacaoDosDados } from "../dados/api";
+import { carregarAnalises, carregarClientes, carregarSituacaoDosDados, carregarVisitas } from "../dados/api";
 import { acoesDaCarteira, montarTerritorio, type Territorio } from "../dados/mapa";
 import { carregarMapaDaUf, carregarMapaDoBrasil } from "../dados/mapas";
 import type { ClienteResumo } from "../dados/tipos";
@@ -50,6 +51,7 @@ export function Mapa() {
   const { dados: clientes } = useCarga("clientes", carregarClientes);
   const { dados: analises } = useCarga("analises", carregarAnalises);
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
+  const { dados: visitas } = useCarga("visitas", carregarVisitas);
   const { dados: brasil, erro: erroDoBrasil } = useCarga("mapa:brasil", carregarMapaDoBrasil);
   // O mapa põe cada CNPJ no seu município: o grupo, que não tem cidade, entra pelos CNPJs dele.
   const cnpjs = useMemo(() => (clientes ?? []).flatMap((cliente) => cliente.cnpjs ?? [cliente]), [clientes]);
@@ -63,8 +65,9 @@ export function Mapa() {
   );
   // Os municípios com cliente de todos os estados da carteira: o "perto" e o roteiro passam das divisas.
   const presencas = useMemo(
-    () => (mapas ?? []).flatMap((umMapa) => [...montarTerritorio(umMapa, cnpjs, acoes).municipios.values()].map((presenca) => ({ ...presenca, uf: umMapa.uf }))),
-    [mapas, cnpjs, acoes],
+    () =>
+      (mapas ?? []).flatMap((umMapa) => [...montarTerritorio(umMapa, cnpjs, acoes, visitas ?? {}).municipios.values()].map((presenca) => ({ ...presenca, uf: umMapa.uf }))),
+    [mapas, cnpjs, acoes, visitas],
   );
   const [parametros, setParametros] = useSearchParams();
   const [escolha, setEscolha] = useState<Escolha | null>(null);
@@ -83,7 +86,7 @@ export function Mapa() {
   });
 
   if (erroDoBrasil || erroDosMapas) return <Aviso texto="O mapa não carregou. Recarregue a página para tentar de novo." />;
-  if (!clientes || !analises || !situacao || !brasil || !mapas) return <Carregando />;
+  if (!clientes || !analises || !situacao || !visitas || !brasil || !mapas) return <Carregando />;
   if (ufs.length === 0) return <Aviso texto="Nenhum cliente da carteira tem o município no cadastro da Suprens." />;
 
   const chave = chaveDaLente(parametros.get("visao"));
@@ -91,8 +94,8 @@ export function Mapa() {
   const uf = ufs.find((item) => item.uf === parametros.get("uf"))?.uf ?? ufs[0]?.uf ?? "";
   const mapa = mapas.find((item) => item.uf === uf);
   if (!mapa) return <Carregando />;
-  const territorio = montarTerritorio(mapa, cnpjs, acoes);
-  const contexto: ContextoDaLente = { territorio, hoje: situacao.hoje };
+  const territorio = montarTerritorio(mapa, cnpjs, acoes, visitas);
+  const contexto: ContextoDaLente = { territorio, hoje: situacao.hoje, visitas };
   const circulos = lente.circulos(territorio);
   const semMunicipio = cnpjs.filter((cliente) => !cliente.municipio).length;
   const escolhaDoEstado = escolha?.uf === uf ? escolha : null;
@@ -280,6 +283,11 @@ function DicaDoMunicipio({ municipio, lente, contexto }: { municipio: MunicipioD
         )}
       </p>
       <lente.Dica {...contexto} municipio={municipio} />
+      {presenca?.ultimaVisita ? (
+        <p className={estilos.linhaDaDica}>
+          Sua última visita: <DataRelativa data={presenca.ultimaVisita} hoje={contexto.hoje} />
+        </p>
+      ) : null}
       {regiao ? <p className={estilos.regiaoDaDica}>Região de {regiao.regiao.nome}</p> : null}
     </>
   );

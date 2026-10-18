@@ -1,6 +1,6 @@
 import { diasEntre } from "dominio/datas";
 import type { MapaDaUf, MunicipioDoMapa, RegiaoDoMapa } from "dominio/mapa";
-import type { Analises, ClienteResumo } from "./tipos";
+import type { Analises, ClienteResumo, UltimasVisitas } from "./tipos";
 
 /*
  * O mapa da carteira, por estado. A pergunta principal é "para onde eu vou, e o que faço lá?": os
@@ -49,6 +49,8 @@ export type MunicipioNoTerritorio = {
   acoes: ResumoDasAcoes;
   /** A compra mais recente de algum cliente do município; null se nenhum comprou. */
   ultimaCompra: string | null;
+  /** A visita mais recente do login a algum cliente do município (app.db); null se nenhuma. */
+  ultimaVisita: string | null;
 };
 
 export type RegiaoNoTerritorio = {
@@ -169,9 +171,17 @@ export function faixaDeRecencia(diasSemCompra: number | null): 1 | 2 | 3 | 4 {
   return (faixa === -1 ? 4 : faixa + 1) as 1 | 2 | 3 | 4;
 }
 
-/** O estado com a carteira por cima: os municípios com cliente e todas as regiões imediatas, com o potencial. */
-export function montarTerritorio(mapa: MapaDaUf, clientes: readonly ClienteResumo[], acoesPorCliente: ReadonlyMap<string, AcoesDoCliente>): Territorio {
-  const municipios = municipiosComCliente(mapa, clientes, acoesPorCliente);
+/**
+ * O estado com a carteira por cima: os municípios com cliente e todas as regiões imediatas, com o
+ * potencial. As visitas são a última do login a cada cliente.
+ */
+export function montarTerritorio(
+  mapa: MapaDaUf,
+  clientes: readonly ClienteResumo[],
+  acoesPorCliente: ReadonlyMap<string, AcoesDoCliente>,
+  visitas: UltimasVisitas,
+): Territorio {
+  const municipios = municipiosComCliente(mapa, clientes, acoesPorCliente, visitas);
   const presencas = [...municipios.values()];
   const receita = somar(presencas.map((presenca) => presenca.receita));
   const area = regioesDaArea(mapa, presencas);
@@ -239,6 +249,7 @@ function municipiosComCliente(
   mapa: MapaDaUf,
   clientes: readonly ClienteResumo[],
   acoesPorCliente: ReadonlyMap<string, AcoesDoCliente>,
+  visitas: UltimasVisitas,
 ): Map<string, MunicipioNoTerritorio> {
   const doMapa = new Map(mapa.municipios.map((municipio) => [municipio.codigo, municipio]));
   const porMunicipio = new Map<string, ClienteResumo[]>();
@@ -250,6 +261,7 @@ function municipiosComCliente(
       const municipio = doMapa.get(codigo);
       if (!municipio) return [];
       const compras = doMunicipio.flatMap(({ ultimaCompra }) => (ultimaCompra ? [ultimaCompra] : [])).sort();
+      const visitados = doMunicipio.flatMap(({ codigo }) => visitas[codigo] ?? []).sort();
       return [
         [
           codigo,
@@ -260,6 +272,7 @@ function municipiosComCliente(
             clientes: doMunicipio,
             acoes: resumirAcoes(doMunicipio, acoesPorCliente),
             ultimaCompra: compras.at(-1) ?? null,
+            ultimaVisita: visitados.at(-1) ?? null,
           },
         ] as const,
       ];

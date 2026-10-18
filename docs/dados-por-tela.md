@@ -200,6 +200,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Por CNPJ | Só no grupo, depois do faturamento mensal: cada CNPJ com cidade e código, situação, última compra, faturado em 12 meses, a parte dele no faturado do grupo e a variação; a linha abre a ficha do CNPJ (FichaCliente.tsx, `TabelaDosCnpjs`) | Os números de cada CNPJ, como se ele estivesse sozinho; a situação é a dele (pedido do Lucas em 2026-10-17) | (ver Clientes) | extrator; a parte, no navegador |
 | Cidade, Mercado e Código | Cartões (FichaCliente.tsx:129-131) | Mercado: M = montadora, E = exportação, o resto é praça. Código: como em Clientes, "Pessoa física" sem número | `CRCL.TIPO_CLI`; código: `CRCL.CLIENTE` só de empresa | extrator |
 | Cliente desde | Só o ano (FichaCliente.tsx:132) | Ano da primeira nota válida da história; nulo se nunca comprou | `MIN(NFME.DT_EMISSAO)` com a RF | extrator; vai só o ano |
+| Última visita | Número ao lado da "Última compra": "Hoje", "há 12 dias" ou "Nenhuma", com o botão "Visitei hoje" ou "Desfazer a de hoje". No grupo, a visita mais recente a algum CNPJ, e a marca fica na ficha de cada CNPJ (2026-10-18) | O dia vem do relógio de Brasília do servidor, não da data da foto | não é ERP (`app.db`, `visitas`) | servidor |
 | Faturado em 12 meses | Indicador, com "vs 12 meses anteriores" | Como em Clientes | NFME, NFDE | extrator |
 | Última compra | Indicador | Como em Clientes | NFME | extrator |
 | Ciclo de compra | "N dias" ou "Irregular" (FichaCliente.tsx:182-187) | Mediana dos intervalos entre eventos de compra em 24 meses | `NFME.DT_EMISSAO` | extrator |
@@ -543,7 +544,8 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
 | Em jogo por mês ("Onde agir") | Círculos, lista, indicador e a coluna dos clientes | A perda mensal de quem parou, a queda por mês de quem compra menos (as listas de Análises) e a média mensal (faturado em 12 meses ÷ 12) do cliente ativo que passou do próprio ciclo de compra | (foto: `analise_parado`, `analise_ritmo`, `cliente.ciclo_dias`, `ultima_compra`) | navegador |
 | Motivo ("Onde agir") | "Parou há 120 dias", "Comprando menos: −45% no semestre", "44 dias sem comprar; costuma a cada 33", "Mix: FLEXIL, MICRO", "Novo desde ago/26" | Parado e comprando menos: as listas de Análises. Fora do ciclo: o cliente ativo com mais dias sem comprar que o ciclo dele, que não está parado nem em risco. Mix e novo: as listas de Análises | (foto: as análises e `cliente.ciclo_dias`) | navegador |
 | Direção ("Receita") | Cor do círculo e variação na lista e na dica | O faturado em 12 meses dos clientes do município contra os 12 meses anteriores (o primeiro ponto de `evolucao_12m`), com 10% de folga: o percentual inteiro, o mesmo que a tela escreve | (foto: `cliente.evolucao_12m`) | navegador |
-| Tempo sem compra ("Esquecidas") | Cor do município, lista e indicadores | Dias desde a compra mais recente de algum cliente do município. Esquecida: mais de 90 dias, ou nenhum cliente comprou | (foto: `cliente.ultima_compra`) | navegador |
+| Tempo sem contato ("Esquecidas") | Cor do município, lista e indicadores | Dias desde o último contato com o município: a compra mais recente de algum cliente dele ou a visita mais recente do login. Esquecida: mais de 90 dias, ou nenhum dos dois | (foto: `cliente.ultima_compra`; app.db: `visitas`) | navegador |
+| Última visita (Mapa) | Coluna dos clientes em "Onde agir" e em "Esquecidas", e linha da dica do município | A visita mais recente do login ao cliente, ou a algum cliente do município | (app.db: `visitas`) | servidor; o município, navegador |
 | Cidades sem cliente ("Onde crescer") | Indicador e a lista da região escolhida, das mais populosas | Os municípios da área sem cliente da carteira | (derivado) | navegador |
 
 - **Por que a área (2026-10-15).**
@@ -722,12 +724,14 @@ As seis primeiras tabelas existem desde a F3 (`server/src/bancoDoApp.ts`, migra�
 | `convites` | hash do token, usuário, criado por, criado em, expira em, usado em, trocado em | Convite, Admin |
 | `sessoes` | hash do token, usuário, chave usada, criada em, último uso, encerrada em e motivo | todas, Entrar |
 | `auditoria` | momento, usuário (ou "linha-de-comando"), evento, alvo, resultado | Admin |
+| `visitas` (migração 3, 2026-10-18) | usuário, cliente (id opaco), dia da visita, registrada em; um dia por cliente e login, sem texto livre | Ficha, Mapa |
 | `rascunhos` e itens | id aleatório, usuário, cliente (id opaco), entrega, observação, atualizado em; itens com produto e quantidade em peças | Pedidos, Montar pedido |
 | `pedidos` e itens | número CRM, usuário, cliente, enviado em, entrega, observação, total estimado, hash do conteúdo, asserção da chave e id da chave; itens com produto, quantidade, cento, família e medida copiados da foto | Pedidos, Detalhe |
 | sequência do número CRM | último número usado; nunca reutilizado | Pedidos |
 
 - **Sessão** (plano.md:142-146): cookie `__Host-`, token de 256 bits, só o hash no banco.
 - **Envio idempotente:** o mesmo rascunho não gera dois números CRM.
+- **Visitas (2026-10-18).** O representante marca o dia em que visitou o cliente: hoje, pelo relógio de Brasília do servidor, ou até 30 dias para trás; nunca no futuro. Só no cliente sozinho ou no CNPJ de um grupo da carteira do login; no grupo em si e fora da carteira, 404, como a ficha (`server/src/visitas.ts`, `POST` e `DELETE /api/clientes/:codigo/visitas`, `GET /api/visitas`). Marcar e desfazer entram na auditoria com o id do cliente. Cada login vê só as próprias visitas.
 - **O que sai para a LAN** (`saida/pedidos`): número CRM, os códigos do login no envio, id do cliente, itens (produto e peças), entrega, observação, hash e assinatura. A LAN converte o id para `CRCL.CLIENTE` e as peças para CT, confere que o `VEND_1` do cliente está entre os códigos e usa esse código no pedido do SGI.
 - **Auditoria.** O alvo é o código opaco do cliente ou o número CRM, nunca o nome nem o corpo da requisição. Guardada por 6 a 12 meses (plano.md:155). Gravar o IP fica a decidir.
 - **O que nunca entra no app.db:** `CRCL.CLIENTE` nem nome de cliente. O nome sempre vem da foto na leitura.

@@ -77,6 +77,16 @@ const MIGRACOES: readonly string[] = [
   `
   ALTER TABLE usuarios ADD COLUMN papel TEXT NOT NULL DEFAULT 'representante' CHECK (papel IN ('representante', 'admin'));
   `,
+  // 3. Visitas (2026-10-18): o dia em que o representante visitou o cliente, sem texto livre. O Mapa e a ficha mostram a última.
+  `
+  CREATE TABLE visitas (
+    usuario TEXT NOT NULL REFERENCES usuarios (id),
+    cliente TEXT NOT NULL,
+    data TEXT NOT NULL,
+    registrada_em TEXT NOT NULL,
+    PRIMARY KEY (usuario, cliente, data)
+  ) STRICT;
+  `,
 ];
 
 /** Abre o app.db (cria a pasta e o arquivo na primeira vez) e aplica as migrações que faltam. ":memory:" nos testes. */

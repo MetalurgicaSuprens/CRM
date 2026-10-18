@@ -9,6 +9,7 @@ import type {
   Rascunho,
   RascunhoParaSalvar,
   SituacaoDosDados,
+  UltimasVisitas,
 } from "./tipos";
 
 /**
@@ -32,4 +33,8 @@ export type FonteDeDados = {
   excluirRascunho(id: string): Promise<void>;
   /** Na F5, o envio leva junto a confirmação da chave de acesso, ligada ao conteúdo do pedido. */
   enviarPedido(idDoRascunho: string): Promise<PedidoEnviado>;
+  carregarVisitas(): Promise<UltimasVisitas>;
+  /** Marca a visita de hoje e devolve as visitas do cliente, da mais recente à mais antiga. */
+  registrarVisita(codigoCliente: string): Promise<string[]>;
+  desfazerVisita(codigoCliente: string, data: string): Promise<string[]>;
 };

@@ -24,4 +24,7 @@ export const {
   salvarRascunho,
   excluirRascunho,
   enviarPedido,
+  carregarVisitas,
+  registrarVisita,
+  desfazerVisita,
 } = fonte;

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { dataDoMomento, momentoEmBrasilia, somarDias } from "dominio/datas";
 import { criarApp } from "./app.ts";
 import { abrirBancoDoApp } from "./bancoDoApp.ts";
 import { criarFotoAtual, type FotoAtual } from "./foto/fotoAtual.ts";
@@ -255,5 +256,73 @@ describe("grupos do SGI: os CNPJs do mesmo grupo como um cliente só", () => {
         expect((await comoA(app, url)).statusCode, url).toBe(404);
       }
     }
+  });
+});
+
+describe("visitas: o dia em que o representante visitou o cliente", () => {
+  const hoje = () => dataDoMomento(momentoEmBrasilia());
+  const visitar = (app: FastifyInstance, metodo: "POST" | "DELETE", codigo: string, corpo: object = {}, origem: string = ORIGEM) =>
+    app.inject({ method: metodo, url: `/api/clientes/${codigo}/visitas`, headers: { cookie: loginDeA, origin: origem }, payload: corpo });
+
+  it("marca a visita de hoje no cliente de A e a mostra na ficha e nas últimas visitas", async () => {
+    const app = criarAppDeTeste();
+    const resposta = await visitar(app, "POST", CLIENTE_DE_A);
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toEqual({ visitas: [hoje()] });
+    expect((await comoA(app, "/api/visitas")).json()).toEqual({ [CLIENTE_DE_A]: hoje() });
+    expect((await comoA(app, `/api/clientes/${CLIENTE_DE_A}`)).json<FichaCliente>().visitas).toEqual([hoje()]);
+  });
+
+  it("não duplica o mesmo dia e aceita um dia dos últimos 30", async () => {
+    const app = criarAppDeTeste();
+    const ontem = somarDias(hoje(), -1);
+    await visitar(app, "POST", CLIENTE_DE_A);
+    await visitar(app, "POST", CLIENTE_DE_A);
+    expect((await visitar(app, "POST", CLIENTE_DE_A, { data: ontem })).json()).toEqual({ visitas: [hoje(), ontem] });
+  });
+
+  it("desfaz a visita do dia", async () => {
+    const app = criarAppDeTeste();
+    await visitar(app, "POST", CLIENTE_DE_A);
+    expect((await visitar(app, "DELETE", CLIENTE_DE_A, { data: hoje() })).json()).toEqual({ visitas: [] });
+  });
+
+  it("marca no CNPJ do grupo, e a ficha do grupo junta as visitas dos CNPJs; no grupo em si, 404", async () => {
+    const app = criarAppDeTeste();
+    expect((await visitar(app, "POST", FILIAL_BAHIA_DE_A)).statusCode).toBe(200);
+    expect((await visitar(app, "POST", GRUPO_DE_A)).statusCode).toBe(404);
+    expect((await comoA(app, `/api/clientes/${GRUPO_DE_A}`)).json<FichaCliente>().visitas).toEqual([hoje()]);
+  });
+
+  it("não deixa A marcar visita no cliente, no grupo ou no CNPJ de B", async () => {
+    const app = criarAppDeTeste();
+    for (const codigo of [CLIENTE_DE_B, GRUPO_DE_B, FILIAL_DE_B]) {
+      expect((await visitar(app, "POST", codigo)).statusCode, codigo).toBe(404);
+    }
+    expect((await comoA(app, "/api/visitas")).json()).toEqual({});
+  });
+
+  it("recusa a data futura, a de mais de 30 dias, a que não existe e a fora do formato", async () => {
+    const app = criarAppDeTeste();
+    for (const data of [somarDias(hoje(), 1), somarDias(hoje(), -31), "2026-02-30", "18/10/2026"]) {
+      expect((await visitar(app, "POST", CLIENTE_DE_A, { data })).statusCode, data).toBe(400);
+    }
+    expect((await comoA(app, "/api/visitas")).json()).toEqual({});
+  });
+
+  it("recusa a visita pedida de outra origem", async () => {
+    const resposta = await visitar(criarAppDeTeste(), "POST", CLIENTE_DE_A, {}, "https://outro.exemplo");
+    expect(resposta.statusCode).toBe(403);
+  });
+
+  it("registra a visita e o desfazer na auditoria, com o id do cliente", async () => {
+    const app = criarAppDeTeste();
+    await visitar(app, "POST", CLIENTE_DE_A);
+    await visitar(app, "DELETE", CLIENTE_DE_A, { data: hoje() });
+    const eventos = banco.prepare("SELECT evento, alvo FROM auditoria WHERE evento LIKE 'visita_%' ORDER BY id").all();
+    expect(eventos.map(({ evento, alvo }) => [evento, alvo])).toEqual([
+      ["visita_registrada", CLIENTE_DE_A],
+      ["visita_desfeita", CLIENTE_DE_A],
+    ]);
   });
 });

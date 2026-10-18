@@ -2,9 +2,10 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import type { MunicipioDoMapa } from "dominio/mapa";
 import type { Ordem } from "../../componentes/ordenacao";
+import { DataRelativa } from "../../componentes/Quando";
 import type { ColunaDaTabela } from "../../componentes/TabelaResponsiva";
 import type { RegiaoNoTerritorio, Territorio } from "../../dados/mapa";
-import type { ClienteResumo } from "../../dados/tipos";
+import type { ClienteResumo, UltimasVisitas } from "../../dados/tipos";
 import type { CirculoDoMapa } from "../../graficos/MapaDoTerritorio";
 
 /*
@@ -12,7 +13,8 @@ import type { CirculoDoMapa } from "../../graficos/MapaDoTerritorio";
  * números do alto, o desenho, a legenda, a dica, a lista ao lado e as colunas dos clientes escolhidos.
  */
 
-export type ContextoDaLente = { territorio: Territorio; hoje: string };
+/** O território do estado, a data da foto e a última visita do login a cada cliente. */
+export type ContextoDaLente = { territorio: Territorio; hoje: string; visitas: UltimasVisitas };
 
 /** Uma linha da lista ao lado do mapa: uma região ou um município, que o toque escolhe. */
 export type ItemDaLista = {
@@ -51,6 +53,15 @@ export type LenteDoMapa = {
   /** Na região escolhida, o que vem antes dos clientes dela. */
   SobreARegiao?: (props: ContextoDaLente & { regiao: RegiaoNoTerritorio }) => ReactNode;
 };
+
+/** A coluna da última visita do login, nas listas de clientes que pedem viagem. */
+export function colunaDaVisita({ visitas, hoje }: ContextoDaLente): ColunaDaTabela<ClienteResumo> {
+  return {
+    titulo: "Última visita",
+    ordenarPor: (cliente) => visitas[cliente.codigo] ?? null,
+    celula: (cliente) => <DataRelativa data={visitas[cliente.codigo] ?? null} hoje={hoje} />,
+  };
+}
 
 /** O fundo dos municípios com cliente, nas visões que não pintam o município de outra cor. */
 export function classesDosMunicipiosComCliente({ territorio }: ContextoDaLente): Map<string, string> {

@@ -22,7 +22,22 @@ export const fonteDoServidor: FonteDeDados = {
   salvarRascunho: () => Promise.reject(new Error(AINDA_SEM_PEDIDOS)),
   excluirRascunho: () => Promise.reject(new Error(AINDA_SEM_PEDIDOS)),
   enviarPedido: () => Promise.reject(new Error(AINDA_SEM_PEDIDOS)),
+  carregarVisitas: () => buscar("/api/visitas"),
+  registrarVisita: (codigo) => mudarVisita("POST", codigo, {}),
+  desfazerVisita: (codigo, data) => mudarVisita("DELETE", codigo, { data }),
 };
+
+/** O servidor confere que o cliente é da carteira e a data, e devolve as visitas dele. */
+async function mudarVisita(metodo: "POST" | "DELETE", codigo: string, corpo: { data?: string }): Promise<string[]> {
+  const resposta = await fetch(`/api/clientes/${encodeURIComponent(codigo)}/visitas`, {
+    method: metodo,
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(corpo),
+  });
+  if (resposta.status === 401) return irParaAEntrada(resposta);
+  if (!resposta.ok) throw new Error(await mensagemDeErro(resposta));
+  return ((await resposta.json()) as { visitas: string[] }).visitas;
+}
 
 async function buscar<T>(caminho: string): Promise<T> {
   const resposta = await fetch(caminho, { headers: { Accept: "application/json" } });

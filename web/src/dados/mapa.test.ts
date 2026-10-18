@@ -68,7 +68,7 @@ describe("montarTerritorio", () => {
     ["b", { parado: { perdaPorMes: 2_000, diasSemComprar: 222 } }],
     ["d", { atrasado: { diasSemComprar: 50, cicloDias: 30, mediaPorMes: 500 }, mix: { familias: ["FLEXIL"] } }],
   ]);
-  const territorio = montarTerritorio(MAPA, CLIENTES, acoes);
+  const territorio = montarTerritorio(MAPA, CLIENTES, acoes, { b: "2026-10-15", c: "2026-09-01" });
   const regiao = (codigo: string) => territorio.regioes.find((r) => r.regiao.codigo === codigo);
 
   it("soma a receita, a de 1 ano antes e os clientes de cada município, sem o cliente sem município", () => {
@@ -77,9 +77,10 @@ describe("montarTerritorio", () => {
     expect(territorio.municipios.get("5208707")).toMatchObject({ receita: 900_000, receitaAnoAntes: 1_000_000 });
   });
 
-  it("guarda a compra mais recente do município, para as cidades esquecidas", () => {
-    expect(territorio.municipios.get("5208707")?.ultimaCompra).toBe("2026-10-01");
-    expect(territorio.municipios.get("5201405")?.ultimaCompra).toBeNull();
+  it("guarda a compra e a visita mais recentes do município, para as cidades esquecidas", () => {
+    expect(territorio.municipios.get("5208707")).toMatchObject({ ultimaCompra: "2026-10-01", ultimaVisita: "2026-10-15" });
+    expect(territorio.municipios.get("5201405")).toMatchObject({ ultimaCompra: null, ultimaVisita: "2026-09-01" });
+    expect(territorio.municipios.get("5218805")?.ultimaVisita).toBeNull();
   });
 
   it("dá a cada região a parte da receita do estado, com os municípios do que mais fatura ao que menos", () => {

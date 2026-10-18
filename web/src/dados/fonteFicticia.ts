@@ -12,14 +12,23 @@ import {
   salvarRascunhoFicticio,
 } from "./pedidosFicticios";
 
-/** O protótipo (F1): a carteira fictícia, sem servidor. Os rascunhos ficam só na memória do navegador. */
+/** As visitas do protótipo, de cada cliente, da mais recente à mais antiga: só na memória, como os rascunhos. */
+const visitasFicticias = new Map<string, string[]>();
+
+function mudarVisitaFicticia(codigo: string, mudar: (datas: string[]) => string[]): Promise<string[]> {
+  const datas = mudar(visitasFicticias.get(codigo) ?? []).sort().reverse();
+  visitasFicticias.set(codigo, datas);
+  return Promise.resolve(datas);
+}
+
+/** O protótipo (F1): a carteira fictícia, sem servidor. Os rascunhos e as visitas ficam só na memória do navegador. */
 export const fonteFicticia: FonteDeDados = {
   carregarSituacaoDosDados: () => Promise.resolve(situacaoDosDadosFicticia()),
   carregarPainel: () => Promise.resolve(painelFicticio()),
   carregarClientes: () => Promise.resolve(clientesFicticios()),
   carregarFicha(codigo) {
     const ficha = fichaFicticia(codigo);
-    return Promise.resolve(ficha && { ...ficha, pedidos: [...pedidosDoCrmNaFicha(codigo), ...ficha.pedidos] });
+    return Promise.resolve(ficha && { ...ficha, pedidos: [...pedidosDoCrmNaFicha(codigo), ...ficha.pedidos], visitas: visitasFicticias.get(codigo) ?? [] });
   },
   carregarAnalises: () => Promise.resolve(analisesFicticias()),
   carregarCatalogo(codigoCliente) {
@@ -44,4 +53,7 @@ export const fonteFicticia: FonteDeDados = {
     const pedido = enviarRascunhoFicticio(idDoRascunho);
     return pedido ? Promise.resolve(pedido) : Promise.reject(new Error("Rascunho não encontrado"));
   },
+  carregarVisitas: () => Promise.resolve(Object.fromEntries([...visitasFicticias].flatMap(([codigo, [ultima]]) => (ultima ? [[codigo, ultima]] : [])))),
+  registrarVisita: (codigo) => mudarVisitaFicticia(codigo, (datas) => [...new Set([situacaoDosDadosFicticia().hoje, ...datas])]),
+  desfazerVisita: (codigo, data) => mudarVisitaFicticia(codigo, (datas) => datas.filter((outra) => outra !== data)),
 };

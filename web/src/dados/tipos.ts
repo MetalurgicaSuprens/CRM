@@ -152,7 +152,12 @@ export type FichaCliente = ClienteResumo & {
   pedidos: PedidoDaFicha[];
   /** No CNPJ de um grupo: o grupo, para voltar à ficha dele. */
   grupo: { codigo: string; nome: string } | null;
+  /** Os dias em que o login visitou o cliente (no grupo, algum CNPJ dele), do mais recente ao mais antigo, até 10 (app.db). */
+  visitas: string[];
 };
+
+/** A última visita do login a cada cliente que ele visitou, pelo código do cliente (app.db). */
+export type UltimasVisitas = Record<string, string>;
 
 export type MesDoPainel = {
   mes: string;

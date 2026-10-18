@@ -6,7 +6,7 @@ import { Valor } from "../../componentes/Valor";
 import { emJogoPorMes, gravidadeDoCliente, gravidadeDoResumo, type AcoesDoCliente, type Gravidade, type ResumoDasAcoes } from "../../dados/mapa";
 import { formatarContagem, formatarMesAno, formatarVariacao } from "../../formato";
 import estilos from "../Mapa.module.css";
-import { classesDosMunicipiosComCliente, type ContextoDaLente, type LenteDoMapa } from "./lente";
+import { classesDosMunicipiosComCliente, colunaDaVisita, type ContextoDaLente, type LenteDoMapa } from "./lente";
 
 /*
  * "Onde agir", a visão que abre: em cada cidade, os clientes que pedem ação e o dinheiro em jogo por
@@ -46,7 +46,8 @@ export const ONDE_AGIR: LenteDoMapa = {
       detalhe: descreverAcoes(acoes),
     }));
   },
-  colunas: ({ territorio, hoje }) => {
+  colunas: (contexto) => {
+    const { territorio, hoje } = contexto;
     const acoesDe = (codigo: string) => territorio.acoesPorCliente.get(codigo);
     return [
       {
@@ -66,6 +67,7 @@ export const ONDE_AGIR: LenteDoMapa = {
         },
       },
       { titulo: "Última compra", ordenarPor: (cliente) => cliente.ultimaCompra, celula: (cliente) => <DataRelativa data={cliente.ultimaCompra} hoje={hoje} /> },
+      colunaDaVisita(contexto),
     ];
   },
   ordemInicial: { coluna: "Em jogo por mês", sentido: "decrescente" },

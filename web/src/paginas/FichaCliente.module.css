@@ -74,8 +74,41 @@
 
 .indicadores {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--esp-4);
+}
+
+/* "Visitei hoje", dentro do número da última visita */
+.visita {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.botaoDaVisita {
+  padding: 2px 10px;
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: 999px;
+  background: var(--cor-superficie);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  color: var(--cor-texto-2);
+}
+
+.botaoDaVisita:hover:not(:disabled) {
+  border-color: var(--cor-acento);
+  color: var(--cor-texto);
+}
+
+.botaoDaVisita[aria-pressed="true"] {
+  border-color: var(--cor-ok);
+  color: var(--cor-ok);
+}
+
+.erroDaVisita {
+  font-size: var(--tam-legenda);
+  color: var(--cor-queda);
 }
 
 /* Cartões da mesma linha esticam até a mesma altura: as bases ficam alinhadas */
@@ -195,9 +228,34 @@
   font-size: var(--tam-pequeno);
 }
 
+/* Os cinco números em 3 + 2, a segunda linha esticada até a ponta */
+@container (max-width: 1180px) {
+  .indicadores {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .indicadores > * {
+    grid-column: span 2;
+  }
+
+  .indicadores > :nth-child(n + 4) {
+    grid-column: span 3;
+  }
+}
+
+/* Dois por linha; o último, sozinho, ocupa a linha toda */
 @container (max-width: 940px) {
   .indicadores {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .indicadores > *,
+  .indicadores > :nth-child(n + 4) {
+    grid-column: auto;
+  }
+
+  .indicadores > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 

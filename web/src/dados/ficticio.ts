@@ -493,6 +493,7 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     grupoDoMix: mix ? { porte: mix.porte } : null,
     pedidos: pedidosDaFicha(cliente, dados),
     grupo: null,
+    visitas: [],
   };
 }
 

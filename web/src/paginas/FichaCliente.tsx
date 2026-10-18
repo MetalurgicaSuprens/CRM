@@ -11,6 +11,7 @@ import {
   Hash,
   Lightbulb,
   MapPin,
+  MapPinCheck,
   Package,
   ReceiptText,
   Repeat,
@@ -34,11 +35,12 @@ import { Voltar, VoltarAoAnterior } from "../componentes/Voltar";
 import type { ColunaOrdenavel } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
 import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
-import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
+import { carregarFicha, carregarSituacaoDosDados, desfazerVisita, registrarVisita } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import { aFaturarNoMes, montarMesAMes, resumirOAno, type ResumoDoAno } from "../dados/faturamentoDoCliente";
 import type { ClienteResumo, FichaCliente as Ficha, Mercado, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
+import { dataDoMomento } from "dominio/datas";
 import {
   formatarCodigoDoCliente,
   formatarContagem,
@@ -63,8 +65,11 @@ export function FichaCliente() {
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   // Guarda de qual cliente é o aviso: ao abrir a ficha de outro, ele some.
   const [codigoDoAviso, setCodigoDoAviso] = useState<string | null>(null);
+  // As visitas marcadas nesta tela, de qual cliente são, até a ficha ser buscada de novo.
+  const [marcadas, setMarcadas] = useState<{ codigo: string; visitas: string[] } | null>(null);
   if (carregando || !situacao) return <Carregando />;
   if (!ficha) return <NaoEncontrado />;
+  const visitas = marcadas?.codigo === ficha.codigo ? marcadas.visitas : ficha.visitas;
   return (
     <div className={estilos.pagina}>
       <CabecalhoPagina
@@ -84,7 +89,11 @@ export function FichaCliente() {
       {codigoDoAviso === ficha.codigo && !podeReceberPedido(ficha.status) ? (
         <AvisoDePedidoBloqueado texto={AVISO_DE_PEDIDO_BLOQUEADO[ficha.status]} />
       ) : null}
-      <Indicadores ficha={ficha} hoje={situacao.hoje} />
+      <Indicadores
+        ficha={ficha}
+        hoje={situacao.hoje}
+        visita={{ visitas, hoje: dataDoMomento(situacao.relogio), aoMudar: (novas) => setMarcadas({ codigo: ficha.codigo, visitas: novas }) }}
+      />
       <Faturamento ficha={ficha} hoje={situacao.hoje} />
       {ficha.cnpjs ? (
         <Cartao titulo="Por CNPJ" icone={Building2} subtitulo="Os números de cada CNPJ do grupo; a linha abre a ficha dele">
@@ -251,7 +260,15 @@ function descricaoDoGrupo(ficha: Ficha): string | null {
   return ficha.grupo ? `CNPJ do grupo ${ficha.grupo.nome}` : null;
 }
 
-function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
+type Visita = {
+  /** Da mais recente à mais antiga. */
+  visitas: string[];
+  /** O dia do relógio de Brasília, o mesmo que o servidor grava: a foto pode ser de ontem. */
+  hoje: string;
+  aoMudar: (visitas: string[]) => void;
+};
+
+function Indicadores({ ficha, hoje, visita }: { ficha: Ficha; hoje: string; visita: Visita }) {
   const emAberto = ficha.pedidos.filter((pedido) => pedido.status === "em_aberto");
   const totalEmAberto = emAberto.reduce((soma, pedido) => soma + pedido.valor, 0);
   return (
@@ -270,6 +287,12 @@ function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
         detalhe={ficha.ultimaCompra ? `em ${formatarData(ficha.ultimaCompra)}` : "sem compras"}
       />
       <Indicador
+        rotulo="Última visita"
+        icone={MapPinCheck}
+        valor={tempoDaVisita(visita)}
+        detalhe={ficha.cnpjs ? "marcada na ficha de cada CNPJ" : <BotaoDaVisita codigo={ficha.codigo} visita={visita} />}
+      />
+      <Indicador
         rotulo="Ciclo de compra"
         icone={Repeat}
         valor={ficha.cicloDias ? `${ficha.cicloDias} dias` : "Irregular"}
@@ -282,6 +305,44 @@ function Indicadores({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
         detalhe={emAberto.length ? `${emAberto.length} pedido(s)` : "tudo faturado"}
       />
     </div>
+  );
+}
+
+function tempoDaVisita({ visitas: [ultima], hoje }: Visita): string {
+  if (!ultima) return "Nenhuma";
+  return ultima === hoje ? "Hoje" : formatarTempoDesde(ultima, hoje);
+}
+
+/**
+ * Marca a visita de hoje, ou desfaz a de hoje. A visita é do CNPJ visitado: no grupo, o botão fica na
+ * ficha de cada CNPJ. O servidor confere que o cliente é da carteira e devolve as visitas dele.
+ */
+function BotaoDaVisita({ codigo, visita }: { codigo: string; visita: Visita }) {
+  const [erro, setErro] = useState<string | null>(null);
+  const [isEnviando, setIsEnviando] = useState(false);
+  const isDeHoje = visita.visitas[0] === visita.hoje;
+  const mudar = async () => {
+    setIsEnviando(true);
+    setErro(null);
+    try {
+      visita.aoMudar(isDeHoje ? await desfazerVisita(codigo, visita.hoje) : await registrarVisita(codigo));
+    } catch (falha) {
+      setErro(falha instanceof Error ? falha.message : "Não deu para marcar a visita. Tente de novo.");
+    } finally {
+      setIsEnviando(false);
+    }
+  };
+  return (
+    <span className={estilos.visita}>
+      <button type="button" className={estilos.botaoDaVisita} onClick={mudar} disabled={isEnviando} aria-pressed={isDeHoje}>
+        {isDeHoje ? "Desfazer a de hoje" : "Visitei hoje"}
+      </button>
+      {erro ? (
+        <span className={estilos.erroDaVisita} role="alert">
+          {erro}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
