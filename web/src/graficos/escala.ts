@@ -25,3 +25,12 @@ function passoRedondo(passoBruto: number): number {
 export function escalarAltura(valor: number, maximo: number, altura: number): number {
   return maximo > 0 ? (Math.max(0, valor) / maximo) * altura : 0;
 }
+
+/**
+ * O passo de um valor numa rampa de `passos` cores: 0 para zero ou menos, e de 1 a `passos` em faixas
+ * iguais até `maior`, inclusive. O valor positivo mais baixo ainda cai no passo 1, que aparece.
+ */
+export function passoNaRampa(valor: number, maior: number, passos = 5): number {
+  if (!(valor > 0) || !(maior > 0)) return 0;
+  return Math.min(passos, Math.max(1, Math.ceil((valor / maior) * passos)));
+}

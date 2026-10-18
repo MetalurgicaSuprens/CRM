@@ -1,0 +1,112 @@
+/* As linhas dos anos, os rótulos da ponta, a legenda e a dica; a moldura comum está em moldura.module.css */
+
+/* Cada ano leva um passo da rampa do dado, na linha, no ponto e na chave da legenda */
+.tom1 {
+  --tom: var(--cor-dado-1);
+}
+
+.tom2 {
+  --tom: var(--cor-dado-2);
+}
+
+.tom3 {
+  --tom: var(--cor-dado-3);
+}
+
+.tom4 {
+  --tom: var(--cor-dado-4);
+}
+
+.linha {
+  fill: none;
+  stroke: var(--tom, var(--cor-dado));
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.maisRecente {
+  stroke-width: 2.5;
+}
+
+/* O anel da cor do fundo separa o ponto das linhas que ele cruza */
+.ponto {
+  fill: var(--tom, var(--cor-dado));
+  stroke: var(--cor-superficie);
+  stroke-width: 2;
+}
+
+.cursor {
+  stroke: var(--cor-eixo);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.rotuloDoAno {
+  fill: var(--cor-texto-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: var(--cor-superficie);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.rotuloRecente {
+  fill: var(--cor-texto);
+  font-weight: 600;
+}
+
+.fio {
+  stroke: var(--cor-linha-forte);
+  stroke-width: 1;
+}
+
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-4);
+  font-size: var(--tam-pequeno);
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto-2);
+}
+
+.legenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chave {
+  flex-shrink: 0;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--tom, var(--cor-dado));
+}
+
+/* Cada ano numa linha só: chave, valor à direita e o ano */
+.dicaLinhas {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  gap: 2px var(--esp-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.dicaLinha {
+  display: contents;
+}
+
+.dicaValor {
+  justify-self: end;
+}
+
+.dicaRotulo {
+  color: var(--cor-texto-suave);
+}
+
+.vazio {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}

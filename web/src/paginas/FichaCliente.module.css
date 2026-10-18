@@ -103,6 +103,19 @@
   color: var(--cor-texto-suave);
 }
 
+/* O seletor dos modelos da tendência, enquanto o Lucas compara (TendenciaDaFicha.tsx) */
+.modelos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-3);
+}
+
+.rotuloDosModelos {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
 .gradeDupla {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);

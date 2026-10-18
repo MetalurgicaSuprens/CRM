@@ -15,7 +15,6 @@ import {
   ReceiptText,
   Repeat,
   Store,
-  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import botoes from "../componentes/Botao.module.css";
@@ -37,7 +36,7 @@ import { useOrdenacao } from "../componentes/useOrdenacao";
 import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { carregarFicha, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
-import { aFaturarNoMes, montarMesAMes, montarTendencia, resumirATendencia, resumirOAno, type ResumoDoAno } from "../dados/faturamentoDoCliente";
+import { aFaturarNoMes, montarMesAMes, resumirOAno, type ResumoDoAno } from "../dados/faturamentoDoCliente";
 import type { ClienteResumo, FichaCliente as Ficha, Mercado, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import {
@@ -45,7 +44,6 @@ import {
   formatarContagem,
   formatarData,
   formatarLocalECodigo,
-  formatarMesAno,
   formatarNomeDoMes,
   formatarNumero,
   formatarParticipacao,
@@ -53,10 +51,10 @@ import {
 } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
 import { BarrasMensais } from "../graficos/BarrasMensais";
-import { LinhaDeTendencia } from "../graficos/LinhaDeTendencia";
 import { Carregando } from "./Carregando";
 import { DetalheDoPedidoDaFicha } from "./DetalhesDosPedidos";
 import estilos from "./FichaCliente.module.css";
+import { TendenciaDaFicha } from "./TendenciaDaFicha";
 
 
 export function FichaCliente() {
@@ -116,33 +114,17 @@ export function FichaCliente() {
 }
 
 /**
- * O faturamento em dois gráficos, cada um com uma pergunta e sem nada para escolher: a tendência (o
- * cliente cresce ou encolhe?) e o mês a mês do ano contra o anterior (em que meses ele compra, e como
+ * O faturamento em dois gráficos, cada um com uma pergunta: a tendência (o cliente compra mais, menos
+ * ou igual nos últimos 4 anos?) e o mês a mês do ano contra o anterior (em que meses ele compra, e como
  * está indo?), no mesmo desenho do Início.
  */
 function Faturamento({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
   const mesAtual = hoje.slice(0, 7);
   const ano = Number(mesAtual.slice(0, 4));
-  const tendencia = montarTendencia(ficha.mensal, mesAtual);
-  const andamento = resumirATendencia(tendencia);
   const resumo = resumirOAno(ficha.mensal, mesAtual);
   return (
     <div className={estilos.gradeDosGraficos}>
-      <Cartao titulo="Tendência" icone={TrendingUp} subtitulo="Faturado nos 12 meses até cada mês, nos últimos 4 anos">
-        {andamento ? (
-          <p className={estilos.resumoDoGrafico}>
-            <span>Desde {formatarMesAno(andamento.desde)}:</span>
-            <Variacao razao={andamento.variacao} referencia="no faturado em 12 meses" />
-          </p>
-        ) : null}
-        <LinhaDeTendencia
-          descricao={`Faturado de ${ficha.nome} nos 12 meses até cada mês, nos últimos 4 anos`}
-          rotulo="Faturado em 12 meses"
-          pontos={tendencia}
-          altura={220}
-        />
-        <p className={estilos.notaDoGrafico}>Somar 12 meses tira o vaivém dos pedidos e a época do ano. O último ponto é o faturado em 12 meses do alto da ficha.</p>
-      </Cartao>
+      <TendenciaDaFicha ficha={ficha} mesAtual={mesAtual} />
       <Cartao titulo="Mês a mês" icone={ChartNoAxesColumn} subtitulo={`${ano}, comparado a ${ano - 1}`}>
         {resumo ? <AnoAteAgora resumo={resumo} /> : null}
         <BarrasMensais
