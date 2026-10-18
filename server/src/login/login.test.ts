@@ -269,4 +269,22 @@ describe("proteções", () => {
     expect((await postar("/api/entrar", { resposta: { id: "x" } })).statusCode).toBe(400);
     expect((await postar("/api/convite/chave", { token: "A".repeat(43), resposta: "texto" })).statusCode).toBe(400);
   });
+
+  it("aceita a credencial criada com os campos que o toJSON() do navegador acrescenta, e recusa campo fora da especificação", async () => {
+    const token = convidar();
+    const opcoes = (await postar("/api/convite/opcoes", { token })).json();
+    const credencial = criarAutenticadorDeTeste().criar(opcoes, ORIGEM);
+    const comCampos = (campos: object) => ({ token, resposta: { ...credencial, response: { ...credencial.response, ...campos } } });
+    expect((await postar("/api/convite/chave", comCampos({ inventado: "AAAA" }))).statusCode).toBe(400);
+    // Cópias do que está no attestationObject, que o servidor não lê: basta o formato.
+    expect((await postar("/api/convite/chave", comCampos({ authenticatorData: "AAAA", publicKey: "AAAA", publicKeyAlgorithm: -7 }))).statusCode).toBe(204);
+  });
+
+  it("recusa a resposta da entrada com um campo fora da especificação, e a mesma resposta sem ele entra", async () => {
+    const aparelho = await aparelhoComChave();
+    const opcoes = (await postar("/api/entrar/opcoes", {})).json();
+    const resposta = aparelho.usar(opcoes, ORIGEM);
+    expect((await postar("/api/entrar", { resposta: { ...resposta, inventado: true } })).statusCode).toBe(400);
+    expect((await postar("/api/entrar", { resposta })).statusCode).toBe(204);
+  });
 });

@@ -42,7 +42,11 @@ const BASE64URL = { type: "string", pattern: "^[A-Za-z0-9_-]+$", maxLength: 16_0
 /** O id da credencial tem até 1.023 bytes (especificação WebAuthn): 1.364 caracteres em base64url. */
 const ID_DA_CREDENCIAL = { type: "string", pattern: "^[A-Za-z0-9_-]+$", maxLength: 1_364 } as const;
 
-/** O JSON da credencial da especificação WebAuthn, sem os campos que o servidor não usa. */
+/**
+ * O JSON da credencial da especificação WebAuthn, com todos os campos que o navegador pode mandar:
+ * o que a tela monta (web/src/acesso/chaveDeAcesso.ts) e o do toJSON() da credencial. O campo fora
+ * da especificação é recusado (app.ts).
+ */
 function credencialJson(resposta: object, obrigatorios: readonly string[]) {
   return {
     type: "object",
@@ -60,7 +64,15 @@ function credencialJson(resposta: object, obrigatorios: readonly string[]) {
 }
 
 const CREDENCIAL_CRIADA = credencialJson(
-  { clientDataJSON: BASE64URL, attestationObject: BASE64URL, transports: { type: "array", items: { type: "string", maxLength: 32 }, maxItems: 8 } },
+  {
+    clientDataJSON: BASE64URL,
+    attestationObject: BASE64URL,
+    transports: { type: "array", items: { type: "string", maxLength: 32 }, maxItems: 8 },
+    // Cópias do que está no attestationObject, que só o toJSON() manda; o servidor não as usa.
+    authenticatorData: BASE64URL,
+    publicKey: BASE64URL,
+    publicKeyAlgorithm: { type: "integer" },
+  },
   ["clientDataJSON", "attestationObject"],
 );
 

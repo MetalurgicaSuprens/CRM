@@ -3,6 +3,7 @@ import type { DatabaseSync } from "node:sqlite";
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { dataDoMomento, momentoEmBrasilia, somarDias } from "dominio/datas";
+import { criarAppDoAdmin } from "./admin/appDoAdmin.ts";
 import { criarApp } from "./app.ts";
 import { abrirBancoDoApp } from "./bancoDoApp.ts";
 import { criarFotoAtual, type FotoAtual } from "./foto/fotoAtual.ts";
@@ -19,9 +20,10 @@ import {
   MARCAS_DE_B,
   gravarFotoDeTeste,
 } from "./fotoDeTeste.ts";
-import { entrarComo } from "./login/loginDeTeste.ts";
+import { entrarComo, entrarComoAdmin } from "./login/loginDeTeste.ts";
 
 const ORIGEM = "http://localhost:5175";
+const ORIGEM_DO_ADMIN = "http://localhost:5179";
 
 let pasta: string;
 let foto: FotoAtual;
@@ -324,5 +326,35 @@ describe("visitas: o dia em que o representante visitou o cliente", () => {
       ["visita_registrada", CLIENTE_DE_A],
       ["visita_desfeita", CLIENTE_DE_A],
     ]);
+  });
+});
+
+describe("entrada hostil: o campo que o schema não lista é recusado, e não apagado", () => {
+  /** A API da administração, com a sessão de um admin. */
+  const administracao = () => ({ admin: criarAppDoAdmin({ foto, banco, origem: ORIGEM_DO_ADMIN, origemDoCrm: ORIGEM }), cookie: entrarComoAdmin(banco).cookie });
+
+  it("recusa a visita com o código de representante no corpo, e o mesmo pedido sem ele passa", async () => {
+    const app = criarAppDeTeste();
+    const visitar = (corpo: object) =>
+      app.inject({ method: "POST", url: `/api/clientes/${CLIENTE_DE_A}/visitas`, headers: { cookie: loginDeA, origin: ORIGEM }, payload: corpo });
+    expect((await visitar({ representante: "9999" })).statusCode).toBe(400);
+    expect((await comoA(app, "/api/visitas")).json()).toEqual({});
+    expect((await visitar({})).statusCode).toBe(200);
+  });
+
+  it("na administração, recusa o login novo com o papel no corpo, e o mesmo pedido sem ele cria o login", async () => {
+    const { admin, cookie } = administracao();
+    const criarLogin = (corpo: object) => admin.inject({ method: "POST", url: "/api/admin/logins", headers: { cookie, origin: ORIGEM_DO_ADMIN }, payload: corpo });
+    const novo = { nome: "Outra Representação", codigos: ["9999"] };
+    expect((await criarLogin({ ...novo, papel: "admin" })).statusCode).toBe(400);
+    // 201, e não 409: o pedido recusado não ligou o 9999 a login nenhum.
+    expect((await criarLogin(novo)).statusCode).toBe(201);
+  });
+
+  it("na administração, recusa também o parâmetro que a busca do registro não lista", async () => {
+    const { admin, cookie } = administracao();
+    const buscar = (busca: string) => admin.inject({ method: "GET", url: `/api/admin/registro?${busca}`, headers: { cookie } });
+    expect((await buscar("antes=5&ordem=asc")).statusCode).toBe(400);
+    expect((await buscar("antes=5")).statusCode).toBe(200);
   });
 });

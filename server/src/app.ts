@@ -17,12 +17,19 @@ import { registrarRotas } from "./rotas.ts";
  * - rota do papel do portal sem sessão responde 401; rota de outro portal nunca responde (404);
  * - o escopo vem sempre da sessão;
  * - pedido que altera algo só vale da própria origem;
+ * - campo que o schema não lista é recusado (400), e não apagado em silêncio;
  * - limite de requisições por IP no login e nos convites, e por usuário no resto;
  * - erro interno não leva detalhe para o navegador;
  * - o log tem só método, rota, status, tempo e id do usuário.
  */
 
 const LIMITE_DO_CORPO = 64 * 1024;
+/**
+ * O padrão do Fastify apaga o campo que o schema não lista e aceita o pedido; aqui ele é recusado.
+ * A conversão de tipos do padrão fica: a query string chega como texto (o `antes` do registro da
+ * administração é número), e o valor convertido ainda tem de passar pelo schema.
+ */
+const VALIDACAO = { customOptions: { removeAdditional: false } };
 /** Só o Apache, nesta máquina, informa o IP de quem chamou (X-Forwarded-For); ele apaga o que vem de fora. */
 const PROXY_CONFIAVEL = "127.0.0.1";
 const LIMITE_DO_LOGIN: Limite = { maximo: 30, janelaMs: 10 * 60_000 };
@@ -48,7 +55,7 @@ export function criarApp(dependencias: Dependencias): FastifyInstance {
 
 /** A base das duas APIs: as regras de segurança de toda rota, as rotas do portal e as do login dele. */
 export function criarApi({ banco, origem, portal, agora = () => new Date() }: DependenciasDaApi, registrarRotasDoPortal: (app: FastifyInstance) => void): FastifyInstance {
-  const app = Fastify({ logger: false, bodyLimit: LIMITE_DO_CORPO, trustProxy: PROXY_CONFIAVEL });
+  const app = Fastify({ logger: false, bodyLimit: LIMITE_DO_CORPO, trustProxy: PROXY_CONFIAVEL, ajv: VALIDACAO });
   const limiteDoLogin = criarLimitador(LIMITE_DO_LOGIN);
   const limiteDoUsuario = criarLimitador(LIMITE_DO_USUARIO);
   app.decorate("rotasRegistradas", []);

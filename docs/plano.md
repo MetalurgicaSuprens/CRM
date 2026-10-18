@@ -86,7 +86,7 @@ Troca da foto:
 3. A troca é só uma referência em memória, sem janela sem dados. O arquivo antigo é fechado depois.
 
 Outras regras:
-- Validação com o schema do próprio Fastify (`additionalProperties:false`). Esquemas de resposta funcionam como lista do que pode sair.
+- Validação com o schema do próprio Fastify (`additionalProperties:false`): o campo que o schema não lista é recusado com 400, e não apagado (`removeAdditional: false`). Esquemas de resposta funcionam como lista do que pode sair.
 - Erros 5xx sem detalhes para o navegador.
 - `trustProxy: '127.0.0.1'`.
 - Limite de requisições por IP no login e nos convites, e por usuário no resto.
