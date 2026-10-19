@@ -3,9 +3,10 @@ import type { BarraMensal } from "../graficos/BarrasMensais";
 import type { FaturamentoMensal, PedidoDaFicha } from "./tipos";
 
 /*
- * Os gráficos de faturamento da ficha. A tendência cobre os últimos 4 anos em duas vistas: o
- * faturado nos 12 meses até cada mês, que tira a sazonalidade e o vaivém dos pedidos (o último ponto é
- * o "Faturado em 12 meses" do alto da ficha), e o faturado de cada mês. O mês a mês é o ano corrente
+ * Os gráficos de faturamento da ficha. A tendência cobre os últimos 4 anos em duas vistas: a média
+ * por mês nos 12 meses até cada mês, que tira a sazonalidade e o vaivém dos pedidos (o último ponto é
+ * o "Faturado em 12 meses" do alto da ficha dividido por 12; pedido do Lucas em 2026-10-19), e o
+ * faturado de cada mês. O mês a mês é o ano corrente
  * contra o anterior, como no Início. A tendência do Início usa as mesmas contas, com o faturado do
  * representante (paginas/FaturamentoDoInicio.tsx).
  */
@@ -19,7 +20,7 @@ type HistoriaPorMes = ReadonlyMap<string, FaturamentoMensal>;
 export type PontoDaTendencia = {
   /** O mês em que os 12 meses terminam ("2026-09"). */
   mes: string;
-  /** O faturado nos 12 meses até o mês, inclusive. */
+  /** A média por mês do faturado nos 12 meses até o mês, inclusive. */
   valor: number;
   /** O mesmo, 12 meses antes; null quando a história não alcança. */
   anoAntes: number | null;
@@ -29,8 +30,8 @@ export type PontoDaTendencia = {
 export function montarTendencia(mensal: readonly FaturamentoMensal[], mesAtual: string): PontoDaTendencia[] {
   const historia = porMes(mensal);
   return mesesDaTendencia(mesAtual).flatMap((mes) => {
-    const valor = somarOsDozeMeses(historia, mes);
-    return valor === null ? [] : [{ mes, valor, anoAntes: somarOsDozeMeses(historia, somarMeses(mes, -MESES_DO_ANO)) }];
+    const valor = mediaDosDozeMeses(historia, mes);
+    return valor === null ? [] : [{ mes, valor, anoAntes: mediaDosDozeMeses(historia, somarMeses(mes, -MESES_DO_ANO)) }];
   });
 }
 
@@ -99,13 +100,13 @@ function mesesDe(inicio: string, fim: string): string[] {
   return meses;
 }
 
-/** A soma dos 12 meses até `fim`, inclusive; null se algum deles não está na história. */
-function somarOsDozeMeses(historia: HistoriaPorMes, fim: string): number | null {
+/** A média por mês dos 12 meses até `fim`, inclusive; null se algum deles não está na história. */
+function mediaDosDozeMeses(historia: HistoriaPorMes, fim: string): number | null {
   let soma = 0;
   for (const mes of mesesDe(somarMeses(fim, 1 - MESES_DO_ANO), fim)) {
     const doMes = historia.get(mes);
     if (!doMes) return null;
     soma += doMes.valor;
   }
-  return soma;
+  return soma / MESES_DO_ANO;
 }

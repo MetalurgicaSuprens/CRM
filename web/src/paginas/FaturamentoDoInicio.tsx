@@ -13,7 +13,7 @@ import moldura from "../graficos/moldura.module.css";
 /*
  * O faturamento do Início, na visão do representante, em duas vistas (pedido do Lucas em 2026-10-19):
  * o mensal do ano contra o anterior, o padrão, e a tendência dos últimos 4 anos, no mesmo modelo da
- * ficha do cliente: cada ponto soma os 12 meses até ele.
+ * ficha do cliente: cada ponto é a média por mês dos 12 meses até ele.
  */
 
 type Vista = "mensal" | "tendencia";
@@ -31,7 +31,7 @@ export function FaturamentoDoInicio({ painel }: { painel: PainelInicio }) {
     <Cartao
       titulo={isTendencia ? "Tendência" : "Faturamento mensal"}
       icone={isTendencia ? TrendingUp : ChartNoAxesColumn}
-      subtitulo={isTendencia ? "Faturado nos 12 meses até cada mês, nos últimos 4 anos" : `${ano}, comparado a ${ano - 1}`}
+      subtitulo={isTendencia ? "Média por mês nos 12 meses até cada mês, nos últimos 4 anos" : `${ano}, comparado a ${ano - 1}`}
     >
       <Segmentos rotulo="Como ver o faturamento" opcoes={VISTAS} selecionado={vista} aoEscolher={setVista} className={moldura.vistas} />
       {isTendencia ? (
@@ -55,12 +55,12 @@ function Tendencia({ painel }: { painel: PainelInicio }) {
       {andamento ? (
         <p className={moldura.resumoDoGrafico}>
           <span>Desde {formatarMesAno(andamento.desde)}:</span>
-          <Variacao razao={andamento.variacao} referencia="no faturado em 12 meses" />
+          <Variacao razao={andamento.variacao} referencia="na média por mês" />
         </p>
       ) : null}
-      <LinhaDeTendencia descricao="Seu faturado nos 12 meses até cada mês, nos últimos 4 anos" rotulo="Faturado em 12 meses" pontos={pontos} altura={240} />
+      <LinhaDeTendencia descricao="Sua média por mês nos 12 meses até cada mês, nos últimos 4 anos" rotulo="Média por mês" pontos={pontos} altura={240} />
       <p className={moldura.notaDoGrafico}>
-        Somar 12 meses tira o vaivém dos pedidos e a época do ano. São as vendas atribuídas aos seus códigos, como os números do alto.
+        A média de 12 meses tira o vaivém dos pedidos e a época do ano. São as vendas atribuídas aos seus códigos, como os números do alto.
       </p>
     </>
   );

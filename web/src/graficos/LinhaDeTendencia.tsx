@@ -20,7 +20,7 @@ export type PontoDaLinha = {
 type Props = {
   pontos: PontoDaLinha[];
   descricao: string;
-  /** O nome do valor na dica e na tabela, como "Faturado em 12 meses". */
+  /** O nome do valor na dica e na tabela, como "Média por mês". */
   rotulo: string;
   altura?: number;
 };

@@ -22,19 +22,19 @@ function pedido(status: PedidoDaFicha["status"], itens: { valor: number; entrega
 }
 
 describe("montarTendencia", () => {
-  it("soma os 12 meses até cada mês fechado, nos últimos 4 anos, com o mesmo número 1 ano antes", () => {
+  it("dá a média por mês dos 12 meses até cada mês fechado, nos últimos 4 anos, com o mesmo número 1 ano antes", () => {
     const valorDe = (mes: string) => (mes >= "2025-10" ? 200 : 100);
     const pontos = montarTendencia(historia("2026-10", valorDe), "2026-10");
     expect(pontos).toHaveLength(48);
-    expect(pontos[0]).toEqual({ mes: "2022-10", valor: 1_200, anoAntes: null });
-    // De out/25 a set/26, tudo a 200; 1 ano antes, tudo a 100: é o "Faturado em 12 meses" e a variação do alto da ficha.
-    expect(pontos.at(-1)).toEqual({ mes: "2026-09", valor: 2_400, anoAntes: 1_200 });
+    expect(pontos[0]).toEqual({ mes: "2022-10", valor: 100, anoAntes: null });
+    // De out/25 a set/26, tudo a 200; 1 ano antes, tudo a 100: o "Faturado em 12 meses" do alto da ficha ÷ 12, e a mesma variação.
+    expect(pontos.at(-1)).toEqual({ mes: "2026-09", valor: 200, anoAntes: 100 });
   });
 
   it("deixa de fora o ponto sem 12 meses de história, como na carteira fictícia, de 36 meses", () => {
     const pontos = montarTendencia(historia("2026-10").slice(-37), "2026-10");
     expect(pontos).toHaveLength(25);
-    expect(pontos[0]).toEqual({ mes: "2024-09", valor: 1_200, anoAntes: null });
+    expect(pontos[0]).toEqual({ mes: "2024-09", valor: 100, anoAntes: null });
   });
 });
 
