@@ -6,7 +6,15 @@
   gap: var(--esp-5);
 }
 
-/* Embaixo do nome: a razão social, o endereço e, no cliente em risco, o motivo do selo */
+/* O selo da situação e, no cliente em risco, o motivo dele ao lado */
+.situacaoComMotivo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-1) var(--esp-3);
+}
+
+/* Embaixo do nome: o grupo, a razão social e o endereço */
 .descricao {
   display: flex;
   flex-direction: column;

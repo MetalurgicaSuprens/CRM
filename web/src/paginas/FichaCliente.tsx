@@ -41,7 +41,7 @@ import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCa
 import { carregarFicha, carregarSituacaoDosDados, desfazerVisita, registrarVisita } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import { aFaturarNoMes, montarMesAMes, resumirOAno, type ResumoDoAno } from "../dados/faturamentoDoCliente";
-import type { ClienteResumo, EnderecoDoCliente, FichaCliente as Ficha, Mercado, Porte, ProdutoComprado, Semestre } from "../dados/tipos";
+import type { ClienteResumo, EnderecoDoCliente, FichaCliente as Ficha, Mercado, Porte, ProdutoComprado } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { linkDoEnderecoNoGoogleMaps } from "../dados/viagem";
 import { dataDoMomento } from "dominio/datas";
@@ -84,11 +84,15 @@ export function FichaCliente() {
         selo={
           <>
             {ficha.cnpjs ? <SeloDoGrupo tamanho="grande" /> : null}
-            <SituacaoCliente situacao={ficha.situacao} tamanho="grande" />
+            {/* O motivo do "Em risco" fica colado no selo: quebra a linha junto com ele. */}
+            <span className={estilos.situacaoComMotivo}>
+              <SituacaoCliente situacao={ficha.situacao} tamanho="grande" />
+              <MotivoDoRisco queda={ficha.quedaNoSemestre} semestre={situacao.semestre} />
+            </span>
             <SeloDoStatus status={ficha.status} tamanho="grande" />
           </>
         }
-        descricao={descricaoDaFicha(ficha, situacao.semestre)}
+        descricao={descricaoDaFicha(ficha)}
         aoLado={<DadosDoCliente ficha={ficha} />}
         acoes={<NovoPedido ficha={ficha} aoBloquear={() => setCodigoDoAviso(ficha.codigo)} />}
       />
@@ -242,21 +246,16 @@ function Dado({ icone: Icone, rotulo, valor }: { icone: LucideIcon; rotulo: stri
   );
 }
 
-/**
- * Embaixo do nome: o que é o grupo ou de que grupo é o CNPJ, a razão social, quando é outra, o
- * endereço da empresa e o motivo do selo "Em risco". O motivo não vai ao lado do selo porque alargaria a linha do título,
- * que empurraria o cadastro ao lado.
- */
-function descricaoDaFicha(ficha: Ficha, semestre: Semestre): ReactNode {
+/** Embaixo do nome: o que é o grupo ou de que grupo é o CNPJ, a razão social, quando é outra, e o endereço da empresa. */
+function descricaoDaFicha(ficha: Ficha): ReactNode {
   const razaoSocial = ficha.razaoSocial && ficha.razaoSocial !== ficha.nome ? ficha.razaoSocial : null;
   const grupo = descricaoDoGrupo(ficha);
-  if (!grupo && !razaoSocial && !ficha.endereco && ficha.quedaNoSemestre === null) return undefined;
+  if (!grupo && !razaoSocial && !ficha.endereco) return undefined;
   return (
     <span className={estilos.descricao}>
       {grupo ? <span>{grupo}</span> : null}
       {razaoSocial ? <span>{razaoSocial}</span> : null}
       {ficha.endereco ? <EnderecoDaFicha ficha={ficha} endereco={ficha.endereco} /> : null}
-      <MotivoDoRisco queda={ficha.quedaNoSemestre} semestre={semestre} />
     </span>
   );
 }
