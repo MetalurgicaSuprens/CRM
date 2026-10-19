@@ -533,6 +533,11 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
   - O ponto mostra o nome, o motivo e o faturado; o toque abre, ao lado do mapa, o cartão do cliente, com "Abrir a ficha", "Pôr no roteiro" e "Google Maps". O cartão diz quando o ponto é aproximado (na rua ou no meio do CEP).
   - Pessoa física não tem endereço no CRM e fica sem ponto, como o endereço que o IBGE não achou: a legenda diz quantos.
   - Na foto de 19/10, dos 3.187 endereços de empresa, 1.767 caíram no número, 1.033 na rua, 127 no meio do CEP e 260 ficaram sem ponto.
+- **Zoom e arraste (2026-10-19, pedido do Lucas: em São Paulo os pontos ficavam pequenos e encavalados).** O representante aproxima e move o mapa por cima do enquadramento que a tela escolhe, até 300 m de largura (graficos/useGestosDoMapa.ts e zoomDoMapa.ts, com teste):
+  - no computador, arrastar move, e Ctrl (ou ⌘) com a rolagem aproxima, como o Google Maps dentro de uma página; a rolagem sozinha continua rolando a página e mostra o aviso do Ctrl;
+  - no celular, dois dedos movem e aproximam, e um dedo rola a página; a dica aparece no canto do mapa;
+  - os botões + e − aproximam do meio, e o de voltar desfaz o ajuste. Escolher outra cidade ou região também desfaz;
+  - o ponto do cliente tem o mesmo tamanho em px em qualquer zoom: aproximar separa os pontos. De perto, o que fica fora da cidade escolhida recua, porque o contorno grosso dos vizinhos não casa com o fino dela.
 - **Por que o IBGE e não o Google (2026-10-19).** Os termos da Geocoding API proíbem usar o ponto dela fora de um mapa do Google (cláusula 6.2) e mandam apagar a coordenada guardada em 30 dias; o mapa do Google também é de outro domínio, que a CSP não deixa carregar. O CNEFE é público, roda na LAN e não manda endereço de cliente a ninguém.
 - **Por estado.** Os botões mostram os estados da carteira, com o número de clientes, e a página abre no que tem mais (`uf=`). Os outros estados da carteira aparecem em volta, mais claros.
 - **Escolha.** A lista mostra as 8 primeiras regiões e o "Ver todas". A região escolhida na lista é aproximada no mapa. O clique ou o toque num município mostra os clientes dele, cada um com o caminho para a ficha. O mouse mostra a dica do município.

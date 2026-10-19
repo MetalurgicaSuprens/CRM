@@ -4,10 +4,78 @@
   width: 100%;
 }
 
+/* Um dedo rola a página; dois dedos, o arraste e a rolagem com Ctrl são do mapa (useGestosDoMapa.ts) */
 .mapa {
   display: block;
-  touch-action: manipulation;
+  touch-action: pan-y;
   user-select: none;
+  cursor: grab;
+}
+
+.mapa:active {
+  cursor: grabbing;
+}
+
+.controlesDoZoom {
+  position: absolute;
+  top: var(--esp-2);
+  right: var(--esp-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-1);
+}
+
+.botaoDoZoom {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  color: var(--cor-texto-2);
+}
+
+.botaoDoZoom:hover {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+}
+
+/* O aviso do Ctrl, no meio do mapa, enquanto a rolagem sem ele passa por cima */
+.avisoDoZoom {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: color-mix(in srgb, var(--cor-acento) 45%, transparent);
+  color: var(--cor-superficie);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* Só nos aparelhos de toque: como mover o mapa sem prender a rolagem da página */
+.dicaDoToque {
+  display: none;
+  position: absolute;
+  left: var(--esp-2);
+  bottom: var(--esp-2);
+  margin: 0;
+  padding: 2px var(--esp-2);
+  border-radius: var(--raio-pequeno);
+  background: color-mix(in srgb, var(--cor-superficie) 85%, transparent);
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-2);
+  pointer-events: none;
+}
+
+@media (pointer: coarse) {
+  .dicaDoToque {
+    display: block;
+  }
 }
 
 .mapa path,
@@ -145,6 +213,12 @@
 }
 
 /* A cidade de perto: o fundo claro, as divisas dos bairros ou distritos e o contorno */
+.foraDaCidade {
+  fill: var(--cor-mapa-fundo);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
 .fundoDaCidade {
   fill: var(--cor-superficie);
   stroke: none;

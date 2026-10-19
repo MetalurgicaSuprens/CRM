@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { Minus, Plus, RotateCcw } from "lucide-react";
 import { DETALHE_DA_CIDADE, type Caixa, type MapaDaCidade, type MapaDaUf, type MapaDoBrasil, type MunicipioDoMapa, type Ponto } from "dominio/mapa";
 import type { ClienteNoMapa } from "../dados/cidade";
-import { posicionarNomes, type Vista } from "./nomesNoMapa";
+import { posicionarNomes } from "./nomesNoMapa";
+import { ajustarAoQuadro, useGestosDoMapa } from "./useGestosDoMapa";
 import { useLargura } from "./useLargura";
 import estilos from "./MapaDoTerritorio.module.css";
 
@@ -9,7 +11,8 @@ import estilos from "./MapaDoTerritorio.module.css";
  * O mapa da carteira em SVG, desenhado à mão como os outros gráficos: o Brasil de fundo, os estados da
  * carteira com os municípios, as regiões imediatas do estado escolhido e um círculo por município, do
  * tamanho do valor e no tom que a visão dá a ele. A dica sai ao passar o mouse; o toque escolhe o
- * município. De perto, a cidade escolhida ocupa o quadro, com os bairros e um ponto por cliente.
+ * município. De perto, a cidade escolhida ocupa o quadro, com os bairros e um ponto por cliente. O
+ * representante aproxima e move o mapa à vontade (useGestosDoMapa.ts).
  */
 
 /** As cores dos círculos (tokens.css, --cor-mapa-*): as ações de "Onde agir" e a direção da receita. */
@@ -79,13 +82,14 @@ const DURACAO_DA_ANIMACAO_MS = 450;
 export function MapaDoTerritorio(props: Props) {
   const { descricao, brasil, mapas, uf, visao, classes, comCliente, circulos, rotulos, municipioEscolhido, regiaoEscolhida, posicao, roteiro, cidade } = props;
   const { referencia, largura } = useLargura<HTMLDivElement>();
-  const caixa = useVisaoAnimada(visao);
   const [sobre, setSobre] = useState<Sobre | null>(null);
   const porCodigo = useMemo(() => new Map(mapas.flatMap((mapa) => mapa.municipios.map((municipio) => [municipio.codigo, municipio] as const))), [mapas]);
   const clientePorCodigo = new Map((cidade?.clientes ?? []).map((cliente) => [cliente.cliente.codigo, cliente]));
   const escolhido = mapas.find((mapa) => mapa.uf === uf);
 
   const altura = Math.round(Math.min(ALTURA_MAXIMA, Math.max(ALTURA_MINIMA, largura * ((visao[3] - visao[1]) / (visao[2] - visao[0])))));
+  const gestos = useGestosDoMapa({ visao, quadro: { largura, altura }, elemento: referencia });
+  const caixa = useVisaoAnimada(gestos.alvo, gestos.isAnimado);
   const vista = ajustarAoQuadro(caixa, largura, altura);
   const escala = largura > 0 ? vista.largura / largura : 1;
   const raioMaximo = largura < 520 ? RAIO_MAXIMO.estreito : RAIO_MAXIMO.largo;
@@ -119,9 +123,16 @@ export function MapaDoTerritorio(props: Props) {
           viewBox={`${vista.x} ${vista.y} ${vista.largura} ${vista.altura}`}
           role="img"
           aria-label={descricao}
-          onPointerMove={aoMover}
+          onPointerDown={gestos.aoPressionar}
+          onPointerMove={(evento) => {
+            if (gestos.aoMover(evento)) setSobre(null);
+            else aoMover(evento);
+          }}
+          onPointerUp={gestos.aoSoltar}
+          onPointerCancel={gestos.aoSoltar}
           onPointerLeave={() => setSobre(null)}
           onClick={(evento) => {
+            if (gestos.isCliqueDoArraste()) return;
             const alvo = doAlvo(evento.target as Element);
             if (alvo?.tipo === "cliente") props.aoEscolherCliente(alvo.cliente);
             else if (alvo?.tipo === "municipio" && alvo.municipio.codigo !== cidade?.municipio.codigo) props.aoEscolher(alvo.municipio);
@@ -173,6 +184,27 @@ export function MapaDoTerritorio(props: Props) {
           </g>
         </svg>
       ) : null}
+      {largura > 0 ? (
+        <div className={estilos.controlesDoZoom}>
+          <button type="button" className={estilos.botaoDoZoom} onClick={() => gestos.aproximarDoMeio("mais")} aria-label="Aproximar o mapa">
+            <Plus size={18} aria-hidden="true" />
+          </button>
+          <button type="button" className={estilos.botaoDoZoom} onClick={() => gestos.aproximarDoMeio("menos")} aria-label="Afastar o mapa">
+            <Minus size={18} aria-hidden="true" />
+          </button>
+          {gestos.isAjustada ? (
+            <button type="button" className={estilos.botaoDoZoom} onClick={gestos.voltar} aria-label="Voltar ao enquadramento" title="Voltar ao enquadramento">
+              <RotateCcw size={16} aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {gestos.isAvisoDoCtrl ? (
+        <p className={estilos.avisoDoZoom} role="status">
+          Use Ctrl + rolagem para aproximar o mapa
+        </p>
+      ) : null}
+      {largura > 0 ? <p className={estilos.dicaDoToque}>Dois dedos movem e aproximam o mapa</p> : null}
       {sobre ? (
         <Dica x={sobre.x} y={sobre.y} largura={largura}>
           {sobre.tipo === "cliente" ? props.dicaDoCliente(sobre.cliente) : sobre.tipo === "area" ? props.dicaDaArea(sobre.nome) : props.dicaDe(sobre.municipio)}
@@ -226,8 +258,12 @@ function Roteiro({ paradas, partida, escala }: { paradas: readonly Ponto[]; part
  */
 function Cidade({ cidade: { desenho, municipio } }: { cidade: CidadeDePerto }) {
   if (!desenho) return null;
+  const [x0, y0, x1, y1] = desenho.caixa;
+  const [largura, altura] = [x1 - x0, y1 - y0];
   return (
     <g className={estilos.cidade} transform={`scale(${1 / DETALHE_DA_CIDADE})`}>
+      {/* Fora da cidade, o estado recua: de perto, o contorno grosso dos vizinhos não casa com o fino dela. */}
+      <rect className={estilos.foraDaCidade} x={x0 - largura * 3} y={y0 - altura * 3} width={largura * 7} height={altura * 7} />
       <path className={estilos.fundoDaCidade} d={desenho.contorno} data-municipio={municipio.codigo} />
       {desenho.divisoes?.areas.map((area, i) => (
         <path key={`${area.nome}-${i}`} className={estilos.areaDaCidade} d={area.d} data-area={area.nome} />
@@ -279,25 +315,18 @@ function Dica({ x, y, largura, children }: { x: number; y: number; largura: numb
   );
 }
 
-/** A caixa crescida para a proporção do quadro, com o centro no mesmo lugar: o mapa enche o quadro todo. */
-function ajustarAoQuadro([x0, y0, x1, y1]: Caixa, largura: number, altura: number): Vista {
-  const larguraDaCaixa = Math.max(1, x1 - x0);
-  const alturaDaCaixa = Math.max(1, y1 - y0);
-  const proporcao = largura > 0 && altura > 0 ? largura / altura : larguraDaCaixa / alturaDaCaixa;
-  const larguraFinal = Math.max(larguraDaCaixa, alturaDaCaixa * proporcao);
-  const alturaFinal = larguraFinal / proporcao;
-  return { x: (x0 + x1) / 2 - larguraFinal / 2, y: (y0 + y1) / 2 - alturaFinal / 2, largura: larguraFinal, altura: alturaFinal };
-}
-
-/** Vai da caixa à vista até a nova, suave; quem pediu menos movimento no aparelho vê a troca direta. */
-function useVisaoAnimada(alvo: Caixa): Caixa {
+/**
+ * Vai da caixa à vista até a nova, suave; o arraste e a rolagem (sem `animado`) e quem pediu menos
+ * movimento no aparelho veem a troca direta.
+ */
+function useVisaoAnimada(alvo: Caixa, animado: boolean): Caixa {
   const [atual, setAtual] = useState<Caixa>(alvo);
   const naTela = useRef<Caixa>(alvo);
   const [ax0, ay0, ax1, ay1] = alvo;
   useEffect(() => {
     const destino: Caixa = [ax0, ay0, ax1, ay1];
     const origem = naTela.current;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!animado || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       naTela.current = destino;
       setAtual(destino);
       return;
@@ -312,6 +341,7 @@ function useVisaoAnimada(alvo: Caixa): Caixa {
       if (t < 1) quadro = requestAnimationFrame(passo);
     });
     return () => cancelAnimationFrame(quadro);
+    // `animado` vem junto com a caixa nova: mudar só ele não move nada.
   }, [ax0, ay0, ax1, ay1]);
   return atual;
 }
