@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { distanciaEmKm, latitudeDoY, projetar, unidadesDoMapa } from "./mapa.ts";
+import { DETALHE_DA_CIDADE, distanciaEmKm, latitudeDoY, projetar, projetarNaCidade, unidadesDoMapa } from "./mapa.ts";
 
 const GOIANIA = projetar(-49.25, -16.68);
 const BRASILIA = projetar(-47.88, -15.79);
@@ -15,6 +15,15 @@ describe("projetar", () => {
 
   it("faz o y crescer para o sul, como no SVG", () => {
     expect(GOIANIA[1]).toBeGreaterThan(BRASILIA[1]);
+  });
+});
+
+describe("projetarNaCidade", () => {
+  it("cai no mesmo lugar do estado, 20 vezes mais fino: unidades de 5 m", () => {
+    const [x, y] = projetarNaCidade(-49.25, -16.68);
+    expect(Math.abs(x / DETALHE_DA_CIDADE - (GOIANIA[0] ?? 0))).toBeLessThan(1);
+    expect(Math.abs(y / DETALHE_DA_CIDADE - (GOIANIA[1] ?? 0))).toBeLessThan(1);
+    expect(projetarNaCidade(1, 0)[0]).toBe(22239);
   });
 });
 

@@ -6,6 +6,7 @@
   "scripts": {
     "foto": "node src/principal.ts",
     "mapas": "node src/mapas/gerarMapas.ts",
+    "cidades": "node src/mapas/gerarCidades.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

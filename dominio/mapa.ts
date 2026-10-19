@@ -16,11 +16,27 @@ const RAIO_DA_TERRA_KM = 6371;
 const UNIDADES_POR_KM = 10;
 const ESCALA = RAIO_DA_TERRA_KM * UNIDADES_POR_KM;
 
+/**
+ * Quantas vezes o desenho de uma cidade (mapas/cidades) é mais fino que o do estado: a unidade dele é
+ * 5 m. A tela põe a cidade e os pontos dos clientes num grupo com escala 1/DETALHE_DA_CIDADE, por cima
+ * do estado, e tudo cai no mesmo lugar.
+ */
+export const DETALHE_DA_CIDADE = 20;
+
 /** Mercator, que preserva a forma, como os mapas do dia a dia; o y cresce para o sul, como no SVG. */
 export function projetar(longitude: number, latitude: number): Ponto {
+  return projetarNaEscala(longitude, latitude, ESCALA);
+}
+
+/** A mesma projeção na unidade do desenho da cidade, 5 m: para o contorno, os bairros e os clientes. */
+export function projetarNaCidade(longitude: number, latitude: number): Ponto {
+  return projetarNaEscala(longitude, latitude, ESCALA * DETALHE_DA_CIDADE);
+}
+
+function projetarNaEscala(longitude: number, latitude: number, escala: number): Ponto {
   const lambda = (longitude * Math.PI) / 180;
   const phi = (latitude * Math.PI) / 180;
-  return [Math.round(ESCALA * lambda), Math.round(-ESCALA * Math.log(Math.tan(Math.PI / 4 + phi / 2)))];
+  return [Math.round(escala * lambda), Math.round(-escala * Math.log(Math.tan(Math.PI / 4 + phi / 2)))];
 }
 
 /** A latitude, em graus, de um y do mapa: o caminho de volta da Mercator. */
@@ -84,3 +100,17 @@ export type MapaDaUf = {
 export type MapaDoBrasil = {
   ufs: { uf: string; nome: string; caixa: Caixa; contorno: string }[];
 };
+
+/**
+ * O desenho de uma cidade, para o mapa aproximar dela (web/public/mapas/cidades/<código IBGE>.json):
+ * o contorno mais fino que o do estado e, onde o IBGE tem, os bairros do Censo 2022 ou, sem eles, os
+ * distritos. Tudo na unidade de projetarNaCidade.
+ */
+export type MapaDaCidade = {
+  codigo: string;
+  caixa: Caixa;
+  contorno: string;
+  divisoes: { tipo: "bairro" | "distrito"; areas: AreaDaCidade[] } | null;
+};
+
+export type AreaDaCidade = { nome: string; d: string; centro: Ponto };

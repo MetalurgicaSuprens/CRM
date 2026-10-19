@@ -144,6 +144,61 @@
   fill-opacity: 1;
 }
 
+/* A cidade de perto: o fundo claro, as divisas dos bairros ou distritos e o contorno */
+.fundoDaCidade {
+  fill: var(--cor-superficie);
+  stroke: none;
+}
+
+.areaDaCidade {
+  fill: transparent;
+  stroke: var(--cor-linha-forte);
+  stroke-width: 0.8px;
+}
+
+.areaDaCidade:hover {
+  fill: color-mix(in srgb, var(--cor-acento) 6%, transparent);
+}
+
+.contornoDaCidade {
+  fill: none;
+  stroke: var(--cor-acento);
+  stroke-width: 2px;
+  pointer-events: none;
+}
+
+/* Um ponto por cliente, na cor da ação mais grave; o anel branco separa os vizinhos */
+.clientesDaCidade circle {
+  stroke: var(--cor-superficie);
+  stroke-width: 1.5px;
+  cursor: pointer;
+}
+
+.clientesDaCidade circle[data-tom="critico"] {
+  fill: var(--cor-mapa-critico);
+}
+
+.clientesDaCidade circle[data-tom="atencao"] {
+  fill: var(--cor-mapa-atencao);
+}
+
+.clientesDaCidade circle[data-tom="oportunidade"] {
+  fill: var(--cor-mapa-oportunidade);
+}
+
+.clientesDaCidade circle[data-tom="em_dia"] {
+  fill: var(--cor-mapa-em-dia);
+}
+
+.clientesDaCidade circle:hover {
+  filter: brightness(1.1);
+}
+
+.clientesDaCidade circle[data-escolhido] {
+  stroke: var(--cor-acento);
+  stroke-width: 2.5px;
+}
+
 .regiaoEscolhida {
   fill: none;
   stroke: var(--cor-acento);

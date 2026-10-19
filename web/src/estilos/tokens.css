@@ -64,6 +64,12 @@
   --cor-mapa-alta: #4cbb79;
   --cor-mapa-estavel: var(--cor-comparacao);
   --cor-mapa-queda: var(--cor-mapa-critico);
+  /*
+   * O cliente de perto, na cidade, "em dia": nada pede ação, e o cinza-aço recua para os coloridos
+   * chamarem a atenção. Com os três de cima passa no validador em todos os pares (CVD 11,1); o piso de
+   * croma acusa o cinza, como esperado.
+   */
+  --cor-mapa-em-dia: #6f7276;
   /* "Esquecidas": calor semântico, com legenda, de quem comprou há pouco ao que ninguém compra há mais de 180 dias */
   --cor-recencia-1: #cfe0f3;
   --cor-recencia-2: #f3d58a;

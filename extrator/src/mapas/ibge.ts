@@ -1,4 +1,4 @@
-import { projetar } from "dominio/mapa";
+import { projetar, type Ponto } from "dominio/mapa";
 import { limparAnel, type Anel } from "./geometria.ts";
 
 /*
@@ -15,8 +15,10 @@ export type MunicipioIbge = {
   regiao: { codigo: string; nome: string };
 };
 
-/** Um município da malha, já projetado. */
+/** Um município (ou um distrito, na malha de dentro do município) da malha, já projetado. */
 export type FeicaoDaMalha = { codigo: string; aneis: Anel[] };
+
+export type Projecao = (longitude: number, latitude: number) => Ponto;
 
 export function lerMunicipios(json: unknown): Map<string, MunicipioIbge> {
   if (!Array.isArray(json)) throw new Error("A lista de municípios do IBGE não é uma lista.");
@@ -38,16 +40,17 @@ export function lerMunicipios(json: unknown): Map<string, MunicipioIbge> {
   );
 }
 
-export function lerMalha(json: unknown): FeicaoDaMalha[] {
+/** A malha do município tem código de 7 dígitos; a dos distritos, de 9. */
+export function lerMalha(json: unknown, projecao: Projecao = projetar): FeicaoDaMalha[] {
   const colecao = json as { type?: string; features?: unknown[] };
   if (colecao.type !== "FeatureCollection" || !Array.isArray(colecao.features)) throw new Error("A malha do IBGE não é uma FeatureCollection.");
   return colecao.features.map((item) => {
     const feicao = item as { properties?: { codarea?: string }; geometry?: { type: string; coordinates: unknown } };
     const codigo = feicao.properties?.codarea;
-    if (typeof codigo !== "string" || !/^\d{7}$/.test(codigo) || !feicao.geometry) {
+    if (typeof codigo !== "string" || !/^(\d{7}|\d{9})$/.test(codigo) || !feicao.geometry) {
       throw new Error(`Feição da malha fora do formato: ${JSON.stringify(item).slice(0, 120)}`);
     }
-    return { codigo, aneis: aneisDaGeometria(feicao.geometry) };
+    return { codigo, aneis: aneisDaGeometria(feicao.geometry, projecao) };
   });
 }
 
@@ -67,7 +70,7 @@ export function chaveDaPopulacao(municipio: Pick<MunicipioIbge, "uf" | "nome">):
 }
 
 /** Os anéis externos e os buracos, projetados; o GeoJSON fecha cada anel repetindo o primeiro ponto. */
-function aneisDaGeometria(geometria: { type: string; coordinates: unknown }): Anel[] {
+function aneisDaGeometria(geometria: { type: string; coordinates: unknown }, projecao: Projecao): Anel[] {
   const poligonos =
     geometria.type === "Polygon"
       ? [geometria.coordinates as number[][][]]
@@ -75,8 +78,13 @@ function aneisDaGeometria(geometria: { type: string; coordinates: unknown }): An
         ? (geometria.coordinates as number[][][][])
         : null;
   if (!poligonos) throw new Error(`Geometria sem polígono: ${geometria.type}`);
-  return poligonos.flat().flatMap((anel) => {
-    const projetado = limparAnel(anel.map(([longitude, latitude]) => projetar(Number(longitude), Number(latitude))));
+  return projetarAneis(poligonos.flat(), projecao);
+}
+
+/** Os anéis em [longitude, latitude], projetados e limpos (geometria.ts, limparAnel). */
+export function projetarAneis(aneis: readonly (readonly (readonly number[])[])[], projecao: Projecao): Anel[] {
+  return aneis.flatMap((anel) => {
+    const projetado = limparAnel(anel.map(([longitude, latitude]) => projecao(Number(longitude), Number(latitude))));
     return projetado ? [projetado] : [];
   });
 }

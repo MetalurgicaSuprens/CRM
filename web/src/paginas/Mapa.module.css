@@ -215,6 +215,10 @@
   background: var(--cor-mapa-queda);
 }
 
+.bolinha[data-tom="em_dia"] {
+  background: var(--cor-mapa-em-dia);
+}
+
 /* As faixas de "Esquecidas", com as cores dos municípios (data-classe) */
 .amostra {
   width: 14px;
@@ -348,6 +352,22 @@
   color: var(--cor-superficie);
 }
 
+/* O cliente tocado no mapa, na coluna ao lado: os números um embaixo do outro e os caminhos */
+.numerosDoCliente {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.numerosDoCliente dd {
+  display: flex;
+  flex-direction: column;
+}
+
+.acoesDoCliente {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
 .notaDaPosicao {
   margin-top: var(--esp-3);
   font-size: var(--tam-legenda);
@@ -470,5 +490,9 @@
 
   .numeros {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .numerosDoCliente {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

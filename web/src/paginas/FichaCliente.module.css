@@ -6,12 +6,47 @@
   gap: var(--esp-5);
 }
 
-/* Embaixo do nome: a razão social e, no cliente em risco, o motivo do selo */
+/* Embaixo do nome: a razão social, o endereço e, no cliente em risco, o motivo do selo */
 .descricao {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+}
+
+/* O endereço corre como texto, com o ícone na primeira linha e os links logo depois */
+.endereco {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.endereco > svg {
+  margin-right: 4px;
+  vertical-align: -2px;
+  color: var(--cor-texto-suave);
+}
+
+.linkDoEndereco {
+  margin-left: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--cor-texto-2);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linkDoEndereco:hover {
+  color: var(--cor-texto);
+}
+
+.linkDoEndereco:disabled {
+  color: var(--cor-texto-suave);
+  cursor: default;
 }
 
 .novoPedido {

@@ -1,20 +1,20 @@
 import { useState } from "react";
-import { ExternalLink, Route, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Plus, Route, Trash2, X } from "lucide-react";
 import type { Ponto } from "dominio/mapa";
 import botoes from "../../componentes/Botao.module.css";
 import { Cartao } from "../../componentes/Cartao";
-import type { MunicipioNoTerritorio } from "../../dados/mapa";
-import { gravarRoteiro, lerRoteiro, linkDoGoogleMaps, PARADAS_NO_ROTEIRO, trechosDoRoteiro, type Parada } from "../../dados/viagem";
+import { gravidadeDoCliente, type AcoesDoCliente, type MunicipioNoTerritorio } from "../../dados/mapa";
+import { codigoDaParada, gravarRoteiro, lerRoteiro, linkDoGoogleMaps, PARADAS_NO_ROTEIRO, trechosDoRoteiro, type Parada } from "../../dados/viagem";
 import { formatarNumero } from "../../formato";
 import estilos from "../Mapa.module.css";
-import { descreverAcoes } from "./OndeAgir";
+import { descreverAcoes, descreverMotivo } from "./OndeAgir";
 
 /*
- * O roteiro da viagem: as cidades que o representante pôs nele, na ordem que dá menos estrada, e o link
- * para o Google Maps. Fica só neste aparelho (dados/viagem.ts).
+ * O roteiro da viagem: os clientes e as cidades que o representante pôs nele, na ordem que dá menos
+ * estrada, e o link para o Google Maps. Fica só neste aparelho (dados/viagem.ts).
  */
 
-/** Os códigos das cidades do roteiro, gravados no aparelho a cada mudança. */
+/** As paradas do roteiro (o id do cliente ou o código da cidade), gravadas no aparelho a cada mudança. */
 export function useRoteiro() {
   const [codigos, setCodigos] = useState<string[]>(lerRoteiro);
   const mudar = (proximos: string[]) => {
@@ -34,8 +34,21 @@ export function useRoteiro() {
   };
 }
 
-/** A parada com o que a carteira tem na cidade, para dizer o que fazer lá. */
-export type ParadaNoMapa = Parada & { presenca: MunicipioNoTerritorio | undefined };
+export type Roteiro = ReturnType<typeof useRoteiro>;
+
+/** Pôr no roteiro e tirar dele, com o aviso de cheio: o mesmo botão no mapa e na ficha. */
+export function BotaoDoRoteiro({ codigo, roteiro }: { codigo: string; roteiro: Pick<Roteiro, "isNoRoteiro" | "isCheio" | "alternar"> }) {
+  const isNoRoteiro = roteiro.isNoRoteiro(codigo);
+  return (
+    <button type="button" className={botoes.secundario} onClick={() => roteiro.alternar(codigo)} disabled={!isNoRoteiro && roteiro.isCheio} aria-pressed={isNoRoteiro}>
+      {isNoRoteiro ? <Check size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
+      {isNoRoteiro ? "No roteiro" : roteiro.isCheio ? "Roteiro cheio" : "Pôr no roteiro"}
+    </button>
+  );
+}
+
+/** A parada com o que a carteira tem na cidade, ou as ações do cliente, para dizer o que fazer lá. */
+export type ParadaNoMapa = Parada & { presenca: MunicipioNoTerritorio | undefined; acoes?: AcoesDoCliente | undefined };
 
 type Props = {
   /** Já na ordem da viagem (ordenarParadas). */
@@ -54,7 +67,7 @@ export function CartaoDoRoteiro({ paradas, partida, aoTirar, aoLimpar, aoEscolhe
     <Cartao
       titulo="Roteiro"
       icone={Route}
-      subtitulo={partida ? "Daqui, sempre para a cidade mais perto que falta" : "Da primeira cidade escolhida, sempre para a mais perto que falta"}
+      subtitulo={partida ? "Daqui, sempre para a parada mais perto que falta" : "Da primeira parada escolhida, sempre para a mais perto que falta"}
       acoes={
         <button type="button" className={botoes.secundario} onClick={aoLimpar}>
           <Trash2 size={16} aria-hidden="true" />
@@ -64,20 +77,22 @@ export function CartaoDoRoteiro({ paradas, partida, aoTirar, aoLimpar, aoEscolhe
     >
       <ol className={estilos.paradas}>
         {paradas.map((parada, i) => (
-          <li key={parada.municipio.codigo} className={estilos.paradaDoRoteiro}>
+          <li key={codigoDaParada(parada)} className={estilos.paradaDoRoteiro}>
             <span className={estilos.numeroDaParada} aria-hidden="true">
               {i + 1}
             </span>
             <button type="button" className={estilos.nomeDaParada} onClick={() => aoEscolher(parada)}>
-              <strong>
-                {parada.municipio.nome}/{parada.uf}
-              </strong>
+              <strong>{parada.cliente ? parada.cliente.nome : `${parada.municipio.nome}/${parada.uf}`}</strong>
               <span>
-                {(trechos[i] ?? 0) > 0 ? `+${formatarNumero(Math.round(trechos[i] ?? 0))} km` : "partida"} ·{" "}
-                {parada.presenca ? descreverAcoes(parada.presenca.acoes) : "sem cliente da carteira"}
+                {(trechos[i] ?? 0) > 0 ? `+${formatarNumero(Math.round(trechos[i] ?? 0))} km` : "partida"} · {oQueFazer(parada)}
               </span>
             </button>
-            <button type="button" className={botoes.icone} onClick={() => aoTirar(parada.municipio.codigo)} aria-label={`Tirar ${parada.municipio.nome} do roteiro`}>
+            <button
+              type="button"
+              className={botoes.icone}
+              onClick={() => aoTirar(codigoDaParada(parada))}
+              aria-label={`Tirar ${parada.cliente?.nome ?? parada.municipio.nome} do roteiro`}
+            >
               <X size={16} aria-hidden="true" />
             </button>
           </li>
@@ -94,7 +109,15 @@ export function CartaoDoRoteiro({ paradas, partida, aoTirar, aoLimpar, aoEscolhe
           </a>
         ) : null}
       </div>
-      <p className={estilos.notaDaPosicao}>O roteiro fica só neste aparelho. O Google recebe só os nomes das cidades e parte de onde o aparelho estiver.</p>
+      <p className={estilos.notaDaPosicao}>
+        O roteiro fica só neste aparelho. O Google recebe o endereço de cada cliente e o nome de cada cidade, sem a sua posição: ele parte de onde o aparelho estiver.
+      </p>
     </Cartao>
   );
+}
+
+/** No cliente, a cidade e o motivo; na cidade, o que a carteira pede lá. */
+function oQueFazer({ cliente, acoes, municipio, uf, presenca }: ParadaNoMapa): string {
+  if (cliente) return `${municipio.nome}/${uf} · ${acoes && gravidadeDoCliente(acoes) ? descreverMotivo(acoes) : "em dia"}`;
+  return presenca ? descreverAcoes(presenca.acoes) : "sem cliente da carteira";
 }

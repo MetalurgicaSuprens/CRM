@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import type { Caixa, MapaDaUf, MapaDoBrasil, MunicipioDoMapa, Ponto } from "dominio/mapa";
+import { DETALHE_DA_CIDADE, type Caixa, type MapaDaCidade, type MapaDaUf, type MapaDoBrasil, type MunicipioDoMapa, type Ponto } from "dominio/mapa";
+import type { ClienteNoMapa } from "../dados/cidade";
 import { posicionarNomes, type Vista } from "./nomesNoMapa";
 import { useLargura } from "./useLargura";
 import estilos from "./MapaDoTerritorio.module.css";
@@ -8,7 +9,7 @@ import estilos from "./MapaDoTerritorio.module.css";
  * O mapa da carteira em SVG, desenhado à mão como os outros gráficos: o Brasil de fundo, os estados da
  * carteira com os municípios, as regiões imediatas do estado escolhido e um círculo por município, do
  * tamanho do valor e no tom que a visão dá a ele. A dica sai ao passar o mouse; o toque escolhe o
- * município.
+ * município. De perto, a cidade escolhida ocupa o quadro, com os bairros e um ponto por cliente.
  */
 
 /** As cores dos círculos (tokens.css, --cor-mapa-*): as ações de "Onde agir" e a direção da receita. */
@@ -16,6 +17,21 @@ export type TomDoCirculo = "critico" | "atencao" | "oportunidade" | "alta" | "es
 
 /** O círculo de valor 0 aparece no tamanho mínimo: o lugar que tem algo, mas sem dinheiro para medir. */
 export type CirculoDoMapa = { municipio: MunicipioDoMapa; valor: number; tom: TomDoCirculo };
+
+/** A cidade de perto: o desenho dela (null sem arquivo: fica o do estado) e os clientes com ponto. */
+export type CidadeDePerto = {
+  municipio: MunicipioDoMapa;
+  desenho: MapaDaCidade | null;
+  clientes: readonly ClienteNoMapa[];
+  clienteEscolhido: string | null;
+};
+
+/** O que está sob o mouse: a dica de cada um. */
+type Sobre = { x: number; y: number } & (
+  | { tipo: "municipio"; municipio: MunicipioDoMapa }
+  | { tipo: "cliente"; cliente: ClienteNoMapa }
+  | { tipo: "area"; nome: string }
+);
 
 type Props = {
   descricao: string;
@@ -39,10 +55,14 @@ type Props = {
   regiaoEscolhida: string | null;
   /** Onde o aparelho está ("Perto de mim"); null sem a localização. */
   posicao: Ponto | null;
-  /** As paradas do roteiro, na ordem, numeradas a partir de 1 e ligadas pelo caminho. */
-  roteiro: readonly MunicipioDoMapa[];
+  /** As paradas do roteiro, na ordem, numeradas a partir de 1 e ligadas pelo caminho, na unidade do estado. */
+  roteiro: readonly Ponto[];
+  cidade: CidadeDePerto | null;
   dicaDe: (municipio: MunicipioDoMapa) => ReactNode;
+  dicaDoCliente: (cliente: ClienteNoMapa) => ReactNode;
+  dicaDaArea: (nome: string) => ReactNode;
   aoEscolher: (municipio: MunicipioDoMapa) => void;
+  aoEscolherCliente: (cliente: ClienteNoMapa) => void;
 };
 
 const ALTURA_MINIMA = 300;
@@ -52,15 +72,17 @@ const RAIO_MAXIMO = { largo: 30, estreito: 20 };
 const RAIO_MINIMO = 3.5;
 /** O raio do círculo numerado de cada parada do roteiro, em px. */
 const RAIO_DA_PARADA = 10;
+/** O ponto do cliente, em px: do que menos fatura na cidade ao que mais. */
+const RAIO_DO_CLIENTE = { minimo: 4.5, maximo: 10 };
 const DURACAO_DA_ANIMACAO_MS = 450;
 
 export function MapaDoTerritorio(props: Props) {
-  const { descricao, brasil, mapas, uf, visao, classes, comCliente, circulos, rotulos, municipioEscolhido, regiaoEscolhida, posicao, roteiro, dicaDe, aoEscolher } =
-    props;
+  const { descricao, brasil, mapas, uf, visao, classes, comCliente, circulos, rotulos, municipioEscolhido, regiaoEscolhida, posicao, roteiro, cidade } = props;
   const { referencia, largura } = useLargura<HTMLDivElement>();
   const caixa = useVisaoAnimada(visao);
-  const [sobre, setSobre] = useState<{ municipio: MunicipioDoMapa; x: number; y: number } | null>(null);
+  const [sobre, setSobre] = useState<Sobre | null>(null);
   const porCodigo = useMemo(() => new Map(mapas.flatMap((mapa) => mapa.municipios.map((municipio) => [municipio.codigo, municipio] as const))), [mapas]);
+  const clientePorCodigo = new Map((cidade?.clientes ?? []).map((cliente) => [cliente.cliente.codigo, cliente]));
   const escolhido = mapas.find((mapa) => mapa.uf === uf);
 
   const altura = Math.round(Math.min(ALTURA_MAXIMA, Math.max(ALTURA_MINIMA, largura * ((visao[3] - visao[1]) / (visao[2] - visao[0])))));
@@ -72,14 +94,19 @@ export function MapaDoTerritorio(props: Props) {
   const valorDe = new Map(circulos.map((circulo) => [circulo.municipio.codigo, circulo.valor]));
   const nomes = posicionarNomes(rotulos, { vista, escala, raioDe: (municipio) => raioEmPx(valorDe.get(municipio.codigo) ?? 0) });
 
-  const municipioDoEvento = (evento: PointerEvent<SVGSVGElement>) => {
-    const codigo = (evento.target as Element).getAttribute("data-municipio");
-    return codigo ? porCodigo.get(codigo) : undefined;
+  // A dica e o clique vêm do atributo do que está sob o ponteiro: o cliente, o bairro ou o município.
+  const doAlvo = (alvo: Element) => {
+    const cliente = clientePorCodigo.get(alvo.getAttribute("data-cliente") ?? "");
+    if (cliente) return { tipo: "cliente" as const, cliente };
+    const area = alvo.getAttribute("data-area");
+    if (area) return { tipo: "area" as const, nome: area };
+    const municipio = porCodigo.get(alvo.getAttribute("data-municipio") ?? "");
+    return municipio ? { tipo: "municipio" as const, municipio } : null;
   };
   const aoMover = (evento: PointerEvent<SVGSVGElement>) => {
-    const municipio = evento.pointerType === "mouse" ? municipioDoEvento(evento) : undefined;
+    const alvo = evento.pointerType === "mouse" ? doAlvo(evento.target as Element) : null;
     const quadro = evento.currentTarget.getBoundingClientRect();
-    setSobre(municipio ? { municipio, x: evento.clientX - quadro.left, y: evento.clientY - quadro.top } : null);
+    setSobre(alvo ? { ...alvo, x: evento.clientX - quadro.left, y: evento.clientY - quadro.top } : null);
   };
 
   return (
@@ -95,9 +122,9 @@ export function MapaDoTerritorio(props: Props) {
           onPointerMove={aoMover}
           onPointerLeave={() => setSobre(null)}
           onClick={(evento) => {
-            const codigo = (evento.target as Element).getAttribute("data-municipio");
-            const municipio = codigo ? porCodigo.get(codigo) : undefined;
-            if (municipio) aoEscolher(municipio);
+            const alvo = doAlvo(evento.target as Element);
+            if (alvo?.tipo === "cliente") props.aoEscolherCliente(alvo.cliente);
+            else if (alvo?.tipo === "municipio" && alvo.municipio.codigo !== cidade?.municipio.codigo) props.aoEscolher(alvo.municipio);
           }}
         >
           <g className={estilos.brasil}>
@@ -114,8 +141,11 @@ export function MapaDoTerritorio(props: Props) {
           {regiaoEscolhida && escolhido ? (
             <path className={estilos.regiaoEscolhida} d={escolhido.regioes.find((regiao) => regiao.codigo === regiaoEscolhida)?.contorno} />
           ) : null}
+          {cidade ? <Cidade cidade={cidade} /> : null}
           <g className={estilos.circulos}>
             {[...circulos]
+              // De perto, os clientes da cidade tomam o lugar do círculo dela.
+              .filter(({ municipio }) => municipio.codigo !== cidade?.municipio.codigo)
               .sort((a, b) => b.valor - a.valor)
               .map(({ municipio, valor, tom }) => (
                 <circle
@@ -128,9 +158,10 @@ export function MapaDoTerritorio(props: Props) {
                 />
               ))}
           </g>
-          {municipioEscolhido && porCodigo.get(municipioEscolhido) ? (
+          {municipioEscolhido && porCodigo.get(municipioEscolhido) && !cidade?.desenho ? (
             <path className={estilos.municipioEscolhido} d={porCodigo.get(municipioEscolhido)?.d} />
           ) : null}
+          {cidade ? <ClientesDaCidade cidade={cidade} escala={escala} /> : null}
           <Roteiro paradas={roteiro} partida={posicao} escala={escala} />
           {posicao ? <AquiEstou posicao={posicao} escala={escala} /> : null}
           <g className={estilos.rotulos} fontSize={12 * escala} strokeWidth={3.5 * escala}>
@@ -142,7 +173,11 @@ export function MapaDoTerritorio(props: Props) {
           </g>
         </svg>
       ) : null}
-      {sobre ? <Dica x={sobre.x} y={sobre.y} largura={largura}>{dicaDe(sobre.municipio)}</Dica> : null}
+      {sobre ? (
+        <Dica x={sobre.x} y={sobre.y} largura={largura}>
+          {sobre.tipo === "cliente" ? props.dicaDoCliente(sobre.cliente) : sobre.tipo === "area" ? props.dicaDaArea(sobre.nome) : props.dicaDe(sobre.municipio)}
+        </Dica>
+      ) : null}
     </div>
   );
 }
@@ -167,19 +202,58 @@ function Estado({ mapa, isEscolhido, classeDe }: PropsDoEstado) {
 }
 
 /** O caminho do roteiro, tracejado, de onde o aparelho está até a última parada, e o número de cada parada. */
-function Roteiro({ paradas, partida, escala }: { paradas: readonly MunicipioDoMapa[]; partida: Ponto | null; escala: number }) {
+function Roteiro({ paradas, partida, escala }: { paradas: readonly Ponto[]; partida: Ponto | null; escala: number }) {
   if (paradas.length === 0) return null;
-  const pontos = [...(partida ? [partida] : []), ...paradas.map(({ centro }) => centro)];
+  const pontos = [...(partida ? [partida] : []), ...paradas];
   return (
     <g className={estilos.roteiro}>
       {pontos.length > 1 ? <polyline className={estilos.caminhoDoRoteiro} points={pontos.map(([x, y]) => `${x},${y}`).join(" ")} /> : null}
-      {paradas.map(({ codigo, centro: [x, y] }, i) => (
-        <g key={codigo} className={estilos.parada}>
+      {paradas.map(([x, y], i) => (
+        <g key={i} className={estilos.parada}>
           <circle cx={x} cy={y} r={RAIO_DA_PARADA * escala} />
           <text x={x} y={y} dy="0.35em" textAnchor="middle" fontSize={11 * escala}>
             {i + 1}
           </text>
         </g>
+      ))}
+    </g>
+  );
+}
+
+/**
+ * A cidade de perto, por baixo dos círculos: o desenho dela, com os bairros ou os distritos. Fica num
+ * grupo com a escala da unidade da cidade, 5 m, por cima do estado.
+ */
+function Cidade({ cidade: { desenho, municipio } }: { cidade: CidadeDePerto }) {
+  if (!desenho) return null;
+  return (
+    <g className={estilos.cidade} transform={`scale(${1 / DETALHE_DA_CIDADE})`}>
+      <path className={estilos.fundoDaCidade} d={desenho.contorno} data-municipio={municipio.codigo} />
+      {desenho.divisoes?.areas.map((area, i) => (
+        <path key={`${area.nome}-${i}`} className={estilos.areaDaCidade} d={area.d} data-area={area.nome} />
+      ))}
+      <path className={estilos.contornoDaCidade} d={desenho.contorno} />
+    </g>
+  );
+}
+
+/** Um ponto por cliente, do tamanho do faturado dele entre os da cidade e na cor da ação mais grave. */
+function ClientesDaCidade({ cidade: { clientes, clienteEscolhido }, escala }: { cidade: CidadeDePerto; escala: number }) {
+  const maior = Math.max(1, ...clientes.map(({ cliente }) => cliente.faturamento12m));
+  const raio = (faturamento: number) =>
+    (RAIO_DO_CLIENTE.minimo + Math.sqrt(Math.max(0, faturamento) / maior) * (RAIO_DO_CLIENTE.maximo - RAIO_DO_CLIENTE.minimo)) * escala * DETALHE_DA_CIDADE;
+  return (
+    <g className={estilos.clientesDaCidade} transform={`scale(${1 / DETALHE_DA_CIDADE})`}>
+      {clientes.map(({ cliente, ponto: [x, y], tom }) => (
+        <circle
+          key={cliente.codigo}
+          data-cliente={cliente.codigo}
+          data-tom={tom}
+          data-escolhido={cliente.codigo === clienteEscolhido ? "" : undefined}
+          cx={x}
+          cy={y}
+          r={raio(cliente.faturamento12m) * (cliente.codigo === clienteEscolhido ? 1.35 : 1)}
+        />
       ))}
     </g>
   );

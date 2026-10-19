@@ -198,6 +198,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Razão social e motivo do risco | Embaixo do nome: a razão social, que some quando é igual a ele, como na pessoa física, e o motivo do selo "Em risco", como em Clientes. O motivo não vai ao lado do selo porque a linha do título empurraria o cadastro (FichaCliente.tsx:65 e 149-162) | `RAZ_SOCIAL` + `COMPLEM_RZ`; motivo: ver Clientes | `CRCL.RAZ_SOCIAL`, `COMPLEM_RZ` | extrator |
 | Grupo | No grupo: "Grupo do cadastro do SGI: 8 CNPJs, com os números somados" embaixo do nome, e os cartões CNPJs e Municípios no lugar de Cidade e Código. No CNPJ de um grupo: "CNPJ do grupo OVD" embaixo do nome, e o "Voltar" leva ao grupo (FichaCliente.tsx) | Ver Clientes, "Grupos do SGI". Todos os números do grupo são a soma dos CNPJs: faturado, meses, famílias, produtos, ciclo e situação | `SGI5_TAB_VEN_CLI3.CLI3_GRP` | extrator |
 | Por CNPJ | Só no grupo, depois do faturamento mensal: cada CNPJ com cidade e código, situação, última compra, faturado em 12 meses, a parte dele no faturado do grupo e a variação; a linha abre a ficha do CNPJ (FichaCliente.tsx, `TabelaDosCnpjs`) | Os números de cada CNPJ, como se ele estivesse sozinho; a situação é a dele (pedido do Lucas em 2026-10-17) | (ver Clientes) | extrator; a parte, no navegador |
+| Endereço | Embaixo do nome, só na empresa: "AV. JUSCELINO KUBITSCHEK DE OLIVEIRA, 3900 · CIDADE INDUSTRIAL · 81260-000", com "Google Maps" e "Pôr no roteiro" do Mapa (FichaCliente.tsx, `EnderecoDaFicha`; 2026-10-19) | O texto do cadastro como está, com o número e o complemento; o CEP com o zero que o ERP perde. Pessoa física e grupo ficam sem endereço. O link do Google Maps leva o endereço, a cidade e o CEP, e só sai quando o representante clica | `CRCL.ENDERECO`, `BAIRRO`, `CEP`, só com `FIS_JURID = 'J'` | extrator |
 | Cidade, Mercado e Código | Cartões (FichaCliente.tsx:129-131) | Mercado: M = montadora, E = exportação, o resto é praça. Código: como em Clientes, "Pessoa física" sem número | `CRCL.TIPO_CLI`; código: `CRCL.CLIENTE` só de empresa | extrator |
 | Cliente desde | Só o ano (FichaCliente.tsx:132) | Ano da primeira nota válida da história; nulo se nunca comprou | `MIN(NFME.DT_EMISSAO)` com a RF | extrator; vai só o ano |
 | Última visita | Número ao lado da "Última compra": "Hoje", "há 12 dias" ou "Nenhuma", com o botão "Visitei hoje" ou "Desfazer a de hoje". No grupo, a visita mais recente a algum CNPJ, e a marca fica na ficha de cada CNPJ (2026-10-18) | O dia vem do relógio de Brasília do servidor, não da data da foto | não é ERP (`app.db`, `visitas`) | servidor |
@@ -528,6 +529,11 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
   - "Esquecidas": a cidade com cliente pintada pelo tempo desde a última compra de algum cliente dela (até 30, 90 e 180 dias, e mais), e a lista das cidades da mais esquecida à mais recente;
   - "Onde crescer": as regiões da área pelo potencial que falta, em 4 tons de verde, e as cidades sem cliente. A recuperação de cliente parado foi para "Onde agir".
 - **Fora do mapa.** O cliente sem o município no cadastro não entra; a página diz quantos são.
+- **A cidade de perto (2026-10-19).** O clique ou o toque numa cidade aproxima o mapa até ela encher o quadro, com os bairros do Censo 2022 ou, sem eles, os distritos, e um ponto por empresa (dados/cidade.ts e graficos/MapaDoTerritorio.tsx, com teste).
+  - O ponto mostra o nome, o motivo e o faturado; o toque abre, ao lado do mapa, o cartão do cliente, com "Abrir a ficha", "Pôr no roteiro" e "Google Maps". O cartão diz quando o ponto é aproximado (na rua ou no meio do CEP).
+  - Pessoa física não tem endereço no CRM e fica sem ponto, como o endereço que o IBGE não achou: a legenda diz quantos.
+  - Na foto de 19/10, dos 3.187 endereços de empresa, 1.767 caíram no número, 1.033 na rua, 127 no meio do CEP e 260 ficaram sem ponto.
+- **Por que o IBGE e não o Google (2026-10-19).** Os termos da Geocoding API proíbem usar o ponto dela fora de um mapa do Google (cláusula 6.2) e mandam apagar a coordenada guardada em 30 dias; o mapa do Google também é de outro domínio, que a CSP não deixa carregar. O CNEFE é público, roda na LAN e não manda endereço de cliente a ninguém.
 - **Por estado.** Os botões mostram os estados da carteira, com o número de clientes, e a página abre no que tem mais (`uf=`). Os outros estados da carteira aparecem em volta, mais claros.
 - **Escolha.** A lista mostra as 8 primeiras regiões e o "Ver todas". A região escolhida na lista é aproximada no mapa. O clique ou o toque num município mostra os clientes dele, cada um com o caminho para a ficha. O mouse mostra a dica do município.
 - **Grupos.** O mapa põe cada CNPJ do grupo no seu município, com os números dele. O dinheiro em jogo de um grupo parado ou comprando menos se divide entre os CNPJs pela parte de cada um no faturado de 12 meses, ou em partes iguais se ele não faturou nada; o mix e o novo valem para todos os CNPJs, e o atraso no ciclo é de cada um (dados/mapa.ts, `acoesDaCarteira`, com teste).
@@ -535,6 +541,7 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
+| Ponto do cliente | De perto, um ponto por empresa no endereço dela, na cor da ação mais grave (vermelho parado, âmbar comprando menos ou fora do ciclo, azul mix ou novo, cinza em dia) e do tamanho do faturado em 12 meses entre os da cidade | O CNEFE do IBGE (Censo 2022), buscado pelo extrator na LAN: o mesmo número na mesma rua; o mesmo número no CEP, com a rua escrita diferente; o número mais perto na rua; o meio da rua; o meio do CEP, se ele não for o da cidade toda (extrator/src/localizacao, com teste). Sem achar, o cliente não tem ponto e a legenda conta quantos | `CRCL.ENDERECO`, `BAIRRO`, `CEP` (empresa) e o CNEFE | extrator |
 | Município do cliente | Círculo e área com cliente | Código IBGE de 7 dígitos que começa pelo código da UF do cliente. Fora disso, nulo, e o cliente fica fora do mapa (`municipioDoCadastro`, com teste) | `CRCL.RESERVADO7` | extrator |
 | Desenho, nome, região imediata, população e PIB | Contornos, nomes, habitantes e potencial | Malha municipal do IBGE, lista dos municípios com a região imediata, Censo 2022 e PIB dos Municípios de 2021, em arquivos estáticos (ver abaixo) | não é ERP | gerador do extrator, uma vez |
 | Faturado do município e da região | Círculos, lista e indicadores | Soma do faturado em 12 meses dos clientes da carteira | (foto: `cliente.faturamento_12m`) | navegador |
@@ -566,9 +573,9 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
 - **Perto de mim (2026-10-18).** O botão pede a posição ao aparelho. O mapa vai para o estado e para a volta dela (150 km), com o ponto azul, e o cartão "Perto de você" lista as cidades com cliente nesse raio, da mais perto à mais longe, com o que pede ação em cada uma (paginas/mapa/PertoDeMim.tsx).
   - A posição fica só na memória da aba: não vai ao servidor, ao endereço da página nem ao armazenamento do navegador, e some ao recarregar. Sem a permissão, a tela diz como liberar.
   - As distâncias são em linha reta, pela mesma projeção dos arquivos do mapa (dominio/mapa.ts, `distanciaEmKm`, com teste).
-- **Roteiro (2026-10-18).** A cidade entra no roteiro pelo "Perto de você" ou pela escolha do município, até 10 cidades (o limite do link do Google Maps). O cartão "Roteiro" põe as cidades na ordem do vizinho mais perto, de onde o aparelho está ou da primeira escolhida, com os km em linha reta e o que pede ação em cada uma. O mapa numera as paradas e liga o caminho (dados/viagem.ts, com teste).
-  - O roteiro fica só neste aparelho (localStorage, `crm:roteiro`), e são códigos de município, dado público.
-  - "Abrir no Google Maps" leva só os nomes das cidades, sem a origem: o Google parte de onde o aparelho estiver, e a posição não sai do CRM.
+- **Roteiro (2026-10-18; o cliente desde 2026-10-19).** A parada é um cliente, no endereço dele, ou uma cidade. O cliente entra pelo cartão do ponto no mapa ou pela ficha; a cidade, pelo "Perto de você" ou pela escolha do município. São até 10 paradas (o limite do link do Google Maps). O cartão "Roteiro" põe as cidades na ordem do vizinho mais perto, de onde o aparelho está ou da primeira escolhida, com os km em linha reta e o que pede ação em cada uma. O mapa numera as paradas e liga o caminho (dados/viagem.ts, com teste).
+  - O roteiro fica só neste aparelho (localStorage, `crm:roteiro`): o código do município, dado público, e o id opaco do cliente, sem nome.
+  - "Abrir no Google Maps" leva o endereço de cada cliente, público no CNPJ, e o nome de cada cidade, sem a origem: o Google parte de onde o aparelho estiver, e a posição não sai do CRM.
 - **Só a carteira** (decidido em 2026-10-09, pergunta 34). Nada de outros representantes entra no mapa, nem para dizer que uma região já é atendida.
 - **Visão do cliente** (plano.md:206). O faturado é o histórico dos clientes da carteira, de qualquer representante, como em Clientes.
 - **Valores ocultos.** A dica, a lista, os indicadores e a legenda escrevem os valores pelo mesmo componente das outras telas, que obedece "Ocultar valores". Os nomes vêm da lista atual do IBGE, o que resolve os nomes antigos do protótipo.
@@ -578,9 +585,11 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
     - cada região: o contorno, a caixa e as vizinhas;
     - o contorno do estado.
   - `brasil.json` traz o contorno de cada estado.
+  - `cidades/<código>.json`, um por cidade com cliente (766 em 19/10, 17,5 MB; a tela baixa só a que aproxima, uns 85 KB comprimida a maior): o contorno, na qualidade intermediária do IBGE, e os bairros ou os distritos, em unidades de 5 m (dominio/mapa.ts, `projetarNaCidade`). 333 cidades têm bairros, 239 distritos e 194 só o contorno. Gerados por `npm run cidades --workspace extrator` (`extrator/src/mapas/gerarCidades.ts`, com as fontes no cabeçalho); rodam de novo quando entrar cliente em cidade nova.
+  - O CNEFE fica na pasta de dados do extrator (`data/cnefe`, um zip por município com cliente, 1,4 GB em 19/10), e os pontos já buscados em `data/pontos-dos-enderecos.db`: a primeira busca levou 4 minutos; depois, só endereço novo ou mudado volta ao CNEFE. O município sem o zip aparece no resumo do extrator, para baixar.
   - A projeção é Mercator, em décimos de km. São 2,3 MB no total, mas a tela baixa só o Brasil e os estados da carteira.
   - Gerados por `npm run mapas --workspace extrator -- <pasta do IBGE> <população> <PIB agro + indústria> <pasta de saída>` (`extrator/src/mapas/gerarMapas.ts`, com as fontes e a regra da usina e da extração no cabeçalho). Os 5.570 municípios acharam a população do Censo e o PIB.
-- **Na foto.** `cliente.municipio_ibge` (versão 9). Na Star Vendas, em 15/10: os 178 clientes com município, em 42 municípios.
+- **Na foto.** `cliente.municipio_ibge` (versão 9). Na Star Vendas, em 15/10: os 178 clientes com município, em 42 municípios. `cliente.endereco`, `bairro`, `cep`, `latitude`, `longitude` e `precisao_do_ponto` (versão 14), só da empresa.
 - **Pendente.** A lista de Clientes ainda mostra o `CRCL.CIDADE`, cortado em 20 letras. Com o código confirmado, o nome pode vir do IBGE (pergunta 5).
 
 ## 11. Administração (feita em 2026-10-16)
@@ -647,7 +656,7 @@ Convenções:
 |---|---|---|---|
 | `foto` | Uma linha | `versao_esquema`, `gerada_em`, `data_ref`, `mes_atual`, `dia_util`, `dias_uteis`, `semestre_inicio`, `semestre_fim` | todas, Admin |
 | `representante` | Representante autorizado; PK `codigo` | `codigo`, `nome` (o da CRVN, para o Admin escolher os códigos) | Admin |
-| `cliente` | Cliente (filial) da carteira de um autorizado, e o grupo do SGI com dois ou mais CNPJs no mesmo código; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física e no grupo), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `status`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (código IBGE do município, para o Mapa), `queda_no_semestre`, `grupo`, `cnpjs` | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
+| `cliente` | Cliente (filial) da carteira de um autorizado, e o grupo do SGI com dois ou mais CNPJs no mesmo código; PK `cliente` | `cliente`, `codigo_erp` (nulo na pessoa física e no grupo), `representante`, `nome`, `razao_social`, `cidade`, `uf`, `mercado`, `situacao`, `status`, `ultima_compra`, `cliente_desde`, `ciclo_dias`, `faturamento_12m`, `variacao_12m`, `evolucao_12m`, `grupo_mix`, `tabela_preco`, `municipio_ibge` (código IBGE do município, para o Mapa), `endereco`, `bairro`, `cep`, `latitude`, `longitude`, `precisao_do_ponto` (só da empresa), `queda_no_semestre`, `grupo`, `cnpjs` | Clientes, Ficha, Análises, Início, Pedidos, Montar pedido, Detalhe |
 | `cliente_mes` | Cliente × mês (60 fechados + o corrente: a tendência soma os 12 meses até cada um dos últimos 48); PK (`cliente`, `mes`) | `cliente`, `mes`, `valor` | Ficha |
 | `cliente_familia` | Cliente × família nos 12 meses fechados; PK (`cliente`, `familia`) | `cliente`, `familia`, `valor`, `participacao`, `pecas` (versão 11) | Ficha |
 | `ficha_produto` | Cliente × produto, só os 8 maiores em valor nos 12 meses fechados; PK (`cliente`, `produto`) | `cliente`, `produto`, `pecas_12m`, `valor_12m`, `ultima_compra` | Ficha |
@@ -671,6 +680,7 @@ Convenções:
 
 Colunas que pedem nota:
 - `cliente.evolucao_12m`: texto JSON com 13 números, do mais antigo ao mais recente.
+- `cliente.endereco`, `bairro` e `cep` (versão 14, 2026-10-19): só da empresa, que tem o endereço público no CNPJ; na pessoa física e no grupo, nulos (CLAUDE.md, regra 3). `latitude` e `longitude` são do CNEFE do IBGE, e `precisao_do_ponto` diz se o ponto está no número, na rua ou no meio do CEP (dominio/tipos.ts, `PrecisaoDoPonto`); sem ponto, os três ficam nulos.
 - `cliente_mes` (versão 13, 2026-10-18): a versão 12 levou as peças de cada mês, para um modelo da tendência que o Lucas não escolheu, e a 13 as tirou. As duas vistas que ficaram usam só o valor.
 - `cliente.grupo` e `cliente.cnpjs` (versão 10, 2026-10-17): no CNPJ de um grupo, `grupo` é o id da linha do grupo; na linha do grupo, `cnpjs` diz quantos CNPJs ele tem. A linha do grupo não tem cidade, município, código do ERP nem tabela de preço, e o id dela é um HMAC do código do representante e do nome do grupo, estável entre fotos. As listas das análises (`analise_*`) têm o grupo no lugar dos CNPJs; a ficha (`cliente_mes`, `cliente_familia`, `ficha_produto`, `cliente_mix`) existe para os dois.
 - `cliente.queda_no_semestre` (versão 10): a variação do semestre do cliente em risco. Antes, o servidor a tirava de `analise_ritmo`, que não tem mais o CNPJ de um grupo.
@@ -762,7 +772,7 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
 
 | Tabela | Colunas | Para quê | Citação | Confirmada |
 |---|---|---|---|---|
-| `ABC71.CRCL` | EMP_FIL, CLIENTE, TIPO_CAD, NOM_FANTAS, RAZ_SOCIAL, COMPLEM_RZ, CIDADE, ESTADO, TIPO_CLI, FIS_JURID, VEND_1, RESERVADO7 (código IBGE do município); COD_PAIS só se a pergunta 5 decidir mostrar o país | Identidade, mercado, carteira, raiz para os grupos (calculada na LAN), nome da cidade e município | omega/ABC71-CR.md:965-1141 (PK 973; 981-988, 995-996, 1005, 1019, 1052, 1079, 1088); OracleDB/docs/licoes.md:97-101 | sim |
+| `ABC71.CRCL` | EMP_FIL, CLIENTE, TIPO_CAD, NOM_FANTAS, RAZ_SOCIAL, COMPLEM_RZ, CIDADE, ESTADO, TIPO_CLI, FIS_JURID, VEND_1, RESERVADO7 (código IBGE do município); ENDERECO, BAIRRO e CEP só com FIS_JURID = 'J' (o SELECT devolve nulo na pessoa física); COD_PAIS só se a pergunta 5 decidir mostrar o país | Identidade, mercado, carteira, raiz para os grupos (calculada na LAN), nome da cidade, município e endereço da empresa | omega/ABC71-CR.md:965-1141 (PK 973; 981-988, 995-996, 1005, 1019, 1052, 1079, 1088); OracleDB/docs/licoes.md:97-101 | sim |
 | `ABC71.CRCLH` | EMP_FIL, CLIENTE, SEQ_HIST, DT_HIST, CAMPO, HISTORICO | Dono do cliente na data da nota sem vendedor. Só na LAN | omega/ABC71-CR.md:1279-1300; pista em CRM-prototipo/server/src/repHistorico.ts:7-41 | sim; formato de HISTORICO a confirmar |
 | `ABC71.CRVN` | EMP_FIL, VENDEDOR, NOME, NOME_CONH | Nome do representante, com `EMP_FIL = 20210001` | omega/ABC71-CR.md:5467-5488; untDmVenPvd.dfm:499-503 e 4976-5006 | sim |
 | `ABC71.NFME` | EMP_FIL, N_FISCAL, SERIE, FORNEC, TIPO_MOVTO, ID_CANCEL, DT_EMISSAO, VENDEDOR, NRO_PEDIDO | Cabeçalho da nota: cliente, data, cancelamento, vendedor (atribuição), número da NF e pedido da nota (pedido de origem na aba Faturados e datas de faturado do pedido CRM) | omega/ABC71-NF.md:6647-6739 (PK 6655; 6663-6667, 6674, 6678, 6694, 6739); Gestao/server/src/producao/foto/moduloVendasEntradas.ts:13 e 32-43; `Vendas {VEN}/Consulta Pedidos Venda {CONPVE}/untDmVenConPve_ConPve.dfm:527-528 e 1257-1261` | sim |
@@ -812,7 +822,8 @@ As citações do catálogo são relativas a `OracleDB/catalogo/`. As do SGI são
   - `CRCL.CLIENTE` de pessoa física, que é o CPF; `NFME.FORNEC`, `VEPM.CLIENTE`, `PV1_CLI` e `VIEW_CLI` em claro;
   - a raiz do CNPJ.
 - **Endereço e contato:**
-  - `CRCL.ENDERECO`, `NUMERO`, `NUMERO_ALFA`, `COMPL_END`, `CEP`, `BAIRRO`, `CONTATO`, `DDD`, `TELEFONE_1`, `TELEFONE_2`, `TELEFAX`;
+  - o endereço da pessoa física (`CRCL.ENDERECO`, `BAIRRO`, `CEP` com `FIS_JURID` diferente de 'J'); o da empresa entra desde 2026-10-19 (CLAUDE.md, regra 3);
+  - `CRCL.NUMERO`, `NUMERO_ALFA` e `COMPL_END` (vazios na carteira, em 19/10: o número vem no texto da rua), `CONTATO`, `DDD`, `TELEFONE_1`, `TELEFONE_2`, `TELEFAX`;
   - telefones, celular, e-mail e endereço da CRVN;
   - `CLI3_EMA`, `FIN_EMA`, `FIN_EMA_CPO`;
   - `VEPM.CONTATO`, `CONT_FONE`, `CONT_FAX`, `PEDIDO_CLI`;
