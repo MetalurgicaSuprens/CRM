@@ -556,8 +556,9 @@ Pedido do Lucas em 2026-10-15: mostrar ao representante as regiões que ele pode
 - **Por que o PIB agro + indústria (2026-10-18).**
   - A população mede o tamanho da cidade, não o do mercado: a cidade grande com pouca lavoura e pouca fábrica pesava mais que a cidade agrícola menor.
   - O Lucas escolheu o valor adicionado da agropecuária e da indústria, do PIB dos Municípios do IBGE, no lugar da população.
-  - Na cidade em que a atividade principal é usina ("Eletricidade e gás...") ou extração ("Indústrias extrativas"), conta só a agropecuária, porque essa indústria não compra o que a Suprens vende. São 211 municípios. Sem a regra, os R$ 11,5 bi de indústria de Foz do Iguaçu, quase toda da Itaipu, inflavam o potencial da região.
-- **Com o PIB, nos códigos 1302 e 1109 (18/10).** No Paraná, as maiores oportunidades são Guarapuava, Telêmaco Borba, Ponta Grossa e Paranaguá. São 21 regiões abaixo da média e 281 cidades sem cliente na área; as de maior PIB são Ortigueira e Tibagi.
+  - Na cidade em que a atividade principal é usina ("Eletricidade e gás...") ou extração ("Indústrias extrativas"), conta só a agropecuária, porque essa indústria não compra o que a Suprens vende. São 210 municípios. Sem a regra, os R$ 11,5 bi de indústria de Foz do Iguaçu, quase toda da Itaipu, inflavam o potencial da região.
+  - O ano é 2021, o último com os setores. A edição de 12/2025 do IBGE (base de 2010 a 2023) traz só o PIB total de 2022 e 2023, e revisou 2021: o mapa usa os números revisados desde 2026-10-19, a pedido do Lucas. No Paraná e em Goiás, o total não mudou. A maior mudança foi Congonhas (MG): a atividade principal passou de extração para indústria de transformação, e a indústria dela, R$ 5,1 bi, voltou a contar.
+- **Com o PIB, nos códigos 1302 e 1109 (18/10; igual com os números revisados, em 19/10).** No Paraná, as maiores oportunidades são Guarapuava, Telêmaco Borba, Ponta Grossa e Paranaguá. São 21 regiões abaixo da média e 281 cidades sem cliente na área; as de maior PIB são Ortigueira e Tibagi.
 - **Com os dados reais da Star Vendas (15/10, ainda pela população).**
   - Em Goiás, as 22 regiões estão na área, e Goiânia faz 88% da receita.
   - A maior oportunidade é Luziânia: 738 mil habitantes, 2 clientes e +R$ 448 mil por ano. Em seguida vem Águas Lindas de Goiás.

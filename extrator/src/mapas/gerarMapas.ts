@@ -12,11 +12,12 @@ import { montarMapaDaUf, montarMapaDoBrasil } from "./montarMapa.ts";
  *     ?formato=application/vnd.geo%2Bjson&qualidade=minima&intrarregiao=municipio;
  *   - a população é a base do protótipo (CRM-prototipo/data/geo/ibge-populacao.json);
  *   - o PIB agro + indústria é {"byMun": {código do IBGE: R$}}, tirado de
- *     ftp.ibge.gov.br/Pib_Municipios/2021/base/base_de_dados_2010_2021_xlsx.zip: a soma das colunas
- *     "Valor adicionado bruto da Agropecuária" e "da Indústria" do ano de 2021, que vêm em R$ 1.000.
+ *     ftp.ibge.gov.br/Pib_Municipios/2022_2023/base/base_de_dados_2010_2023_xlsx.zip (de 12/2025): a
+ *     soma das colunas "Valor adicionado bruto da Agropecuária" e "da Indústria" do ano de 2021, que
+ *     vêm em R$ 1.000. 2021 é o último ano com os setores: em 2022 e 2023, a base traz só o PIB total.
  *     Onde a "Atividade com maior valor adicionado bruto" é "Eletricidade e gás..." ou "Indústrias
  *     extrativas", a indústria fica de fora e conta só a agropecuária: usina e extração (Itaipu,
- *     petróleo, minério) não compram o que a Suprens vende. São 211 municípios em 2021.
+ *     petróleo, minério) não compram o que a Suprens vende. São 210 municípios em 2021.
  * Roda de novo só quando o IBGE mudar a malha, o Censo ou o PIB dos Municípios.
  */
 
