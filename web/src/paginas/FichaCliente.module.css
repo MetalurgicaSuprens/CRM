@@ -163,27 +163,6 @@
   gap: var(--esp-4);
 }
 
-.resumoDoGrafico {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px var(--esp-2);
-  margin-bottom: var(--esp-3);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.notaDoGrafico {
-  margin-top: var(--esp-2);
-  font-size: var(--tam-pequeno);
-  color: var(--cor-texto-suave);
-}
-
-/* As duas vistas da tendência (TendenciaDaFicha.tsx): o seletor fica do tamanho dos botões */
-.vistas {
-  align-self: flex-start;
-}
-
 .gradeDupla {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);

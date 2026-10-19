@@ -7,7 +7,8 @@ import type { Referencia } from "./referencia.ts";
 /*
  * Indicadores do Início na visão do representante: faturado de cada mês do ano corrente, o mesmo
  * mês do ano anterior e, no mês corrente, o ano anterior até o mesmo dia útil e o ritmo dos
- * últimos 6 meses, base da projeção (dominio/projecao.ts).
+ * últimos 6 meses, base da projeção (dominio/projecao.ts). E a história de cada mês fechado, que a
+ * tendência do Início soma de 12 em 12.
  */
 
 export type MesDoPainel = {
@@ -39,6 +40,24 @@ export function montarPainel(vendas: readonly VendaDoDia[], autorizados: readonl
         ritmoPorDiaUtil: mes === referencia.mesAtual ? ritmoDosUltimosMeses(doRepresentante, referencia.mesAtual) : null,
       };
     });
+  });
+}
+
+/** O faturado de cada mês fechado dos meses da ficha, por representante; o mês sem venda vale 0. */
+export function montarHistoricoDoPainel(
+  vendas: readonly VendaDoDia[],
+  autorizados: readonly string[],
+  referencia: Referencia,
+): { representante: string; mes: string; faturado: number }[] {
+  const fechados = referencia.mesesDaFicha.filter((mes) => mes < referencia.mesAtual);
+  return autorizados.flatMap((representante) => {
+    const porMes = new Map<string, number>();
+    for (const venda of vendas) {
+      if (venda.representante !== representante) continue;
+      const mes = venda.dia.slice(0, 7);
+      porMes.set(mes, (porMes.get(mes) ?? 0) + venda.valor);
+    }
+    return fechados.map((mes) => ({ representante, mes, faturado: porMes.get(mes) ?? 0 }));
   });
 }
 

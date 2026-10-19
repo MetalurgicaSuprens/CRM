@@ -58,6 +58,7 @@ import {
 } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
 import { BarrasMensais } from "../graficos/BarrasMensais";
+import moldura from "../graficos/moldura.module.css";
 import { Carregando } from "./Carregando";
 import { useRoteiro } from "./mapa/Roteiro";
 import { DetalheDoPedidoDaFicha } from "./DetalhesDosPedidos";
@@ -162,7 +163,7 @@ function AnoAteAgora({ resumo }: { resumo: ResumoDoAno }) {
   const ano = Number(resumo.inicio.slice(0, 4));
   const variacao = resumo.anoAnterior > 0 ? resumo.valor / resumo.anoAnterior - 1 : null;
   return (
-    <p className={estilos.resumoDoGrafico}>
+    <p className={moldura.resumoDoGrafico}>
       <span>
         {ano} até {formatarNomeDoMes(resumo.fim)}: <Valor valor={resumo.valor} compacto />
       </span>

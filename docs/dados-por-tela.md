@@ -94,6 +94,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Acumulado do ano anterior | "vs 2025" | Janeiro até o mês anterior inteiros, mais o mesmo dia útil do mês corrente | (foto) | servidor |
 | Pedidos em aberto | Valor e "N pedidos" (Inicio.tsx:138-143) | Contagem e soma dos pedidos em aberto atribuídos ao representante | VEPM, VEPD; atribuição por `VEPM.VENDEDOR`, na LAN | servidor, sobre os pedidos do representante |
 | Gráfico mensal | Barras do ano, comparação com o ano anterior e "A faturar no mês" (BarrasMensais.tsx:156-170) | Mês sem dado ainda é nulo. O ano anterior usa o mês inteiro; na dica do mês corrente, ele aparece como "2025, mês inteiro" (BarrasMensais.tsx:214-240) | NFME, NFDE, VEPD | extrator; a faturar: servidor |
+| Tendência | No mesmo cartão do gráfico mensal, a segunda vista do seletor "Mensal | Tendência"; o Mensal é o padrão (pedido do Lucas em 2026-10-19; paginas/FaturamentoDoInicio.tsx). A linha do faturado nos 12 meses até cada um dos últimos 48 meses, com "Desde out/22: +X%", no mesmo desenho da Tendência da ficha | Cada ponto soma os 12 meses fechados até ele (dados/faturamentoDoCliente.ts, `montarTendencia`, com teste); o mês corrente, aberto, fica de fora. Visão do representante, como os números do alto | NFME, NFDE, `NFME.VENDEDOR`, CRCLH (foto: `painel_historico`) | extrator (60 meses fechados); a soma: navegador |
 | Saudação | "Boa tarde, Carlos" (Inicio.tsx:29) | Primeiro nome do usuário; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | nenhuma (proposta da pergunta 20) | nome: app.db; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:224-230) |
 
 **Destaques (visão do cliente, sobre a carteira)**
@@ -674,6 +675,7 @@ Convenções:
 | `analise_novo` | Cliente novo ou reativado; PK `cliente` | `cliente`, `tipo`, `desde`, `faturado_desde`, `ordem` | Análises, Início |
 | `analise_mix` | Cliente da lista de mix; PK `cliente` | `cliente`, `ordem` | Análises |
 | `painel_mes` | Representante × mês do ano corrente; PK (`representante`, `mes`) | `representante`, `mes`, `faturado`, `ano_anterior`, `ano_anterior_ate_dia_util`, `ritmo_por_dia_util` | Início |
+| `painel_historico` | Representante × mês fechado, os 60 dos meses da ficha (versão 15, 2026-10-19); PK (`representante`, `mes`) | `representante`, `mes`, `faturado` | Início (Tendência) |
 | `pedido_aberto` | Pedido do Omega com saldo, atribuído a um representante autorizado; PK `pedido` | `pedido`, `representante`, `cliente`, `emissao`, `entrega`, `itens`, `valor`, `valor_entrega_no_mes` | Pedidos, Ficha, Início |
 | `pedido_aberto_item` | Item com saldo de um pedido de `pedido_aberto`, na ordem do pedido; PK (`pedido`, `ordem`) | `pedido`, `ordem`, `produto`, `pecas`, `entrega`, `valor` | Pedidos |
 | `pedido_faturado` | Pedido do Omega sem saldo, com nota de venda nos 12 meses fechados e no corrente, de cliente da carteira de um autorizado; PK `pedido` | `pedido`, `representante`, `cliente`, `emissao`, `faturado_em`, `itens`, `valor` | Ficha |

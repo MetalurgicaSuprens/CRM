@@ -259,6 +259,12 @@ export type PainelInicio = {
   };
   pedidosEmAberto: { quantidade: number; valor: number };
   mensal: MesDoPainel[];
+  /**
+   * O faturado de cada mês fechado, do mais antigo ao mais recente, na visão do representante: a
+   * tendência do Início soma 12 meses até cada um dos últimos 48, como a da ficha. São 60 meses; na
+   * carteira fictícia, 36.
+   */
+  historico: FaturamentoMensal[];
   destaques: {
     pararam: GrupoDestaque;
     menos: GrupoDestaque;

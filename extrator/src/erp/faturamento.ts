@@ -21,7 +21,10 @@ import type { NotaRecente, PedidoFaturadoNoErp, VendaDoDia } from "./tipos.ts";
 
 const CLIENTE_DA_NOTA = "LEFT JOIN ABC71.CRCL C ON C.EMP_FIL = M.EMP_FIL AND C.CLIENTE = M.FORNEC";
 
-/** Faturado por representante e dia, desde 1º de janeiro do ano anterior: indicadores do Início. */
+/**
+ * Faturado por representante e dia, desde o começo dos meses da ficha (60 fechados): os indicadores
+ * do Início e a tendência dele, que soma 12 meses até cada um dos últimos 48.
+ */
 export async function lerVendasPorDia(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<VendaDoDia[]> {
   const lista = emLista("r", autorizados);
   const representante = representanteDaVenda("M.VENDEDOR");
@@ -31,7 +34,7 @@ export async function lerVendasPorDia(oracle: Oracle, referencia: Referencia, au
      ${CLIENTE_DA_NOTA}
       WHERE ${NOTA_DE_VENDA} AND M.DT_EMISSAO >= ${data("inicio")} AND ${representante} IN ${lista.sql}
       GROUP BY ${representante}, ${textoDaData("M.DT_EMISSAO")}`,
-    { ...lista.binds, inicio: referencia.inicioDoAnoAnterior },
+    { ...lista.binds, inicio: referencia.inicioDaFicha },
   );
   return linhas.map((linha) => ({ representante: String(numero(linha, 0)), dia: texto(linha, 1), valor: numero(linha, 2) }));
 }

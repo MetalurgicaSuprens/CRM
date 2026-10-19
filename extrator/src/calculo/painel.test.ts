@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { montarPainel } from "./painel.ts";
+import { montarHistoricoDoPainel, montarPainel } from "./painel.ts";
 import { montarReferencia } from "./referencia.ts";
 
 const REFERENCIA = montarReferencia("2026-10-13T09:50");
@@ -39,5 +39,27 @@ describe("montarPainel", () => {
     expect(mes("10")?.anoAnterior).toBe(4_500);
     expect(mes("10")?.anoAnteriorAteDiaUtil).toBe(500);
     expect(mes("09")?.anoAnteriorAteDiaUtil).toBeNull();
+  });
+});
+
+describe("montarHistoricoDoPainel", () => {
+  const vendas = [
+    { representante: "1401", dia: "2026-09-10", valor: 500 },
+    { representante: "1401", dia: "2026-09-20", valor: 250 },
+    { representante: "1401", dia: "2021-10-01", valor: 100 },
+    { representante: "1401", dia: "2026-10-05", valor: 1_000 },
+    { representante: "1402", dia: "2026-09-10", valor: 9_999 },
+  ];
+  const historico = montarHistoricoDoPainel(vendas, ["1401"], REFERENCIA);
+
+  it("tem os 60 meses fechados da ficha, somando as vendas do mês do representante", () => {
+    expect(historico).toHaveLength(60);
+    expect(historico[0]).toEqual({ representante: "1401", mes: "2021-10", faturado: 100 });
+    expect(historico.at(-1)).toEqual({ representante: "1401", mes: "2026-09", faturado: 750 });
+  });
+
+  it("deixa de fora o mês corrente, ainda aberto, e dá 0 ao mês sem venda", () => {
+    expect(historico.map(({ mes }) => mes)).not.toContain("2026-10");
+    expect(historico.find(({ mes }) => mes === "2024-01")?.faturado).toBe(0);
   });
 });

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { Activity, ChartLine, ChartNoAxesColumn, ChevronRight, ClipboardList, Gauge, ReceiptText } from "lucide-react";
+import { Activity, ChartLine, ChevronRight, ClipboardList, Gauge, ReceiptText } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { IconeNoCirculo } from "../componentes/IconeNoCirculo";
@@ -16,8 +16,8 @@ import { carregarPainel, carregarSituacaoDosDados } from "../dados/api";
 import type { GrupoDestaque, PainelInicio } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarDiaPorExtenso, formatarLocalDoCliente, formatarMesAno, formatarNomeDoMes, formatarTempoDesde } from "../formato";
-import { BarrasMensais } from "../graficos/BarrasMensais";
 import { Carregando } from "./Carregando";
+import { FaturamentoDoInicio } from "./FaturamentoDoInicio";
 import estilos from "./Inicio.module.css";
 
 export function Inicio() {
@@ -32,13 +32,7 @@ export function Inicio() {
       />
       <Indicadores painel={painel} />
       <div className={estilos.gradePrincipal}>
-        <Cartao titulo="Faturamento mensal" icone={ChartNoAxesColumn} subtitulo={`${anoDe(painel)}, comparado a ${anoDe(painel) - 1}`}>
-          <BarrasMensais
-            descricao={`Faturamento mensal de ${anoDe(painel)} comparado a ${anoDe(painel) - 1}`}
-            rotulos={{ valor: String(anoDe(painel)), comparacao: String(anoDe(painel) - 1), aFaturar: "A faturar no mês" }}
-            barras={painel.mensal.map((mes) => ({ mes: mes.mes, valor: mes.faturado, comparacao: mes.anoAnterior, aFaturar: mes.aFaturar }))}
-          />
-        </Cartao>
+        <FaturamentoDoInicio painel={painel} />
         <AtencaoNaCarteira destaques={painel.destaques} />
       </div>
       <div className={estilos.gradeListas}>

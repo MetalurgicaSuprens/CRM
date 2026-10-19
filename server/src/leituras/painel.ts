@@ -27,6 +27,11 @@ export function lerPainel(db: DatabaseSync, sessao: Sessao): PainelInicio {
        FROM pedido_aberto WHERE representante IN (${marcas})`,
     codigos,
   )[0] ?? {};
+  const historico = lerLinhas(
+    db,
+    `SELECT mes, SUM(faturado) AS valor FROM painel_historico WHERE representante IN (${marcas}) GROUP BY mes ORDER BY mes`,
+    codigos,
+  );
   const aFaturarNoMes = numero(pedidos, "no_mes");
   const corrente = meses.find((mes) => texto(mes, "mes") === mesAtual) ?? {};
   const anteriores = meses.filter((mes) => texto(mes, "mes") < mesAtual);
@@ -59,6 +64,7 @@ export function lerPainel(db: DatabaseSync, sessao: Sessao): PainelInicio {
       anoAnterior: numero(mes, "ano_anterior"),
       aFaturar: texto(mes, "mes") === mesAtual ? aFaturarNoMes : null,
     })),
+    historico: historico.map((mes) => ({ mes: texto(mes, "mes"), valor: numero(mes, "valor") })),
     destaques: destaquesDasAnalises(lerAnalises(db, sessao)),
   };
 }

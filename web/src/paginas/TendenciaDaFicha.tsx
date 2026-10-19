@@ -8,7 +8,7 @@ import type { FichaCliente } from "../dados/tipos";
 import { formatarMesAno } from "../formato";
 import { BarrasMensais } from "../graficos/BarrasMensais";
 import { LinhaDeTendencia } from "../graficos/LinhaDeTendencia";
-import estilos from "./FichaCliente.module.css";
+import moldura from "../graficos/moldura.module.css";
 
 /*
  * O cartão Tendência da ficha: o faturado dos últimos 4 anos em duas vistas, a escolha do Lucas em
@@ -34,9 +34,9 @@ export function TendenciaDaFicha({ ficha, mesAtual }: { ficha: FichaCliente; mes
       icone={TrendingUp}
       subtitulo={isPorMes ? "Faturado de cada mês, nos últimos 4 anos" : "Faturado nos 12 meses até cada mês, nos últimos 4 anos"}
     >
-      <Segmentos rotulo="Como ver o faturado" opcoes={VISTAS} selecionado={vista} aoEscolher={setVista} className={estilos.vistas} />
+      <Segmentos rotulo="Como ver o faturado" opcoes={VISTAS} selecionado={vista} aoEscolher={setVista} className={moldura.vistas} />
       {andamento ? (
-        <p className={estilos.resumoDoGrafico}>
+        <p className={moldura.resumoDoGrafico}>
           <span>Desde {formatarMesAno(andamento.desde)}:</span>
           <Variacao razao={andamento.variacao} referencia="no faturado em 12 meses" />
         </p>
@@ -56,7 +56,7 @@ export function TendenciaDaFicha({ ficha, mesAtual }: { ficha: FichaCliente; mes
           altura={220}
         />
       )}
-      <p className={estilos.notaDoGrafico}>
+      <p className={moldura.notaDoGrafico}>
         {isPorMes
           ? "Cada barra é o faturado de um mês fechado: mostra o vaivém dos pedidos e a época do ano, que a soma de 12 meses tira."
           : "Somar 12 meses tira o vaivém dos pedidos e a época do ano. O último ponto é o faturado em 12 meses do alto da ficha."}

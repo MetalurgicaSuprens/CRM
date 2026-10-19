@@ -30,7 +30,6 @@ export type Referencia = {
   inicio24: string;
   inicioDoMesAtual: string;
   fimDoMesAtual: string;
-  inicioDoAnoAnterior: string;
   /** Primeiro dia das notas da aba Faturados. */
   inicioDosFaturados: string;
 };
@@ -52,7 +51,6 @@ export function montarReferencia(geradaEm: string): Referencia {
     inicio24: `${somarMeses(mesAtual, -24)}-01`,
     inicioDoMesAtual: `${mesAtual}-01`,
     fimDoMesAtual: `${mesAtual}-${String(ultimoDiaDoMes(mesAtual)).padStart(2, "0")}`,
-    inicioDoAnoAnterior: `${Number(hoje.slice(0, 4)) - 1}-01-01`,
     inicioDosFaturados: somarDias(hoje, -DIAS_DOS_FATURADOS),
   };
 }

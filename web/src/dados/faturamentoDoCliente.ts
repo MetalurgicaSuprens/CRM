@@ -6,7 +6,8 @@ import type { FaturamentoMensal, PedidoDaFicha } from "./tipos";
  * Os gráficos de faturamento da ficha. A tendência cobre os últimos 4 anos em duas vistas: o
  * faturado nos 12 meses até cada mês, que tira a sazonalidade e o vaivém dos pedidos (o último ponto é
  * o "Faturado em 12 meses" do alto da ficha), e o faturado de cada mês. O mês a mês é o ano corrente
- * contra o anterior, como no Início.
+ * contra o anterior, como no Início. A tendência do Início usa as mesmas contas, com o faturado do
+ * representante (paginas/FaturamentoDoInicio.tsx).
  */
 
 /** A tendência cobre os últimos 4 anos. */

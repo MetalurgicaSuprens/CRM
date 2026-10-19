@@ -614,6 +614,7 @@ function montarPainel(dados: Carteira): PainelInicio {
     ano: acumuladoDoAno(dados, fracaoDoMes),
     pedidosEmAberto: { quantidade: pedidos.length, valor: somar(pedidos.map((p) => p.valor)) },
     mensal: mesesDoAno(dados, aFaturarNoMes),
+    historico: Array.from({ length: MESES_FECHADOS }, (_, indice) => ({ mes: somarMeses(dados.mesAtual, indice - MESES_FECHADOS), valor: somarMes(dados, indice) })),
     destaques: destaquesDasAnalises(montarAnalises(dados)),
   };
 }

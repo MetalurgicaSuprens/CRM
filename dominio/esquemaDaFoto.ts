@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 14;
+export const VERSAO_DO_ESQUEMA = 15;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -149,6 +149,13 @@ CREATE TABLE painel_mes (
   ano_anterior REAL NOT NULL,
   ano_anterior_ate_dia_util REAL,
   ritmo_por_dia_util REAL,
+  PRIMARY KEY (representante, mes)
+) STRICT;
+
+CREATE TABLE painel_historico (
+  representante TEXT NOT NULL,
+  mes TEXT NOT NULL,
+  faturado REAL NOT NULL,
   PRIMARY KEY (representante, mes)
 ) STRICT;
 
@@ -309,6 +316,8 @@ export type Foto = {
     /** Só no mês corrente: faturado por dia útil nos últimos 6 meses fechados (dominio/projecao.ts). */
     ritmo_por_dia_util: number | null;
   }[];
+  /** O faturado de cada um dos 60 meses fechados, na visão do representante: a tendência do Início (versão 15). */
+  painel_historico: { representante: string; mes: string; faturado: number }[];
   pedido_aberto: {
     pedido: string;
     representante: string;

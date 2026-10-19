@@ -126,6 +126,14 @@ function painel(representante: string): Foto["painel_mes"] {
   }));
 }
 
+/** Os 60 meses fechados antes de outubro de 2026, com o mesmo faturado em todos. */
+function historicoDoPainel(representante: string, faturado: number): Foto["painel_historico"] {
+  return Array.from({ length: 60 }, (_, i) => {
+    const mes = new Date(Date.UTC(2021, 9 + i, 1)).toISOString().slice(0, 7);
+    return { representante, mes, faturado };
+  });
+}
+
 export function montarFotoDeTeste(): Foto {
   const a = porCliente(CLIENTE_DE_A);
   const b = porCliente(CLIENTE_DE_B);
@@ -178,6 +186,7 @@ export function montarFotoDeTeste(): Foto {
     analise_novo: [...a.analise_novo, ...b.analise_novo, { cliente: GRUPO_DE_A, tipo: "reativado", desde: "2026-04-01", faturado_desde: 9_000, ordem: 2 }],
     analise_mix: [...a.analise_mix, ...b.analise_mix],
     painel_mes: [...painel("1401"), ...painel("9999")],
+    painel_historico: [...historicoDoPainel("1401", 1_000), ...historicoDoPainel("9999", 7_777)],
     pedido_aberto: [
       { pedido: "100001", representante: "1401", cliente: CLIENTE_DE_A, emissao: "2026-10-01", entrega: "2026-10-20", itens: 2, valor: 5_000, valor_entrega_no_mes: 5_000 },
       { pedido: "999001", representante: "9999", cliente: CLIENTE_DE_B, emissao: "2026-10-01", entrega: "2026-10-21", itens: 1, valor: 7_000, valor_entrega_no_mes: 7_000 },

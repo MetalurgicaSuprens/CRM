@@ -151,6 +151,13 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     expect(pedidos.json().emAberto.map((pedido: { numero: string }) => pedido.numero)).toEqual(["100001", "100004"]);
   });
 
+  it("dá no Início a história de 60 meses dos códigos do login, sem a de B", async () => {
+    const historico: { mes: string; valor: number }[] = (await comoA(criarAppDeTeste(), "/api/painel")).json().historico;
+    expect(historico).toHaveLength(60);
+    expect(historico[0]).toEqual({ mes: "2021-10", valor: 1_000 });
+    expect(historico.at(-1)).toEqual({ mes: "2026-09", valor: 1_000 });
+  });
+
   it("traz os itens de cada pedido e de cada nota de A, para a linha abrir na própria lista", async () => {
     const app = criarAppDeTeste();
     const { emAberto, faturados } = (await comoA(app, "/api/pedidos")).json();
