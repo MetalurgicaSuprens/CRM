@@ -9,6 +9,7 @@ import {
 } from "dominio/datas";
 import { diaUtilDoMes, diasUteisDoMes } from "dominio/calendario";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
+import { enderecoFicticio } from "./enderecoFicticio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
 import { PECAS_POR_CENTO } from "./pedido";
 import { analisarCliente, semestreDoRitmo, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
@@ -463,6 +464,7 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
     cidade: cliente.cidade,
     uf: cliente.uf,
     municipio: cliente.municipio,
+    endereco: cliente.codigoErp === null ? null : enderecoFicticio(cliente.codigo, cliente.municipio),
     mercado: cliente.mercado,
     situacao: indicadores.situacao,
     status: cliente.status,

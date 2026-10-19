@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 13;
+export const VERSAO_DO_ESQUEMA = 14;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -34,6 +34,12 @@ CREATE TABLE cliente (
   cidade TEXT NOT NULL,
   uf TEXT NOT NULL,
   municipio_ibge TEXT,
+  endereco TEXT,
+  bairro TEXT,
+  cep TEXT,
+  latitude REAL,
+  longitude REAL,
+  precisao_do_ponto TEXT,
   mercado TEXT NOT NULL,
   situacao TEXT NOT NULL,
   status TEXT NOT NULL,
@@ -234,6 +240,16 @@ export type Foto = {
     uf: string;
     /** Código IBGE de 7 dígitos do município (CRCL.RESERVADO7); null fora do formato ou de outro estado. */
     municipio_ibge: string | null;
+    /** Só da empresa (versão 14): CRCL.ENDERECO como está, com o número e o complemento. */
+    endereco: string | null;
+    bairro: string | null;
+    /** 8 dígitos. */
+    cep: string | null;
+    /** O ponto do endereço pelo CNEFE do IBGE (extrator/src/localizacao); null sem endereço ou sem achar. */
+    latitude: number | null;
+    longitude: number | null;
+    /** dominio/tipos.ts, PrecisaoDoPonto; null sem ponto. */
+    precisao_do_ponto: string | null;
     mercado: string;
     /** A situação de compra (dominio/tipos.ts, Situacao). */
     situacao: string;

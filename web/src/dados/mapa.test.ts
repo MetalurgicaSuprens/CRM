@@ -39,6 +39,7 @@ function cliente(codigo: string, municipio: string | null, faturamento12m: numbe
     cidade: "",
     uf: "GO",
     municipio,
+    endereco: null,
     mercado: "PRACA",
     situacao: "ativo",
     status: "ativo",

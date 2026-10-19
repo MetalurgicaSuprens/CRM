@@ -1,6 +1,6 @@
 import type { DatabaseSync, SQLInputValue, SQLOutputValue } from "node:sqlite";
-import type { Mercado, Situacao, StatusDoCadastro } from "dominio/tipos";
-import type { ClienteResumo } from "../../../web/src/dados/tipos.ts";
+import type { Mercado, PrecisaoDoPonto, Situacao, StatusDoCadastro } from "dominio/tipos";
+import type { ClienteResumo, EnderecoDoCliente } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 
 /*
@@ -46,7 +46,8 @@ export function numeroOuNulo(linha: Linha, coluna: string): number | null {
 
 /** Colunas de `cliente` (alias c) que formam o ClienteResumo. */
 export const COLUNAS_DO_RESUMO = `c.cliente, c.codigo_erp, c.nome, c.cidade, c.uf, c.municipio_ibge, c.mercado, c.situacao, c.status, c.ultima_compra,
-  c.ciclo_dias, c.faturamento_12m, c.variacao_12m, c.evolucao_12m, c.queda_no_semestre, c.cnpjs`;
+  c.ciclo_dias, c.faturamento_12m, c.variacao_12m, c.evolucao_12m, c.queda_no_semestre, c.cnpjs,
+  c.endereco, c.bairro, c.cep, c.latitude, c.longitude, c.precisao_do_ponto`;
 
 /**
  * Cada linha (lida com COLUNAS_DO_RESUMO) com o resumo do cliente, na mesma ordem; o do grupo traz
@@ -90,6 +91,7 @@ export function resumoDoCliente(linha: Linha): ClienteResumo {
     cidade: texto(linha, "cidade"),
     uf: texto(linha, "uf"),
     municipio: textoOuNulo(linha, "municipio_ibge"),
+    endereco: enderecoDoCliente(linha),
     mercado: texto(linha, "mercado") as Mercado,
     situacao: texto(linha, "situacao") as Situacao,
     status: texto(linha, "status") as StatusDoCadastro,
@@ -100,5 +102,20 @@ export function resumoDoCliente(linha: Linha): ClienteResumo {
     evolucao12m: JSON.parse(texto(linha, "evolucao_12m")) as number[],
     quedaNoSemestre: numeroOuNulo(linha, "queda_no_semestre"),
     cnpjs: null,
+  };
+}
+
+/** O extrator só grava endereço de empresa; o ponto vem junto quando o IBGE achou. */
+function enderecoDoCliente(linha: Linha): EnderecoDoCliente | null {
+  const enderecoNoCadastro = textoOuNulo(linha, "endereco");
+  if (enderecoNoCadastro === null) return null;
+  const latitude = numeroOuNulo(linha, "latitude");
+  const longitude = numeroOuNulo(linha, "longitude");
+  const precisao = textoOuNulo(linha, "precisao_do_ponto");
+  return {
+    texto: enderecoNoCadastro,
+    bairro: textoOuNulo(linha, "bairro"),
+    cep: textoOuNulo(linha, "cep"),
+    ponto: latitude !== null && longitude !== null && precisao !== null ? { latitude, longitude, precisao: precisao as PrecisaoDoPonto } : null,
   };
 }

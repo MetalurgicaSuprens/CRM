@@ -48,6 +48,12 @@ function cliente(id: string, representante: string, nome: string, status: Status
     cidade: "CAMPINAS",
     uf: "SP",
     municipio_ibge: "3509502",
+    endereco: "R BARAO DE JAGUARA, 1200 SALA 3",
+    bairro: "CENTRO",
+    cep: "13015002",
+    latitude: -22.9,
+    longitude: -47.06,
+    precisao_do_ponto: "numero",
     mercado: "PRACA",
     situacao: "parado",
     status,
@@ -66,7 +72,7 @@ function cliente(id: string, representante: string, nome: string, status: Status
   };
 }
 
-/** A linha do grupo: sem cidade, código do ERP nem tabela, com os números dos CNPJs somados. */
+/** A linha do grupo: sem cidade, endereço, código do ERP nem tabela, com os números dos CNPJs somados. */
 function grupo(id: string, representante: string, nome: string, cnpjs: number): Foto["cliente"][number] {
   return {
     ...cliente(id, representante, nome),
@@ -75,6 +81,12 @@ function grupo(id: string, representante: string, nome: string, cnpjs: number): 
     cidade: "",
     uf: "",
     municipio_ibge: null,
+    endereco: null,
+    bairro: null,
+    cep: null,
+    latitude: null,
+    longitude: null,
+    precisao_do_ponto: null,
     situacao: "ativo",
     faturamento_12m: 30_000,
     queda_no_semestre: null,

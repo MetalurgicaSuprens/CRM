@@ -21,6 +21,8 @@ function cliente(numero: number, parcial: Partial<ClienteDaCarteira> = {}): Clie
     cidade: "CAMPINAS",
     uf: "SP",
     municipio: "3509502",
+    endereco: null,
+    ponto: null,
     mercado: "PRACA",
     representante: "1302",
     status: "ativo",

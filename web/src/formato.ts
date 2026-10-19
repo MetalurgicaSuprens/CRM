@@ -1,5 +1,5 @@
 import { dataDoMomento, diasEntre, horaDoMomento, paraDiaUtc, somarMeses } from "dominio/datas";
-import type { ClienteResumo, Semestre } from "./dados/tipos";
+import type { ClienteResumo, EnderecoDoCliente, Semestre } from "./dados/tipos";
 
 const REAIS = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -145,6 +145,16 @@ export function formatarLocalDoCliente(cliente: Pick<ClienteResumo, "cidade" | "
 export function formatarLocalECodigo(cliente: Pick<ClienteResumo, "cidade" | "uf" | "cnpjs" | "codigoErp">): string {
   const local = formatarLocalDoCliente(cliente);
   return cliente.cnpjs ? local : `${local} · ${formatarCodigoDoCliente(cliente.codigoErp)}`;
+}
+
+/** "80020-310". */
+export function formatarCep(cep: string): string {
+  return /^\d{8}$/.test(cep) ? `${cep.slice(0, 5)}-${cep.slice(5)}` : cep;
+}
+
+/** O endereço numa linha: "R XV DE NOVEMBRO, 1200 · CENTRO · 80020-310". */
+export function formatarEndereco({ texto, bairro, cep }: Pick<EnderecoDoCliente, "texto" | "bairro" | "cep">): string {
+  return [texto, bairro, cep === null ? null : formatarCep(cep)].filter((parte) => parte !== null).join(" · ");
 }
 
 /** "1 cliente", "9 clientes". */

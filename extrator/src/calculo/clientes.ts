@@ -164,6 +164,12 @@ function linhaDoCliente(
     cidade: cliente.cidade,
     uf: cliente.uf,
     municipio_ibge: cliente.municipio,
+    endereco: cliente.endereco?.texto ?? null,
+    bairro: cliente.endereco?.bairro ?? null,
+    cep: cliente.endereco?.cep ?? null,
+    latitude: cliente.ponto?.latitude ?? null,
+    longitude: cliente.ponto?.longitude ?? null,
+    precisao_do_ponto: cliente.ponto?.precisao ?? null,
     mercado: cliente.mercado,
     status: cliente.status,
     ...indicadores(analisado),
@@ -175,7 +181,7 @@ function linhaDoCliente(
 }
 
 /**
- * O grupo não tem cidade, código do ERP nem tabela de preço: o pedido é sempre de um CNPJ. O
+ * O grupo não tem cidade, endereço, código do ERP nem tabela de preço: o pedido é sempre de um CNPJ. O
  * mercado é o do CNPJ que mais fatura, e o grupo está ativo se algum CNPJ estiver.
  */
 function linhaDoGrupo(grupo: GrupoAnalisado): Foto["cliente"][number] {
@@ -189,6 +195,12 @@ function linhaDoGrupo(grupo: GrupoAnalisado): Foto["cliente"][number] {
     cidade: "",
     uf: "",
     municipio_ibge: null,
+    endereco: null,
+    bairro: null,
+    cep: null,
+    latitude: null,
+    longitude: null,
+    precisao_do_ponto: null,
     mercado: principal.cliente.mercado,
     status: grupo.membros.some(({ cliente }) => cliente.status === "ativo") ? "ativo" : principal.cliente.status,
     ...indicadores(grupo),

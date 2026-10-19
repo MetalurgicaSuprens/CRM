@@ -17,6 +17,8 @@ function cliente(numero: number, mercado: ClienteDaCarteira["mercado"] = "PRACA"
     cidade: "CAMPINAS",
     uf: "SP",
     municipio: "3509502",
+    endereco: null,
+    ponto: null,
     mercado,
     representante: "1401",
     status: "ativo",

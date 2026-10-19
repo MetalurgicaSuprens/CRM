@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatarCep,
   formatarCodigoDoCliente,
   formatarCodigosDoRepresentante,
   formatarCompacto,
   formatarContagem,
   formatarData,
   formatarDiaPorExtenso,
+  formatarEndereco,
   formatarMesAno,
   formatarMomento,
   formatarPedidosDaNota,
@@ -44,6 +46,17 @@ describe("formatarReaisCompacto", () => {
     expect(formatarCompacto(99_970)).toBe("100 mil");
     expect(formatarCompacto(999_960_000)).toBe("1 bi");
     expect(formatarCompacto(999_900_000)).toBe("999,9 mi");
+  });
+});
+
+describe("formatarEndereco", () => {
+  it("junta a rua, o bairro e o CEP com o traço", () => {
+    expect(formatarEndereco({ texto: "R XV DE NOVEMBRO, 1200", bairro: "CENTRO", cep: "80020310" })).toBe("R XV DE NOVEMBRO, 1200 · CENTRO · 80020-310");
+    expect(formatarCep("1234")).toBe("1234");
+  });
+
+  it("deixa de fora o bairro e o CEP que o cadastro não tem", () => {
+    expect(formatarEndereco({ texto: "AV BRASIL, 10", bairro: null, cep: null })).toBe("AV BRASIL, 10");
   });
 });
 

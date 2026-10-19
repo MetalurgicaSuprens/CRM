@@ -1,4 +1,5 @@
 import type { Mercado, StatusDoCadastro } from "dominio/tipos";
+import type { PontoLocalizado } from "../localizacao/cnefe.ts";
 
 /*
  * O que o extrator lê do ERP, já com nomes do CRM. A chave do cliente ("empresa/código") só
@@ -18,6 +19,10 @@ export type ClienteDaCarteira = {
   uf: string;
   /** Código IBGE do município; null fora do formato (erp/carteira.ts, municipioDoCadastro). */
   municipio: string | null;
+  /** Só da empresa, que tem o endereço público no CNPJ; o da pessoa física nem sai do Oracle. */
+  endereco: EnderecoDoCliente | null;
+  /** O ponto do endereço no mapa. Quem preenche é a localização (localizacao/), não o ERP. */
+  ponto: PontoLocalizado | null;
   mercado: Mercado;
   /** VEND_1: o representante dono do cliente. */
   representante: string;
@@ -30,7 +35,15 @@ export type ClienteDaCarteira = {
   grupo: string | null;
 };
 
-export type VendaDoMes = { chave: string; mes: string; valor: number; pecas: number };
+export type EnderecoDoCliente = {
+  /** CRCL.ENDERECO como está: a rua, o número e o complemento num texto só. */
+  texto: string;
+  bairro: string | null;
+  /** 8 dígitos; null fora do formato. */
+  cep: string | null;
+};
+
+export type VendaDoMes ={ chave: string; mes: string; valor: number; pecas: number };
 
 export type DatasDeCompra = {
   primeiraCompra: string;

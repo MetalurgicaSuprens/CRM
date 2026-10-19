@@ -5,7 +5,7 @@
  */
 
 import type { Projecao } from "dominio/projecao";
-import type { Mercado, OportunidadeMix, Porte, Situacao, StatusDoCadastro } from "dominio/tipos";
+import type { Mercado, OportunidadeMix, Porte, PrecisaoDoPonto, Situacao, StatusDoCadastro } from "dominio/tipos";
 
 export type { Mercado, OportunidadeMix, Porte, Situacao, StatusDoCadastro };
 
@@ -46,6 +46,8 @@ export type ClienteResumo = {
   uf: string;
   /** Código IBGE de 7 dígitos do município, o que liga o cliente ao mapa; null quando o cadastro não tem. */
   municipio: string | null;
+  /** Só na empresa, que tem o endereço público no CNPJ. Null na pessoa física e no grupo. */
+  endereco: EnderecoDoCliente | null;
   mercado: Mercado;
   situacao: Situacao;
   /** Fora de ativo no cadastro do SGI, o cliente aparece com o status e não recebe pedido. */
@@ -76,6 +78,18 @@ export type ClienteResumo = {
    */
   cnpjs: ClienteResumo[] | null;
 };
+
+export type EnderecoDoCliente = {
+  /** Como está no cadastro do ERP: a rua, o número e o complemento num texto só. */
+  texto: string;
+  bairro: string | null;
+  /** 8 dígitos. */
+  cep: string | null;
+  /** O ponto do endereço pelo Cadastro de Endereços do IBGE (CNEFE); null quando a busca não achou. */
+  ponto: PontoDoEndereco | null;
+};
+
+export type PontoDoEndereco = { latitude: number; longitude: number; precisao: PrecisaoDoPonto };
 
 export type FaturamentoMensal = {
   mes: string;

@@ -2,13 +2,15 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs, parseEnv } from "node:util";
+import type { FontesDaLocalizacao } from "./localizacao/localizarClientes.ts";
 import type { AcessoAoOracle } from "./oracle.ts";
 
 /*
  * O que o extrator precisa para rodar. Tudo fica na máquina da LAN, fora do git:
  * - o .env com o acesso ao Oracle (só os nomes das chaves estão em .env.example);
  * - a lista de representantes autorizados, mantida pelo Lucas;
- * - a chave do id dos clientes, criada na primeira execução.
+ * - a chave do id dos clientes, criada na primeira execução;
+ * - os arquivos do CNEFE do IBGE (cnefe/) e os pontos já achados (localizacao/localizarClientes.ts).
  */
 
 export type Configuracao = {
@@ -17,6 +19,7 @@ export type Configuracao = {
   autorizados: string[];
   chaveDoIdDoCliente: Buffer;
   pastaDasFotos: string;
+  localizacao: FontesDaLocalizacao;
 };
 
 const PASTA_DO_EXTRATOR = path.resolve(import.meta.dirname, "..");
@@ -35,6 +38,7 @@ export function lerConfiguracao(argumentos: string[]): Configuracao {
     autorizados: lerAutorizados(path.join(pastaDeDados, ARQUIVO_DE_AUTORIZADOS)),
     chaveDoIdDoCliente: lerOuCriarChave(path.join(pastaDeDados, ARQUIVO_DA_CHAVE)),
     pastaDasFotos: path.join(pastaDeDados, "fotos"),
+    localizacao: { pastaDoCnefe: path.join(pastaDeDados, "cnefe"), arquivoDosPontos: path.join(pastaDeDados, "pontos-dos-enderecos.db") },
   };
 }
 

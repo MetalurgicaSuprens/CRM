@@ -171,6 +171,17 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     expect(clientes.find(({ codigo }) => codigo === CLIENTE_DE_A)?.quedaNoSemestre).toBe(-0.5);
   });
 
+  it("dá o endereço da empresa com o ponto no mapa; o grupo fica sem endereço", async () => {
+    const clientes: ClienteResumo[] = (await comoA(criarAppDeTeste(), "/api/clientes")).json();
+    expect(clientes.find(({ codigo }) => codigo === CLIENTE_DE_A)?.endereco).toEqual({
+      texto: "R BARAO DE JAGUARA, 1200 SALA 3",
+      bairro: "CENTRO",
+      cep: "13015002",
+      ponto: { latitude: -22.9, longitude: -47.06, precisao: "numero" },
+    });
+    expect(clientes.find(({ codigo }) => codigo === GRUPO_DE_A)?.endereco).toBeNull();
+  });
+
   it("mostra o status do cadastro: o cliente inativo de A continua na carteira", async () => {
     const app = criarAppDeTeste();
     const clientes: { codigo: string; status: string }[] = (await comoA(app, "/api/clientes")).json();

@@ -1,14 +1,17 @@
 import type { Mercado, StatusDoCadastro } from "dominio/tipos";
 import type { Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
+import { cepDoErp } from "../localizacao/endereco.ts";
 import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
 import { ITENS_DAS_NOTAS, NOTA_DE_VENDA, PECAS_DO_ITEM, VALOR_DO_ITEM, data, emLista, textoDaData } from "./sql.ts";
-import type { ClienteDaCarteira, DatasDeCompra, VendaDoMes } from "./tipos.ts";
+import type { ClienteDaCarteira, DatasDeCompra, EnderecoDoCliente, VendaDoMes } from "./tipos.ts";
 
 /*
  * A carteira dos representantes autorizados e a história de compras de cada cliente dela.
  * Carteira: clientes com VEND_1 de um autorizado e nota de venda nos 36 meses da janela, com o
- * status do cadastro do SGI, que a tela mostra quando não é ativo.
+ * status do cadastro do SGI, que a tela mostra quando não é ativo. O endereço só sai do Oracle na
+ * empresa (FIS_JURID = 'J'), como o código do cliente: o da pessoa física é dado pessoal (CLAUDE.md,
+ * regra 3).
  */
 
 /**
@@ -32,7 +35,10 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
   const linhas = await oracle.consultar(
     `SELECT C.EMP_FIL, C.CLIENTE, TRIM(C.FIS_JURID), C.NOM_FANTAS, C.RAZ_SOCIAL || C.COMPLEM_RZ,
             TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1, TRIM(G.CLI3_STA), C.RESERVADO7,
-            UPPER(TRIM(G.CLI3_GRP))
+            UPPER(TRIM(G.CLI3_GRP)),
+            CASE WHEN TRIM(C.FIS_JURID) = 'J' THEN TRIM(C.ENDERECO) END,
+            CASE WHEN TRIM(C.FIS_JURID) = 'J' THEN TRIM(C.BAIRRO) END,
+            CASE WHEN TRIM(C.FIS_JURID) = 'J' THEN C.CEP END
        FROM ABC71.CRCL C
        LEFT JOIN ABC71.SGI5_TAB_VEN_CLI3 G ON G.CLI3_CLI = C.CLIENTE
       WHERE ${condicaoDaCarteira(lista.sql)}`,
@@ -53,7 +59,15 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
     status: statusDoCadastro(textoOuNulo(linha, 9)),
     municipio: municipioDoCadastro(textoOuNulo(linha, 10), texto(linha, 6)),
     grupo: grupoDoCadastro(textoOuNulo(linha, 11)),
+    endereco: enderecoDoCadastro(textoOuNulo(linha, 12), textoOuNulo(linha, 13), textoOuNulo(linha, 14)),
+    ponto: null,
   }));
+}
+
+/** Sem a rua, não há endereço para mostrar nem para pôr no mapa. */
+export function enderecoDoCadastro(rua: string | null, bairro: string | null, cep: string | null): EnderecoDoCliente | null {
+  if (rua === null) return null;
+  return { texto: semEspacosSobrando(rua), bairro: bairro === null ? null : semEspacosSobrando(bairro), cep: cepDoErp(cep === null ? null : Number(cep)) };
 }
 
 /**
