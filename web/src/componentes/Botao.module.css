@@ -1,4 +1,4 @@
-/* O primário (em relevo, no grafite ou, no Incluir pedido, no verde) é a ação principal da tela; o secundário, as demais. */
+/* O primário (em relevo, no grafite ou, no pedido, no verde) é a ação principal da tela; o secundário, as demais. */
 .primario,
 .secundario {
   display: inline-flex;
@@ -28,7 +28,7 @@
     0 8px 18px -10px color-mix(in srgb, var(--cor-do-botao) 55%, transparent);
 }
 
-/* O Incluir pedido: o mesmo primário, no verde da ação boa */
+/* Incluir e enviar o pedido: o mesmo primário, no verde da ação boa */
 .primario.positivo {
   --cor-do-botao: var(--cor-positivo);
 }

@@ -332,7 +332,7 @@ function Fechamento({ total, problemas, podeEnviar, aoEnviar }: PropsDoFechament
           ))}
         </ul>
       ) : null}
-      <button type="button" className={`${botoes.primario} ${estilos.enviar}`} disabled={!podeEnviar} onClick={aoEnviar}>
+      <button type="button" className={`${botoes.primario} ${botoes.positivo} ${estilos.enviar}`} disabled={!podeEnviar} onClick={aoEnviar}>
         Enviar pedido
       </button>
     </div>
@@ -378,7 +378,7 @@ function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo }: PropsDoEnvio)
         <button type="button" className={botoes.secundario} onClick={aoFechar} disabled={aguardando}>
           Voltar
         </button>
-        <button type="button" className={`${botoes.primario} ${botoes.aguardando}`} onClick={() => setAguardando(true)} disabled={aguardando}>
+        <button type="button" className={`${botoes.primario} ${botoes.positivo} ${botoes.aguardando}`} onClick={() => setAguardando(true)} disabled={aguardando}>
           <KeyRound size={18} aria-hidden="true" />
           {aguardando ? "Confirme no seu aparelho…" : "Confirmar com chave de acesso"}
         </button>
