@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { Activity, ChartLine, ChevronRight, ClipboardList, Gauge, ReceiptText } from "lucide-react";
+import { Activity, ChartLine, ChevronRight, ClipboardList, FilePlus2, Gauge, ReceiptText } from "lucide-react";
+import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { IconeNoCirculo } from "../componentes/IconeNoCirculo";
@@ -28,6 +29,13 @@ export function Inicio() {
     <div className={estilos.pagina}>
       <CabecalhoPagina
         titulo={`${saudacao(situacao.relogio)}, ${primeiroNome(situacao.representante.nome)}`}
+        selo={
+          // Ao lado da saudação, o atalho para o pedido (pedido do Lucas em 2026-10-20): leva à escolha do cliente.
+          <Link to="/pedidos/novo" className={botoes.primario}>
+            <FilePlus2 size={18} aria-hidden="true" />
+            Incluir pedido
+          </Link>
+        }
         descricao={descricaoDoDia(painel, situacao.relogio)}
       />
       <Indicadores painel={painel} />
