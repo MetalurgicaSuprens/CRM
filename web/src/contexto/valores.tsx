@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { formatarCompacto, formatarReais, formatarReaisCompacto } from "../formato";
+import { formatarCompacto, formatarReais, formatarReaisComCentavos, formatarReaisCompacto } from "../formato";
 
 type Valores = {
   visiveis: boolean;
@@ -33,6 +33,7 @@ export function useFormatoDeReais() {
   return useMemo(
     () => ({
       reais: (valor: number) => (visiveis ? formatarReais(valor) : VALOR_OCULTO),
+      reaisComCentavos: (valor: number) => (visiveis ? formatarReaisComCentavos(valor) : VALOR_OCULTO),
       reaisCompacto: (valor: number) => (visiveis ? formatarReaisCompacto(valor) : VALOR_OCULTO),
       eixo: (valor: number) => (visiveis ? formatarCompacto(valor) : ""),
     }),

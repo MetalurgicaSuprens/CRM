@@ -140,7 +140,7 @@ function Enviados({ pedidos, relogio, vazio }: { pedidos: PedidoEnviado[]; relog
             ordenarPor: (pedido) => pedido.totalSgi ?? pedido.totalEstimado,
             celula: (pedido) => (
               <>
-                <Valor valor={pedido.totalSgi ?? pedido.totalEstimado} />
+                <Valor valor={pedido.totalSgi ?? pedido.totalEstimado} comCentavos />
                 <span className={estilos.suave}>{pedido.totalSgi === null ? "estimado" : "no SGI"}</span>
               </>
             ),
@@ -169,7 +169,7 @@ function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascu
           },
           { titulo: "Produtos", ordenarPor: (rascunho) => rascunho.itens.length, celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
           { titulo: "Atualizado", ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} relogio={relogio} /> },
-          { titulo: "Total estimado", numerica: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} /> },
+          { titulo: "Total estimado", numerica: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} comCentavos /> },
           { titulo: "Ações", largura: 8.5, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
         ]}
       />
@@ -213,7 +213,7 @@ function EmAberto({ pedidos, hoje, vazio }: { pedidos: PedidoNoErp[]; hoje: stri
           { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
           { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => <DataRelativa data={pedido.entrega} hoje={hoje} /> },
           { titulo: "Itens", numerica: true, ordenarPor: (pedido) => pedido.itens, celula: (pedido) => pedido.itens },
-          { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} /> },
+          { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
         ]}
       />
     </CartaoDaAba>
@@ -234,7 +234,7 @@ function Faturados({ notas, hoje, vazio }: { notas: NotaFaturada[]; hoje: string
         colunas={[
           { titulo: "Nota", ordenarPor: (nota) => nota.numero, celula: (nota) => <Identificacao titulo={`NF ${nota.numero}`} detalhe={nota.cliente.nome} /> },
           { titulo: "Emissão", ordenarPor: (nota) => nota.emissao, celula: (nota) => <span title={formatarData(nota.emissao)}>{formatarTempoDesde(nota.emissao, hoje)}</span> },
-          { titulo: "Valor", numerica: true, ordenarPor: (nota) => nota.valor, celula: (nota) => <Valor valor={nota.valor} /> },
+          { titulo: "Valor", numerica: true, ordenarPor: (nota) => nota.valor, celula: (nota) => <Valor valor={nota.valor} comCentavos /> },
         ]}
       />
     </CartaoDaAba>

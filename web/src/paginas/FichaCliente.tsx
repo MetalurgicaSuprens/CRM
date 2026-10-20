@@ -484,7 +484,7 @@ function TabelaPedidos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
         { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
         { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => (pedido.entrega ? formatarData(pedido.entrega) : "—") },
         { titulo: "Itens", numerica: true, largura: 4.5, ordenarPor: (pedido) => pedido.itens.length, celula: (pedido) => pedido.itens.length },
-        { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} /> },
+        { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
       ]}
     />
   );

@@ -60,8 +60,8 @@ export function ItensDoPedidoEnviado({ pedido }: { pedido: PedidoEnviado }) {
         colunas={[
           { titulo: "Produto", ordenarPor: (item) => item.codigo, celula: (item) => <Identificacao titulo={item.codigo} detalhe={[item.familia, item.medida].filter(Boolean).join(" · ")} /> },
           { titulo: "Peças", numerica: true, largura: 5, ordenarPor: (item) => item.quantidade, celula: (item) => formatarNumero(item.quantidade) },
-          { titulo: "Cento", numerica: true, largura: 5.5, ordenarPor: (item) => item.precoCento, celula: (item) => <Valor valor={item.precoCento} /> },
-          { titulo: "Valor", numerica: true, ordenarPor: valorDaLinha, celula: (item) => <Valor valor={valorDaLinha(item)} /> },
+          { titulo: "Cento", numerica: true, largura: 5.5, ordenarPor: (item) => item.precoCento, celula: (item) => <Valor valor={item.precoCento} comCentavos /> },
+          { titulo: "Valor", numerica: true, ordenarPor: valorDaLinha, celula: (item) => <Valor valor={valorDaLinha(item)} comCentavos /> },
         ]}
       />
       <Totais pedido={pedido} />
@@ -90,14 +90,14 @@ function Totais({ pedido }: { pedido: PedidoEnviado }) {
     <div className={estilos.totais}>
       <div className={estilos.linhaDoTotal}>
         <span>Estimativa do CRM</span>
-        <Valor valor={pedido.totalEstimado} />
+        <Valor valor={pedido.totalEstimado} comCentavos />
       </div>
       {pedido.totalSgi === null ? (
         <p className={estilos.suave}>O SGI recalcula o total quando recebe o pedido.</p>
       ) : (
         <div className={`${estilos.linhaDoTotal} ${estilos.totalDoSgi}`}>
           <span>Total no SGI</span>
-          <Valor valor={pedido.totalSgi} />
+          <Valor valor={pedido.totalSgi} comCentavos />
         </div>
       )}
     </div>

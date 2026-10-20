@@ -6,6 +6,12 @@ const REAIS = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
   maximumFractionDigits: 0,
 });
+const REAIS_COM_CENTAVOS = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 const INTEIRO = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
 const UMA_CASA = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -18,9 +24,14 @@ const LISTA = new Intl.ListFormat("pt-BR", { type: "conjunction" });
 /** Em UTC porque a data já chega pronta: o fuso do aparelho não pode mudar o dia. */
 const DIA_POR_EXTENSO = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 
-/** Valor em reais, sem centavos (regra aprovada no protótipo). */
+/** Valor em reais, sem centavos (regra aprovada no protótipo). Os pedidos usam formatarReaisComCentavos. */
 export function formatarReais(valor: number): string {
   return REAIS.format(Math.round(valor)).replace("-", MENOS);
+}
+
+/** "R$ 1.234,56": os valores dos pedidos, com os centavos (pedido do Lucas em 2026-10-20). */
+export function formatarReaisComCentavos(valor: number): string {
+  return REAIS_COM_CENTAVOS.format(valor).replace("-", MENOS);
 }
 
 /** "R$ 950", "R$ 48,5 mil", "R$ 182 mil", "R$ 1,2 mi". */

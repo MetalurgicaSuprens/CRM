@@ -106,7 +106,7 @@ function ResumoPorFamilia({ itens }: { itens: readonly TotalDaFamilia[] }) {
           <li key={familia} className={estilos.familia}>
             <span className={estilos.nomeDaFamilia}>{familia}</span>
             <span className={estilos.numerosDaFamilia}>
-              {formatarNumero(pecas)} peças · <Valor valor={valor} />
+              {formatarNumero(pecas)} peças · <Valor valor={valor} comCentavos />
             </span>
           </li>
         ))}
@@ -172,14 +172,14 @@ const CENTO: ColunaDaTabela<ItemDoErp> = {
   numerica: true,
   largura: 5.5,
   ordenarPor: precoDoCento,
-  celula: (item) => <Valor valor={precoDoCento(item)} />,
+  celula: (item) => <Valor valor={precoDoCento(item)} comCentavos />,
 };
 
 const VALOR: ColunaDaTabela<ItemDoErp> = {
   titulo: "Valor",
   numerica: true,
   ordenarPor: (item) => item.valor,
-  celula: (item) => <Valor valor={item.valor} />,
+  celula: (item) => <Valor valor={item.valor} comCentavos />,
 };
 
 function colunaDaEntrega(hoje: string): ColunaDaTabela<{ entrega?: string | null }> {

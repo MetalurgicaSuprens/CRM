@@ -15,6 +15,7 @@ import {
   formatarPrazo,
   formatarSemestres,
   formatarReais,
+  formatarReaisComCentavos,
   formatarReaisCompacto,
   formatarTempoDesde,
   formatarVariacao,
@@ -29,6 +30,18 @@ describe("formatarReais", () => {
 
   it("usa o sinal de menos tipográfico", () => {
     expect(espacoFixo(formatarReais(-1_500))).toBe("−R$ 1.500");
+  });
+});
+
+describe("formatarReaisComCentavos", () => {
+  it("mostra sempre duas casas depois da vírgula", () => {
+    expect(espacoFixo(formatarReaisComCentavos(182_340.674))).toBe("R$ 182.340,67");
+    expect(espacoFixo(formatarReaisComCentavos(12.5))).toBe("R$ 12,50");
+    expect(espacoFixo(formatarReaisComCentavos(300))).toBe("R$ 300,00");
+  });
+
+  it("usa o sinal de menos tipográfico", () => {
+    expect(espacoFixo(formatarReaisComCentavos(-1_500.25))).toBe("−R$ 1.500,25");
   });
 });
 

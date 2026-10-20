@@ -43,8 +43,9 @@ export function embalagemAnterior(pecas: number, embalagem: number): number {
   return Math.max(0, (Math.ceil(pecas / embalagem) - 1) * embalagem);
 }
 
+/** O valor do item, arredondado ao centavo: a tela mostra os centavos, e o total é a soma do que ela mostra. */
 export function valorDaLinha(linha: Pick<LinhaDoPedido, "quantidade" | "precoCento">): number {
-  return pecasEmCentos(linha.quantidade) * linha.precoCento;
+  return arredondarAoCentavo(pecasEmCentos(linha.quantidade) * linha.precoCento);
 }
 
 /** O preço do cento que o item do ERP pagou: o caminho de volta de valorDaLinha. Sem peças, 0. */
@@ -52,8 +53,13 @@ export function precoDoCento(item: { pecas: number; valor: number }): number {
   return item.pecas > 0 ? item.valor / pecasEmCentos(item.pecas) : 0;
 }
 
+/** A soma dos itens, já no centavo; arredondar de novo tira o resto que a soma em ponto flutuante deixa. */
 export function totalDoPedido(linhas: readonly LinhaDoPedido[]): number {
-  return linhas.reduce((total, linha) => total + valorDaLinha(linha), 0);
+  return arredondarAoCentavo(linhas.reduce((total, linha) => total + valorDaLinha(linha), 0));
+}
+
+function arredondarAoCentavo(valor: number): number {
+  return Math.round(valor * 100) / 100;
 }
 
 /** Peças e valor de uma família no pedido; serve também para um item só. */

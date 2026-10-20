@@ -115,7 +115,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
         <Catalogo catalogo={catalogo} quantidades={quantidades} alterar={alterar} />
         <div className={estilos.barraDoPedido}>
           <span>
-            {formatarContagem(escolhidos.length, "produto", "produtos")} · <Valor valor={total} />
+            {formatarContagem(escolhidos.length, "produto", "produtos")} · <Valor valor={total} comCentavos />
           </span>
           <a href="#pedido" className={`${botoes.secundario} ${estilos.compacto}`}>
             Ver pedido
@@ -171,7 +171,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
         aoConfirmar={enviar}
         resumo={
           <>
-            {catalogo.cliente.nome} · {formatarContagem(escolhidos.length, "produto", "produtos")} · <Valor valor={total} /> estimado
+            {catalogo.cliente.nome} · {formatarContagem(escolhidos.length, "produto", "produtos")} · <Valor valor={total} comCentavos /> estimado
           </>
         }
       />
@@ -266,7 +266,7 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
         colunas={[
           { titulo: "Produto", ordenarPor: (produto) => produto.codigo, celula: (produto) => <Identificacao titulo={produto.codigo} detalhe={descricaoDe(produto)} /> },
           { titulo: "Embalagem", numerica: true, largura: 5.5, ordenarPor: (produto) => produto.embalagem, celula: (produto) => `${formatarNumero(produto.embalagem)} pç` },
-          { titulo: "Cento", numerica: true, largura: 5, ordenarPor: (produto) => produto.precoCento, celula: (produto) => <Valor valor={produto.precoCento} /> },
+          { titulo: "Cento", numerica: true, largura: 5, ordenarPor: (produto) => produto.precoCento, celula: (produto) => <Valor valor={produto.precoCento} comCentavos /> },
           {
             titulo: "Quantidade",
             numerica: true,
@@ -300,7 +300,7 @@ function ItensEscolhidos({ linhas, alterar }: { linhas: LinhaEscolhida[]; altera
           </span>
           <Quantidade valor={linha.quantidade} embalagem={linha.embalagem} rotulo={linha.codigo} aoMudar={(pecas) => alterar(linha.codigo, pecas)} />
           <span className={estilos.valorDoItem}>
-            <Valor valor={valorDaLinha(linha)} />
+            <Valor valor={valorDaLinha(linha)} comCentavos />
           </span>
         </li>
       ))}
@@ -323,7 +323,7 @@ function Fechamento({ total, problemas, podeEnviar, aoEnviar }: PropsDoFechament
     <div className={estilos.fechamento}>
       <div className={estilos.total}>
         <span className={estilos.rotuloDoTotal}>Total estimado</span>
-        <Valor valor={total} />
+        <Valor valor={total} comCentavos />
       </div>
       {problemas.length > 0 ? (
         <ul className={estilos.problemas} role="status">

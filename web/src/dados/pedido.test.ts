@@ -77,6 +77,15 @@ describe("valorDaLinha e totalDoPedido", () => {
   it("soma as linhas", () => {
     expect(totalDoPedido([linha({ quantidade: 200, precoCento: 95 }), linha({ quantidade: 50, precoCento: 260 })])).toBe(320);
   });
+
+  it("arredonda cada linha ao centavo", () => {
+    expect(valorDaLinha({ quantidade: 333, precoCento: 12.35 })).toBe(41.13);
+  });
+
+  it("soma as linhas como a tela as mostra, no centavo", () => {
+    // Sem arredondar cada linha, 41,1255 + 41,1255 daria R$ 82,25, e a tela mostraria 41,13 + 41,13.
+    expect(totalDoPedido([linha({ quantidade: 333, precoCento: 12.35 }), linha({ quantidade: 333, precoCento: 12.35 })])).toBe(82.26);
+  });
 });
 
 describe("resumirPorFamilia", () => {

@@ -311,6 +311,8 @@ Os cartões ficam na ordem Faturados, Em aberto no ERP, Enviados pelo CRM e Rasc
 
 Ao lado do título, na altura do subtítulo (desde 2026-10-20; antes, abaixo dos cartões), a busca de cliente filtra as quatro abas pelo nome fantasia ou pelo CNPJ, com ou sem pontuação e com ou sem os dígitos verificadores, e o número de cada cartão segue a busca (pedido do Lucas em 2026-10-15; Pedidos.tsx:45-53, 73 e 81-94; dados/busca.ts). A busca fica no endereço (`busca=`) e continua ao trocar de aba; a aba sem resultado mostra "Nada nesta aba para esse cliente."
 
+Os valores dos pedidos têm os centavos (pedido do Lucas em 2026-10-20): as quatro abas, os detalhes da linha (famílias, cento e valor de cada item), a montagem, o andamento do pedido enviado e o cartão Pedidos da ficha (`Valor comCentavos`; formato.ts, `formatarReaisComCentavos`, com teste). O resto do CRM continua sem centavos, e os números grandes do alto, como os Pedidos em aberto do Início e da ficha, continuam resumidos.
+
 **Enviados pelo CRM**
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
@@ -412,7 +414,7 @@ Ao lado do título, na altura do subtítulo (desde 2026-10-20; antes, abaixo dos
 | Valor do item | Ao lado da quantidade (MontarPedido.tsx:290) | Peças ÷ 100 × cento | (foto) | navegador |
 | Entrega desejada | Data com mínimo hoje | Não antes de hoje, pelo relógio de Brasília | vira `PV2_DEN` de cada item (no arquivo, `CGA_DEN`) | app.db |
 | Observação | "Observação (n/300)" | Até 300 caracteres, conjunto permitido, CP1252 | vira `PV1_OBS` | app.db |
-| Total estimado | Barra e fechamento | Σ peças ÷ 100 × cento | (foto) | navegador; ao salvar e enviar: servidor |
+| Total estimado | Barra e fechamento, com os centavos | Σ dos itens. Cada item, peças ÷ 100 × cento, é arredondado ao centavo, e o total é a soma do que a tela mostra (dados/pedido.ts, `valorDaLinha` e `totalDoPedido`, com teste) | (foto) | navegador; ao salvar e enviar: servidor |
 | Rascunho salvo | "Rascunho salvo hoje, 16:42." | Grava 700 ms depois da última mudança, quando há item | nenhuma | app.db |
 | Confirmar com chave | Diálogo de envio | Nova verificação da chave, ligada ao hash do pedido (plano.md:148) | nenhuma | app.db |
 
