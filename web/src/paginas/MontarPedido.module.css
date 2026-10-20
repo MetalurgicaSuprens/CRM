@@ -12,6 +12,11 @@
   gap: var(--esp-4);
 }
 
+/* O pedido num fundo verde bem leve, para não se confundir com o catálogo (pedido do Lucas em 2026-10-20) */
+.cartaoDoPedido {
+  --fundo-do-cartao: var(--cor-positivo-fundo);
+}
+
 /* Total sempre à vista enquanto se escolhe os produtos; leva ao pedido, mais abaixo */
 .barraDoPedido {
   position: sticky;
@@ -284,13 +289,14 @@
 /* ------------------------------------------------ catálogo e pedido lado a lado */
 
 /*
- * O pedido fica ao lado, em cerca de um terço da largura: com 22 rem ou mais, cada item cabe numa
- * linha só. Sem altura para travar a página, ele
- * acompanha a rolagem e rola por dentro.
+ * O pedido fica ao lado, com 40% da largura, entre 22 rem (cada item cabe numa linha só) e 40 rem: o
+ * catálogo menor e o pedido maior, a pedido do Lucas em 2026-10-20. O catálogo fica com pelo menos
+ * 41 rem, onde as colunas dele ainda cabem como tabela, com a barra de rolagem (TabelaResponsiva).
+ * Sem altura para travar a página, o pedido acompanha a rolagem e rola por dentro.
  */
 @container (min-width: 960px) {
   .grade {
-    grid-template-columns: minmax(0, 1fr) clamp(22rem, 36%, 28rem);
+    grid-template-columns: minmax(0, 1fr) clamp(22rem, min(40%, 100% - 41rem - var(--esp-4)), 40rem);
   }
 
   .barraDoPedido {

@@ -4,7 +4,8 @@
   gap: var(--esp-4);
   min-width: 0;
   padding: var(--esp-5) var(--esp-6) var(--esp-6);
-  background: var(--cor-superficie);
+  /* A tela pode trocar o fundo, para o cartão não se confundir com o vizinho (ex.: o pedido ao lado do catálogo) */
+  background: var(--fundo-do-cartao, var(--cor-superficie));
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio);
   box-shadow: var(--sombra-1);

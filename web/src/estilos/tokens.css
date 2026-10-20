@@ -86,6 +86,8 @@
    * texto branco fica acima de 4,5:1 nas letras (4,7:1 no alto delas e 6,4:1 sem o relevo).
    */
   --cor-positivo: #2e6b45;
+  /* O fundo do pedido em montagem: o mesmo verde, de leve (9%), para ele não se confundir com o catálogo ao lado (texto suave a 4,7:1) */
+  --cor-positivo-fundo: #ecf2ee;
 
   --cor-alta: #2e6b45;
   --cor-queda: #a3361f;

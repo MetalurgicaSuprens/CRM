@@ -396,6 +396,7 @@ Os valores dos pedidos têm os centavos (pedido do Lucas em 2026-10-20): as quat
 - **Tela travada (2026-10-20, pedido do Lucas).** Com o pedido ao lado do catálogo (960 px úteis ou mais) e altura para isso, a página fica do tamanho da janela, como Clientes, Análises e Pedidos: rolam só a lista de produtos e a dos itens escolhidos. Numa coluna, o pedido vem embaixo do catálogo, e a página rola.
 - **O alto do pedido.** Entrega desejada, Observação, Total estimado e Enviar pedido ficam em cima, sempre à vista; os itens vêm embaixo, um por linha, e o "rascunho salvo" e o "Descartar rascunho" no pé (MontarPedido.tsx). A nota de que o SGI recalcula os preços foi para a confirmação do envio.
 - **Verde.** O "Enviar pedido" e o "Confirmar com chave de acesso" da confirmação são verdes, como todo "Incluir pedido" (pedido do Lucas em 2026-10-20, `botoes.positivo`).
+- **Largura e fundo (2026-10-20, pedido do Lucas).** Com o pedido ao lado, ele fica com 40% da largura, entre 22 e 40 rem (antes, 36%, até 28 rem), e o catálogo com pelo menos 41 rem, para a lista dele continuar em tabela. O pedido tem um fundo verde bem leve (`--cor-positivo-fundo`), para não se confundir com o catálogo, que continua branco (MontarPedido.module.css).
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
