@@ -24,12 +24,12 @@ import {
   salvarRascunho,
 } from "../dados/api";
 import { PedidoBloqueado } from "../dados/fonteDeDados";
-import { correspondeAoClienteOuCidade } from "../dados/busca";
+import { correspondeAoClienteOuCidade, correspondeAoProduto, partNumberDaBusca } from "../dados/busca";
 import { LIMITE_DA_OBSERVACAO, problemasDoPedido, totalDoPedido, valorDaLinha } from "../dados/pedido";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { CatalogoDoCliente, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarContagem, formatarLocalECodigo, formatarMomento, formatarNumero, normalizarParaBusca } from "../formato";
+import { formatarContagem, formatarLocalECodigo, formatarMomento, formatarNumero } from "../formato";
 import { Carregando } from "./Carregando";
 import estilos from "./MontarPedido.module.css";
 
@@ -238,10 +238,9 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
   const comprados = useMemo(() => catalogo.produtos.filter((produto) => produto.jaComprou), [catalogo.produtos]);
   const [filtro, setFiltro] = useState<Filtro>(comprados.length > 0 ? "comprados" : "todos");
   const [busca, setBusca] = useState("");
-  const termo = normalizarParaBusca(busca.trim());
   const visiveis = useMemo(
-    () => (filtro === "comprados" ? comprados : catalogo.produtos).filter((produto) => correspondeABusca(produto, termo)),
-    [filtro, comprados, catalogo.produtos, termo],
+    () => (filtro === "comprados" ? comprados : catalogo.produtos).filter((produto) => correspondeAoProduto(produto, busca)),
+    [filtro, comprados, catalogo.produtos, busca],
   );
   return (
     <Cartao titulo="Produtos" icone={PackageSearch} subtitulo="Busque pelo código, pela família, pela medida ou pelo part number." className={estilos.cartaoDoCatalogo}>
@@ -264,7 +263,7 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
         chaveDe={(produto) => produto.codigo}
         vazio={filtro === "comprados" ? "Nada entre os já comprados. Procure em Todos." : "Nenhum produto com essa busca."}
         colunas={[
-          { titulo: "Produto", ordenarPor: (produto) => produto.codigo, celula: (produto) => <Identificacao titulo={produto.codigo} detalhe={descricaoDe(produto)} /> },
+          { titulo: "Produto", ordenarPor: (produto) => produto.codigo, celula: (produto) => <Identificacao titulo={produto.codigo} detalhe={<DescricaoDoProduto produto={produto} busca={busca} />} /> },
           { titulo: "Embalagem", numerica: true, largura: 5.5, ordenarPor: (produto) => produto.embalagem, celula: (produto) => `${formatarNumero(produto.embalagem)} pç` },
           { titulo: "Cento", numerica: true, largura: 5, ordenarPor: (produto) => produto.precoCento, celula: (produto) => <Valor valor={produto.precoCento} comCentavos /> },
           {
@@ -296,7 +295,7 @@ function ItensEscolhidos({ linhas, alterar }: { linhas: LinhaEscolhida[]; altera
         <li key={linha.codigo} className={estilos.item}>
           <span className={estilos.descricaoDoItem}>
             <span className={estilos.codigo}>{linha.codigo}</span>
-            <span className={`${estilos.suave} ${estilos.detalheDoItem}`}>{descricaoDe(linha)}</span>
+            <DescricaoDoProduto produto={linha} className={`${estilos.suave} ${estilos.detalheDoItem}`} />
           </span>
           <Quantidade valor={linha.quantidade} embalagem={linha.embalagem} rotulo={linha.codigo} aoMudar={(pecas) => alterar(linha.codigo, pecas)} />
           <span className={estilos.valorDoItem}>
@@ -468,15 +467,25 @@ function mensagemDo(erro: unknown): string {
   return erro instanceof Error ? erro.message : "Não deu para falar com o servidor. Tente de novo.";
 }
 
-/** "FLEXIL · 14–22 mm · part number CF420118": a medida e o part number só quando existem. */
-function descricaoDe(produto: Pick<ProdutoDoCatalogo, "familia" | "medida" | "partNumber">): string {
-  const partNumber = produto.partNumber ? `part number ${produto.partNumber}` : null;
-  return [produto.familia, produto.medida, partNumber].filter(Boolean).join(" · ");
+type PropsDaDescricao = { produto: Pick<ProdutoDoCatalogo, "familia" | "medida" | "partNumbers">; busca?: string; className?: string };
+
+/** A descrição do produto, com todos os part numbers na dica quando ele tem mais de um. */
+function DescricaoDoProduto({ produto, busca = "", className }: PropsDaDescricao) {
+  const dica = produto.partNumbers.length > 1 ? `Part numbers: ${produto.partNumbers.join(", ")}` : undefined;
+  return (
+    <span className={className} title={dica}>
+      {descricaoDe(produto, busca)}
+    </span>
+  );
 }
 
-function correspondeABusca(produto: ProdutoDoCatalogo, termo: string): boolean {
-  if (!termo) return true;
-  return [produto.codigo, produto.familia, produto.medida ?? "", produto.partNumber ?? ""].some((campo) =>
-    normalizarParaBusca(campo).includes(termo),
-  );
+/**
+ * "FLEXIL · 14–22 mm · part number N906227 +1": a medida e o part number só quando existem. Com mais
+ * de um part number, o que a busca achou (ou o primeiro) e quantos mais o produto tem.
+ */
+function descricaoDe(produto: PropsDaDescricao["produto"], busca: string): string {
+  const destaque = partNumberDaBusca(produto.partNumbers, busca) ?? produto.partNumbers[0];
+  const outros = produto.partNumbers.length - 1;
+  const partNumber = destaque ? `part number ${destaque}${outros > 0 ? ` +${outros}` : ""}` : null;
+  return [produto.familia, produto.medida, partNumber].filter(Boolean).join(" · ");
 }

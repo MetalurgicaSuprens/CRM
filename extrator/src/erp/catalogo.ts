@@ -3,7 +3,7 @@ import type { Oracle } from "../oracle.ts";
 import { condicaoDaCarteira } from "./carteira.ts";
 import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
 import { ITENS_DAS_NOTAS, NOTA_DE_VENDA, data, emLista, emListaDeTexto } from "./sql.ts";
-import type { PrecoDoCliente, ProdutoDaTabela, ProdutoJaComprado, TabelaDoCliente } from "./tipos.ts";
+import type { PartNumberDaBiblia, PrecoDoCliente, ProdutoDaTabela, ProdutoJaComprado, TabelaDoCliente } from "./tipos.ts";
 
 /*
  * O catálogo dos clientes da carteira. O preço vem da view de preço líquido do SGI, a mesma da tela
@@ -39,13 +39,13 @@ export async function lerTabelasDosClientes(oracle: Oracle, referencia: Referenc
 
 /**
  * Um preço por cliente, tabela e produto ativo. A view repete o produto por part number e por
- * depósito do ESTQ, sempre com o mesmo preço (conferido em 14/10); fica o menor part number.
+ * depósito do ESTQ, sempre com o mesmo preço (conferido em 14/10): fica uma linha por produto.
  * Saem o produto inativo no Omega e o produto sem árvore, que o SGI não deixa vender.
  */
 export async function lerPrecos(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<PrecoDoCliente[]> {
   const lista = emLista("r", autorizados);
   const linhas = await oracle.consultar(
-    `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ), MIN(NULLIF(TRIM(V.VIEW_PNU_FOR), '0'))
+    `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ)
        FROM ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI V
       WHERE V.VIEW_CLI IN (${clientesDaCarteira(lista.sql)}) AND V.VIEW_STA LIKE 'ATIVO%' AND V.VIEW_VLR_LIQ > 0
         AND NOT EXISTS (SELECT 1 FROM ABC71.ESTQ E WHERE TRIM(E.C_PROD) = TRIM(V.VIEW_PAC) AND NVL(TRIM(E.QT_ALT_OBR), 'A') = 'I')
@@ -58,8 +58,24 @@ export async function lerPrecos(oracle: Oracle, referencia: Referencia, autoriza
     tabela: texto(linha, 1),
     produto: texto(linha, 2),
     precoCento: numero(linha, 3),
-    partNumber: textoOuNulo(linha, 4),
   }));
+}
+
+/**
+ * Os part numbers da Bíblia Montadora (SGI: Relatórios > Administrativo > Vendas): o "Código Cliente"
+ * dos itens das tabelas de preço de montadora (TP1_TIP = 'M'), só dos ativos, como o Lucas pediu em
+ * 2026-10-20. É a consulta do relatório (untVenTab_RelBibliaMont.dfm, qryRel) com o status ATIVO, que
+ * o menu passa como 'ATIVO%' e por isso inclui o ATIVO-DB (Principal.pas, ImprimirRelVen001). O
+ * part number '0' é vazio, como no relatório.
+ */
+export async function lerPartNumbersDaBiblia(oracle: Oracle): Promise<PartNumberDaBiblia[]> {
+  const linhas = await oracle.consultar(
+    `SELECT DISTINCT TRIM(A.TP2_PRO), TRIM(A.TP2_CMO)
+       FROM ABC71.SGI5_TAB_VEN_TP2 A
+       JOIN ABC71.SGI5_TAB_VEN_TP1 B ON TRIM(B.TP1_COD) = TRIM(A.TP2_COD)
+      WHERE B.TP1_TIP = 'M' AND TRIM(A.TP2_STA) LIKE 'ATIVO%' AND NULLIF(TRIM(A.TP2_CMO), '0') IS NOT NULL`,
+  );
+  return linhas.map((linha) => ({ produto: texto(linha, 0), partNumber: texto(linha, 1) }));
 }
 
 /** A embalagem é a quantidade do EAN do produto: em 14/10, cada produto do catálogo tinha um só. */

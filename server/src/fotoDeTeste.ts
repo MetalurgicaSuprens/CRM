@@ -168,9 +168,14 @@ export function montarFotoDeTeste(): Foto {
       { produto: "PRODUTO-SO-DE-B", familia: "FLEXIL", medida: null, embalagem: 50 },
     ],
     lista_de_precos: [
-      { lista: 1, produto: "F-100", preco_cento: 95.5, part_number: "CF420118" },
-      { lista: 1, produto: "P-200", preco_cento: 120, part_number: null },
-      { lista: 2, produto: "PRODUTO-SO-DE-B", preco_cento: 80, part_number: null },
+      { lista: 1, produto: "F-100", preco_cento: 95.5 },
+      { lista: 1, produto: "P-200", preco_cento: 120 },
+      { lista: 2, produto: "PRODUTO-SO-DE-B", preco_cento: 80 },
+    ],
+    produto_part_number: [
+      { produto: "F-100", part_number: "CF420118" },
+      { produto: "F-100", part_number: "N906227" },
+      { produto: "PRODUTO-SO-DE-B", part_number: "SO-DE-B" },
     ],
     produto_comprado: [
       { cliente: CLIENTE_DE_A, produto: "F-100" },

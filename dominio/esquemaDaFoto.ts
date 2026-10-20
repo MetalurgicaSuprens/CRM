@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 15;
+export const VERSAO_DO_ESQUEMA = 16;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -86,8 +86,13 @@ CREATE TABLE lista_de_precos (
   lista INTEGER NOT NULL,
   produto TEXT NOT NULL,
   preco_cento REAL NOT NULL,
-  part_number TEXT,
   PRIMARY KEY (lista, produto)
+) STRICT;
+
+CREATE TABLE produto_part_number (
+  produto TEXT NOT NULL,
+  part_number TEXT NOT NULL,
+  PRIMARY KEY (produto, part_number)
 ) STRICT;
 
 CREATE TABLE produto_comprado (
@@ -289,7 +294,12 @@ export type Foto = {
    * Preço do cento de cada produto vendável, por lista: clientes com a mesma tabela e os mesmos
    * descontos dividem uma lista (extrator/src/calculo/catalogo.ts).
    */
-  lista_de_precos: { lista: number; produto: string; preco_cento: number; part_number: string | null }[];
+  lista_de_precos: { lista: number; produto: string; preco_cento: number }[];
+  /**
+   * Os part numbers da Bíblia Montadora do SGI (versão 16): os itens ativos das tabelas de preço de
+   * montadora, só dos produtos de alguma lista. Sem o nome da montadora, que nenhuma tela usa.
+   */
+  produto_part_number: { produto: string; part_number: string }[];
   /** Os produtos da lista do cliente que ele comprou nos últimos 24 meses: a aba "Já comprados". */
   produto_comprado: { cliente: string; produto: string }[];
   ficha_produto: { cliente: string; produto: string; pecas_12m: number; valor_12m: number; ultima_compra: string }[];

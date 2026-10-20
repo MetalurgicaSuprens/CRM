@@ -2,7 +2,7 @@ import { montarReferencia, type Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
 import { lerMomentoDoOracle, lerNomesDosRepresentantes } from "./cadastros.ts";
 import { lerCarteira, lerDatasDeCompra, lerVendasPorMes } from "./carteira.ts";
-import { lerPrecos, lerProdutosDasTabelas, lerProdutosJaComprados, lerTabelasDosClientes } from "./catalogo.ts";
+import { lerPartNumbersDaBiblia, lerPrecos, lerProdutosDasTabelas, lerProdutosJaComprados, lerTabelasDosClientes } from "./catalogo.ts";
 import { lerNotasRecentes, lerPedidosFaturados, lerVendasPorDia } from "./faturamento.ts";
 import { lerFamiliasDaSuprens, lerProdutosDoAno } from "./familias.ts";
 import { lerPedidosEmAberto } from "./pedidos.ts";
@@ -39,6 +39,7 @@ export async function lerDadosDoErp(
     vendasDoDia: await etapa("vendas por dia", () => lerVendasPorDia(oracle, referencia, autorizados)),
     tabelas,
     precos: await etapa("preços", () => lerPrecos(oracle, referencia, autorizados)),
+    partNumbers: await etapa("part numbers da Bíblia Montadora", () => lerPartNumbersDaBiblia(oracle)),
     produtosDasTabelas: await etapa("produtos das tabelas", () =>
       lerProdutosDasTabelas(oracle, [...new Set(tabelas.map((tabela) => tabela.tabela))]),
     ),

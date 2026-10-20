@@ -207,9 +207,9 @@ describe("escopo: o login A nunca vê os dados de B", () => {
       cliente: { codigo: CLIENTE_DE_A },
       tabela: "PADRAO - FEV",
       produtos: [
-        { codigo: "F-100", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100, precoCento: 95.5, partNumber: "CF420118", jaComprou: true },
-        // Produto sem EAN: qualquer quantidade de peças.
-        { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoCento: 120, partNumber: null, jaComprou: false },
+        { codigo: "F-100", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100, precoCento: 95.5, partNumbers: ["CF420118", "N906227"], jaComprou: true },
+        // Produto sem EAN: qualquer quantidade de peças. Sem part number na Bíblia, a lista vem vazia.
+        { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoCento: 120, partNumbers: [], jaComprou: false },
       ],
     });
   });

@@ -1,19 +1,19 @@
 import type { Foto } from "dominio/esquemaDaFoto";
 import type { Mercado } from "dominio/tipos";
-import type { ClienteDaCarteira, DadosDoErp, PrecoDoCliente, ProdutoDaTabela, TabelaDoCliente } from "../erp/tipos.ts";
+import type { ClienteDaCarteira, DadosDoErp, PartNumberDaBiblia, PrecoDoCliente, ProdutoDaTabela, TabelaDoCliente } from "../erp/tipos.ts";
 import { agruparPor } from "./agrupar.ts";
 import { SEM_FAMILIA } from "./produtos.ts";
 
 /*
  * O catálogo de cada cliente da carteira: a tabela escolhida e os preços dela. Clientes com a mesma
  * tabela e os mesmos descontos têm preços iguais e dividem uma lista, para o catálogo não se repetir
- * cliente a cliente na foto.
+ * cliente a cliente na foto. O part number é do produto, o mesmo em toda lista: vem da Bíblia Montadora.
  */
 
 /** O nome da tabela de preço do cliente e a lista dele em `lista_de_precos`. */
 export type TabelaEListaDoCliente = { tabela: string; lista: number };
 
-export type CatalogoDosClientes = Pick<Foto, "lista_de_precos" | "produto_comprado"> & {
+export type CatalogoDosClientes = Pick<Foto, "lista_de_precos" | "produto_comprado" | "produto_part_number"> & {
   /** Id do cliente → tabela e lista dele. Cliente sem tabela usável fica de fora. */
   porCliente: Map<string, TabelaEListaDoCliente>;
   /** Os produtos de alguma lista, com medida e embalagem. */
@@ -22,7 +22,7 @@ export type CatalogoDosClientes = Pick<Foto, "lista_de_precos" | "produto_compra
 
 type ClienteDoCatalogo = { id: string; cliente: ClienteDaCarteira };
 
-type DadosDoCatalogo = Pick<DadosDoErp, "tabelas" | "precos" | "produtosDasTabelas" | "jaComprados">;
+type DadosDoCatalogo = Pick<DadosDoErp, "tabelas" | "precos" | "partNumbers" | "produtosDasTabelas" | "jaComprados">;
 
 const MEDIDA = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 
@@ -44,6 +44,7 @@ export function montarCatalogo(clientes: readonly ClienteDoCatalogo[], dados: Da
     porCliente,
     lista_de_precos: linhas,
     produto_comprado: produtosComprados(clientes, porCliente, linhas, dados.jaComprados),
+    produto_part_number: partNumbersDosProdutos(dados.partNumbers, produtosDasListas),
     produtos: dados.produtosDasTabelas.filter(({ produto }) => produtosDasListas.has(produto)).map(linhaDoProduto),
   };
 }
@@ -69,9 +70,7 @@ function montarListas(clientes: readonly ClienteDoCatalogo[], dados: DadosDoCata
     if (lista === undefined) {
       lista = listaPorAssinatura.size + 1;
       listaPorAssinatura.set(assinatura, lista);
-      for (const { produto, precoCento, partNumber } of ordenados) {
-        linhas.push({ lista, produto, preco_cento: precoCento, part_number: partNumber });
-      }
+      for (const { produto, precoCento } of ordenados) linhas.push({ lista, produto, preco_cento: precoCento });
     }
     porCliente.set(id, { tabela: tabela.nome ?? tabela.tabela, lista });
   }
@@ -79,7 +78,16 @@ function montarListas(clientes: readonly ClienteDoCatalogo[], dados: DadosDoCata
 }
 
 function assinaturaDosPrecos(precos: readonly PrecoDoCliente[]): string {
-  return precos.map(({ produto, precoCento, partNumber }) => `${produto}=${precoCento}=${partNumber ?? ""}`).join("|");
+  return precos.map(({ produto, precoCento }) => `${produto}=${precoCento}`).join("|");
+}
+
+/** Os part numbers da Bíblia só dos produtos de alguma lista: a foto não leva o resto. */
+function partNumbersDosProdutos(partNumbers: readonly PartNumberDaBiblia[], produtos: ReadonlySet<string>): Foto["produto_part_number"] {
+  const unicos = new Map<string, Foto["produto_part_number"][number]>();
+  for (const { produto, partNumber } of partNumbers) {
+    if (produtos.has(produto)) unicos.set(JSON.stringify([produto, partNumber]), { produto, part_number: partNumber });
+  }
+  return [...unicos.values()].sort((a, b) => a.produto.localeCompare(b.produto) || a.part_number.localeCompare(b.part_number));
 }
 
 /** Só os produtos comprados que estão na lista do cliente: são eles que a aba "Já comprados" mostra. */

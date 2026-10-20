@@ -287,8 +287,11 @@ export type ProdutoDoCatalogo = {
    * o desconto padrão do cliente. Só referência: o SGI recalcula.
    */
   precoCento: number;
-  /** O part number da tabela de preço: o código da montadora, ou do cliente, para o produto. */
-  partNumber: string | null;
+  /**
+   * Os part numbers da Bíblia Montadora: os códigos que as montadoras dão ao produto, só dos itens
+   * ativos. Vazio quando nenhuma montadora tem o produto.
+   */
+  partNumbers: string[];
   jaComprou: boolean;
 };
 

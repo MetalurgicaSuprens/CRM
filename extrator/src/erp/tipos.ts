@@ -158,9 +158,10 @@ export type PrecoDoCliente = {
   produto: string;
   /** Preço do cento com o desconto do modelo do produto, ou o padrão do cliente; sem IPI. */
   precoCento: number;
-  /** O part number da tabela: o código da montadora ou do cliente para o produto. */
-  partNumber: string | null;
 };
+
+/** Um part number da Bíblia Montadora: o código que uma montadora dá ao produto. */
+export type PartNumberDaBiblia = { produto: string; partNumber: string };
 
 /** Família, medida e embalagem de um produto das tabelas de preço. */
 export type ProdutoDaTabela = {
@@ -190,6 +191,7 @@ export type DadosDoErp = {
   vendasDoDia: VendaDoDia[];
   tabelas: TabelaDoCliente[];
   precos: PrecoDoCliente[];
+  partNumbers: PartNumberDaBiblia[];
   produtosDasTabelas: ProdutoDaTabela[];
   jaComprados: ProdutoJaComprado[];
 };

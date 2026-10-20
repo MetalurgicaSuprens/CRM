@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { correspondeAoCliente, correspondeAoClienteOuCidade } from "./busca";
+import { correspondeAoCliente, correspondeAoClienteOuCidade, correspondeAoProduto, partNumberDaBusca } from "./busca";
 
 const EMPRESA = { nome: "Retífica São Jorge", codigoErp: "591328580003", cidade: "Ribeirão Preto", cnpjs: null };
 /** CNPJ 01.116.500/0001-xx: o código do ERP perdeu o zero da esquerda. */
@@ -57,5 +57,39 @@ describe("correspondeAoClienteOuCidade", () => {
     expect(correspondeAoClienteOuCidade(grupo, "12.345.678/0012")).toBe(true);
     expect(correspondeAoClienteOuCidade(grupo, "salvador")).toBe(true);
     expect(correspondeAoClienteOuCidade(grupo, "curitiba")).toBe(false);
+  });
+});
+
+const PRODUTO = { codigo: "FAB1422P", familia: "FLEXIL", medida: "14–22 mm", partNumbers: ["N.906.227.01", "51234567"] };
+
+describe("correspondeAoProduto", () => {
+  it("acha pelo código, pela família e pela medida", () => {
+    expect(correspondeAoProduto(PRODUTO, "fab14")).toBe(true);
+    expect(correspondeAoProduto(PRODUTO, "flexil")).toBe(true);
+    expect(correspondeAoProduto(PRODUTO, "14–22")).toBe(true);
+  });
+
+  it("acha por qualquer part number, com ou sem a pontuação", () => {
+    expect(correspondeAoProduto(PRODUTO, "N90622701")).toBe(true);
+    expect(correspondeAoProduto(PRODUTO, "906.227")).toBe(true);
+    expect(correspondeAoProduto(PRODUTO, "5123")).toBe(true);
+  });
+
+  it("não acha o que o produto não tem", () => {
+    expect(correspondeAoProduto(PRODUTO, "presil")).toBe(false);
+    expect(correspondeAoProduto({ ...PRODUTO, partNumbers: [] }, "51234567")).toBe(false);
+  });
+});
+
+describe("partNumberDaBusca", () => {
+  it("devolve o part number que a busca achou, para a tela mostrar esse", () => {
+    expect(partNumberDaBusca(PRODUTO.partNumbers, "5123")).toBe("51234567");
+    expect(partNumberDaBusca(PRODUTO.partNumbers, "n 906")).toBe("N.906.227.01");
+  });
+
+  it("sem busca ou sem part number que case, devolve null", () => {
+    expect(partNumberDaBusca(PRODUTO.partNumbers, "")).toBeNull();
+    expect(partNumberDaBusca(PRODUTO.partNumbers, "--")).toBeNull();
+    expect(partNumberDaBusca(PRODUTO.partNumbers, "777")).toBeNull();
   });
 });

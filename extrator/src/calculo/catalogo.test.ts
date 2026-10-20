@@ -27,7 +27,7 @@ function cliente(numero: number, mercado: ClienteDaCarteira["mercado"] = "PRACA"
 }
 
 function preco(clienteNumero: number, produto: string, precoCento: number, tabelaCodigo = "PDR02"): PrecoDoCliente {
-  return { cliente: clienteNumero, tabela: tabelaCodigo, produto, precoCento, partNumber: null };
+  return { cliente: clienteNumero, tabela: tabelaCodigo, produto, precoCento };
 }
 
 describe("escolherTabela", () => {
@@ -72,6 +72,14 @@ describe("montarCatalogo", () => {
         // Preço de outra tabela do cliente 1, que não é a escolhida.
         preco(1, "FAB1422P", 99, "MMC"),
       ],
+      partNumbers: [
+        { produto: "MAB1216P", partNumber: "5U0-123" },
+        { produto: "FAB1422P", partNumber: "N906227" },
+        { produto: "FAB1422P", partNumber: "51234567" },
+        // Repetido em duas tabelas de montadora.
+        { produto: "FAB1422P", partNumber: "N906227" },
+        { produto: "FORA-DAS-LISTAS", partNumber: "999" },
+      ],
       produtosDasTabelas: [
         { produto: "FAB1422P", familia: "FLEXIL", medidaMinimaMm: 14, medidaMaximaMm: 22, embalagem: 100 },
         { produto: "MAB1216P", familia: null, medidaMinimaMm: null, medidaMaximaMm: null, embalagem: 500 },
@@ -104,6 +112,14 @@ describe("montarCatalogo", () => {
 
   it("marca como já comprado só o que está na lista do cliente", () => {
     expect(catalogo.produto_comprado).toEqual([{ cliente: "id-1", produto: "FAB1422P" }]);
+  });
+
+  it("leva os part numbers da Bíblia só dos produtos de alguma lista, sem repetir, em ordem", () => {
+    expect(catalogo.produto_part_number).toEqual([
+      { produto: "FAB1422P", part_number: "51234567" },
+      { produto: "FAB1422P", part_number: "N906227" },
+      { produto: "MAB1216P", part_number: "5U0-123" },
+    ]);
   });
 
   it("leva a família, a medida e a embalagem só dos produtos de alguma lista", () => {

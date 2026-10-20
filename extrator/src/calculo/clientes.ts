@@ -29,6 +29,7 @@ export type TabelasDosClientes = Pick<
   | "cliente_familia"
   | "produto"
   | "lista_de_precos"
+  | "produto_part_number"
   | "produto_comprado"
   | "ficha_produto"
   | "cliente_mix"
@@ -90,6 +91,7 @@ export function montarClientes(dados: DadosDoErp, referencia: Referencia, ids: I
     cliente_familia: comFicha.flatMap(({ id, compras }) => familiasDaFicha(id, compras.familias)),
     produto: juntarProdutos(catalogo.produtos, produtosDaFicha),
     lista_de_precos: catalogo.lista_de_precos,
+    produto_part_number: catalogo.produto_part_number,
     produto_comprado: catalogo.produto_comprado,
     ficha_produto: produtosDaFicha.map((produto) => ({
       cliente: produto.cliente,

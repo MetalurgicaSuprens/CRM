@@ -1,10 +1,10 @@
 import { normalizarParaBusca } from "../formato";
-import type { ClienteResumo } from "./tipos";
+import type { ClienteResumo, ProdutoDoCatalogo } from "./tipos";
 
 /*
- * A busca de cliente, pelo nome ou pelo CNPJ. O código do ERP da empresa é a raiz do CNPJ e a filial,
- * sem os dois dígitos verificadores, e perde os zeros da esquerda, porque no ERP ele é um número:
- * 01.116.500/0001 vira 11165000001 (61 dos 178 clientes da Star Vendas, em 2026-10-15).
+ * A busca de cliente, pelo nome ou pelo CNPJ, e a do catálogo do pedido. O código do ERP da empresa é
+ * a raiz do CNPJ e a filial, sem os dois dígitos verificadores, e perde os zeros da esquerda, porque no
+ * ERP ele é um número: 01.116.500/0001 vira 11165000001 (61 dos 178 clientes da Star Vendas, em 2026-10-15).
  */
 
 /** Só dígitos e a pontuação do CNPJ: a busca é pelo CNPJ. */
@@ -32,6 +32,28 @@ export function correspondeAoClienteOuCidade(cliente: ClienteDaBusca, busca: str
     normalizarParaBusca(cliente.cidade).includes(normalizarParaBusca(busca.trim())) ||
     (cliente.cnpjs ?? []).some((cnpj) => correspondeAoClienteOuCidade(cnpj, busca))
   );
+}
+
+/** O produto do catálogo pelo código, pela família, pela medida ou por qualquer part number dele. */
+export function correspondeAoProduto(produto: Pick<ProdutoDoCatalogo, "codigo" | "familia" | "medida" | "partNumbers">, busca: string): boolean {
+  const termo = normalizarParaBusca(busca.trim());
+  if (!termo) return true;
+  const nosCampos = [produto.codigo, produto.familia, produto.medida ?? ""].some((campo) => normalizarParaBusca(campo).includes(termo));
+  return nosCampos || partNumberDaBusca(produto.partNumbers, busca) !== null;
+}
+
+/**
+ * O part number que a busca acha, com ou sem pontos, traços e espaços: o cliente passa o código da
+ * montadora escrito de vários jeitos. Null quando ela não acha nenhum.
+ */
+export function partNumberDaBusca(partNumbers: readonly string[], busca: string): string | null {
+  const termo = soLetrasEDigitos(busca);
+  if (!termo) return null;
+  return partNumbers.find((partNumber) => soLetrasEDigitos(partNumber).includes(termo)) ?? null;
+}
+
+function soLetrasEDigitos(texto: string): string {
+  return normalizarParaBusca(texto).replace(/[^a-z0-9]/g, "");
 }
 
 function correspondeAoCnpj(codigoErp: string | null, termo: string): boolean {

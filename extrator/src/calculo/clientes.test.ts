@@ -82,6 +82,7 @@ function dadosDaCarteira(): DadosDoErp {
     vendasDoDia: [],
     tabelas: [],
     precos: [],
+    partNumbers: [],
     produtosDasTabelas: [],
     jaComprados: [],
   };
