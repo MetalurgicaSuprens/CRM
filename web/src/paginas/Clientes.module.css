@@ -4,15 +4,6 @@
   gap: var(--esp-5);
 }
 
-/* ------------------------------------------------ ferramentas */
-
-.ferramentas {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--esp-3);
-}
-
 /* ------------------------------------------------ tabela (desktop) */
 
 .tabela {
@@ -40,10 +31,10 @@
   padding: 0 var(--esp-5);
 }
 
-/* Ao rolar a carteira, o cabeçalho fica grudado logo abaixo da barra superior */
+/* Ao rolar a carteira, o cabeçalho fica grudado logo abaixo da barra superior; na página travada, no alto da lista */
 .cabecalhoTabela {
   position: sticky;
-  top: var(--altura-barra-superior);
+  top: var(--topo-do-cabecalho, var(--altura-barra-superior));
   z-index: 1;
   min-height: 40px;
   background: var(--cor-superficie-2);

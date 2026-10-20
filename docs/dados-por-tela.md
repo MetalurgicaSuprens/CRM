@@ -133,6 +133,8 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 
 ## 3. Clientes
 
+- **Página travada (2026-10-20, pedido do Lucas; vale também para Análises e Pedidos).** No computador, a página fica do tamanho da janela: o cabeçalho e os filtros ficam parados, só a lista rola, e o título das colunas gruda no alto dela (componentes/PaginaTravada.module.css). No celular e no tablet, a página rola inteira, como antes, porque a lista ficaria espremida. O estado de antes está na tag `listas-com-rolagem-da-pagina`.
+
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
 | Carteira | "N clientes na carteira" (Clientes.tsx:71) | Clientes com `VEND_1` igual ao código da sessão (decidido em 2026-10-09) | `CRCL.EMP_FIL`, `CLIENTE`, `VEND_1` | extrator |
@@ -148,7 +150,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Faturado 12 meses | Coluna e ordem de abertura, no navegador (Clientes.tsx:45 e 58) | RF dos 12 últimos meses fechados, sem o corrente | NFME, NFDE | extrator |
 | Variação | Coluna, ordenável pelo título (Clientes.tsx:42 e 107-109) | 12 meses ÷ 12 meses anteriores − 1; nulo com base pequena | NFME, NFDE | extrator |
 | Tendência | Minigráfico de 13 pontos (Clientes.tsx:161-163) | Faturado em 12 meses recalculado no fim de cada mês fechado, de um ano atrás até o mês passado | NFME, NFDE | extrator |
-| Busca, filtros e ordem | Campo, botões e títulos das colunas (Clientes.tsx:58 e 90-117) | Sobre a lista recebida. A busca acha o nome, a cidade e o CNPJ, com ou sem pontuação e verificadores (dados/busca.ts) | nenhuma | navegador |
+| Busca, filtros e ordem | Campo de busca ao lado do título (desde 2026-10-20), botões e títulos das colunas (Clientes.tsx) | Sobre a lista recebida. A busca acha o nome, a cidade e o CNPJ, com ou sem pontuação e verificadores (dados/busca.ts) | nenhuma | navegador |
 
 - **Carteira (decidida em 2026-10-09; filtro de empresa e exclusões ainda em aberto).**
   - Clientes da `CRCL` com `VEND_1`, o campo vendedor do cliente, igual a um dos códigos da sessão. Proposta: também `EMP_FIL = 20210001`.

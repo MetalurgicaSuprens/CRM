@@ -12,6 +12,7 @@ import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import type { ColunaOrdenavel, Ordem } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
+import travada from "../componentes/PaginaTravada.module.css";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
 import { correspondeAoClienteOuCidade } from "../dados/busca";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
@@ -68,8 +69,20 @@ export function Clientes() {
   };
 
   return (
-    <div className={estilos.pagina}>
-      <CabecalhoPagina titulo="Clientes" descricao={`${clientes.length} clientes na carteira`} />
+    <div className={`${estilos.pagina} ${travada.pagina}`}>
+      <CabecalhoPagina
+        titulo="Clientes"
+        descricao={`${clientes.length} clientes na carteira`}
+        aoLado={
+          <CampoDeBusca
+            rotulo="Buscar cliente"
+            valor={busca}
+            dica="Nome, código ou cidade"
+            aoMudar={(valor) => alterar("busca", valor, "")}
+            className={estilos.busca}
+          />
+        }
+      />
 
       <Filtros
         rotulo="Situação"
@@ -78,17 +91,7 @@ export function Clientes() {
         aoEscolher={(valor) => alterar("situacao", valor, "todas")}
       />
 
-      <div className={estilos.ferramentas}>
-        <CampoDeBusca
-          rotulo="Buscar cliente"
-          valor={busca}
-          dica="Nome, código ou cidade"
-          aoMudar={(valor) => alterar("busca", valor, "")}
-          className={estilos.busca}
-        />
-      </div>
-
-      <section className={estilos.tabela} aria-label="Carteira de clientes">
+      <section className={`${estilos.tabela} ${travada.rola}`} aria-label="Carteira de clientes">
         <div className={estilos.cabecalhoTabela}>
           <span>
             <TituloDaColuna coluna={COLUNAS.cliente} ordenacao={ordenacao} />

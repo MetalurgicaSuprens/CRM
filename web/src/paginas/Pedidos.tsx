@@ -9,6 +9,7 @@ import { ETAPAS, EtapaDoPedido } from "../componentes/EtapaDoPedido";
 import { Filtros } from "../componentes/Filtros";
 import type { TomDoSelo } from "../componentes/Selo";
 import { STATUS_DO_PEDIDO } from "../componentes/StatusDoPedido";
+import travada from "../componentes/PaginaTravada.module.css";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho } from "../dados/api";
@@ -52,7 +53,7 @@ export function Pedidos() {
     setParametros(proximos, { replace: true });
   };
   return (
-    <div className={estilos.pagina}>
+    <div className={`${estilos.pagina} ${travada.pagina}`}>
       <CabecalhoPagina
         titulo="Pedidos"
         descricao="Os pedidos do ERP, o que você enviou pelo CRM e os rascunhos"
@@ -114,7 +115,7 @@ function AbaEscolhida({ aba, painel, situacao, recarregar, vazio }: PropsDaAba) 
 function CartaoDaAba({ aba, subtitulo, children }: { aba: Aba; subtitulo: string; children: ReactNode }) {
   const { rotulo, icone, tom } = ABAS[aba];
   return (
-    <Cartao titulo={rotulo} icone={icone} tom={tom === "neutro" ? undefined : tom} subtitulo={subtitulo}>
+    <Cartao titulo={rotulo} icone={icone} tom={tom === "neutro" ? undefined : tom} subtitulo={subtitulo} className={travada.estica}>
       {children}
     </Cartao>
   );
@@ -124,6 +125,7 @@ function Enviados({ pedidos, relogio, vazio }: { pedidos: PedidoEnviado[]; relog
   return (
     <CartaoDaAba aba="enviados" subtitulo="Do envio até o faturamento. A situação volta do ERP a cada atualização dos dados.">
       <TabelaResponsiva
+        className={travada.rola}
         descricao="Pedidos enviados pelo CRM"
         itens={pedidos}
         chaveDe={(pedido) => pedido.numero}
@@ -155,6 +157,7 @@ function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascu
   return (
     <CartaoDaAba aba="rascunhos" subtitulo="Pedidos começados e ainda não enviados. No protótipo, ficam só até recarregar a página.">
       <TabelaResponsiva
+        className={travada.rola}
         descricao="Rascunhos de pedido"
         itens={rascunhos}
         chaveDe={(rascunho) => rascunho.id}
@@ -200,6 +203,7 @@ function EmAberto({ pedidos, hoje, vazio }: { pedidos: PedidoNoErp[]; hoje: stri
       subtitulo="Todos os pedidos da sua carteira ainda não faturados, pelo CRM ou não."
     >
       <TabelaResponsiva
+        className={travada.rola}
         descricao="Pedidos em aberto no ERP"
         itens={pedidos}
         chaveDe={(pedido) => pedido.numero}
@@ -222,6 +226,7 @@ function Faturados({ notas, hoje, vazio }: { notas: NotaFaturada[]; hoje: string
   return (
     <CartaoDaAba aba="faturados" subtitulo="Notas dos últimos 45 dias.">
       <TabelaResponsiva
+        className={travada.rola}
         descricao="Notas faturadas nos últimos 45 dias"
         itens={notas}
         chaveDe={(nota) => nota.id}

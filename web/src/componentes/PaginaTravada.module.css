@@ -1,0 +1,35 @@
+/*
+ * A página do tamanho da janela, em que só a lista rola (pedido do Lucas em 2026-10-20: Clientes,
+ * Análises e Pedidos; o estado de antes está na tag listas-com-rolagem-da-pagina). Os filtros e o
+ * cabeçalho ficam sempre à vista, e o título das colunas gruda no alto da lista.
+ *
+ * Só no computador, com o menu ao lado e altura para a lista: no celular e no tablet, a página rola
+ * inteira como antes, porque os filtros comeriam quase toda a tela e a lista ficaria espremida.
+ *   - pagina: o elemento de fora da página;
+ *   - estica: o que fica entre a página e a lista (o cartão), para a lista ir até o fim da janela;
+ *   - rola: a lista.
+ */
+
+@media (min-width: 961px) and (min-height: 560px) {
+  .pagina {
+    height: var(--altura-da-pagina);
+    min-height: 0;
+  }
+
+  .estica {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  /* Dois nomes: vence o overflow que a própria lista declara. */
+  .pagina .rola {
+    /* O que se posiciona dentro das linhas (o texto só para o leitor de tela) fica preso à lista e não estica a página. */
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    /* O título das colunas gruda no alto da lista, e não abaixo da barra superior da página. */
+    --topo-do-cabecalho: 0px;
+  }
+}

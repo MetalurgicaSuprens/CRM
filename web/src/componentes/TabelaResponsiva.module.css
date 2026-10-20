@@ -13,12 +13,12 @@
 }
 
 /*
- * Fica grudado abaixo da barra superior ao rolar listas longas. Um título mais largo que a
- * coluna quebra a linha em vez de invadir a coluna ao lado.
+ * Fica grudado abaixo da barra superior ao rolar listas longas; na página travada, no alto da
+ * própria lista. Um título mais largo que a coluna quebra a linha em vez de invadir a coluna ao lado.
  */
 .cabecalho {
   position: sticky;
-  top: var(--altura-barra-superior);
+  top: var(--topo-do-cabecalho, var(--altura-barra-superior));
   z-index: 1;
   min-height: 36px;
   background: var(--cor-superficie);
@@ -109,7 +109,7 @@ li:last-child > .linha {
   background: none;
   text-align: left;
   /* Ao vir para a tela, para abaixo da barra superior e do cabeçalho grudado da lista */
-  scroll-margin-top: calc(var(--altura-barra-superior) + 3rem);
+  scroll-margin-top: calc(var(--topo-do-cabecalho, var(--altura-barra-superior)) + 3rem);
 }
 
 .seta {

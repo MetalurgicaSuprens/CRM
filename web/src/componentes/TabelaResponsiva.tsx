@@ -29,6 +29,8 @@ type Props<T> = ToqueNaLinha<T> & {
   /** A primeira coluna identifica a linha e, nos cartões, vira o título. */
   colunas: readonly [ColunaDaTabela<T>, ...ColunaDaTabela<T>[]];
   vazio: string;
+  /** Na página travada, a classe que faz a lista rolar sozinha (PaginaTravada.module.css). */
+  className?: string;
   /** A ordem ao abrir; sem ela, a da lista recebida, sem coluna marcada. */
   ordemInicial?: Ordem;
   /** Nome da ordem na URL. Muda na tabela de dentro da linha aberta, para não reordenar a lista de fora. */
@@ -55,7 +57,7 @@ export function TabelaResponsiva<T>({ itens, vazio, ...props }: Props<T>) {
   return <Tabela itens={itens} {...props} />;
 }
 
-function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, ordemInicial, parametroDaOrdem }: Omit<Props<T>, "vazio">) {
+function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, ordemInicial, parametroDaOrdem, className }: Omit<Props<T>, "vazio">) {
   const { referencia, largura } = useLargura<HTMLElement>();
   const ordenacao = useOrdenacao(itens, colunas, { inicial: ordemInicial, parametro: parametroDaOrdem });
   // Só uma linha aberta por vez: abrir outra fecha a anterior.
@@ -80,7 +82,7 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, orde
   return (
     <section
       ref={referencia}
-      className={emCartoes ? `${estilos.tabela} ${estilos.cartoes}` : estilos.tabela}
+      className={[estilos.tabela, emCartoes ? estilos.cartoes : null, className].filter(Boolean).join(" ")}
       style={{ "--grade": gradeDasColunas(grade) } as CSSProperties}
       aria-label={descricao}
     >

@@ -7,6 +7,7 @@ import { ANALISES, CartaoDaAnalise, type TipoDeAnalise } from "../componentes/Id
 import { NomeDoCliente } from "../componentes/NomeDoCliente";
 import { DataRelativa } from "../componentes/Quando";
 import { Selo } from "../componentes/Selo";
+import travada from "../componentes/PaginaTravada.module.css";
 import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
@@ -36,7 +37,7 @@ export function Analises() {
   const lista = lerLista(parametros.get("lista"));
   if (!analises || !situacao) return <Carregando />;
   return (
-    <div className={estilos.pagina}>
+    <div className={`${estilos.pagina} ${travada.pagina}`}>
       <CabecalhoPagina titulo="Análises" descricao="Quem pede atenção na carteira, pelas regras do CRM" />
       <Filtros
         rotulo="Análise"
@@ -81,6 +82,7 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
   ];
   return (
     <CartaoDaAnalise
+      className={travada.estica}
       tipo="pararam"
       subtitulo="Sem comprar há mais que o dobro do ciclo típico (no mínimo 60 dias; 180 para quem compra sem ritmo) e sem pedido em aberto. Com 24 meses sem comprar, o cliente vira perdido e sai da lista."
     >
@@ -123,6 +125,7 @@ function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
   ];
   return (
     <CartaoDaAnalise
+      className={travada.estica}
       tipo={direcao}
       subtitulo={`${atual} contra ${anterior}: ${ritmo.mudanca} de 20% ou mais e de pelo menos R$ 2 mil, com 3 compras ou mais nos dois períodos. A ${ritmo.mudanca} precisa continuar em ${trimestre}.`}
     >
@@ -150,6 +153,7 @@ function NovosEReativados({ itens, hoje }: { itens: ClienteNovoOuReativado[]; ho
   ];
   return (
     <CartaoDaAnalise
+      className={travada.estica}
       tipo="novos"
       subtitulo="Novo: primeira compra nos últimos 12 meses. Reativado: voltou a comprar nos últimos 12 meses depois de um ano ou mais sem comprar."
     >
@@ -192,6 +196,7 @@ function Mix({ itens }: { itens: ClienteComMix[] }) {
   ];
   return (
     <CartaoDaAnalise
+      className={travada.estica}
       tipo="mix"
       subtitulo="Famílias que pelo menos metade dos clientes parecidos (mesmo mercado e porte, em toda a Suprens) comprou em 12 meses e que o cliente não compra há 24. O percentual é a parte dos parecidos que compra."
     >
@@ -214,6 +219,7 @@ function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...pr
   return (
     <TabelaResponsiva
       {...props}
+      className={travada.rola}
       chaveDe={(item) => item.cliente.codigo}
       linkDe={(item) => `/clientes/${item.cliente.codigo}`}
       colunas={[

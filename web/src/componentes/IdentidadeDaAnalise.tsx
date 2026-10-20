@@ -17,13 +17,13 @@ export const ANALISES: Record<TipoDeAnalise, Identidade> = {
   mix: { rotulo: "Oportunidades de mix", icone: Lightbulb, tom: "neutro" },
 };
 
-type PropsDoCartao = { tipo: TipoDeAnalise; subtitulo: ReactNode; acoes?: ReactNode; children: ReactNode };
+type PropsDoCartao = { tipo: TipoDeAnalise; subtitulo: ReactNode; acoes?: ReactNode; children: ReactNode; className?: string };
 
 /** Cartão com o nome e o ícone da análise; o tom neutro é o padrão do cartão. */
-export function CartaoDaAnalise({ tipo, subtitulo, acoes, children }: PropsDoCartao) {
+export function CartaoDaAnalise({ tipo, subtitulo, acoes, children, className }: PropsDoCartao) {
   const { rotulo, icone, tom } = ANALISES[tipo];
   return (
-    <Cartao titulo={rotulo} icone={icone} tom={tom === "neutro" ? undefined : tom} subtitulo={subtitulo} acoes={acoes}>
+    <Cartao titulo={rotulo} icone={icone} tom={tom === "neutro" ? undefined : tom} subtitulo={subtitulo} acoes={acoes} className={className}>
       {children}
     </Cartao>
   );

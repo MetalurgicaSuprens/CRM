@@ -211,6 +211,8 @@
   max-width: var(--largura-conteudo);
   margin: 0 auto;
   padding: var(--esp-8);
+  /* A janela menos a barra superior e os recuos daqui: a página travada (PaginaTravada.module.css) */
+  --altura-da-pagina: calc(100dvh - var(--altura-barra-superior) - 2 * var(--esp-8));
 }
 
 /* ------------------------------------------------ abas inferiores (celular) */
