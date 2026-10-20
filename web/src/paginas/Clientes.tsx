@@ -73,7 +73,7 @@ export function Clientes() {
       <CabecalhoPagina
         titulo="Clientes"
         descricao={`${clientes.length} clientes na carteira`}
-        aoLado={
+        naLinhaDaDescricao={
           <CampoDeBusca
             rotulo="Buscar cliente"
             valor={busca}

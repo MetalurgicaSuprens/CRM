@@ -45,6 +45,16 @@
   container-type: inline-size;
 }
 
+/*
+ * O que vai na linha da descrição (a busca das listas) fica com o meio na altura dela: o fundo no fim
+ * do bloco e, daí, desce metade do quanto é mais alto que a linha (1lh). Sem o lh (Safari antes do
+ * 16.4), fica com o fundo na linha da descrição.
+ */
+.naLinhaDaDescricao {
+  align-self: end;
+  transform: translateY(calc(50% - 0.5lh));
+}
+
 .acoes {
   grid-area: acoes;
   display: flex;
@@ -80,6 +90,16 @@
   .aoLado {
     margin-top: var(--esp-3);
   }
+
+  /* A busca cabe ao lado do título até o celular: não desce para uma linha só dela. */
+  .linha.comItemNaDescricao {
+    grid-template-columns: fit-content(45%) minmax(0, 1fr) auto;
+    grid-template-areas: "textos aoLado acoes";
+  }
+
+  .linha.comItemNaDescricao > .aoLado {
+    margin-top: 0;
+  }
 }
 
 @media (max-width: 640px) {
@@ -93,6 +113,24 @@
 
   .acoes {
     margin-top: var(--esp-3);
+  }
+
+  /* No celular, a busca desce para baixo do título, como o resto */
+  .linha.comItemNaDescricao {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "textos"
+      "aoLado"
+      "acoes";
+  }
+
+  .linha.comItemNaDescricao > .aoLado {
+    margin-top: var(--esp-3);
+  }
+
+  .naLinhaDaDescricao {
+    align-self: auto;
+    transform: none;
   }
 
   .acoes > * {

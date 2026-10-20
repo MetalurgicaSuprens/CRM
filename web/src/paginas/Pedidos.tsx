@@ -57,6 +57,7 @@ export function Pedidos() {
       <CabecalhoPagina
         titulo="Pedidos"
         descricao="Os pedidos do ERP, o que você enviou pelo CRM e os rascunhos"
+        naLinhaDaDescricao={<CampoDeBusca rotulo="Buscar cliente" valor={busca} dica="Cliente: nome fantasia ou CNPJ" aoMudar={buscar} className={estilos.busca} />}
         acoes={
           <Link to="/pedidos/novo" className={botoes.primario}>
             <FilePlus2 size={18} aria-hidden="true" />
@@ -70,9 +71,6 @@ export function Pedidos() {
         selecionado={aba}
         aoEscolher={(valor) => setParametros(parametrosDaAba(valor, busca), { replace: true })}
       />
-      <div className={estilos.ferramentas}>
-        <CampoDeBusca rotulo="Buscar cliente" valor={busca} dica="Cliente: nome fantasia ou CNPJ" aoMudar={buscar} className={estilos.busca} />
-      </div>
       <AbaEscolhida aba={aba} painel={doCliente} situacao={situacao} recarregar={recarregar} vazio={busca.trim() ? SEM_RESULTADO : undefined} />
     </div>
   );

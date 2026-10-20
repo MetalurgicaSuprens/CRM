@@ -150,7 +150,7 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Faturado 12 meses | Coluna e ordem de abertura, no navegador (Clientes.tsx:45 e 58) | RF dos 12 últimos meses fechados, sem o corrente | NFME, NFDE | extrator |
 | Variação | Coluna, ordenável pelo título (Clientes.tsx:42 e 107-109) | 12 meses ÷ 12 meses anteriores − 1; nulo com base pequena | NFME, NFDE | extrator |
 | Tendência | Minigráfico de 13 pontos (Clientes.tsx:161-163) | Faturado em 12 meses recalculado no fim de cada mês fechado, de um ano atrás até o mês passado | NFME, NFDE | extrator |
-| Busca, filtros e ordem | Campo de busca ao lado do título (desde 2026-10-20), botões e títulos das colunas (Clientes.tsx) | Sobre a lista recebida. A busca acha o nome, a cidade e o CNPJ, com ou sem pontuação e verificadores (dados/busca.ts) | nenhuma | navegador |
+| Busca, filtros e ordem | Campo de busca ao lado do título, na altura do subtítulo (desde 2026-10-20), botões e títulos das colunas (Clientes.tsx) | Sobre a lista recebida. A busca acha o nome, a cidade e o CNPJ, com ou sem pontuação e verificadores (dados/busca.ts) | nenhuma | navegador |
 
 - **Carteira (decidida em 2026-10-09; filtro de empresa e exclusões ainda em aberto).**
   - Clientes da `CRCL` com `VEND_1`, o campo vendedor do cliente, igual a um dos códigos da sessão. Proposta: também `EMP_FIL = 20210001`.
@@ -308,7 +308,7 @@ Regras:
 
 Os cartões ficam na ordem Faturados, Em aberto no ERP, Enviados pelo CRM e Rascunhos, e a página abre em Faturados (pedido do Lucas em 2026-10-15; Pedidos.tsx:34-36). O nome, o ícone e o tom de cada um são os do status do pedido na Ficha (componentes/StatusDoPedido.tsx).
 
-Abaixo dos cartões, a busca de cliente filtra as quatro abas pelo nome fantasia ou pelo CNPJ, com ou sem pontuação e com ou sem os dígitos verificadores, e o número de cada cartão segue a busca (pedido do Lucas em 2026-10-15; Pedidos.tsx:45-53, 73 e 81-94; dados/busca.ts). A busca fica no endereço (`busca=`) e continua ao trocar de aba; a aba sem resultado mostra "Nada nesta aba para esse cliente."
+Ao lado do título, na altura do subtítulo (desde 2026-10-20; antes, abaixo dos cartões), a busca de cliente filtra as quatro abas pelo nome fantasia ou pelo CNPJ, com ou sem pontuação e com ou sem os dígitos verificadores, e o número de cada cartão segue a busca (pedido do Lucas em 2026-10-15; Pedidos.tsx:45-53, 73 e 81-94; dados/busca.ts). A busca fica no endereço (`busca=`) e continua ao trocar de aba; a aba sem resultado mostra "Nada nesta aba para esse cliente."
 
 **Enviados pelo CRM**
 

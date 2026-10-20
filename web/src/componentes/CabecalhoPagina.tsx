@@ -8,16 +8,21 @@ type Props = {
   descricao?: ReactNode;
   /** Ocupa o espaço livre entre o título e as ações (ex.: o cadastro do cliente). */
   aoLado?: ReactNode;
+  /**
+   * No mesmo lugar do `aoLado`, mas na altura da descrição, e não do título (ex.: a busca das listas).
+   * Fica ao lado do título até o celular.
+   */
+  naLinhaDaDescricao?: ReactNode;
   /** Na ponta direita da linha do título (ex.: Novo pedido). */
   acoes?: ReactNode;
   antes?: ReactNode;
 };
 
-export function CabecalhoPagina({ titulo, selo, descricao, aoLado, acoes, antes }: Props) {
+export function CabecalhoPagina({ titulo, selo, descricao, aoLado, naLinhaDaDescricao, acoes, antes }: Props) {
   return (
     <header className={estilos.cabecalho}>
       {antes ? <div className={estilos.antes}>{antes}</div> : null}
-      <div className={estilos.linha}>
+      <div className={naLinhaDaDescricao ? `${estilos.linha} ${estilos.comItemNaDescricao}` : estilos.linha}>
         <div className={estilos.textos}>
           <div className={estilos.tituloComSelo}>
             <h1 className={estilos.titulo}>{titulo}</h1>
@@ -26,6 +31,7 @@ export function CabecalhoPagina({ titulo, selo, descricao, aoLado, acoes, antes 
           {descricao ? <div className={estilos.descricao}>{descricao}</div> : null}
         </div>
         {aoLado ? <div className={estilos.aoLado}>{aoLado}</div> : null}
+        {naLinhaDaDescricao ? <div className={`${estilos.aoLado} ${estilos.naLinhaDaDescricao}`}>{naLinhaDaDescricao}</div> : null}
         {acoes ? <div className={estilos.acoes}>{acoes}</div> : null}
       </div>
     </header>
