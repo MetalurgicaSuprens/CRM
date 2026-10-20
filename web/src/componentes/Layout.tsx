@@ -1,11 +1,12 @@
 import { useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router";
-import { Clock, Eye, EyeOff, LogOut } from "lucide-react";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
+import { Clock, Eye, EyeOff, FilePlus2, LogOut } from "lucide-react";
 import { login } from "../acesso/login";
 import { useValores } from "../contexto/valores";
 import { carregarSituacaoDosDados, isDadosReais } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigosDoRepresentante, formatarMomento } from "../formato";
+import botoes from "./Botao.module.css";
 import { NAVEGACAO, ProvedorDaOrigem, useMemoriaDaNavegacao } from "./navegacao";
 import estilos from "./Layout.module.css";
 
@@ -24,6 +25,11 @@ export function Layout() {
     <div className={estilos.casca}>
       <aside className={estilos.menu}>
         <Marca />
+        {/* O atalho para o pedido, de qualquer tela (pedido do Lucas em 2026-10-20): leva à escolha do cliente. */}
+        <Link to="/pedidos/novo" className={`${botoes.primario} ${botoes.positivo} ${estilos.incluirPedido}`}>
+          <FilePlus2 size={18} aria-hidden="true" />
+          Incluir pedido
+        </Link>
         <nav aria-label="Principal">
           <ul className={estilos.itensMenu}>
             {NAVEGACAO.map(({ para, rotulo, Icone }) => (
@@ -74,6 +80,10 @@ export function Layout() {
             <span>{rotulo}</span>
           </NavLink>
         ))}
+        <Link to="/pedidos/novo" className={`${estilos.aba} ${estilos.abaIncluirPedido}`}>
+          <FilePlus2 size={20} strokeWidth={1.75} aria-hidden="true" />
+          <span>Incluir pedido</span>
+        </Link>
       </nav>
     </div>
   );

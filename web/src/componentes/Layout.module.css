@@ -43,6 +43,11 @@
   border-left: 1px solid var(--cor-linha-forte);
 }
 
+/* O Incluir pedido, no alto do menu, com a largura dele */
+.incluirPedido {
+  width: 100%;
+}
+
 .itensMenu {
   display: flex;
   flex-direction: column;
@@ -261,7 +266,8 @@
     inset: auto 0 0 0;
     z-index: 10;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    /* A última coluna, a do Incluir pedido, um pouco mais larga: o nome cabe numa linha a partir de 360 px */
+    grid-template-columns: repeat(5, 1fr) 1.4fr;
     height: calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     background: color-mix(in srgb, var(--cor-superficie) 88%, transparent);
@@ -298,6 +304,19 @@
   .abaAtiva svg {
     background: var(--cor-marca-fundo);
     color: var(--cor-marca);
+  }
+
+  /* O Incluir pedido, o último da barra: a pílula sempre cheia, no verde da ação boa */
+  .abaIncluirPedido {
+    color: var(--cor-texto);
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .abaIncluirPedido svg {
+    background: var(--cor-positivo);
+    color: #ffffff;
   }
 }
 

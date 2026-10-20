@@ -80,6 +80,12 @@
   /* Destaque da interface (ícones, escolha neutra, botão principal, foco): o grafite da Suprens */
   --cor-acento: #161616;
   --cor-acento-fundo: #efefed;
+  /*
+   * A ação boa, o Incluir pedido, no verde do "Ativo" e do dinheiro: no grafite, o Lucas achou que passava a
+   * impressão errada (2026-10-20). O relevo do primário clareia o alto do botão; com este verde, o texto
+   * branco fica acima de 4,5:1 nas letras (4,7:1 no alto delas e 6,4:1 sem o relevo).
+   */
+  --cor-positivo: #2e6b45;
 
   --cor-alta: #2e6b45;
   --cor-queda: #a3361f;

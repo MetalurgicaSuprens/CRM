@@ -59,15 +59,16 @@ Versão de 2026-10-13, com as decisões do Lucas de 2026-10-09 e 2026-10-13. Ent
 
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
-| Hora do dado (`atualizadoEm`) | "Dados de hoje, 14:32", com a dica "Hora em que os dados foram copiados do ERP" (Layout.tsx:68 e 105-113) | Início da leitura do ERP que gerou a foto | `TO_CHAR(SYSDATE)` no Oracle; nenhuma tabela | extrator |
+| Hora do dado (`atualizadoEm`) | "Dados de hoje, 14:32", com a dica "Hora em que os dados foram copiados do ERP" (Layout.tsx:66 e 117-125) | Início da leitura do ERP que gerou a foto | `TO_CHAR(SYSDATE)` no Oracle; nenhuma tabela | extrator |
 | Data da foto (`hoje`) | Base de "há 12 dias" e das datas relativas que vêm do ERP, em todas as telas | Data de referência das regras | `TO_CHAR(SYSDATE,'YYYY-MM-DD')` | extrator |
 | Relógio (`relogio`) | O "hoje" da barra, a entrega mínima, a data e a saudação do Início e os momentos que o CRM grava | Relógio do servidor em Brasília, a cada resposta | nenhuma | servidor |
-| Códigos do representante | "Representante 1401" ou "Representantes 1401 e 1402" no menu (Layout.tsx:53; formato.ts:119) | Vêm da sessão, nunca do navegador. Um login pode ter mais de um código | É o mesmo número em `CRVN.VENDEDOR`, `SGI5_TAB_FIN_VEN.FIN_VEN`, `CRCL.VEND_1`, `NFME.VENDEDOR` e `VEPM.VENDEDOR` (este a confirmar, pergunta 1) | app.db |
-| Nome | Nome e iniciais no menu (Layout.tsx:50-52) | Proposta: o nome do usuário, digitado no Admin ao criar o login (pergunta 20) | nenhuma | app.db |
+| Códigos do representante | "Representante 1401" ou "Representantes 1401 e 1402" no menu (Layout.tsx:51; formato.ts:121) | Vêm da sessão, nunca do navegador. Um login pode ter mais de um código | É o mesmo número em `CRVN.VENDEDOR`, `SGI5_TAB_FIN_VEN.FIN_VEN`, `CRCL.VEND_1`, `NFME.VENDEDOR` e `VEPM.VENDEDOR` (este a confirmar, pergunta 1) | app.db |
+| Nome | Nome e iniciais no menu (Layout.tsx:47-50) | Proposta: o nome do usuário, digitado no Admin ao criar o login (pergunta 20) | nenhuma | app.db |
 | Ocultar valores | "R$ ••••" (valores.tsx:11) | Começa oculto em toda sessão e não é lembrado | nenhuma | navegador |
-| Sair | Link do menu (Layout.tsx:54) | Na F3 vira POST, revoga a sessão e manda `Clear-Site-Data` (plano.md:146) | nenhuma | app.db |
+| Incluir pedido | Botão verde no alto do menu, logo abaixo da marca; no celular, o último item da barra de baixo, com a pílula verde (pedido do Lucas em 2026-10-20, quando saiu do lado da saudação do Início; Layout.tsx:28-32 e 83-86) | Leva à escolha do cliente do pedido (`/pedidos/novo`). Todo "Incluir pedido" é verde, também em Pedidos e na ficha (`--cor-positivo`, tokens.css): a ação boa, que no grafite passava a impressão errada | nenhuma | navegador |
+| Sair | Botão do menu (Layout.tsx:52-55) | Na F3 vira POST, revoga a sessão e manda `Clear-Site-Data` (plano.md:146) | nenhuma | app.db |
 
-- **Data da foto e relógio (corrigido em 2026-10-09).** A barra comparava `atualizadoEm` com o `hoje` da própria foto, e a foto parada desde ontem aparecia como "hoje, 23:50". Agora o contrato traz `SituacaoDosDados.relogio`, o relógio do servidor em Brasília (tipos.ts:25-30), e a barra compara com ele (Layout.tsx:105-113).
+- **Data da foto e relógio (corrigido em 2026-10-09).** A barra comparava `atualizadoEm` com o `hoje` da própria foto, e a foto parada desde ontem aparecia como "hoje, 23:50". Agora o contrato traz `SituacaoDosDados.relogio`, o relógio do servidor em Brasília (tipos.ts:25-30), e a barra compara com ele (Layout.tsx:117-125).
   - A data da foto vale para as regras do extrator e para as datas que vêm do ERP.
   - O relógio vale para:
     - o rótulo "hoje" da barra;
@@ -96,7 +97,6 @@ Todos os indicadores usam a visão do representante. Projeção e pedidos em abe
 | Gráfico mensal | Barras do ano, comparação com o ano anterior e "A faturar no mês" (BarrasMensais.tsx:156-170) | Mês sem dado ainda é nulo. O ano anterior usa o mês inteiro; na dica do mês corrente, ele aparece como "2025, mês inteiro" (BarrasMensais.tsx:214-240) | NFME, NFDE, VEPD | extrator; a faturar: servidor |
 | Tendência | No mesmo cartão do gráfico mensal, a segunda vista do seletor "Mensal | Tendência"; o Mensal é o padrão (pedido do Lucas em 2026-10-19; paginas/FaturamentoDoInicio.tsx). A linha da média por mês nos 12 meses até cada um dos últimos 48 meses, com "Desde out/22: +X% na média por mês", no mesmo desenho da Tendência da ficha | Cada ponto é a média por mês dos 12 meses fechados até ele (dados/faturamentoDoCliente.ts, `montarTendencia`, com teste); o mês corrente, aberto, fica de fora. Visão do representante, como os números do alto | NFME, NFDE, `NFME.VENDEDOR`, CRCLH (foto: `painel_historico`) | extrator (60 meses fechados); a soma: navegador |
 | Saudação | "Boa tarde, Carlos" (Inicio.tsx:29) | Primeiro nome do usuário; "Bom dia", "Boa tarde" ou "Boa noite" pela hora de Brasília | nenhuma (proposta da pergunta 20) | nome: app.db; parte do dia: navegador, pelo `relogio` do servidor (Inicio.tsx:224-230) |
-| Incluir pedido | Botão logo depois da saudação (pedido do Lucas em 2026-10-20; Inicio.tsx) | Leva à escolha do cliente do pedido (`/pedidos/novo`), como o "Incluir pedido" de Pedidos | nenhuma | navegador |
 
 **Destaques (visão do cliente, sobre a carteira)**
 

@@ -59,7 +59,7 @@ export function Pedidos() {
         descricao="Os pedidos do ERP, o que você enviou pelo CRM e os rascunhos"
         naLinhaDaDescricao={<CampoDeBusca rotulo="Buscar cliente" valor={busca} dica="Cliente: nome fantasia ou CNPJ" aoMudar={buscar} className={estilos.busca} />}
         acoes={
-          <Link to="/pedidos/novo" className={botoes.primario}>
+          <Link to="/pedidos/novo" className={`${botoes.primario} ${botoes.positivo}`}>
             <FilePlus2 size={18} aria-hidden="true" />
             Incluir pedido
           </Link>

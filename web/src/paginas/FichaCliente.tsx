@@ -193,7 +193,7 @@ function rotuloDaOrigem(caminho: string, ficha: Ficha): string | null {
 
 /** No cliente fora de ativo no cadastro, o botão continua, mas mostra o aviso no lugar de abrir o pedido. */
 function IncluirPedido({ ficha, aoBloquear }: { ficha: Ficha; aoBloquear: () => void }) {
-  const classe = `${botoes.primario} ${estilos.incluirPedido}`;
+  const classe = `${botoes.primario} ${botoes.positivo} ${estilos.incluirPedido}`;
   const rotulo = (
     <>
       <FilePlus2 size={19} aria-hidden="true" />
