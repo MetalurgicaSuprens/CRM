@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   STATUS_NA_FICHA,
-  ajustarAEmbalagem,
+  embalagemAnterior,
   passosDoAndamento,
   pecasEmCentos,
   precoDoCento,
   problemasDoPedido,
+  proximaEmbalagem,
+  quantidadeDigitada,
   resumirPorFamilia,
   totalDoPedido,
   valorDaLinha,
@@ -34,17 +36,36 @@ describe("precoDoCento", () => {
   });
 });
 
-describe("ajustarAEmbalagem", () => {
-  it("arredonda para cima até fechar a embalagem", () => {
-    expect(ajustarAEmbalagem(130, 100)).toBe(200);
-    expect(ajustarAEmbalagem(200, 100)).toBe(200);
-    expect(ajustarAEmbalagem(1, 50)).toBe(50);
+describe("quantidadeDigitada", () => {
+  it("fica com o que foi digitado, também fora da embalagem", () => {
+    expect(quantidadeDigitada("300")).toBe(300);
+    expect(quantidadeDigitada("1")).toBe(1);
   });
 
-  it("zera quantidade negativa, zerada ou que não é número", () => {
-    expect(ajustarAEmbalagem(-5, 100)).toBe(0);
-    expect(ajustarAEmbalagem(0, 100)).toBe(0);
-    expect(ajustarAEmbalagem(Number.NaN, 100)).toBe(0);
+  it("arredonda para peças inteiras", () => {
+    expect(quantidadeDigitada("299.6")).toBe(300);
+  });
+
+  it("zera quantidade negativa, zerada, vazia ou que não é número", () => {
+    expect(quantidadeDigitada("-5")).toBe(0);
+    expect(quantidadeDigitada("0")).toBe(0);
+    expect(quantidadeDigitada("")).toBe(0);
+    expect(quantidadeDigitada("abc")).toBe(0);
+  });
+});
+
+describe("proximaEmbalagem e embalagemAnterior", () => {
+  it("o + vai à próxima embalagem fechada, também de uma quantidade fora dela", () => {
+    expect(proximaEmbalagem(0, 500)).toBe(500);
+    expect(proximaEmbalagem(300, 500)).toBe(500);
+    expect(proximaEmbalagem(500, 500)).toBe(1_000);
+  });
+
+  it("o − volta à embalagem fechada de baixo, sem passar de zero", () => {
+    expect(embalagemAnterior(1_200, 500)).toBe(1_000);
+    expect(embalagemAnterior(1_000, 500)).toBe(500);
+    expect(embalagemAnterior(300, 500)).toBe(0);
+    expect(embalagemAnterior(0, 500)).toBe(0);
   });
 });
 
@@ -148,7 +169,7 @@ describe("passosDoAndamento", () => {
 });
 
 describe("problemasDoPedido", () => {
-  it("libera o pedido com produto, embalagens fechadas e entrega futura", () => {
+  it("libera o pedido com produto e entrega futura", () => {
     expect(problemasDoPedido([linha()], "", "2026-10-20", HOJE)).toEqual([]);
   });
 
@@ -157,10 +178,8 @@ describe("problemasDoPedido", () => {
     expect(problemasDoPedido([linha({ quantidade: 0 })], "", null, HOJE)).toEqual(["Inclua pelo menos um produto."]);
   });
 
-  it("recusa quantidade que não fecha a embalagem", () => {
-    expect(problemasDoPedido([linha({ quantidade: 150 })], "", null, HOJE)).toEqual([
-      "FAB12345: a quantidade precisa fechar embalagens de 100 peças.",
-    ]);
+  it("aceita quantidade fora da embalagem: 300 peças de um item de 500", () => {
+    expect(problemasDoPedido([linha({ quantidade: 300, embalagem: 500 })], "", null, HOJE)).toEqual([]);
   });
 
   it("recusa entrega antes de hoje e observação longa demais", () => {
