@@ -61,7 +61,7 @@ export function Pedidos() {
         acoes={
           <Link to="/pedidos/novo" className={botoes.primario}>
             <FilePlus2 size={18} aria-hidden="true" />
-            Novo pedido
+            Incluir pedido
           </Link>
         }
       />

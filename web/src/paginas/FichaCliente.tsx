@@ -95,7 +95,7 @@ export function FichaCliente() {
         }
         descricao={descricaoDaFicha(ficha)}
         aoLado={<DadosDoCliente ficha={ficha} />}
-        acoes={<NovoPedido ficha={ficha} aoBloquear={() => setCodigoDoAviso(ficha.codigo)} />}
+        acoes={<IncluirPedido ficha={ficha} aoBloquear={() => setCodigoDoAviso(ficha.codigo)} />}
       />
       {codigoDoAviso === ficha.codigo && !podeReceberPedido(ficha.status) ? (
         <AvisoDePedidoBloqueado texto={AVISO_DE_PEDIDO_BLOQUEADO[ficha.status]} />
@@ -192,12 +192,12 @@ function rotuloDaOrigem(caminho: string, ficha: Ficha): string | null {
 }
 
 /** No cliente fora de ativo no cadastro, o botão continua, mas mostra o aviso no lugar de abrir o pedido. */
-function NovoPedido({ ficha, aoBloquear }: { ficha: Ficha; aoBloquear: () => void }) {
-  const classe = `${botoes.primario} ${estilos.novoPedido}`;
+function IncluirPedido({ ficha, aoBloquear }: { ficha: Ficha; aoBloquear: () => void }) {
+  const classe = `${botoes.primario} ${estilos.incluirPedido}`;
   const rotulo = (
     <>
       <FilePlus2 size={19} aria-hidden="true" />
-      Novo pedido
+      Incluir pedido
     </>
   );
   if (!podeReceberPedido(ficha.status)) {

@@ -108,7 +108,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
     <div className={`${estilos.pagina} ${estilos.paginaDaMontagem}`}>
       <CabecalhoPagina
         antes={<Voltar para="/pedidos" rotulo="Pedidos" />}
-        titulo="Novo pedido"
+        titulo="Incluir pedido"
         descricao={`${catalogo.cliente.nome} · ${catalogo.cliente.cidade}/${catalogo.cliente.uf} · ${catalogo.tabela}`}
       />
       <div className={estilos.grade}>
@@ -403,7 +403,7 @@ function EscolherCliente({ codigoDoGrupo }: { codigoDoGrupo: string | null }) {
     <div className={estilos.pagina}>
       <CabecalhoPagina
         antes={grupo ? <Voltar para={`/clientes/${grupo.codigo}`} rotulo={grupo.nome} /> : <Voltar para="/pedidos" rotulo="Pedidos" />}
-        titulo="Novo pedido"
+        titulo="Incluir pedido"
         descricao={grupo ? `Para qual CNPJ de ${grupo.nome} é o pedido?` : "Para qual cliente é o pedido?"}
       />
       <CampoDeBusca

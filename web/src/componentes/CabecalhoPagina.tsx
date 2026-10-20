@@ -13,7 +13,7 @@ type Props = {
    * Fica ao lado do título até o celular.
    */
   naLinhaDaDescricao?: ReactNode;
-  /** Na ponta direita da linha do título (ex.: Novo pedido). */
+  /** Na ponta direita da linha do título (ex.: Incluir pedido). */
   acoes?: ReactNode;
   antes?: ReactNode;
 };

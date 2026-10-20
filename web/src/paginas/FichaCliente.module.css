@@ -1,5 +1,5 @@
 .pagina {
-  /* O botão Novo pedido e os cartões do cadastro ficam lado a lado, com a mesma altura */
+  /* O botão Incluir pedido e os cartões do cadastro ficam lado a lado, com a mesma altura */
   --altura-cartao-cadastro: 4rem;
   display: flex;
   flex-direction: column;
@@ -57,7 +57,7 @@
   cursor: default;
 }
 
-.novoPedido {
+.incluirPedido {
   gap: 10px;
   height: var(--altura-cartao-cadastro);
   padding: 0 var(--esp-6);
@@ -306,7 +306,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .novoPedido {
+  .incluirPedido {
     height: 3.25rem;
   }
 }
