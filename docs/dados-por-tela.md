@@ -390,6 +390,9 @@ Ao lado do título, na altura do subtítulo (desde 2026-10-20; antes, abaixo dos
 
 ## 7. Montar pedido
 
+- **Tela travada (2026-10-20, pedido do Lucas).** Com o pedido ao lado do catálogo (960 px úteis ou mais) e altura para isso, a página fica do tamanho da janela, como Clientes, Análises e Pedidos: rolam só a lista de produtos e a dos itens escolhidos. Numa coluna, o pedido vem embaixo do catálogo, e a página rola.
+- **O alto do pedido.** Entrega desejada, Observação, Total estimado e Enviar pedido ficam em cima, sempre à vista; os itens vêm embaixo, um por linha, e o "rascunho salvo" e o "Descartar rascunho" no pé (MontarPedido.tsx). A nota de que o SGI recalcula os preços foi para a confirmação do envio.
+
 | Dado | O que a tela mostra | Regra | Origem no ERP | Onde é calculado |
 |---|---|---|---|---|
 | Escolha do cliente | O pedido é sempre de um CNPJ: o grupo aparece pelos CNPJs dele, e o "Novo pedido" da ficha do grupo abre a escolha só entre eles ("Para qual CNPJ de OVD é o pedido?", `/pedidos/novo?grupo=`). O catálogo do grupo responde 404. Nome, código do ERP (ou "Pessoa física"), cidade, status, situação e última compra. Escolher o cliente fora de ativo abre o aviso do status, para falar com a equipe de vendas, e não o catálogo (MontarPedido.tsx:61 e 428-435). Até 2026-10-14, a escolha mostrava e buscava pelo id do cliente, que não deve aparecer na tela. Abre na ordem recebida, sem coluna marcada, e o representante reordena por Cliente, Status, Situação e Última compra (MontarPedido.tsx:405-421) | Clientes da carteira | (ver Clientes) | extrator; ordem de abertura: servidor, por `faturamento_12m` decrescente; busca e reordenação: navegador (MontarPedido.tsx:386 e 405-421) |
@@ -400,10 +403,10 @@ Ao lado do título, na altura do subtítulo (desde 2026-10-20; antes, abaixo dos
 | Família | Descrição e busca | Mesma regra da Ficha | `PAC_GRC` → `GRP_DES` | extrator |
 | Medida | "14–22 mm" na descrição e na busca | Faixa de aperto em mm; sem as duas pontas, nenhuma (kits, molas). Em 14/10, 470 dos 692 produtos do catálogo tinham | `PAC_DMI_MM`, `PAC_DMA_MM` | extrator |
 | Part number | "part number X" na descrição e na busca | Part number formatado; sem ele, o part number; '0' vira nulo. Na tabela da montadora é o código dela; na tabela padrão, a referência do fabricante do veículo (143 dos 742 produtos). Até 2026-10-14 a tela dizia "no cliente: X" | `VIEW_PNU_FOR`, `VIEW_PNU` | extrator |
-| Embalagem | "100 pç" e o passo do campo de quantidade | Peças por embalagem: a quantidade do EAN do produto. Em 14/10, cada produto do catálogo tinha um EAN só (100, 50, 20, 500…); o múltiplo e o lote mínimo da tabela vinham vazios. Sem EAN, qualquer quantidade | `SGI5_TAB_ENG_EAN.EAN_QTD`, pelo `EAN_COD` | extrator |
+| Embalagem | "100 pç" e o passo dos botões + e − da quantidade | Peças por embalagem: a quantidade do EAN do produto. Em 14/10, cada produto do catálogo tinha um EAN só (100, 50, 20, 500…); o múltiplo e o lote mínimo da tabela vinham vazios. Sem EAN, qualquer quantidade | `SGI5_TAB_ENG_EAN.EAN_QTD`, pelo `EAN_COD` | extrator |
 | Cento | Preço do cento, só referência | Decidido pelo Lucas em 2026-10-14: o preço da tabela do cliente com o desconto do modelo do produto e, sem ele, com o desconto padrão do cliente. É a conta da view do SGI: `TP2_PVE × DES_IND ÷ 100`, com o desconto de `SGI5_TAB_VEN_CLI2` (cliente × `PAC_MOD`) no lugar do `CLI_DES` quando existe. Em 14/10, a conta refeita pelas tabelas deu o mesmo preço nos 122.142 pares de cliente e produto. Sem IPI | `VIEW_VLR_LIQ` | extrator |
 | Já comprou | Separa as abas | Produto da lista do cliente que ele comprou nos últimos 24 meses, com o mês corrente (proposta, pergunta 28) | `TRIM(NFDE.C_PROD)` com a RF | extrator (`produto_comprado`) |
-| Quantidade | Peças, de embalagem em embalagem | Múltiplo da embalagem | nenhuma | app.db |
+| Quantidade | Peças: o que for digitado fica como está; o + vai à próxima embalagem fechada e o − à de baixo (de 300, num item de 500, o + vai a 500 e o − a 0) | Inteira e positiva. Fora da embalagem também vale, porque pedir 300 peças de um item de 500 é o dia a dia (decisão do Lucas em 2026-10-20; antes, a tela arredondava para cima e não enviava) | nenhuma | app.db |
 | Valor do item | Ao lado da quantidade (MontarPedido.tsx:290) | Peças ÷ 100 × cento | (foto) | navegador |
 | Entrega desejada | Data com mínimo hoje | Não antes de hoje, pelo relógio de Brasília | vira `PV2_DEN` de cada item (no arquivo, `CGA_DEN`) | app.db |
 | Observação | "Observação (n/300)" | Até 300 caracteres, conjunto permitido, CP1252 | vira `PV1_OBS` | app.db |
@@ -426,7 +429,7 @@ Ao lado do título, na altura do subtítulo (desde 2026-10-20; antes, abaixo dos
 - **O navegador nunca manda preço, tabela nem representante.** `RascunhoParaSalvar` tem só id, código do cliente, itens, entrega e observação (tipos.ts:251-257). O servidor confere:
   - cliente na carteira;
   - produto no catálogo do cliente;
-  - quantidade inteira, positiva e múltipla da embalagem;
+  - quantidade inteira e positiva, também fora da embalagem (2026-10-20);
   - limite de itens;
   - schema estrito.
 - **Rascunho com produto que saiu do catálogo** (deixou de ser vendável ou perdeu o preço entre duas fotos).
@@ -967,7 +970,7 @@ O login de verdade, com a chave de acesso, aprovado pelo Lucas em 2026-10-15 com
    - Comparar com a regra do Gestao (`ESTQ.GRUPO`).
    - O que mostrar para os 41 PA sem grupo (familias.md:38) e para item vendido fora do grupo 30?
 8. **Medida.** `PAC_DMI_MM` e `PAC_DMA_MM` estão preenchidos e fazem sentido em todas as famílias (MOLA, BORRACHA, LAMINADOS)? A alternativa é o diâmetro nominal ou o tamanho do código (`SGI5_FNC_ENG_PAC_TAM_COD`).
-9. **Embalagem.** Qual é a fonte da embalagem de venda: `EAN_QTD` do EAN padrão, `VIEW_MVE` ou `TR1_QPE`? Em peça ou em CT? Qual o valor quando vier vazio? O CRM bloqueia quantidade fora do múltiplo; o SGI não valida.
+9. **Embalagem.** Qual é a fonte da embalagem de venda: `EAN_QTD` do EAN padrão, `VIEW_MVE` ou `TR1_QPE`? Em peça ou em CT? Qual o valor quando vier vazio? Desde 2026-10-20, o CRM aceita quantidade fora do múltiplo, como o SGI, e a embalagem só dá o passo dos botões.
     - Respondido no banco em 2026-10-14: o `VIEW_MVE` (e o lote mínimo `VIEW_LMI`) vêm vazios em todas as linhas da Star Vendas, e o EAN não tem padrão marcado (`EAN_PPR` nulo), mas cada produto do catálogo tem um EAN só, com a quantidade em peças. O CRM usa o `EAN_QTD`; sem EAN, qualquer quantidade. Falta o Lucas confirmar o bloqueio do múltiplo.
 10. **View de preço.** Respondido em 2026-10-14: o texto da view (DBA_VIEWS) é a regra que o Lucas definiu, e a conta refeita pelas tabelas dá o mesmo preço. `VIEW_TAB`, `VIEW_PAC` e `VIEW_PNU` são `CLI_TAB`, `TP2_PRO` e `TP2_CMO`. A leitura agrupada da carteira da Star Vendas leva 1,5 s.
     - A view já abre com o `LUCAS_RO` (plano.md:322). Ler o texto dela em DBA_VIEWS.

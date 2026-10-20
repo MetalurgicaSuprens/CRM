@@ -105,7 +105,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
   };
 
   return (
-    <div className={estilos.pagina}>
+    <div className={`${estilos.pagina} ${estilos.paginaDaMontagem}`}>
       <CabecalhoPagina
         antes={<Voltar para="/pedidos" rotulo="Pedidos" />}
         titulo="Novo pedido"
@@ -121,11 +121,16 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
             Ver pedido
           </a>
         </div>
+        {/* Em cima, o que fecha o pedido, sempre à vista; embaixo, os itens, que rolam (pedido do Lucas em 2026-10-20). */}
         <section id="pedido" className={estilos.resumo} aria-label="Seu pedido">
-          <Cartao titulo="Seu pedido" icone={ShoppingBasket} subtitulo={`Preços da ${catalogo.tabela}`} className={estilos.cartaoDoPedido}>
-            <ItensEscolhidos linhas={linhas} alterar={alterar} />
+          <Cartao
+            titulo="Seu pedido"
+            icone={ShoppingBasket}
+            subtitulo={`Preços da ${catalogo.tabela}, só para referência`}
+            className={estilos.cartaoDoPedido}
+          >
             <div className={estilos.campos}>
-              <label className={estilos.campo}>
+              <label className={`${estilos.campo} ${estilos.campoEmLinha}`}>
                 <span>Entrega desejada</span>
                 <input type="date" min={hoje} value={entrega ?? ""} onChange={(evento) => setEntrega(evento.target.value || null)} />
               </label>
@@ -136,7 +141,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
                     ({observacao.length}/{LIMITE_DA_OBSERVACAO})
                   </span>
                 </span>
-                <textarea rows={3} maxLength={LIMITE_DA_OBSERVACAO} value={observacao} onChange={(evento) => setObservacao(evento.target.value)} />
+                <textarea rows={1} maxLength={LIMITE_DA_OBSERVACAO} value={observacao} onChange={(evento) => setObservacao(evento.target.value)} />
               </label>
             </div>
             <Fechamento
@@ -145,16 +150,18 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
               podeEnviar={problemas.length === 0}
               aoEnviar={() => setConfirmando(true)}
             />
-            <p className={estilos.nota}>Preço da tabela do cliente, só para referência: o SGI recalcula quando recebe o pedido.</p>
-            <p className={estilos.salvo} role="status">
-              {erroAoEnviar ?? erroAoSalvar ?? (salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, relogio)}.` : "O rascunho é salvo sozinho enquanto você monta o pedido.")}
-            </p>
-            {idDoRascunho ? (
-              <button type="button" className={estilos.descartar} onClick={descartar}>
-                <Trash size={14} aria-hidden="true" />
-                Descartar rascunho
-              </button>
-            ) : null}
+            <ItensEscolhidos linhas={linhas} alterar={alterar} />
+            <div className={estilos.rodapeDoPedido}>
+              <p className={estilos.salvo} role="status">
+                {erroAoEnviar ?? erroAoSalvar ?? (salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, relogio)}.` : "O rascunho é salvo sozinho enquanto você monta o pedido.")}
+              </p>
+              {idDoRascunho ? (
+                <button type="button" className={estilos.descartar} onClick={descartar}>
+                  <Trash size={14} aria-hidden="true" />
+                  Descartar rascunho
+                </button>
+              ) : null}
+            </div>
           </Cartao>
         </section>
       </div>
@@ -237,7 +244,7 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
     [filtro, comprados, catalogo.produtos, termo],
   );
   return (
-    <Cartao titulo="Produtos" icone={PackageSearch} subtitulo="Busque pelo código, pela família, pela medida ou pelo part number.">
+    <Cartao titulo="Produtos" icone={PackageSearch} subtitulo="Busque pelo código, pela família, pela medida ou pelo part number." className={estilos.cartaoDoCatalogo}>
       <div className={estilos.ferramentas}>
         <CampoDeBusca rotulo="Buscar produto" valor={busca} dica="Código, família ou medida" aoMudar={setBusca} />
         <Segmentos
@@ -252,6 +259,7 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
       </div>
       <TabelaResponsiva
         descricao="Produtos do catálogo"
+        className={estilos.listaQueRola}
         itens={visiveis}
         chaveDe={(produto) => produto.codigo}
         vazio={filtro === "comprados" ? "Nada entre os já comprados. Procure em Todos." : "Nenhum produto com essa busca."}
@@ -283,12 +291,12 @@ type LinhaEscolhida = ProdutoDoCatalogo & { quantidade: number };
 function ItensEscolhidos({ linhas, alterar }: { linhas: LinhaEscolhida[]; alterar: (codigo: string, pecas: number) => void }) {
   if (linhas.length === 0) return <p className={estilos.vazio}>Escolha os produtos na lista e as quantidades.</p>;
   return (
-    <ul className={estilos.itens}>
+    <ul className={`${estilos.itens} ${estilos.listaQueRola}`}>
       {linhas.map((linha) => (
         <li key={linha.codigo} className={estilos.item}>
           <span className={estilos.descricaoDoItem}>
             <span className={estilos.codigo}>{linha.codigo}</span>
-            <span className={estilos.suave}>{descricaoDe(linha)}</span>
+            <span className={`${estilos.suave} ${estilos.detalheDoItem}`}>{descricaoDe(linha)}</span>
           </span>
           <Quantidade valor={linha.quantidade} embalagem={linha.embalagem} rotulo={linha.codigo} aoMudar={(pecas) => alterar(linha.codigo, pecas)} />
           <span className={estilos.valorDoItem}>
@@ -314,7 +322,7 @@ function Fechamento({ total, problemas, podeEnviar, aoEnviar }: PropsDoFechament
   return (
     <div className={estilos.fechamento}>
       <div className={estilos.total}>
-        <span>Total estimado</span>
+        <span className={estilos.rotuloDoTotal}>Total estimado</span>
         <Valor valor={total} />
       </div>
       {problemas.length > 0 ? (
@@ -363,7 +371,8 @@ function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo }: PropsDoEnvio)
       </h2>
       <p className={estilos.resumoDoEnvio}>{resumo}</p>
       <p className={estilos.texto}>
-        O pedido entra bloqueado no SGI e passa pelas aprovações de sempre. Depois de enviado, não dá para alterar pelo CRM.
+        O pedido entra bloqueado no SGI e passa pelas aprovações de sempre, e o SGI recalcula os preços pela tabela do cliente. Depois de enviado, não dá
+        para alterar pelo CRM.
       </p>
       <div className={estilos.acoesDoDialogo}>
         <button type="button" className={botoes.secundario} onClick={aoFechar} disabled={aguardando}>

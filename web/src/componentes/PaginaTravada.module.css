@@ -4,7 +4,8 @@
  * cabeçalho ficam sempre à vista, e o título das colunas gruda no alto da lista.
  *
  * Só no computador, com o menu ao lado e altura para a lista: no celular e no tablet, a página rola
- * inteira como antes, porque os filtros comeriam quase toda a tela e a lista ficaria espremida.
+ * inteira como antes, porque os filtros comeriam quase toda a tela e a lista ficaria espremida. A
+ * montagem do pedido trava do mesmo jeito, só com o pedido ao lado do catálogo (MontarPedido.module.css).
  *   - pagina: o elemento de fora da página;
  *   - estica: o que fica entre a página e a lista (o cartão), para a lista ir até o fim da janela;
  *   - rola: a lista.

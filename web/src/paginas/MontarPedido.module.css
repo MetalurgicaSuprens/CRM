@@ -55,9 +55,10 @@
   container-type: inline-size;
 }
 
+/* Um item por linha: o código (e a descrição, cortada), a quantidade e o valor */
 .item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 5.5rem;
+  grid-template-columns: minmax(0, 1fr) auto minmax(4.5rem, auto);
   align-items: center;
   gap: var(--esp-3);
   padding: var(--esp-2) 0;
@@ -76,12 +77,18 @@
   font-weight: 600;
 }
 
+.detalheDoItem {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .valorDoItem {
   text-align: right;
 }
 
 /* Numa coluna estreita, o produto ocupa a linha toda; a quantidade e o valor ficam embaixo */
-@container (max-width: 28rem) {
+@container (max-width: 19rem) {
   .item {
     grid-template-columns: auto minmax(0, 1fr);
     row-gap: var(--esp-2);
@@ -115,6 +122,21 @@
   resize: vertical;
 }
 
+/* A entrega numa linha só: o rótulo e a data lado a lado, para sobrar altura para os itens */
+.campoEmLinha {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2) var(--esp-3);
+}
+
+/* A observação começa com uma linha e cresce com o texto, até umas cinco (onde o navegador sabe) */
+.campo textarea {
+  field-sizing: content;
+  max-height: 8rem;
+}
+
 .campo input:focus,
 .campo textarea:focus {
   outline: none;
@@ -122,32 +144,49 @@
   box-shadow: var(--foco-campo);
 }
 
-/* Total, avisos e o botão de enviar; com o pedido ao lado do catálogo, ficam presos no pé dele */
+/*
+ * Total e botão de enviar na mesma linha, no alto do pedido, logo abaixo da entrega e da observação;
+ * os avisos, embaixo dos dois.
+ */
 .fechamento {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   gap: var(--esp-3);
-  padding-top: var(--esp-3);
-  border-top: 1px solid var(--cor-linha);
-  background: var(--cor-superficie);
+  padding-bottom: var(--esp-4);
+  border-bottom: 1px solid var(--cor-linha);
 }
 
 .total {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  flex-direction: column;
   font-size: var(--tam-destaque);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.nota,
+.rotuloDoTotal {
+  font-size: var(--tam-pequeno);
+  font-weight: 500;
+  color: var(--cor-texto-2);
+}
+
+/* No pé do pedido, embaixo dos itens: se o rascunho foi salvo e o descartar */
+.rodapeDoPedido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2) var(--esp-4);
+}
+
 .salvo {
   font-size: var(--tam-legenda);
   color: var(--cor-texto-suave);
 }
 
 .problemas {
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -159,15 +198,16 @@
 }
 
 .enviar {
-  width: 100%;
+  grid-row: 1;
+  grid-column: 2;
   height: 3rem;
+  padding: 0 var(--esp-5);
   border-radius: var(--raio);
   font-size: var(--tam-titulo-cartao);
 }
 
 .descartar {
   display: inline-flex;
-  align-self: flex-start;
   align-items: center;
   gap: 6px;
   padding: 0;
@@ -244,12 +284,13 @@
 /* ------------------------------------------------ catálogo e pedido lado a lado */
 
 /*
- * O pedido fica ao lado, em cerca de um terço da largura, e acompanha a rolagem. Mais alto que a
- * tela, ele rola por dentro, com o total e o botão de enviar sempre à vista no pé.
+ * O pedido fica ao lado, em cerca de um terço da largura: com 22 rem ou mais, cada item cabe numa
+ * linha só. Sem altura para travar a página, ele
+ * acompanha a rolagem e rola por dentro.
  */
 @container (min-width: 960px) {
   .grade {
-    grid-template-columns: minmax(0, 1fr) clamp(20rem, 33%, 28rem);
+    grid-template-columns: minmax(0, 1fr) clamp(22rem, 36%, 28rem);
   }
 
   .barraDoPedido {
@@ -267,10 +308,49 @@
     scrollbar-width: thin;
   }
 
-  /* O sticky para antes do recuo de baixo do cartão (--esp-6); o negativo o leva até a borda, sem nada aparecendo por baixo */
-  .fechamento {
-    position: sticky;
-    bottom: calc(var(--esp-6) * -1);
-    padding-bottom: var(--esp-4);
+  /*
+   * A página travada, como Clientes, Análises e Pedidos (componentes/PaginaTravada.module.css), mas só
+   * com o pedido ao lado do catálogo: numa coluna, os dois ficam um embaixo do outro, e a página rola.
+   * O cabeçalho, a busca e o fechamento do pedido ficam parados; rolam só a lista de produtos e a
+   * dos itens escolhidos.
+   */
+  @media (min-height: 560px) {
+    .paginaDaMontagem {
+      height: var(--altura-da-pagina);
+      min-height: 0;
+    }
+
+    .paginaDaMontagem .grade {
+      flex: 1 1 auto;
+      min-height: 0;
+      grid-template-rows: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .paginaDaMontagem .cartaoDoCatalogo {
+      min-height: 0;
+    }
+
+    .paginaDaMontagem .resumo {
+      position: static;
+      display: flex;
+      min-height: 0;
+    }
+
+    .paginaDaMontagem .cartaoDoPedido {
+      flex: 1 1 auto;
+      max-height: none;
+      overflow: hidden;
+    }
+
+    .paginaDaMontagem .listaQueRola {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      overscroll-behavior: contain;
+      /* O título das colunas do catálogo gruda no alto da lista, e não abaixo da barra superior. */
+      --topo-do-cabecalho: 0px;
+    }
   }
 }
