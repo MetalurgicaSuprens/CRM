@@ -89,7 +89,7 @@ Troca da foto:
 2. A API copia o arquivo para uma pasta privada e confere hash, `quick_check`, versão, data mais nova que a atual e contagens.
 3. A troca é só uma referência em memória, sem janela sem dados. O arquivo antigo é fechado depois.
 
-Feito em 2026-11-05, com a entrada numa pasta local; falta o SFTP. A foto sem manifesto é ignorada, e a recusada vai para o log do servidor, com o motivo, enquanto a anterior segue valendo (`server/src/foto/conferirFoto.ts`).
+Feito em 2026-11-05, com a entrada numa pasta local; o envio por SFTP está na seção "SFTP". A foto sem manifesto é ignorada, e a recusada vai para o log do servidor, com o motivo, enquanto a anterior segue valendo (`server/src/foto/conferirFoto.ts`).
 
 Outras regras:
 - Validação com o schema do próprio Fastify (`additionalProperties:false`): o campo que o schema não lista é recusado com 400, e não apagado (`removeAdditional: false`). Esquemas de resposta funcionam como lista do que pode sair.
@@ -125,6 +125,11 @@ Serviço systemd confinado:
 SFTP:
 - Conta `crm-troca` com chroot, `internal-sftp` e chave `restrict,from=<IP>`.
 - Um único escritor por pasta.
+- O lado do extrator foi feito em 2026-11-05, testado com um servidor simulado (`extrator/src/envio/`, com o pacote `ssh2` só nos testes, aprovado pelo Lucas):
+  - `npm run enviar` usa o `sftp.exe` do Windows, com a chave do servidor fixada pelo apelido `crm-servidor`, e nunca pergunta nada;
+  - leva a foto e o manifesto com nome provisório e deixa em `/entrada` só as 3 fotos mais novas;
+  - a chave do extrator precisa ficar numa pasta que só a conta do extrator lê: o Windows recusa a chave em `data/`, que herda a leitura para todos os usuários.
+- Falta a conta `crm-troca` no servidor de verdade (I1) e a busca de pedidos, auditoria e backup, que entra junto com eles.
 
 Publicação:
 - Um pacote montado no PC de desenvolvimento (`npm ci --omit=dev --ignore-scripts`).

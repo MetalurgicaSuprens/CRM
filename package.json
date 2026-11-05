@@ -17,6 +17,7 @@
     "dev:admin": "npm run dev:admin --workspace web",
     "dev:servidor": "npm run dev --workspace server",
     "foto": "npm run foto --workspace extrator --",
+    "enviar": "npm run enviar --workspace extrator --",
     "admin": "npm run admin --workspace server --",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

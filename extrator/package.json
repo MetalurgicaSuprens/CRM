@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "foto": "node src/principal.ts",
+    "enviar": "node src/enviar.ts",
     "mapas": "node src/mapas/gerarMapas.ts",
     "cidades": "node src/mapas/gerarCidades.ts",
     "typecheck": "tsc --noEmit",
@@ -13,5 +14,8 @@
   "dependencies": {
     "dominio": "0.0.0",
     "oracledb": "6.10.0"
+  },
+  "devDependencies": {
+    "ssh2": "1.17.0"
   }
 }

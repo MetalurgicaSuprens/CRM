@@ -927,7 +927,7 @@ Primeira entrega da F2, pedida pelo Lucas ("começar a ver dados reais"). O extr
   - Os desenhos são arquivos estáticos do IBGE, iguais nos dois modos.
   - A linha aberta, nas abas de Pedidos e na ficha: só uma por vez, o cabeçalho um tom mais escuro e o resumo por família antes dos itens. Na ficha, a tabela de pedidos passou a abrir como a de Pedidos, e os faturados trazem os itens das notas (`pedido_faturado_item`).
   - A busca de cliente em Pedidos, pelo nome fantasia ou pelo CNPJ (dados/busca.ts, com teste). A mesma regra passou a valer na busca de Clientes e na escolha do cliente do pedido, que também acham o CNPJ com pontuação e com o zero da esquerda.
-- **Ainda não feito:** grupos por raiz de CNPJ, a entrega da foto por SFTP (o manifesto e a conferência da cópia ficaram prontos em 2026-11-05) e os esquemas de resposta da API.
+- **Ainda não feito:** grupos por raiz de CNPJ, a conta de troca de arquivos no servidor de verdade (o manifesto, a conferência da cópia e o envio pelo extrator, testado com um servidor simulado, ficaram prontos em 2026-11-05) e os esquemas de resposta da API.
 
 ## O que a F3 já faz (2026-10-15)
 

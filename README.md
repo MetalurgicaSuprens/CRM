@@ -35,4 +35,5 @@ Cada pasta é criada na fase em que começa a ser usada.
   - Os mesmos comandos continuam na linha de comando (`npm run admin`), para o servidor, por SSH.
 - **Só a foto:** `npm run foto` (ou `npm run foto -- --env <outro .env>`). A foto vai para `data/fotos/`, com o manifesto. Em até 30 s, a API copia a mais nova para `data/fotos-conferidas/`, confere a cópia e passa a usá-la.
   - O extrator recusa a foto que mudou demais desde a anterior: uma tabela grande que caiu ou subiu mais de 50%, ou dados que voltaram no tempo. Se a mudança é esperada, `npm run foto -- --aceitar-mudanca`.
+- **Enviar a foto ao servidor do CRM:** `npm run enviar`, depois do `npm run foto`. Precisa do `CRM_SERVIDOR` no `extrator/.env` e das duas chaves em `data/envio/` (veja `extrator/.env.example`). Neste computador não é preciso: a API lê `data/fotos/` direto. Os testes usam um servidor simulado.
 - **Testes e tipos:** `npm test` e `npm run typecheck`.
