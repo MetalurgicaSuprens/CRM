@@ -401,6 +401,13 @@ function ItensEscolhidos({ linhas, alterar, alterarPreco }: PropsDosItens) {
   if (linhas.length === 0) return <p className={estilos.vazio}>Escolha os produtos na lista e as quantidades.</p>;
   return (
     <ul className={`${estilos.itens} ${estilos.listaQueRola}`}>
+      {/* Os títulos das colunas, só quando o item cabe numa linha (MontarPedido.module.css). */}
+      <li className={estilos.titulosDosItens} aria-hidden="true">
+        <span className={estilos.tituloDoProduto}>Produto</span>
+        <span className={estilos.tituloDaQuantidade}>Peças</span>
+        <span className={estilos.tituloDoPreco}>Cento R$</span>
+        <span className={estilos.tituloDoValor}>Valor</span>
+      </li>
       {linhas.map((linha) => (
         <li key={linha.codigo} className={estilos.item}>
           <span className={estilos.descricaoDoItem}>
@@ -408,13 +415,13 @@ function ItensEscolhidos({ linhas, alterar, alterarPreco }: PropsDosItens) {
             <DescricaoDoProduto produto={linha} className={`${estilos.suave} ${estilos.detalheDoItem}`} />
           </span>
           <Quantidade valor={linha.quantidade} embalagem={linha.embalagem} rotulo={linha.codigo} aoMudar={(pecas) => alterar(linha.codigo, pecas)} />
+          <PrecoDoItem linha={linha} aoMudar={(preco) => alterarPreco(linha.codigo, preco)} />
           <span className={estilos.valorDoItem}>
             <Valor valor={valorDaLinha(linha)} comCentavos />
           </span>
           <button type="button" className={estilos.tirarItem} aria-label={`Tirar ${linha.codigo} do pedido`} title="Tirar do pedido" onClick={() => alterar(linha.codigo, 0)}>
             <X size={16} aria-hidden="true" />
           </button>
-          <PrecoDoItem linha={linha} aoMudar={(preco) => alterarPreco(linha.codigo, preco)} />
         </li>
       ))}
     </ul>
@@ -436,10 +443,13 @@ function PrecoDoItem({ linha, aoMudar }: { linha: LinhaEscolhida; aoMudar: (prec
     setDigitado(formatarComCentavos(resultado?.preco ?? linha.precoCento));
     if (resultado) aoMudar(resultado.preco);
   };
+  // Duas células do item: o campo, na linha da quantidade, e de onde o preço vem, embaixo do produto.
   return (
-    <div className={estilos.precoDoItem}>
-      <label className={estilos.campoDoPreco}>
-        <span>Cento R$</span>
+    <>
+      <label className={estilos.campoDoPreco} title="Preço do cento">
+        <span className={estilos.prefixoDoPreco} aria-hidden="true">
+          R$
+        </span>
         {visiveis ? (
           <input
             type="text"
@@ -458,21 +468,35 @@ function PrecoDoItem({ linha, aoMudar }: { linha: LinhaEscolhida; aoMudar: (prec
       </label>
       {subiuAoMinimo ? (
         <span className={estilos.avisoDoPreco} role="status" title="O menor preço é o da tabela do cliente, com o desconto dele">
-          Subiu para o mínimo: a tabela do cliente
+          Subiu para o mínimo, a tabela do cliente
         </span>
       ) : (
-        // O mínimo primeiro: se faltar espaço, o que se corta é a última compra.
-        <span className={estilos.referenciasDoPreco}>
-          Mínimo <Valor valor={linha.precoDaTabela} comCentavos />
-          {linha.ultimaCompra ? (
-            <>
-              {" "}
-              · Última <Valor valor={linha.ultimaCompra.precoCento} comCentavos /> em {formatarDataCurta(linha.ultimaCompra.data)}
-            </>
-          ) : null}
-        </span>
+        <ReferenciasDoPreco linha={linha} />
       )}
-    </div>
+    </>
+  );
+}
+
+/** O mínimo primeiro: se faltar espaço, o que se corta é a última compra. Igual ao mínimo, o preço aparece uma vez só. */
+function ReferenciasDoPreco({ linha }: { linha: LinhaEscolhida }) {
+  const { precoDaTabela, ultimaCompra } = linha;
+  if (ultimaCompra && Math.abs(ultimaCompra.precoCento - precoDaTabela) < 0.005) {
+    return (
+      <span className={estilos.referenciasDoPreco}>
+        Mínimo e última compra <Valor valor={precoDaTabela} comCentavos />, em {formatarDataCurta(ultimaCompra.data)}
+      </span>
+    );
+  }
+  return (
+    <span className={estilos.referenciasDoPreco}>
+      Mínimo <Valor valor={precoDaTabela} comCentavos />
+      {ultimaCompra ? (
+        <>
+          {" "}
+          · última compra <Valor valor={ultimaCompra.precoCento} comCentavos />, em {formatarDataCurta(ultimaCompra.data)}
+        </>
+      ) : null}
+    </span>
   );
 }
 
