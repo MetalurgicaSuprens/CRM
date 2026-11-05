@@ -63,7 +63,11 @@ Lucas (LAN) ──────────────────────�
 - Gera a `foto.db` já com as regras de negócio calculadas, como a "tela servida pronta" do Gestao: situação, ciclo, análises, mix e município IBGE. A API só faz leituras com escopo e somas simples.
 - Antes de gravar:
   - compara a impressão digital com a da última foto;
-  - recusa a carga se o volume cair mais de 50% ou subir mais de 50%, ou se a data mais recente voltar no tempo.
+  - recusa a carga se o volume cair mais de 50% ou subir mais de 50%, ou se a data mais recente voltar no tempo. Feito em 2026-11-05 (`extrator/src/foto/comparacao.ts`):
+    - o volume é o de cada tabela com pelo menos 1.000 linhas na foto anterior. As menores, como a dos pedidos em aberto, mudam muito de uma carga para a outra;
+    - a data mais recente é a da foto, pelo relógio do Oracle, e a da nota mais recente;
+    - só compara fotos da mesma versão do esquema e com os mesmos representantes autorizados;
+    - quando a mudança é esperada, `npm run foto -- --aceitar-mudanca` grava assim mesmo.
 - Datas sempre via `TO_CHAR`, para evitar o deslocamento de fuso.
 - Fixa a chave do servidor SSH (sem aceitar qualquer servidor).
 - Trata os pedidos que chegam do servidor (ver "Pedidos").
@@ -84,6 +88,8 @@ Troca da foto:
 1. O extrator envia o arquivo como `.part`, renomeia e envia o manifesto por último (sha256, tamanho, versão do esquema, data de geração e contagens).
 2. A API copia o arquivo para uma pasta privada e confere hash, `quick_check`, versão, data mais nova que a atual e contagens.
 3. A troca é só uma referência em memória, sem janela sem dados. O arquivo antigo é fechado depois.
+
+Feito em 2026-11-05, com a entrada numa pasta local; falta o SFTP. A foto sem manifesto é ignorada, e a recusada vai para o log do servidor, com o motivo, enquanto a anterior segue valendo (`server/src/foto/conferirFoto.ts`).
 
 Outras regras:
 - Validação com o schema do próprio Fastify (`additionalProperties:false`): o campo que o schema não lista é recusado com 400, e não apagado (`removeAdditional: false`). Esquemas de resposta funcionam como lista do que pode sair.

@@ -12,7 +12,7 @@ import { criarFotoAtual } from "./foto/fotoAtual.ts";
 const ENDERECO = "127.0.0.1";
 
 const configuracao = lerConfiguracao();
-const foto = criarFotoAtual(configuracao.pastaDasFotos);
+const foto = criarFotoAtual(configuracao.fotos);
 const banco = abrirBancoDoApp(configuracao.arquivoDoApp);
 const crm = criarApp({ foto, banco, origem: configuracao.origem });
 const admin = criarAppDoAdmin({ foto, banco, origem: configuracao.origemDoAdmin, origemDoCrm: configuracao.origem });
@@ -20,4 +20,4 @@ await crm.listen({ host: ENDERECO, port: configuracao.porta });
 await admin.listen({ host: ENDERECO, port: configuracao.portaDoAdmin });
 console.log(`API do CRM em http://${ENDERECO}:${configuracao.porta}, para o site ${configuracao.origem}.`);
 console.log(`API da administração em http://${ENDERECO}:${configuracao.portaDoAdmin}, para o site ${configuracao.origemDoAdmin}.`);
-console.log(`Fotos em ${configuracao.pastaDasFotos}; app.db em ${configuracao.arquivoDoApp}.`);
+console.log(`Fotos chegam em ${configuracao.fotos.entrada} e são conferidas em ${configuracao.fotos.conferidas}; app.db em ${configuracao.arquivoDoApp}.`);

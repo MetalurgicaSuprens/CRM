@@ -19,21 +19,22 @@ import {
   GRUPO_DE_B,
   MARCAS_DE_B,
   gravarFotoDeTeste,
+  type PastasDeTeste,
 } from "./fotoDeTeste.ts";
 import { entrarComo, entrarComoAdmin } from "./login/loginDeTeste.ts";
 
 const ORIGEM = "http://localhost:5175";
 const ORIGEM_DO_ADMIN = "http://localhost:5179";
 
-let pasta: string;
+let pastas: PastasDeTeste;
 let foto: FotoAtual;
 let banco: DatabaseSync;
 /** O Cookie da sessão do login A, que puxa o código 1401. */
 let loginDeA: string;
 
 beforeAll(() => {
-  pasta = gravarFotoDeTeste();
-  foto = criarFotoAtual(pasta);
+  pastas = gravarFotoDeTeste();
+  foto = criarFotoAtual(pastas);
 });
 
 beforeEach(() => {
@@ -43,7 +44,7 @@ beforeEach(() => {
 
 afterAll(() => {
   foto.fechar();
-  fs.rmSync(pasta, { recursive: true, force: true });
+  fs.rmSync(pastas.raiz, { recursive: true, force: true });
 });
 
 function criarAppDeTeste(): FastifyInstance {

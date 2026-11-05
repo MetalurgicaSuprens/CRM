@@ -20,6 +20,8 @@ export type Configuracao = {
   chaveDoIdDoCliente: Buffer;
   pastaDasFotos: string;
   localizacao: FontesDaLocalizacao;
+  /** Grava a foto mesmo que ela mude demais desde a anterior (foto/comparacao.ts). */
+  aceitarMudanca: boolean;
 };
 
 const PASTA_DO_EXTRATOR = path.resolve(import.meta.dirname, "..");
@@ -29,9 +31,15 @@ const ARQUIVO_DA_CHAVE = "chave-do-id-do-cliente";
 const BYTES_DA_CHAVE = 32;
 const CHAVES_DO_ORACLE = ["ORACLE_USER", "ORACLE_PASSWORD", "ORACLE_HOST", "ORACLE_SERVICE_NAME"] as const;
 
-/** `--env <arquivo>` troca o .env do extrator; `--dados <pasta>` troca a pasta de dados. */
+/**
+ * `--env <arquivo>` troca o .env do extrator; `--dados <pasta>` troca a pasta de dados;
+ * `--aceitar-mudanca` grava a foto sem compará-la com a anterior.
+ */
 export function lerConfiguracao(argumentos: string[]): Configuracao {
-  const { values } = parseArgs({ args: argumentos, options: { env: { type: "string" }, dados: { type: "string" } } });
+  const { values } = parseArgs({
+    args: argumentos,
+    options: { env: { type: "string" }, dados: { type: "string" }, "aceitar-mudanca": { type: "boolean", default: false } },
+  });
   const pastaDeDados = path.resolve(values.dados ?? PASTA_DE_DADOS_PADRAO);
   return {
     oracle: lerAcessoAoOracle(path.resolve(values.env ?? path.join(PASTA_DO_EXTRATOR, ".env"))),
@@ -39,6 +47,7 @@ export function lerConfiguracao(argumentos: string[]): Configuracao {
     chaveDoIdDoCliente: lerOuCriarChave(path.join(pastaDeDados, ARQUIVO_DA_CHAVE)),
     pastaDasFotos: path.join(pastaDeDados, "fotos"),
     localizacao: { pastaDoCnefe: path.join(pastaDeDados, "cnefe"), arquivoDosPontos: path.join(pastaDeDados, "pontos-dos-enderecos.db") },
+    aceitarMudanca: values["aceitar-mudanca"],
   };
 }
 

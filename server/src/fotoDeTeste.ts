@@ -1,9 +1,12 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 import { ESQUEMA, VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
+import { contarLinhasPorTabela, nomeDoManifesto, type ManifestoDaFoto } from "dominio/manifestoDaFoto";
 import type { StatusDoCadastro } from "dominio/tipos";
+import type { PastasDaFoto } from "./foto/conferirFoto.ts";
 
 /*
  * Foto pequena para os testes do servidor: o representante A (1401) e o B (9999), cada um com um
@@ -230,10 +233,26 @@ export function montarFotoDeTeste(): Foto {
   };
 }
 
-/** Grava a foto numa pasta temporária nova e devolve a pasta. */
-export function gravarFotoDeTeste(foto: Foto = montarFotoDeTeste()): string {
-  const pasta = fs.mkdtempSync(path.join(os.tmpdir(), "crm-fotos-"));
-  const db = new DatabaseSync(path.join(pasta, "foto-20261013-0955-1.db"));
+/** As pastas da foto dentro de uma pasta temporária, a raiz, que o teste apaga no fim. */
+export type PastasDeTeste = PastasDaFoto & { raiz: string };
+
+/** Entrega a foto, com o manifesto, na entrada de uma pasta temporária nova. */
+export function gravarFotoDeTeste(foto: Foto = montarFotoDeTeste()): PastasDeTeste {
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), "crm-fotos-"));
+  const pastas = { raiz, entrada: path.join(raiz, "entrada"), conferidas: path.join(raiz, "conferidas") };
+  entregarFotoDeTeste(pastas.entrada, foto);
+  return pastas;
+}
+
+/**
+ * Grava a foto e, por último, o manifesto, como o extrator, e devolve o nome do manifesto.
+ * `mudarManifesto` estraga o manifesto de propósito.
+ */
+export function entregarFotoDeTeste(entrada: string, foto: Foto, mudarManifesto = (manifesto: ManifestoDaFoto) => manifesto): string {
+  fs.mkdirSync(entrada, { recursive: true });
+  const nomeDaFoto = `foto-${foto.foto.gerada_em.replace(/[-:]/g, "").replace("T", "-")}-1.db`;
+  const arquivo = path.join(entrada, nomeDaFoto);
+  const db = new DatabaseSync(arquivo);
   db.exec(ESQUEMA);
   for (const [tabela, conteudo] of Object.entries(foto)) {
     for (const linha of Array.isArray(conteudo) ? conteudo : [conteudo]) {
@@ -242,6 +261,17 @@ export function gravarFotoDeTeste(foto: Foto = montarFotoDeTeste()): string {
       db.prepare(`INSERT INTO ${tabela} (${colunas.join(", ")}) VALUES (${colunas.map(() => "?").join(", ")})`).run(...valores);
     }
   }
+  const contagens = contarLinhasPorTabela(db);
   db.close();
-  return pasta;
+  const conteudo = fs.readFileSync(arquivo);
+  const manifesto: ManifestoDaFoto = {
+    versaoDoEsquema: foto.foto.versao_esquema,
+    geradaEm: foto.foto.gerada_em,
+    tamanho: conteudo.length,
+    sha256: crypto.createHash("sha256").update(conteudo).digest("hex"),
+    contagens,
+  };
+  const nome = nomeDoManifesto(nomeDaFoto);
+  fs.writeFileSync(path.join(entrada, nome), JSON.stringify(mudarManifesto(manifesto)));
+  return nome;
 }

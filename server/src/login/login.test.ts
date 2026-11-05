@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { criarApp } from "../app.ts";
 import { abrirBancoDoApp } from "../bancoDoApp.ts";
 import { criarFotoAtual, type FotoAtual } from "../foto/fotoAtual.ts";
-import { CLIENTE_DE_A, gravarFotoDeTeste } from "../fotoDeTeste.ts";
+import { CLIENTE_DE_A, gravarFotoDeTeste, type PastasDeTeste } from "../fotoDeTeste.ts";
 import { criarAutenticadorDeTeste, type AutenticadorDeTeste } from "./autenticadorDeTeste.ts";
 import { resumoDasChavesDo, revogarChavesDo } from "./chaves.ts";
 import { criarConvite } from "./convites.ts";
@@ -14,7 +14,7 @@ import { criarUsuario, desativarUsuario, type Usuario } from "./usuarios.ts";
 const ORIGEM = "http://localhost:5175";
 const UM_MINUTO = 60_000;
 
-let pasta: string;
+let pastas: PastasDeTeste;
 let foto: FotoAtual;
 let banco: DatabaseSync;
 let app: FastifyInstance;
@@ -23,8 +23,8 @@ let agora: Date;
 let star: Usuario;
 
 beforeAll(() => {
-  pasta = gravarFotoDeTeste();
-  foto = criarFotoAtual(pasta);
+  pastas = gravarFotoDeTeste();
+  foto = criarFotoAtual(pastas);
 });
 
 beforeEach(() => {
@@ -36,7 +36,7 @@ beforeEach(() => {
 
 afterAll(() => {
   foto.fechar();
-  fs.rmSync(pasta, { recursive: true, force: true });
+  fs.rmSync(pastas.raiz, { recursive: true, force: true });
 });
 
 function passar(milissegundos: number): void {

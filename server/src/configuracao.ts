@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
+import type { PastasDaFoto } from "./foto/conferirFoto.ts";
 
 /*
  * Configuração do servidor, lida do server/.env (fora do git; as chaves estão em .env.example).
@@ -9,7 +10,7 @@ import { parseEnv } from "node:util";
 
 export type ConfiguracaoDoServidor = {
   porta: number;
-  pastaDasFotos: string;
+  fotos: PastasDaFoto;
   /** O app.db: usuários, chaves, sessões e auditoria. */
   arquivoDoApp: string;
   /** O endereço do CRM: a chave de acesso fica presa a ele, e os POSTs só valem dele. */
@@ -32,7 +33,10 @@ export function lerConfiguracao(): ConfiguracaoDoServidor {
   const env = fs.existsSync(arquivo) ? parseEnv(fs.readFileSync(arquivo, "utf8")) : {};
   return {
     porta: Number(env.CRM_PORTA || PORTA_PADRAO),
-    pastaDasFotos: path.resolve(PASTA_DO_SERVIDOR, env.CRM_PASTA_DAS_FOTOS || "../data/fotos"),
+    fotos: {
+      entrada: path.resolve(PASTA_DO_SERVIDOR, env.CRM_PASTA_DE_ENTRADA || "../data/fotos"),
+      conferidas: path.resolve(PASTA_DO_SERVIDOR, env.CRM_PASTA_DAS_FOTOS_CONFERIDAS || "../data/fotos-conferidas"),
+    },
     arquivoDoApp: path.resolve(PASTA_DO_SERVIDOR, env.CRM_ARQUIVO_DO_APP || "../data/app.db"),
     origem: lerOrigem("CRM_ORIGEM", env.CRM_ORIGEM, ORIGEM_DO_CRM_NESTE_COMPUTADOR),
     portaDoAdmin: Number(env.CRM_PORTA_DO_ADMIN || PORTA_PADRAO_DO_ADMIN),

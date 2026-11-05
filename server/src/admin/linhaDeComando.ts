@@ -39,7 +39,7 @@ if (!pedido || !executar) {
 } else {
   const configuracao = lerConfiguracao();
   const banco = abrirBancoDoApp(configuracao.arquivoDoApp);
-  const foto = criarFotoAtual(configuracao.pastaDasFotos);
+  const foto = criarFotoAtual(configuracao.fotos);
   try {
     const contexto: Contexto = { banco, agora: new Date(), foto: () => foto.abrir(), origens: { crm: configuracao.origem, admin: configuracao.origemDoAdmin } };
     console.log(executar(contexto, pedido.opcoes));

@@ -33,5 +33,6 @@ Cada pasta é criada na fase em que começa a ser usada.
 - **Administração (logins, chaves, convites e registro):** `abrir-administracao.bat`, ou `npm run dev:admin` com a API aberta, em http://localhost:5179. É um site à parte, só para quem administra, com o login de admin.
   - Na primeira vez, crie o seu login de admin: `npm run admin -- criar-admin --nome "Seu nome"`. Abra no Chrome ou no Edge o link que ele escreve.
   - Os mesmos comandos continuam na linha de comando (`npm run admin`), para o servidor, por SSH.
-- **Só a foto:** `npm run foto` (ou `npm run foto -- --env <outro .env>`). A foto vai para `data/fotos/`, e a API passa a usar a mais nova em até 30 s.
+- **Só a foto:** `npm run foto` (ou `npm run foto -- --env <outro .env>`). A foto vai para `data/fotos/`, com o manifesto. Em até 30 s, a API copia a mais nova para `data/fotos-conferidas/`, confere a cópia e passa a usá-la.
+  - O extrator recusa a foto que mudou demais desde a anterior: uma tabela grande que caiu ou subiu mais de 50%, ou dados que voltaram no tempo. Se a mudança é esperada, `npm run foto -- --aceitar-mudanca`.
 - **Testes e tipos:** `npm test` e `npm run typecheck`.

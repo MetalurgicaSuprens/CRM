@@ -6,7 +6,7 @@ import type { DetalheDoLogin, LoginNaGestao, PaginaDoRegistro } from "../../../w
 import { criarApp } from "../app.ts";
 import { abrirBancoDoApp } from "../bancoDoApp.ts";
 import { criarFotoAtual, type FotoAtual } from "../foto/fotoAtual.ts";
-import { CLIENTE_DE_A, gravarFotoDeTeste } from "../fotoDeTeste.ts";
+import { CLIENTE_DE_A, gravarFotoDeTeste, type PastasDeTeste } from "../fotoDeTeste.ts";
 import { criarAutenticadorDeTeste, type AutenticadorDeTeste } from "../login/autenticadorDeTeste.ts";
 import { cabecalhoDoCookie, entrarComo, entrarComoAdmin } from "../login/loginDeTeste.ts";
 import { PORTAL_DO_ADMIN, PORTAL_DO_CRM } from "../login/portal.ts";
@@ -16,7 +16,7 @@ import { criarLoginDeAdmin } from "./gestao.ts";
 const ORIGEM_DO_CRM = "http://localhost:5175";
 const ORIGEM_DO_ADMIN = "http://localhost:5179";
 
-let pasta: string;
+let pastas: PastasDeTeste;
 let foto: FotoAtual;
 let banco: DatabaseSync;
 let crm: FastifyInstance;
@@ -25,8 +25,8 @@ let cookieDoAdmin: string;
 let idDoAdmin: string;
 
 beforeAll(() => {
-  pasta = gravarFotoDeTeste();
-  foto = criarFotoAtual(pasta);
+  pastas = gravarFotoDeTeste();
+  foto = criarFotoAtual(pastas);
 });
 
 beforeEach(() => {
@@ -40,7 +40,7 @@ beforeEach(() => {
 
 afterAll(() => {
   foto.fechar();
-  fs.rmSync(pasta, { recursive: true, force: true });
+  fs.rmSync(pastas.raiz, { recursive: true, force: true });
 });
 
 function lerNoAdmin(url: string, cookie = cookieDoAdmin) {
