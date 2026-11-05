@@ -19,10 +19,10 @@ const SEM_FATURADO = "sem faturado em 12 meses";
 
 export const RECEITA: LenteDoMapa = {
   rotulo: "Receita",
+  icone: ReceiptText,
   subtitulo: "Cada círculo é o faturado do município em 12 meses; a cor, se ele cresce ou cai",
   lista: {
     titulo: "Regiões que mais faturam",
-    icone: ReceiptText,
     subtitulo: "Regiões imediatas do IBGE: a cidade-polo e o entorno",
     barra: estilos.barraDeReceita,
     vazio: () => "Nenhum faturado nos últimos 12 meses.",

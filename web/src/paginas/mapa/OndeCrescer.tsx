@@ -21,10 +21,10 @@ const CIDADES_SEM_CLIENTE = 8;
 
 export const ONDE_CRESCER: LenteDoMapa = {
   rotulo: "Onde crescer",
+  icone: Sprout,
   subtitulo: "Em verde, o potencial que falta onde você tem cliente e nas regiões vizinhas",
   lista: {
     titulo: "Onde crescer",
-    icone: Sprout,
     subtitulo: "Onde você tem cliente e as regiões vizinhas, pelo que faturariam na sua média pelo PIB agro + indústria",
     barra: estilos.barraDePotencial,
     vazio: ({ territorio }) =>

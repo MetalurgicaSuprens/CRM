@@ -4,6 +4,7 @@
   gap: var(--esp-5);
 }
 
+/* As visões à esquerda; o "Perto de mim", na ponta direita */
 .controles {
   display: flex;
   flex-wrap: wrap;
@@ -12,13 +13,65 @@
   gap: var(--esp-3);
 }
 
-/* As visões e o "Perto de mim", juntos à esquerda */
-.grupoDeControles {
+/*
+ * As visões do mapa, em destaque (pedido do Lucas em 2026-11-05): botões brancos com o ícone no
+ * círculo; a escolhida fica como o filtro neutro escolhido, com a borda grafite e o círculo cheio.
+ */
+.visoes {
   display: flex;
   flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+.visao {
+  display: inline-flex;
   align-items: center;
-  gap: var(--esp-3);
-  min-width: 0;
+  gap: var(--esp-2);
+  padding: 5px var(--esp-4) 5px 5px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-1);
+  font-size: var(--tam-texto);
+  font-weight: 600;
+  color: var(--cor-texto-2);
+  white-space: nowrap;
+  transition:
+    box-shadow var(--transicao),
+    border-color var(--transicao),
+    color var(--transicao);
+}
+
+/* Só com mouse: no celular, o toque deixaria o botão "levantado" */
+@media (hover: hover) {
+  .visao:hover {
+    color: var(--cor-texto);
+    box-shadow: var(--sombra-2);
+  }
+}
+
+.visao[aria-pressed="true"] {
+  border-color: var(--cor-acento);
+  color: var(--cor-texto);
+  box-shadow: 0 12px 24px -12px color-mix(in srgb, var(--cor-acento) 35%, transparent);
+}
+
+/* 32 px com ícone de 16 px: a diferença de 16 px deixa o ícone no centro exato (ver IconeNoCirculo) */
+.iconeDaVisao {
+  --tamanho-do-icone: 16px;
+  width: 32px;
+  height: 32px;
+}
+
+.visao[aria-pressed="true"] > .iconeDaVisao {
+  background: var(--cor-acento);
+  color: var(--cor-superficie);
+}
+
+/* Os estados da carteira, no alto do cartão do mapa: no computador, quebram a linha em vez de esconder os últimos */
+.estados {
+  align-self: flex-start;
+  flex-wrap: wrap;
 }
 
 /* Quantos clientes ficam fora do mapa por falta do município no cadastro */
@@ -494,5 +547,19 @@
 
   .numerosDoCliente {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 640px) {
+  /* Duas visões por linha, todas à vista; o "Perto de mim" vai para a linha de baixo */
+  .visoes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  /* No celular, os estados rolam para o lado, como antes */
+  .estados {
+    flex-wrap: nowrap;
   }
 }

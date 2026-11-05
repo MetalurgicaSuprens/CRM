@@ -5,6 +5,7 @@ import { unidadesDoMapa, type Caixa, type MapaDaUf, type MunicipioDoMapa, type P
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
+import { IconeNoCirculo } from "../componentes/IconeNoCirculo";
 import { DataRelativa } from "../componentes/Quando";
 import { Segmentos } from "../componentes/Segmentos";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
@@ -39,7 +40,7 @@ import estilos from "./Mapa.module.css";
 const LENTES = { agir: ONDE_AGIR, receita: RECEITA, esquecidas: ESQUECIDAS, crescer: ONDE_CRESCER } as const satisfies Record<string, LenteDoMapa>;
 type ChaveDaLente = keyof typeof LENTES;
 const PADRAO: ChaveDaLente = "agir";
-const OPCOES = (Object.keys(LENTES) as ChaveDaLente[]).map((chave) => ({ valor: chave, rotulo: LENTES[chave].rotulo }));
+const CHAVES = Object.keys(LENTES) as ChaveDaLente[];
 
 type Escolha = { uf: string; tipo: "regiao" | "municipio"; codigo: string };
 
@@ -125,27 +126,17 @@ export function Mapa() {
     <div className={estilos.pagina}>
       <CabecalhoPagina titulo="Mapa" descricao="Para onde ir, de onde vem a receita e onde ainda dá para crescer" />
       <div className={estilos.controles}>
-        <div className={estilos.grupoDeControles}>
-          <Segmentos rotulo="O que o mapa mostra" opcoes={OPCOES} selecionado={chave} aoEscolher={(valor) => alterar("visao", valor, PADRAO)} />
-          <button
-            type="button"
-            className={botoes.secundario}
-            onClick={buscar}
-            disabled={localizacao.estado === "buscando"}
-            aria-pressed={localizacao.estado === "achou"}
-          >
-            <LocateFixed size={16} aria-hidden="true" />
-            {localizacao.estado === "buscando" ? "Procurando…" : "Perto de mim"}
-          </button>
-        </div>
-        {ufs.length > 1 ? (
-          <Segmentos
-            rotulo="Estado"
-            opcoes={ufs.map(({ uf: sigla, clientes: quantos }) => ({ valor: sigla, rotulo: sigla, contagem: quantos }))}
-            selecionado={uf}
-            aoEscolher={(valor) => alterar("uf", valor, ufs[0]?.uf ?? "")}
-          />
-        ) : null}
+        <Visoes escolhida={chave} aoEscolher={(valor) => alterar("visao", valor, PADRAO)} />
+        <button
+          type="button"
+          className={botoes.secundario}
+          onClick={buscar}
+          disabled={localizacao.estado === "buscando"}
+          aria-pressed={localizacao.estado === "achou"}
+        >
+          <LocateFixed size={16} aria-hidden="true" />
+          {localizacao.estado === "buscando" ? "Procurando…" : "Perto de mim"}
+        </button>
       </div>
       {localizacao.estado === "erro" ? (
         <p className={estilos.aviso} role="alert">
@@ -175,6 +166,15 @@ export function Mapa() {
           }
           className={estilos.cartaoDoMapa}
         >
+          {ufs.length > 1 ? (
+            <Segmentos
+              rotulo="Estado"
+              opcoes={ufs.map(({ uf: sigla, clientes: quantos }) => ({ valor: sigla, rotulo: sigla, contagem: quantos }))}
+              selecionado={uf}
+              aoEscolher={(valor) => alterar("uf", valor, ufs[0]?.uf ?? "")}
+              className={estilos.estados}
+            />
+          ) : null}
           <MapaDoTerritorio
             descricao={`Mapa de ${territorio.nome}: ${lente.subtitulo}`}
             brasil={brasil}
@@ -262,15 +262,31 @@ function chaveDaLente(valor: string | null): ChaveDaLente {
   return valor !== null && valor in LENTES ? (valor as ChaveDaLente) : PADRAO;
 }
 
+type PropsDasVisoes = { escolhida: ChaveDaLente; aoEscolher: (chave: ChaveDaLente) => void };
+
+/** As visões do mapa, a escolha que mais muda a página: botões grandes, com o ícone de cada uma (pedido do Lucas em 2026-11-05). */
+function Visoes({ escolhida, aoEscolher }: PropsDasVisoes) {
+  return (
+    <div className={estilos.visoes} role="group" aria-label="O que o mapa mostra">
+      {CHAVES.map((chave) => (
+        <button key={chave} type="button" className={estilos.visao} aria-pressed={chave === escolhida} onClick={() => aoEscolher(chave)}>
+          <IconeNoCirculo icone={LENTES[chave].icone} tom="neutro" className={estilos.iconeDaVisao} />
+          {LENTES[chave].rotulo}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 type PropsDaLista = { lente: LenteDoMapa; contexto: ContextoDaLente; escolhido: string | null; aoEscolher: (item: ItemDaLista) => void };
 
 /** A lista que acompanha o mapa, na ordem da visão; a linha escolhida é a que o mapa aproxima. */
 function Lista({ lente, contexto, escolhido, aoEscolher }: PropsDaLista) {
   const [isCompleta, setIsCompleta] = useState(false);
   const itens = lente.itens(contexto);
-  const { titulo, icone, subtitulo, barra, vazio } = lente.lista;
+  const { titulo, subtitulo, barra, vazio } = lente.lista;
   return (
-    <Cartao titulo={titulo} icone={icone} subtitulo={subtitulo} className={estilos.cartaoDoRanking}>
+    <Cartao titulo={titulo} icone={lente.icone} subtitulo={subtitulo} className={estilos.cartaoDoRanking}>
       {itens.length === 0 ? (
         <p className={estilos.vazio}>{vazio(contexto)}</p>
       ) : (

@@ -15,10 +15,10 @@ import { classesDosMunicipiosComCliente, colunaDaVisita, type ContextoDaLente, t
 
 export const ONDE_AGIR: LenteDoMapa = {
   rotulo: "Onde agir",
+  icone: Target,
   subtitulo: "Cada círculo é o dinheiro em jogo por mês nos clientes da cidade que pedem ação",
   lista: {
     titulo: "Onde agir primeiro",
-    icone: Target,
     subtitulo: "Regiões imediatas do IBGE, pelo dinheiro em jogo por mês",
     barra: estilos.barraDePerda,
     vazio: () => "Nenhum cliente pede ação neste estado agora.",

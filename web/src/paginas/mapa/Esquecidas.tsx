@@ -23,10 +23,10 @@ const FAIXAS = ["até 30 dias", "31 a 90 dias", "91 a 180 dias", "mais de 180 di
 
 export const ESQUECIDAS: LenteDoMapa = {
   rotulo: "Esquecidas",
+  icone: CalendarClock,
   subtitulo: "Há quanto tempo cada cidade não tem compra nem visita sua",
   lista: {
     titulo: "Sem compra há mais tempo",
-    icone: CalendarClock,
     subtitulo: "As cidades com cliente, da mais esquecida à mais recente",
     barra: estilos.barraDeRecencia,
     vazio: () => "Nenhuma cidade com cliente neste estado.",

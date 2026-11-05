@@ -29,11 +29,12 @@ export type ItemDaLista = {
 
 export type LenteDoMapa = {
   rotulo: string;
+  /** No botão da visão, no alto da página, e no cartão da lista. */
+  icone: LucideIcon;
   /** Embaixo do nome do estado, no cartão do mapa. */
   subtitulo: string;
   lista: {
     titulo: string;
-    icone: LucideIcon;
     subtitulo: string;
     /** A classe da cor da barra (Mapa.module.css). */
     barra: string | undefined;
