@@ -107,7 +107,7 @@ describe("histórico de pedidos da ficha", () => {
 
   it("traz o rascunho do cliente, junto dos pedidos do ERP", async () => {
     const codigo = maior?.codigo ?? "";
-    const rascunho = salvarRascunhoFicticio({ id: null, codigoCliente: codigo, itens: [], entrega: null, observacao: "" });
+    const rascunho = salvarRascunhoFicticio({ id: "rascunho-de-teste", codigoCliente: codigo, itens: [], entrega: null, observacao: "" });
     const ficha = await fonteFicticia.carregarFicha(codigo);
     expect(ficha?.pedidos.find((pedido) => pedido.id === rascunho?.id)).toMatchObject({ numero: null, status: "rascunho" });
   });

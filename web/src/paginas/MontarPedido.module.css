@@ -92,6 +92,80 @@
   text-align: right;
 }
 
+/*
+ * Embaixo do produto, numa linha só: o campo do preço do cento e de onde ele vem (a última compra e o
+ * mínimo), cortado se faltar espaço, para cada item ficar em duas linhas e a lista mostrar vários.
+ */
+.precoDoItem {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  min-width: 0;
+}
+
+.campoDoPreco {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--esp-2);
+  white-space: nowrap;
+  color: var(--cor-texto-2);
+  font-size: var(--tam-legenda);
+  font-weight: 500;
+}
+
+.campoDoPreco input {
+  width: 6.5rem;
+  height: 2rem;
+  padding: 0 var(--esp-2);
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  font-size: var(--tam-pequeno);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.campoDoPreco input:focus {
+  outline: none;
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
+}
+
+.precoOculto {
+  letter-spacing: 0.08em;
+  color: var(--cor-texto-suave);
+}
+
+.referenciasDoPreco,
+.avisoDoPreco {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--tam-legenda);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.referenciasDoPreco {
+  color: var(--cor-texto-suave);
+}
+
+.avisoDoPreco {
+  color: var(--cor-alerta);
+  font-weight: 500;
+}
+
+/* O rascunho que voltou diferente do salvo: produto que saiu do catálogo ou preço que subiu para a tabela */
+.avisoDoRascunho {
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+  font-size: var(--tam-pequeno);
+}
+
 /* Numa coluna estreita, o produto ocupa a linha toda; a quantidade e o valor ficam embaixo */
 @container (max-width: 19rem) {
   .item {

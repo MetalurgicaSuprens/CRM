@@ -409,14 +409,16 @@ Os valores dos pedidos têm os centavos (pedido do Lucas em 2026-10-20): as quat
 | Medida | "14–22 mm" na descrição e na busca | Faixa de aperto em mm; sem as duas pontas, nenhuma (kits, molas). Em 14/10, 470 dos 692 produtos do catálogo tinham | `PAC_DMI_MM`, `PAC_DMA_MM` | extrator |
 | Part number | "part number X" na descrição; com mais de um, o que a busca achou (ou o primeiro) e "+N", com todos na dica. A busca acha por qualquer um, com ou sem pontuação e espaços (dados/busca.ts, `correspondeAoProduto` e `partNumberDaBusca`, com teste) | Desde 2026-10-20, a pedido do Lucas, vem da Bíblia Montadora do SGI (Relatórios > Administrativo > Vendas): o "Código Cliente" dos itens ativos das tabelas de preço de montadora, o mesmo do produto em todas as listas, sem o nome da montadora. Ativo é o status do item na Bíblia, `TP2_STA LIKE 'ATIVO%'`, como o filtro do relatório: inclui o ATIVO-DB, como o Lucas confirmou em 2026-10-20 (12 itens, 1 deles no catálogo); '0' é vazio. Em 20/10, 372 dos 807 produtos do catálogo têm part number, 206 com mais de um (até 11); as FAN não estão na Bíblia. Até 2026-10-20 vinha da tabela de preço do cliente (`VIEW_PNU_FOR`), e nas FAN só a tabela da UNIFORT tinha código, o dela | `SGI5_TAB_VEN_TP2.TP2_CMO`, nas tabelas com `SGI5_TAB_VEN_TP1.TP1_TIP = 'M'` (untVenTab_RelBibliaMont.dfm, `qryRel`; Principal.pas, `ImprimirRelVen001`) | extrator (`produto_part_number`) |
 | Embalagem | "100 pç" e o passo dos botões + e − da quantidade | Peças por embalagem: a quantidade do EAN do produto. Em 14/10, cada produto do catálogo tinha um EAN só (100, 50, 20, 500…); o múltiplo e o lote mínimo da tabela vinham vazios. Sem EAN, qualquer quantidade | `SGI5_TAB_ENG_EAN.EAN_QTD`, pelo `EAN_COD` | extrator |
-| Cento | Preço do cento, só referência | Decidido pelo Lucas em 2026-10-14: o preço da tabela do cliente com o desconto do modelo do produto e, sem ele, com o desconto padrão do cliente. É a conta da view do SGI: `TP2_PVE × DES_IND ÷ 100`, com o desconto de `SGI5_TAB_VEN_CLI2` (cliente × `PAC_MOD`) no lugar do `CLI_DES` quando existe. Em 14/10, a conta refeita pelas tabelas deu o mesmo preço nos 122.142 pares de cliente e produto. Sem IPI | `VIEW_VLR_LIQ` | extrator |
+| Cento | No catálogo, o preço com que o item entra no pedido: o da última compra, nunca abaixo da tabela do cliente (dados/pedido.ts, `precoInicialDoItem`, com teste) | A tabela do cliente, que é o mínimo, decidida pelo Lucas em 2026-10-14: o preço da tabela com o desconto da família (o do modelo, `SGI5_TAB_VEN_CLI2`, que o SGI chama de "Descontos por modelo", com família e modelo na chave) e, sem ele, com o desconto padrão do cliente. É a conta da view do SGI: `TP2_PVE × DES_IND ÷ 100`, com o desconto de `SGI5_TAB_VEN_CLI2` (cliente × `PAC_MOD`) no lugar do `CLI_DES` quando existe. Em 14/10, a conta refeita pelas tabelas deu o mesmo preço nos 122.142 pares de cliente e produto. Sem IPI | `VIEW_VLR_LIQ` | extrator |
+| Última compra | "Última compra R$ 98,40, 15/09/2026 · Mínimo R$ 95,50" embaixo de cada item do pedido | O preço do cento da última linha de nota de venda do CNPJ em que o produto veio com valor, nos 24 meses (a bonificação não conta): o preço unitário da linha, que vem em CT (em peça, ×100). Não é o total ÷ peças, que o arredondamento do total desvia em centavos. Em 05/11, na carteira toda, ele batia no centavo com a tabela de hoje em 93% dos 61.495 pares de cliente e produto; ficava acima em 2,8% e abaixo em 4,5% | `NFDE.VLR_UNIT` e `UNIDADE`, `NFME.DT_EMISSAO` | extrator (`produto_comprado.ultima_compra` e `preco_cento_na_ultima`, versão 17) |
+| Preço do item | Campo "Cento R$" em cada item do pedido; vale ao sair do campo ou com Enter. Com os valores ocultos, o campo some | Começa no da última compra, nunca abaixo da tabela do cliente; o representante pode mudar (pedido do Lucas em 2026-11-05). Abaixo da tabela, sobe para ela e avisa "Subiu para o mínimo" (dados/pedido.ts, `precoDigitado`, com teste). O servidor recusa o rascunho com preço abaixo da tabela (400) | (foto) | navegador; app.db no rascunho |
 | Já comprou | Separa as abas | Produto da lista do cliente que ele comprou nos últimos 24 meses, com o mês corrente (proposta, pergunta 28) | `TRIM(NFDE.C_PROD)` com a RF | extrator (`produto_comprado`) |
 | Quantidade | Peças: o que for digitado fica como está; o + vai à próxima embalagem fechada e o − à de baixo (de 300, num item de 500, o + vai a 500 e o − a 0) | Inteira e positiva. Fora da embalagem também vale, porque pedir 300 peças de um item de 500 é o dia a dia (decisão do Lucas em 2026-10-20; antes, a tela arredondava para cima e não enviava) | nenhuma | app.db |
-| Valor do item | Ao lado da quantidade (MontarPedido.tsx:290) | Peças ÷ 100 × cento | (foto) | navegador |
+| Valor do item | Ao lado da quantidade | Peças ÷ 100 × o preço do item, no centavo (dominio/pedido.ts, `valorDaLinha`, igual no servidor) | (foto) | navegador; servidor no total do rascunho |
 | Entrega desejada | Data com mínimo hoje | Não antes de hoje, pelo relógio de Brasília | vira `PV2_DEN` de cada item (no arquivo, `CGA_DEN`) | app.db |
 | Observação | "Observação (n/300)" | Até 300 caracteres, conjunto permitido, CP1252 | vira `PV1_OBS` | app.db |
 | Total estimado | Barra e fechamento, com os centavos | Σ dos itens. Cada item, peças ÷ 100 × cento, é arredondado ao centavo, e o total é a soma do que a tela mostra (dados/pedido.ts, `valorDaLinha` e `totalDoPedido`, com teste) | (foto) | navegador; ao salvar e enviar: servidor |
-| Rascunho salvo | "Rascunho salvo hoje, 16:42." | Grava 700 ms depois da última mudança, quando há item | nenhuma | app.db |
+| Rascunho salvo | "Rascunho salvo hoje, 16:42: fica em Pedidos, na aba Rascunhos." | No servidor, no app.db do login, desde 2026-11-05 (pedido do Lucas: o pedido sobrevive ao computador desligar). Grava 700 ms depois da última mudança, quando há item, e na hora em que a página fecha, sai da tela ou o representante vai para outra tela (`keepalive`). O id é um UUID que a tela gera e põe no endereço (`/pedidos/novo?cliente=…&rascunho=…`): salvar de novo não duplica, e recarregar a página ou o navegador reabrir a aba continua o mesmo pedido | nenhuma | app.db (`PUT /api/rascunhos/:id`) |
 | Confirmar com chave | Diálogo de envio | Nova verificação da chave, ligada ao hash do pedido (plano.md:148) | nenhuma | app.db |
 
 - **Produto vendável.** Os critérios vêm do SGI. A LAN repete a mesma regra ao revalidar (plano.md:173).
@@ -431,16 +433,15 @@ Os valores dos pedidos têm os centavos (pedido do Lucas em 2026-10-20): as quat
   - O preço já tem o desconto do cliente e não tem IPI. O SGI aplica o IPI à parte (`untVenPvd_ItensMov.pas:181-185`).
 - **Tabela.** Proposta: a linha com `CLI_STA = 'PRINCIPAL'`. O SGI ignora `CLI_STA` e deixa o usuário escolher quando há mais de uma (`untVenPvd_PvdIncluir.pas:1167-1176`). Pendência do plano.md:335.
 - **Part number.** A PK da `SGI5_TAB_VEN_TP2` inclui o part number (TP2_COD, TP2_PRO, TP2_CMO): o mesmo produto aparece uma vez por part number. O catálogo indexa pelo código, e os part numbers vão numa lista por produto (`produto_part_number`, desde 2026-10-20).
-- **O navegador nunca manda preço, tabela nem representante.** `RascunhoParaSalvar` tem só id, código do cliente, itens, entrega e observação (tipos.ts:251-257). O servidor confere:
-  - cliente na carteira;
-  - produto no catálogo do cliente;
+- **O navegador nunca manda tabela nem representante.** Desde 2026-11-05 ele manda o preço do cento de cada item, que o representante pode mudar. `RascunhoParaSalvar` tem id, código do cliente, itens (produto, peças e preço), entrega e observação. O servidor confere (server/src/rascunhos.ts e o schema em rotas.ts):
+  - cliente na carteira do login, um CNPJ (o grupo não) e ativo no cadastro (409 com o aviso, senão);
+  - produto no catálogo do cliente, uma vez só;
+  - preço do cento não abaixo da tabela do cliente, no centavo;
   - quantidade inteira e positiva, também fora da embalagem (2026-10-20);
-  - limite de itens;
-  - schema estrito.
-- **Rascunho com produto que saiu do catálogo** (deixou de ser vendável ou perdeu o preço entre duas fotos).
-  - A tela carrega as quantidades de todos os itens do rascunho (MontarPedido.tsx:71-72), mostra só os que estão no catálogo (MontarPedido.tsx:80) e reenvia todos em cada salvamento automático (MontarPedido.tsx:184-186).
-  - Com a validação "produto no catálogo do cliente", o servidor recusaria o rascunho inteiro em todo salvamento.
-  - A aba Rascunhos conta esse item em "N produtos" (Pedidos.tsx:169), e o total estimado não tem preço para ele (pergunta 33).
+  - até 300 itens, observação de até 300 caracteres sem caractere de controle, entrega que existe;
+  - até 100 rascunhos por login;
+  - schema estrito, com o UUID do rascunho no endereço.
+- **Rascunho com produto que saiu do catálogo** (deixou de ser vendável ou perdeu o preço entre duas fotos). Desde 2026-11-05, ao abrir o rascunho, a tela tira o item e avisa "1 produto do rascunho saiu do catálogo do cliente e ficou fora do pedido"; o preço que ficou abaixo da tabela (ela subiu) sobe para ela, também com aviso (dados/pedido.ts, `rascunhoNoCatalogo`, com teste). O salvamento seguinte já vai sem o item, e o servidor recusa produto fora do catálogo.
 - **URL do catálogo.** O catálogo é pedido pelo código do cliente na URL (`/pedidos/novo?cliente=`). Com o id opaco, a query string deixa de levar o CNPJ e, na pessoa física, o CPF.
 - **Quantidade.** A única conversão é peças ÷ 100 = CT (pedido.ts:8-9 e 23-25). Ela acontece na LAN, ao montar o arquivo do SGI.
 - **Entrega.**
@@ -680,7 +681,7 @@ Convenções:
 | `produto` | Produto que aparece em `lista_de_precos`, `ficha_produto`, `pedido_aberto_item` ou `nota_item`; PK `produto` | `produto`, `familia`, `medida`, `embalagem` | Ficha, Pedidos, Montar pedido, Detalhe (cópia no envio) |
 | `lista_de_precos` | Lista × produto vendável: clientes com a mesma tabela e os mesmos descontos dividem uma lista; PK (`lista`, `produto`) | `lista`, `produto`, `preco_cento` (sem `part_number` desde a versão 16) | Montar pedido; validação do rascunho e do envio |
 | `produto_part_number` | Produto × part number da Bíblia Montadora: só os itens ativos das tabelas de montadora e só os produtos de alguma lista (versão 16); PK (`produto`, `part_number`) | `produto`, `part_number` | Montar pedido |
-| `produto_comprado` | Cliente × produto da lista dele comprado nos últimos 24 meses; PK (`cliente`, `produto`) | `cliente`, `produto` | Montar pedido |
+| `produto_comprado` | Cliente × produto da lista dele comprado nos últimos 24 meses; PK (`cliente`, `produto`) | `cliente`, `produto`, `ultima_compra` e `preco_cento_na_ultima` (a última nota com preço; nulos só com bonificação; versão 17) | Montar pedido |
 | `analise_parado` | Cliente que parou de comprar; PK `cliente` | `cliente`, `perda_mensal`, `ordem` | Análises, Início |
 | `analise_ritmo` | Cliente comprando menos ou mais; PK `cliente` | `cliente`, `direcao`, `semestre`, `semestre_ano_anterior`, `variacao`, `variacao_pecas`, `ordem` | Análises, Início |
 | `analise_novo` | Cliente novo ou reativado; PK `cliente` | `cliente`, `tipo`, `desde`, `faturado_desde`, `ordem` | Análises, Início |
@@ -760,7 +761,7 @@ As seis primeiras tabelas existem desde a F3 (`server/src/bancoDoApp.ts`, migra�
 | `sessoes` | hash do token, usuário, chave usada, criada em, último uso, encerrada em e motivo | todas, Entrar |
 | `auditoria` | momento, usuário (ou "linha-de-comando"), evento, alvo, resultado | Admin |
 | `visitas` (migração 3, 2026-10-18) | usuário, cliente (id opaco), dia da visita, registrada em; um dia por cliente e login, sem texto livre | Ficha, Mapa |
-| `rascunhos` e itens | id aleatório, usuário, cliente (id opaco), entrega, observação, atualizado em; itens com produto e quantidade em peças | Pedidos, Montar pedido |
+| `rascunhos` e `rascunho_itens` (migração 4, 2026-11-05) | id (o UUID da tela), usuário, cliente (id opaco), entrega, observação, criado em, atualizado em; itens com a ordem, o produto, a quantidade em peças e o preço do cento | Pedidos, Montar pedido, Ficha |
 | `pedidos` e itens | número CRM, usuário, cliente, enviado em, entrega, observação, total estimado, hash do conteúdo, asserção da chave e id da chave; itens com produto, quantidade, cento, família e medida copiados da foto | Pedidos, Detalhe |
 | sequência do número CRM | último número usado; nunca reutilizado | Pedidos |
 
@@ -1074,8 +1075,8 @@ O login de verdade, com a chave de acesso, aprovado pelo Lucas em 2026-10-15 com
 31. **Motivo da recusa.** Fechar a lista de códigos e frases, escrita pelo importador e pela validação da LAN. Quais códigos são por item e levam o código do produto (`motivo_produto`)?
 32. **Valor em aberto.** O pedido antecipado bloqueado (condição de pagamento 1000, `untRecCpv_Cpv.pas:344-373`) entra no valor em aberto? A coluna "Itens" conta só as linhas com saldo? A "Entrega" mostra a próxima entrega com saldo ou a entrega do cabeçalho?
 33. **Rascunho de cliente que saiu da carteira.** Some, fica bloqueado para envio ou continua visível? O pedido já enviado continua visível para quem enviou?
-    - E o rascunho com produto que saiu do catálogo do cliente? O servidor tira o item na leitura e avisa o representante, ou bloqueia só o envio? Hoje a tela esconde o item (MontarPedido.tsx:80), mas o reenvia em todo salvamento (MontarPedido.tsx:184-186), e a validação recusaria o rascunho inteiro.
-    - Como esse item entra em "N produtos" e no total estimado da aba Rascunhos?
+    - Respondido em 2026-11-05: o rascunho de cliente que saiu da carteira some (404), como a ficha. O de produto que saiu do catálogo perde o item, com aviso, ao ser aberto.
+    - O total estimado e o "N produtos" da aba Rascunhos contam os itens como foram salvos, pelo preço de cada um.
     - E o pedido em aberto ou a nota atribuídos ao representante de cliente que hoje é de outra carteira? Proposta: a linha aparece sem o nome, com "Cliente de outra carteira", e sem link para a ficha (ver Pedidos).
 34. **Mapa.** Decidido em 2026-10-09: saem as classes "atendida" e "carteira de outros". O mapa mostra só a carteira do representante (plano.md:199).
 35. **Contrato.** Tirar os campos sem tela: `FaturamentoMensal.pecas`, `ClienteParado.diasSemComprar` e os itens de "mais" e "novos" nos destaques do Início.

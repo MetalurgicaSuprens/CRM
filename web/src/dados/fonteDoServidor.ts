@@ -3,11 +3,11 @@ import { irParaAEntrada, mensagemDeErro } from "./http";
 
 /*
  * Os dados reais: a API do servidor, que lê a foto do ERP (server/src/rotas.ts). Mesma origem,
- * sem CORS; o representante vem da sessão, nunca daqui.
- * Rascunhos e envio chegam com os pedidos (app.db na F5).
+ * sem CORS; o representante vem da sessão, nunca daqui. Os rascunhos ficam no app.db do servidor;
+ * o envio do pedido ao ERP chega na F5.
  */
 
-const AINDA_SEM_PEDIDOS = "Com os dados reais, os pedidos ainda não são gravados. Isso chega com os pedidos (F5).";
+const ENVIO_AINDA_NAO = "Com os dados reais, o envio do pedido ao ERP chega na F5. O rascunho está salvo em Pedidos, na aba Rascunhos.";
 
 export const fonteDoServidor: FonteDeDados = {
   carregarSituacaoDosDados: () => buscar("/api/situacao"),
@@ -18,10 +18,10 @@ export const fonteDoServidor: FonteDeDados = {
   carregarCatalogo: (codigoCliente) => buscarOuNulo(`/api/clientes/${encodeURIComponent(codigoCliente)}/catalogo`),
   carregarPedidos: () => buscar("/api/pedidos"),
   carregarPedidoEnviado: () => Promise.resolve(null),
-  carregarRascunho: () => Promise.resolve(null),
-  salvarRascunho: () => Promise.reject(new Error(AINDA_SEM_PEDIDOS)),
-  excluirRascunho: () => Promise.reject(new Error(AINDA_SEM_PEDIDOS)),
-  enviarPedido: () => Promise.reject(new Error(AINDA_SEM_PEDIDOS)),
+  carregarRascunho: (id) => buscarOuNulo(`/api/rascunhos/${encodeURIComponent(id)}`),
+  salvarRascunho: ({ id, ...conteudo }, opcoes) => gravar("PUT", `/api/rascunhos/${encodeURIComponent(id)}`, conteudo, opcoes?.aoSairDaPagina),
+  excluirRascunho: (id) => gravar("DELETE", `/api/rascunhos/${encodeURIComponent(id)}`),
+  enviarPedido: () => Promise.reject(new Error(ENVIO_AINDA_NAO)),
   carregarVisitas: () => buscar("/api/visitas"),
   registrarVisita: (codigo) => mudarVisita("POST", codigo, {}),
   desfazerVisita: (codigo, data) => mudarVisita("DELETE", codigo, { data }),
@@ -29,14 +29,23 @@ export const fonteDoServidor: FonteDeDados = {
 
 /** O servidor confere que o cliente é da carteira e a data, e devolve as visitas dele. */
 async function mudarVisita(metodo: "POST" | "DELETE", codigo: string, corpo: { data?: string }): Promise<string[]> {
-  const resposta = await fetch(`/api/clientes/${encodeURIComponent(codigo)}/visitas`, {
+  return (await gravar<{ visitas: string[] }>(metodo, `/api/clientes/${encodeURIComponent(codigo)}/visitas`, corpo)).visitas;
+}
+
+/**
+ * O pedido que muda algo no servidor. Sem corpo, vai sem Content-Type. `manterAoSair` deixa o
+ * navegador terminar o envio depois de a página fechar (keepalive).
+ */
+async function gravar<T>(metodo: "POST" | "PUT" | "DELETE", caminho: string, corpo?: object, manterAoSair = false): Promise<T> {
+  const resposta = await fetch(caminho, {
     method: metodo,
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify(corpo),
+    headers: corpo ? { Accept: "application/json", "Content-Type": "application/json" } : { Accept: "application/json" },
+    body: corpo ? JSON.stringify(corpo) : undefined,
+    keepalive: manterAoSair,
   });
   if (resposta.status === 401) return irParaAEntrada(resposta);
   if (!resposta.ok) throw new Error(await mensagemDeErro(resposta));
-  return ((await resposta.json()) as { visitas: string[] }).visitas;
+  return (resposta.status === 204 ? undefined : await resposta.json()) as T;
 }
 
 async function buscar<T>(caminho: string): Promise<T> {

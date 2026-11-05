@@ -7,10 +7,10 @@ import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, resumoDoCliente, texto, t
  * Pedidos do login: em aberto no ERP e notas dos últimos 45 dias, só os atribuídos aos códigos
  * dele, cada um com os itens que a linha mostra ao abrir. O nome do cliente só aparece quando o
  * cliente é da carteira do login.
- * Enviados e rascunhos ficam no app.db, que chega na F3.
+ * Os rascunhos vêm do app.db, e a rota junta (rotas.ts); os enviados chegam na F5.
  */
 
-export function lerPedidos(db: DatabaseSync, sessao: Sessao): PainelDePedidos {
+export function lerPedidos(db: DatabaseSync, sessao: Sessao): Omit<PainelDePedidos, "rascunhos"> {
   const { marcas, codigos } = escopo(sessao);
   /** Linhas ligadas a `x` (pedido ou nota) atribuído ao login e de cliente da carteira dele. */
   const doLogin = (tabelas: string, colunas: string, ordem: string) =>
@@ -43,7 +43,6 @@ export function lerPedidos(db: DatabaseSync, sessao: Sessao): PainelDePedidos {
   );
   return {
     enviados: [],
-    rascunhos: [],
     emAberto: doLogin("pedido_aberto x", `${COLUNAS_DO_RESUMO}, x.pedido, x.emissao, x.entrega, x.itens, x.valor`, "x.entrega").map(
       (linha) => ({
         numero: texto(linha, "pedido"),

@@ -11,7 +11,7 @@ import { diaUtilDoMes, diasUteisDoMes } from "dominio/calendario";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
 import { enderecoFicticio } from "./enderecoFicticio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
-import { PECAS_POR_CENTO } from "./pedido";
+import { PECAS_POR_CENTO } from "dominio/pedido";
 import { analisarCliente, semestreDoRitmo, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
 import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
 import { evolucao12m, variacao12m } from "dominio/indicadores";

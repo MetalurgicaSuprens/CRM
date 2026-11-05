@@ -107,7 +107,12 @@ function produtosComprados(
     if (!produtosDaLista) return [];
     return (compradosPorChave.get(cliente.chave) ?? [])
       .filter(({ produto }) => produtosDaLista.has(produto))
-      .map(({ produto }) => ({ cliente: id, produto }));
+      .map(({ produto, ultimaCompra }) => ({
+        cliente: id,
+        produto,
+        ultima_compra: ultimaCompra?.data ?? null,
+        preco_cento_na_ultima: ultimaCompra?.precoCento ?? null,
+      }));
   });
 }
 

@@ -53,6 +53,12 @@ export function ultimoDiaDoMes(mesIso: string): number {
   return new Date(Date.UTC(ano ?? 1970, mes ?? 1, 0)).getUTCDate();
 }
 
+/** "2026-02-30" passa no formato AAAA-MM-DD, mas não existe. */
+export function isDataDeVerdade(dataIso: string): boolean {
+  const momento = Date.parse(`${dataIso}T00:00:00Z`);
+  return !Number.isNaN(momento) && new Date(momento).toISOString().slice(0, 10) === dataIso;
+}
+
 /** Meia-noite da data em UTC, em milissegundos: a data de calendário sem o fuso do aparelho. */
 export function paraDiaUtc(dataIso: string): number {
   const [ano, mes, dia] = dataIso.split("-").map(Number);

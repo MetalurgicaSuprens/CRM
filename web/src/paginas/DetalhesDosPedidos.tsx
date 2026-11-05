@@ -5,7 +5,8 @@ import { AndamentoDoPedido, ItensDoPedidoEnviado } from "../componentes/PedidoEn
 import { DataRelativa } from "../componentes/Quando";
 import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
-import { precoDoCento, resumirPorFamilia, valorDaLinha, type TotalDaFamilia } from "../dados/pedido";
+import { valorDaLinha } from "dominio/pedido";
+import { precoDoCento, resumirPorFamilia, type TotalDaFamilia } from "../dados/pedido";
 import type { ClienteResumo, ItemDoErp, NotaFaturada, PedidoDaFicha, PedidoEnviado, PedidoNoErp } from "../dados/tipos";
 import { formatarNumero, formatarPedidosDaNota } from "../formato";
 import estilos from "./DetalhesDosPedidos.module.css";

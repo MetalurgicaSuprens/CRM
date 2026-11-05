@@ -12,6 +12,7 @@ const REAIS_COM_CENTAVOS = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+const COM_CENTAVOS = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const INTEIRO = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
 const UMA_CASA = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -32,6 +33,11 @@ export function formatarReais(valor: number): string {
 /** "R$ 1.234,56": os valores dos pedidos, com os centavos (pedido do Lucas em 2026-10-20). */
 export function formatarReaisComCentavos(valor: number): string {
   return REAIS_COM_CENTAVOS.format(valor).replace("-", MENOS);
+}
+
+/** "1.234,56": o número com duas casas, sem o R$, para o campo do preço do item. */
+export function formatarComCentavos(valor: number): string {
+  return COM_CENTAVOS.format(valor);
 }
 
 /** "R$ 950", "R$ 48,5 mil", "R$ 182 mil", "R$ 1,2 mi". */
@@ -74,6 +80,11 @@ export function formatarParticipacao(razao: number): string {
 export function formatarData(dataIso: string): string {
   const [ano, mes, dia] = dataIso.split("-");
   return `${dia}/${mes}/${ano}`;
+}
+
+/** "2026-10-07" → "07/10/26": onde falta espaço, como na linha do preço do item. */
+export function formatarDataCurta(dataIso: string): string {
+  return formatarData(dataIso).replace(/\/\d{2}(\d{2})$/, "/$1");
 }
 
 /** "2026-03" → "mar" */

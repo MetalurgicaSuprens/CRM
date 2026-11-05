@@ -18,6 +18,9 @@ import type {
  */
 export class PedidoBloqueado extends Error {}
 
+/** Ao fechar a página ou ela sair da tela: o navegador termina de mandar o rascunho mesmo depois de ela sair. */
+export type OpcoesDoSalvamento = { aoSairDaPagina?: boolean };
+
 /** O que as telas pedem, venha dos dados fictícios (fonteFicticia) ou do servidor (fonteDoServidor). */
 export type FonteDeDados = {
   carregarSituacaoDosDados(): Promise<SituacaoDosDados>;
@@ -29,7 +32,7 @@ export type FonteDeDados = {
   carregarPedidos(): Promise<PainelDePedidos>;
   carregarPedidoEnviado(numero: string): Promise<PedidoEnviado | null>;
   carregarRascunho(id: string): Promise<Rascunho | null>;
-  salvarRascunho(dados: RascunhoParaSalvar): Promise<Rascunho>;
+  salvarRascunho(dados: RascunhoParaSalvar, opcoes?: OpcoesDoSalvamento): Promise<Rascunho>;
   excluirRascunho(id: string): Promise<void>;
   /** Na F5, o envio leva junto a confirmação da chave de acesso, ligada ao conteúdo do pedido. */
   enviarPedido(idDoRascunho: string): Promise<PedidoEnviado>;

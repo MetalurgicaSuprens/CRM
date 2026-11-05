@@ -13,7 +13,9 @@ import { AvisoDePedidoBloqueado, StatusDoCliente } from "../componentes/StatusDo
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Voltar } from "../componentes/Voltar";
+import { useValores } from "../contexto/valores";
 import { dataDoMomento } from "dominio/datas";
+import { LIMITE_DA_OBSERVACAO, totalDoPedido, valorDaLinha } from "dominio/pedido";
 import {
   carregarCatalogo,
   carregarClientes,
@@ -21,15 +23,16 @@ import {
   carregarSituacaoDosDados,
   enviarPedido,
   excluirRascunho,
+  isDadosReais,
   salvarRascunho,
 } from "../dados/api";
 import { PedidoBloqueado } from "../dados/fonteDeDados";
 import { correspondeAoClienteOuCidade, correspondeAoProduto, partNumberDaBusca } from "../dados/busca";
-import { LIMITE_DA_OBSERVACAO, problemasDoPedido, totalDoPedido, valorDaLinha } from "../dados/pedido";
+import { precoDigitado, precoInicialDoItem, problemasDoPedido, rascunhoNoCatalogo } from "../dados/pedido";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
-import type { CatalogoDoCliente, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
+import type { CatalogoDoCliente, ItemDoPedido, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarContagem, formatarLocalECodigo, formatarMomento, formatarNumero } from "../formato";
+import { formatarComCentavos, formatarContagem, formatarDataCurta, formatarLocalECodigo, formatarMomento, formatarNumero } from "../formato";
 import { Carregando } from "./Carregando";
 import estilos from "./MontarPedido.module.css";
 
@@ -39,69 +42,123 @@ const ESPERA_PARA_SALVAR_MS = 700;
 const ESPERA_SIMULADA_MS = 1_200;
 
 /**
- * /pedidos/novo?cliente=... começa um pedido; /pedidos/novo?grupo=... escolhe antes o CNPJ do grupo;
- * /pedidos/rascunhos/:id continua um rascunho.
+ * /pedidos/novo?cliente=... começa um pedido e põe no endereço o id do rascunho (&rascunho=...): recarregar
+ * a página, ou o navegador reabrir a aba depois de o computador desligar, continua o mesmo pedido.
+ * /pedidos/novo?grupo=... escolhe antes o CNPJ do grupo; /pedidos/rascunhos/:id continua um rascunho.
  */
 export function MontarPedido() {
   const { id } = useParams();
-  const [parametros] = useSearchParams();
-  if (id) return <ContinuarRascunho id={id} />;
+  const [parametros, setParametros] = useSearchParams();
   const codigoCliente = parametros.get("cliente");
-  return codigoCliente ? <Montagem codigoCliente={codigoCliente} inicial={null} /> : <EscolherCliente codigoDoGrupo={parametros.get("grupo")} />;
+  const idDoNovo = parametros.get("rascunho");
+  useEffect(() => {
+    if (id || !codigoCliente || idDoNovo) return;
+    const proximos = new URLSearchParams(parametros);
+    proximos.set("rascunho", crypto.randomUUID());
+    setParametros(proximos, { replace: true });
+  }, [id, codigoCliente, idDoNovo, parametros, setParametros]);
+  if (id) return <ContinuarRascunho id={id} codigoDoNovo={null} />;
+  if (!codigoCliente) return <EscolherCliente codigoDoGrupo={parametros.get("grupo")} />;
+  return idDoNovo ? <ContinuarRascunho id={idDoNovo} codigoDoNovo={codigoCliente} /> : <Carregando />;
 }
 
-function ContinuarRascunho({ id }: { id: string }) {
-  const { dados: rascunho, carregando } = useCarga(`rascunho:${id}`, () => carregarRascunho(id));
-  if (carregando) return <Carregando />;
-  if (!rascunho) return <Indisponivel texto="Rascunho não encontrado. No protótipo, os rascunhos somem quando a página é recarregada." />;
-  return <Montagem key={rascunho.atualizadoEm} codigoCliente={rascunho.cliente.codigo} inicial={rascunho} />;
+type BuscaDoRascunho = { id: string; rascunho: Rascunho | null; erro: string | null };
+
+/**
+ * O rascunho como está no servidor agora: sem o cache das telas, que podia trazer uma versão de antes.
+ * No pedido novo, o rascunho ainda não existe e começa vazio, com o id do endereço.
+ */
+function ContinuarRascunho({ id, codigoDoNovo }: { id: string; codigoDoNovo: string | null }) {
+  const [busca, setBusca] = useState<BuscaDoRascunho | null>(null);
+  useEffect(() => {
+    let atual = true;
+    carregarRascunho(id).then(
+      (rascunho) => {
+        if (atual) setBusca({ id, rascunho, erro: null });
+      },
+      (erro: unknown) => {
+        if (atual) setBusca({ id, rascunho: null, erro: mensagemDo(erro) });
+      },
+    );
+    return () => {
+      atual = false;
+    };
+  }, [id]);
+  if (busca?.id !== id) return <Carregando />;
+  if (busca.erro) return <Indisponivel texto={busca.erro} />;
+  const codigoCliente = busca.rascunho?.cliente.codigo ?? codigoDoNovo;
+  if (!codigoCliente) return <Indisponivel texto={RASCUNHO_NAO_ENCONTRADO} />;
+  return <Montagem codigoCliente={codigoCliente} idDoRascunho={id} inicial={busca.rascunho} />;
 }
 
-function Montagem({ codigoCliente, inicial }: { codigoCliente: string; inicial: Rascunho | null }) {
+const RASCUNHO_NAO_ENCONTRADO = isDadosReais
+  ? "Rascunho não encontrado: ele foi enviado ou descartado."
+  : "Rascunho não encontrado. No protótipo, os rascunhos somem quando a página é recarregada.";
+
+type PropsDaMontagem = { codigoCliente: string; idDoRascunho: string; inicial: Rascunho | null };
+
+function Montagem({ codigoCliente, idDoRascunho, inicial }: PropsDaMontagem) {
   const { dados: catalogo, carregando, erro } = useCarga(`catalogo:${codigoCliente}`, () => carregarCatalogo(codigoCliente));
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   if (carregando || !situacao) return <Carregando />;
   if (erro instanceof PedidoBloqueado) return <ClienteSemPedido aviso={erro.message} />;
   if (!catalogo) return <Indisponivel texto={erro?.message ?? "Cliente não encontrado na sua carteira."} />;
-  return <Formulario catalogo={catalogo} inicial={inicial} relogio={situacao.relogio} />;
+  return <Formulario catalogo={catalogo} idDoRascunho={idDoRascunho} inicial={inicial} relogio={situacao.relogio} />;
 }
 
 // ---------------------------------------------------------------- formulário
 
 type Quantidades = Record<string, number>;
+/** Só os preços que o representante mudou, ou que vieram do rascunho; o resto usa o preço inicial do item. */
+type Precos = Record<string, number>;
 
-function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoCliente; inicial: Rascunho | null; relogio: string }) {
+type PropsDoFormulario = { catalogo: CatalogoDoCliente; idDoRascunho: string; inicial: Rascunho | null; relogio: string };
+
+function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormulario) {
   const navegar = useNavigate();
   const hoje = dataDoMomento(relogio);
-  const [quantidades, setQuantidades] = useState<Quantidades>(() =>
-    Object.fromEntries((inicial?.itens ?? []).map((item) => [item.codigo, item.quantidade])),
-  );
+  // O rascunho diante do catálogo de hoje: o produto que saiu dele fica de fora, e o preço abaixo da tabela sobe para ela.
+  const [doRascunho] = useState(() => rascunhoNoCatalogo(inicial?.itens ?? [], catalogo.produtos));
+  const [quantidades, setQuantidades] = useState<Quantidades>(() => Object.fromEntries(doRascunho.itens.map((item) => [item.codigo, item.quantidade])));
+  const [precos, setPrecos] = useState<Precos>(() => Object.fromEntries(doRascunho.itens.map((item) => [item.codigo, item.precoCento])));
   const [entrega, setEntrega] = useState<string | null>(inicial?.entrega ?? null);
   const [observacao, setObservacao] = useState(inicial?.observacao ?? "");
   const [confirmando, setConfirmando] = useState(false);
   const [erroAoEnviar, setErroAoEnviar] = useState<string | null>(null);
-  const { idDoRascunho, salvoEm, erroAoSalvar, salvarAgora } = useRascunhoAutomatico(catalogo, inicial, { quantidades, entrega, observacao });
 
-  const escolhidos = catalogo.produtos.filter((produto) => (quantidades[produto.codigo] ?? 0) > 0);
-  const linhas = escolhidos.map((produto) => ({ ...produto, quantidade: quantidades[produto.codigo] ?? 0 }));
+  const linhas = useMemo(
+    () =>
+      catalogo.produtos
+        .filter((produto) => (quantidades[produto.codigo] ?? 0) > 0)
+        .map((produto) => ({ ...produto, quantidade: quantidades[produto.codigo] ?? 0, precoCento: precos[produto.codigo] ?? precoInicialDoItem(produto) })),
+    [catalogo, quantidades, precos],
+  );
+  const conteudo = useMemo(() => conteudoDoPedido(catalogo.cliente.codigo, linhas, entrega, observacao), [catalogo, linhas, entrega, observacao]);
+  const { existe, salvoEm, erroAoSalvar, salvarAgora, pararDeSalvar } = useRascunhoAutomatico(idDoRascunho, inicial, conteudo);
   const total = totalDoPedido(linhas);
   const problemas = problemasDoPedido(linhas, observacao, entrega, hoje);
   const alterar = useCallback((codigo: string, pecas: number) => setQuantidades((atuais) => ({ ...atuais, [codigo]: pecas })), []);
+  const alterarPreco = useCallback((codigo: string, preco: number) => setPrecos((atuais) => ({ ...atuais, [codigo]: preco })), []);
 
   const enviar = useCallback(async () => {
     try {
       const rascunho = await salvarAgora();
       const pedido = await enviarPedido(rascunho.id);
+      pararDeSalvar();
       navegar(`/pedidos/${pedido.numero}?enviado=1`, { replace: true });
     } catch (erro) {
       setConfirmando(false);
       setErroAoEnviar(mensagemDo(erro));
     }
-  }, [salvarAgora, navegar]);
+  }, [salvarAgora, pararDeSalvar, navegar]);
 
   const descartar = () => {
-    if (!idDoRascunho || !window.confirm("Descartar este rascunho?")) return;
-    void excluirRascunho(idDoRascunho).then(() => navegar("/pedidos?aba=rascunhos", { replace: true }));
+    if (!existe || !window.confirm("Descartar este rascunho?")) return;
+    pararDeSalvar();
+    excluirRascunho(idDoRascunho).then(
+      () => navegar("/pedidos?aba=rascunhos", { replace: true }),
+      (erro: unknown) => setErroAoEnviar(mensagemDo(erro)),
+    );
   };
 
   return (
@@ -115,7 +172,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
         <Catalogo catalogo={catalogo} quantidades={quantidades} alterar={alterar} />
         <div className={estilos.barraDoPedido}>
           <span>
-            {formatarContagem(escolhidos.length, "produto", "produtos")} · <Valor valor={total} comCentavos />
+            {formatarContagem(linhas.length, "produto", "produtos")} · <Valor valor={total} comCentavos />
           </span>
           <a href="#pedido" className={`${botoes.secundario} ${estilos.compacto}`}>
             Ver pedido
@@ -126,7 +183,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
           <Cartao
             titulo="Seu pedido"
             icone={ShoppingBasket}
-            subtitulo={`Preços da ${catalogo.tabela}, só para referência`}
+            subtitulo={`Preço da última compra; o mínimo é a ${catalogo.tabela}`}
             className={estilos.cartaoDoPedido}
           >
             <div className={estilos.campos}>
@@ -150,12 +207,15 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
               podeEnviar={problemas.length === 0}
               aoEnviar={() => setConfirmando(true)}
             />
-            <ItensEscolhidos linhas={linhas} alterar={alterar} />
+            <AvisoDoRascunho foraDoCatalogo={doRascunho.foraDoCatalogo} subiramAoMinimo={doRascunho.subiramAoMinimo} />
+            <ItensEscolhidos linhas={linhas} alterar={alterar} alterarPreco={alterarPreco} />
             <div className={estilos.rodapeDoPedido}>
               <p className={estilos.salvo} role="status">
-                {erroAoEnviar ?? erroAoSalvar ?? (salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, relogio)}.` : "O rascunho é salvo sozinho enquanto você monta o pedido.")}
+                {erroAoEnviar ??
+                  erroAoSalvar ??
+                  (salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, relogio)}: fica em Pedidos, na aba Rascunhos.` : "O rascunho é salvo sozinho enquanto você monta o pedido.")}
               </p>
-              {idDoRascunho ? (
+              {existe ? (
                 <button type="button" className={estilos.descartar} onClick={descartar}>
                   <Trash size={14} aria-hidden="true" />
                   Descartar rascunho
@@ -171,7 +231,7 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
         aoConfirmar={enviar}
         resumo={
           <>
-            {catalogo.cliente.nome} · {formatarContagem(escolhidos.length, "produto", "produtos")} · <Valor valor={total} comCentavos /> estimado
+            {catalogo.cliente.nome} · {formatarContagem(linhas.length, "produto", "produtos")} · <Valor valor={total} comCentavos /> estimado
           </>
         }
       />
@@ -179,49 +239,90 @@ function Formulario({ catalogo, inicial, relogio }: { catalogo: CatalogoDoClient
   );
 }
 
-type ConteudoDoRascunho = { quantidades: Quantidades; entrega: string | null; observacao: string };
+/** O que vai para o servidor: a mesma ordem de chaves sempre, para comparar com o que já foi salvo. */
+function conteudoDoPedido(codigoCliente: string, itens: readonly ItemDoPedido[], entrega: string | null, observacao: string): Omit<RascunhoParaSalvar, "id"> {
+  return { codigoCliente, itens: itens.map(({ codigo, quantidade, precoCento }) => ({ codigo, quantidade, precoCento })), entrega, observacao };
+}
 
 /**
- * Salva o rascunho sozinho, um pouco depois da última mudança. Só começa quando há o que guardar:
- * abrir um pedido novo e sair sem escolher nada não deixa rascunho vazio.
+ * Salva o rascunho sozinho, um pouco depois da última mudança e, na hora, quando a página fecha, sai da
+ * tela ou o representante vai para outra tela: o pedido sobrevive ao computador desligar (pedido do
+ * Lucas em 2026-11-05). Só começa quando há o que guardar: abrir um pedido novo e sair sem escolher nada
+ * não deixa rascunho vazio. O id vem do endereço, então salvar de novo nunca duplica.
  */
-function useRascunhoAutomatico(catalogo: CatalogoDoCliente, inicial: Rascunho | null, conteudo: ConteudoDoRascunho) {
-  const [idDoRascunho, setIdDoRascunho] = useState(inicial?.id ?? null);
+function useRascunhoAutomatico(id: string, inicial: Rascunho | null, conteudo: Omit<RascunhoParaSalvar, "id">) {
+  const [existe, setExiste] = useState(inicial !== null);
   const [salvoEm, setSalvoEm] = useState(inicial?.atualizadoEm ?? null);
   const [erroAoSalvar, setErroAoSalvar] = useState<string | null>(null);
-  const { quantidades, entrega, observacao } = conteudo;
-  const dados = useMemo<Omit<RascunhoParaSalvar, "id">>(
-    () => ({
-      codigoCliente: catalogo.cliente.codigo,
-      itens: Object.entries(quantidades)
-        .filter(([, pecas]) => pecas > 0)
-        .map(([codigo, pecas]) => ({ codigo, quantidade: pecas })),
-      entrega,
-      observacao,
-    }),
-    [catalogo, quantidades, entrega, observacao],
-  );
-  const conteudoAtual = JSON.stringify(dados);
-  const ultimoSalvo = useRef(conteudoAtual);
+  const conteudoAtual = JSON.stringify(conteudo);
+  const ultimoSalvo = useRef(inicial ? JSON.stringify(conteudoDoPedido(inicial.cliente.codigo, inicial.itens, inicial.entrega, inicial.observacao)) : conteudoAtual);
+  const parado = useRef(false);
+  const temOQueGuardar = existe || conteudo.itens.length > 0;
 
   const salvarAgora = useCallback(async () => {
-    const rascunho = await salvarRascunho({ id: idDoRascunho, ...dados });
+    const rascunho = await salvarRascunho({ id, ...conteudo });
     ultimoSalvo.current = conteudoAtual;
-    setIdDoRascunho(rascunho.id);
+    setExiste(true);
     setSalvoEm(rascunho.atualizadoEm);
     setErroAoSalvar(null);
     return rascunho;
-  }, [dados, conteudoAtual, idDoRascunho]);
+  }, [id, conteudo, conteudoAtual]);
 
   useEffect(() => {
-    if (conteudoAtual === ultimoSalvo.current) return;
-    if (!idDoRascunho && dados.itens.length === 0) return;
-    // Com os dados reais, o rascunho ainda não é gravado (F3): o motivo aparece na linha de status.
+    if (parado.current || conteudoAtual === ultimoSalvo.current || !temOQueGuardar) return;
     const espera = window.setTimeout(() => salvarAgora().catch((erro: unknown) => setErroAoSalvar(mensagemDo(erro))), ESPERA_PARA_SALVAR_MS);
     return () => window.clearTimeout(espera);
-  }, [conteudoAtual, idDoRascunho, dados.itens.length, salvarAgora]);
+  }, [conteudoAtual, temOQueGuardar, salvarAgora]);
 
-  return { idDoRascunho, salvoEm, erroAoSalvar, salvarAgora };
+  // O que ainda não foi salvo, para mandar de uma vez quando a página sai; null quando não há nada.
+  const pendente = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    pendente.current =
+      conteudoAtual === ultimoSalvo.current || !temOQueGuardar
+        ? null
+        : () => {
+            ultimoSalvo.current = conteudoAtual;
+            // A página já está saindo: o erro não teria onde aparecer, e o salvamento normal mostra os dele.
+            salvarRascunho({ id, ...conteudo }, { aoSairDaPagina: true }).catch(() => undefined);
+          };
+  });
+  useEffect(() => {
+    const salvarJa = () => {
+      if (!parado.current) pendente.current?.();
+    };
+    const aoMudarDeVisibilidade = () => {
+      if (document.visibilityState === "hidden") salvarJa();
+    };
+    window.addEventListener("pagehide", salvarJa);
+    document.addEventListener("visibilitychange", aoMudarDeVisibilidade);
+    return () => {
+      salvarJa();
+      window.removeEventListener("pagehide", salvarJa);
+      document.removeEventListener("visibilitychange", aoMudarDeVisibilidade);
+    };
+  }, []);
+
+  /** Depois de enviar ou descartar, o rascunho não é salvo de novo. */
+  const pararDeSalvar = useCallback(() => {
+    parado.current = true;
+  }, []);
+
+  return { existe, salvoEm, erroAoSalvar, salvarAgora, pararDeSalvar };
+}
+
+/** O rascunho que voltou diferente do salvo, porque o catálogo do cliente mudou. */
+function AvisoDoRascunho({ foraDoCatalogo, subiramAoMinimo }: { foraDoCatalogo: number; subiramAoMinimo: number }) {
+  if (foraDoCatalogo === 0 && subiramAoMinimo === 0) return null;
+  const avisos = [
+    foraDoCatalogo === 1 ? "1 produto do rascunho saiu do catálogo do cliente e ficou fora do pedido." : null,
+    foraDoCatalogo > 1 ? `${formatarNumero(foraDoCatalogo)} produtos do rascunho saíram do catálogo do cliente e ficaram fora do pedido.` : null,
+    subiramAoMinimo > 0 ? `O preço de ${formatarContagem(subiramAoMinimo, "produto", "produtos")} subiu para a tabela do cliente, que aumentou.` : null,
+  ];
+  return (
+    <p className={estilos.avisoDoRascunho} role="status">
+      {avisos.filter(Boolean).join(" ")}
+    </p>
+  );
 }
 
 // ---------------------------------------------------------------- catálogo
@@ -265,7 +366,7 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
         colunas={[
           { titulo: "Produto", ordenarPor: (produto) => produto.codigo, celula: (produto) => <Identificacao titulo={produto.codigo} detalhe={<DescricaoDoProduto produto={produto} busca={busca} />} /> },
           { titulo: "Embalagem", numerica: true, largura: 5.5, ordenarPor: (produto) => produto.embalagem, celula: (produto) => `${formatarNumero(produto.embalagem)} pç` },
-          { titulo: "Cento", numerica: true, largura: 5, ordenarPor: (produto) => produto.precoCento, celula: (produto) => <Valor valor={produto.precoCento} comCentavos /> },
+          { titulo: "Cento", numerica: true, largura: 5, ordenarPor: precoInicialDoItem, celula: (produto) => <Valor valor={precoInicialDoItem(produto)} comCentavos /> },
           {
             titulo: "Quantidade",
             numerica: true,
@@ -285,9 +386,15 @@ function Catalogo({ catalogo, quantidades, alterar }: PropsDoCatalogo) {
   );
 }
 
-type LinhaEscolhida = ProdutoDoCatalogo & { quantidade: number };
+type LinhaEscolhida = ProdutoDoCatalogo & { quantidade: number; precoCento: number };
 
-function ItensEscolhidos({ linhas, alterar }: { linhas: LinhaEscolhida[]; alterar: (codigo: string, pecas: number) => void }) {
+type PropsDosItens = {
+  linhas: LinhaEscolhida[];
+  alterar: (codigo: string, pecas: number) => void;
+  alterarPreco: (codigo: string, preco: number) => void;
+};
+
+function ItensEscolhidos({ linhas, alterar, alterarPreco }: PropsDosItens) {
   if (linhas.length === 0) return <p className={estilos.vazio}>Escolha os produtos na lista e as quantidades.</p>;
   return (
     <ul className={`${estilos.itens} ${estilos.listaQueRola}`}>
@@ -301,9 +408,65 @@ function ItensEscolhidos({ linhas, alterar }: { linhas: LinhaEscolhida[]; altera
           <span className={estilos.valorDoItem}>
             <Valor valor={valorDaLinha(linha)} comCentavos />
           </span>
+          <PrecoDoItem linha={linha} aoMudar={(preco) => alterarPreco(linha.codigo, preco)} />
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * O preço do cento do item, que o representante pode mudar: vale ao sair do campo ou com Enter. Abaixo
+ * da tabela do cliente, que é o mínimo, ele sobe para ela e avisa. Com os valores ocultos, o campo some.
+ */
+function PrecoDoItem({ linha, aoMudar }: { linha: LinhaEscolhida; aoMudar: (preco: number) => void }) {
+  const { visiveis } = useValores();
+  const [digitado, setDigitado] = useState(formatarComCentavos(linha.precoCento));
+  const [subiuAoMinimo, setSubiuAoMinimo] = useState(false);
+  useEffect(() => setDigitado(formatarComCentavos(linha.precoCento)), [linha.precoCento]);
+  const confirmar = () => {
+    const resultado = precoDigitado(digitado, linha.precoDaTabela);
+    setSubiuAoMinimo(resultado?.subiuAoMinimo ?? false);
+    setDigitado(formatarComCentavos(resultado?.preco ?? linha.precoCento));
+    if (resultado) aoMudar(resultado.preco);
+  };
+  return (
+    <div className={estilos.precoDoItem}>
+      <label className={estilos.campoDoPreco}>
+        <span>Cento R$</span>
+        {visiveis ? (
+          <input
+            type="text"
+            inputMode="decimal"
+            value={digitado}
+            aria-label={`Preço do cento de ${linha.codigo}, em reais`}
+            onChange={(evento) => setDigitado(evento.target.value)}
+            onBlur={confirmar}
+            onKeyDown={(evento) => {
+              if (evento.key === "Enter") confirmar();
+            }}
+          />
+        ) : (
+          <span className={estilos.precoOculto}>••••</span>
+        )}
+      </label>
+      {subiuAoMinimo ? (
+        <span className={estilos.avisoDoPreco} role="status" title="O menor preço é o da tabela do cliente, com o desconto dele">
+          Subiu para o mínimo: a tabela do cliente
+        </span>
+      ) : (
+        // O mínimo primeiro: se faltar espaço, o que se corta é a última compra.
+        <span className={estilos.referenciasDoPreco}>
+          Mínimo <Valor valor={linha.precoDaTabela} comCentavos />
+          {linha.ultimaCompra ? (
+            <>
+              {" "}
+              · Última <Valor valor={linha.ultimaCompra.precoCento} comCentavos /> em {formatarDataCurta(linha.ultimaCompra.data)}
+            </>
+          ) : null}
+        </span>
+      )}
+    </div>
   );
 }
 

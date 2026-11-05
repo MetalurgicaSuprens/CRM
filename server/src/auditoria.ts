@@ -20,7 +20,9 @@ export type Evento =
   | "usuario_desativado"
   | "ficha_consultada"
   | "visita_registrada"
-  | "visita_desfeita";
+  | "visita_desfeita"
+  | "rascunho_criado"
+  | "rascunho_descartado";
 
 /** Quem fez: o id do usuário ou, nas ações de admin pela linha de comando, esta marca. */
 export const LINHA_DE_COMANDO = "linha-de-comando";

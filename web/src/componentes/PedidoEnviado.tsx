@@ -1,4 +1,5 @@
-import { passosDoAndamento, valorDaLinha, type PassoDoAndamento } from "../dados/pedido";
+import { valorDaLinha } from "dominio/pedido";
+import { passosDoAndamento, type PassoDoAndamento } from "../dados/pedido";
 import type { PedidoEnviado } from "../dados/tipos";
 import { formatarData, formatarMomento, formatarNumero } from "../formato";
 import { ETAPAS } from "./EtapaDoPedido";

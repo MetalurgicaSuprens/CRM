@@ -12,7 +12,7 @@ import { STATUS_DO_PEDIDO } from "../componentes/StatusDoPedido";
 import travada from "../componentes/PaginaTravada.module.css";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
-import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho } from "../dados/api";
+import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho, isDadosReais } from "../dados/api";
 import { correspondeAoCliente } from "../dados/busca";
 import type { ClienteResumo, NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Rascunho, SituacaoDosDados } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
@@ -151,9 +151,13 @@ function Enviados({ pedidos, relogio, vazio }: { pedidos: PedidoEnviado[]; relog
   );
 }
 
+const SUBTITULO_DOS_RASCUNHOS = isDadosReais
+  ? "Pedidos começados e ainda não enviados: ficam guardados até você enviar ou descartar."
+  : "Pedidos começados e ainda não enviados. No protótipo, ficam só até recarregar a página.";
+
 function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascunho[]; relogio: string; recarregar: () => void; vazio: string | undefined }) {
   return (
-    <CartaoDaAba aba="rascunhos" subtitulo="Pedidos começados e ainda não enviados. No protótipo, ficam só até recarregar a página.">
+    <CartaoDaAba aba="rascunhos" subtitulo={SUBTITULO_DOS_RASCUNHOS}>
       <TabelaResponsiva
         className={travada.rola}
         descricao="Rascunhos de pedido"

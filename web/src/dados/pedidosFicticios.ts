@@ -1,8 +1,9 @@
-import { dataDoMomento, momentoEmBrasilia } from "dominio/datas";
+import { dataDoMomento, momentoEmBrasilia, somarDias } from "dominio/datas";
+import { arredondarAoCentavo, totalDoPedido, valorDaLinha } from "dominio/pedido";
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
-import { STATUS_NA_FICHA, totalDoPedido, valorDaLinha } from "./pedido";
+import { STATUS_NA_FICHA, precoInicialDoItem } from "./pedido";
 import { ROTULOS_DE_MERCADO } from "./rotulos";
 import type {
   CatalogoDoCliente,
@@ -26,7 +27,7 @@ import type {
 
 const rascunhos = new Map<string, Rascunho>();
 const enviadosNaSessao: PedidoEnviado[] = [];
-let proximoRascunho = 1;
+let isExemploCriado = false;
 let proximoNumero = 109;
 let exemplosEmCache: PedidoEnviado[] | null = null;
 
@@ -42,12 +43,14 @@ export function catalogoDoClienteFicticio(codigoCliente: string): CatalogoDoClie
     tabela: `Tabela ${aleatorio.inteiro(10, 40)} · ${ROTULOS_DE_MERCADO[ficha.mercado]}`,
     produtos: catalogoFicticio().map((produto) => {
       const jaComprou = comprados.has(produto.codigo);
+      const precoDaTabela = Math.round(produto.precoBase * fatorDaTabela);
       return {
         codigo: produto.codigo,
         familia: produto.familia,
         medida: produto.medida,
         embalagem: produto.embalagem,
-        precoCento: Math.round(produto.precoBase * fatorDaTabela),
+        precoDaTabela,
+        ultimaCompra: jaComprou ? ultimaCompraFicticia(produto.codigo, precoDaTabela) : null,
         partNumbers: jaComprou && aleatorio.chance(0.6) ? [`${sigla}-${aleatorio.inteiro(1_000, 9_999)}`] : [],
         jaComprou,
       };
@@ -115,18 +118,17 @@ export function rascunhoFicticio(id: string): Rascunho | null {
 export function salvarRascunhoFicticio(dados: RascunhoParaSalvar): Rascunho | null {
   const catalogo = catalogoDoClienteFicticio(dados.codigoCliente);
   if (!catalogo) return null;
-  const id = dados.id ?? `R${proximoRascunho++}`;
   const itens = dados.itens.filter((item) => item.quantidade > 0);
   const rascunho: Rascunho = {
-    id,
+    id: dados.id,
     cliente: catalogo.cliente,
     itens,
     entrega: dados.entrega,
     observacao: dados.observacao,
     atualizadoEm: momentoEmBrasilia(),
-    totalEstimado: totalDoPedido(linhasDe(itens, catalogo)),
+    totalEstimado: totalDoPedido(itens),
   };
-  rascunhos.set(id, rascunho);
+  rascunhos.set(dados.id, rascunho);
   return rascunho;
 }
 
@@ -215,11 +217,12 @@ function gerarExemplos(): PedidoEnviado[] {
     const itens = comprados.slice(0, aleatorio.inteiro(2, 4)).map((produto) => ({
       codigo: produto.codigo,
       quantidade: produto.embalagem * aleatorio.inteiro(2, 20),
+      precoCento: precoInicialDoItem(produto),
     }));
     const enviadoEm = agora - minutosAtras * 60_000;
     const caminho = CAMINHOS[etapa];
     const passou = (alvo: EtapaDoPedido) => caminho.includes(alvo);
-    const totalEstimado = totalDoPedido(linhasDe(itens, catalogo));
+    const totalEstimado = totalDoPedido(itens);
     return [
       {
         numero: numeroCrm(numero),
@@ -241,24 +244,28 @@ function gerarExemplos(): PedidoEnviado[] {
 }
 
 function garantirRascunhoDeExemplo(): void {
-  if (proximoRascunho > 1) return;
+  if (isExemploCriado) return;
+  isExemploCriado = true;
   const cliente = clientesFicticios().find((resumo) => resumo.situacao === "ativo");
   const catalogo = cliente ? catalogoDoClienteFicticio(cliente.codigo) : null;
   if (!catalogo) return;
   const itens = catalogo.produtos
     .filter((produto) => produto.jaComprou)
     .slice(0, 2)
-    .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4 }));
-  salvarRascunhoFicticio({ id: null, codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "" });
+    .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4, precoCento: precoInicialDoItem(produto) }));
+  salvarRascunhoFicticio({ id: crypto.randomUUID(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "" });
 }
 
 // ---------------------------------------------------------------- apoio
 
-function linhasDe(itens: ItemDoPedido[], catalogo: CatalogoDoCliente) {
-  return itens.flatMap((item) => {
-    const produto = catalogo.produtos.find((candidato) => candidato.codigo === item.codigo);
-    return produto ? [{ ...item, embalagem: produto.embalagem, precoCento: produto.precoCento }] : [];
-  });
+/**
+ * A última compra do produto que o cliente já comprou: um pouco acima ou abaixo da tabela, e o dia,
+ * tirados do código, para não mexer na sequência dos sorteios do resto do protótipo.
+ */
+function ultimaCompraFicticia(codigo: string, precoDaTabela: number): { precoCento: number; data: string } {
+  const semente = [...codigo].reduce((soma, letra) => soma + letra.charCodeAt(0), 0);
+  const hoje = dataDoMomento(momentoEmBrasilia());
+  return { precoCento: arredondarAoCentavo(precoDaTabela * (0.96 + (semente % 12) / 100)), data: somarDias(hoje, -(15 + (semente % 200))) };
 }
 
 /** Os itens do pedido do CRM com o valor pelo preço do cento, como os do ERP; sem entrega por item. */
@@ -269,7 +276,7 @@ function itensDaFicha(itens: ItemEnviado[]): ItemDaFicha[] {
 function itensEnviados(itens: ItemDoPedido[], catalogo: CatalogoDoCliente): ItemEnviado[] {
   return itens.flatMap((item) => {
     const produto = catalogo.produtos.find((candidato) => candidato.codigo === item.codigo);
-    return produto ? [{ ...item, familia: produto.familia, medida: produto.medida, precoCento: produto.precoCento }] : [];
+    return produto ? [{ ...item, familia: produto.familia, medida: produto.medida }] : [];
   });
 }
 

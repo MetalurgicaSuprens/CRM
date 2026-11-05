@@ -9,11 +9,16 @@ export const TIPOS_DE_VENDA = "310, 315, 316, 317, 320, 325, 326";
 export const VALOR_DO_ITEM = "(D.VLR_TOTAL - NVL(D.Z_FRANCA_DESC, 0))";
 
 /**
- * A única conversão de unidade do extrator: a quantidade do item vem em cento (CT), que vira ×100,
- * ou em peça. Alias D = NFDE ou VEPD, que têm a mesma coluna UNIDADE.
+ * As conversões de unidade do extrator: o item vem em cento (CT) ou em peça. A quantidade em CT vira
+ * ×100 peças; o preço unitário em peça vira ×100 no preço do cento. Alias D = NFDE ou VEPD, que têm a
+ * mesma coluna UNIDADE.
  */
 export function emPecas(quantidade: string): string {
   return `(${quantidade} * CASE TRIM(D.UNIDADE) WHEN 'CT' THEN 100 ELSE 1 END)`;
+}
+
+export function precoDoCento(precoUnitario: string): string {
+  return `(${precoUnitario} * CASE TRIM(D.UNIDADE) WHEN 'CT' THEN 1 ELSE 100 END)`;
 }
 
 /** Peças do item da nota. Alias D = NFDE. */

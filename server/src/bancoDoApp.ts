@@ -87,6 +87,28 @@ const MIGRACOES: readonly string[] = [
     PRIMARY KEY (usuario, cliente, data)
   ) STRICT;
   `,
+  // 4. Rascunhos (2026-11-05): o pedido em montagem, que a tela salva sozinha; o id é o UUID que ela gera. O nome do cliente vem da foto.
+  `
+  CREATE TABLE rascunhos (
+    id TEXT PRIMARY KEY,
+    usuario TEXT NOT NULL REFERENCES usuarios (id),
+    cliente TEXT NOT NULL,
+    entrega TEXT,
+    observacao TEXT NOT NULL,
+    criado_em TEXT NOT NULL,
+    atualizado_em TEXT NOT NULL
+  ) STRICT;
+  CREATE INDEX rascunhos_usuario ON rascunhos (usuario, atualizado_em);
+
+  CREATE TABLE rascunho_itens (
+    rascunho TEXT NOT NULL REFERENCES rascunhos (id) ON DELETE CASCADE,
+    ordem INTEGER NOT NULL,
+    produto TEXT NOT NULL,
+    quantidade INTEGER NOT NULL,
+    preco_cento REAL NOT NULL,
+    PRIMARY KEY (rascunho, produto)
+  ) STRICT;
+  `,
 ];
 
 /** Abre o app.db (cria a pasta e o arquivo na primeira vez) e aplica as migrações que faltam. ":memory:" nos testes. */

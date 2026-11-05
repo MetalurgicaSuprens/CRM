@@ -1,14 +1,11 @@
-import type { EtapaDoPedido, PedidoEnviado, StatusDoPedido } from "./tipos";
+import { LIMITE_DA_OBSERVACAO, arredondarAoCentavo, pecasEmCentos } from "dominio/pedido";
+import type { EtapaDoPedido, ItemDoPedido, PedidoEnviado, ProdutoDoCatalogo, StatusDoPedido } from "./tipos";
 
 /*
- * Contas do pedido no CRM. São só estimativas para o representante: ao receber o pedido, o SGI
- * recalcula os preços pela tabela do cliente, e a LAN revalida tudo no Oracle.
+ * Regras do pedido na tela. O preço do item é o da última compra do cliente, que o representante pode
+ * mudar, nunca abaixo da tabela dele (pedido do Lucas em 2026-11-05). O valor e o total são contas do
+ * dominio/pedido.ts, iguais às do servidor; a LAN revalida tudo no Oracle.
  */
-
-/** A única conversão de unidade do CRM: o ERP trabalha em CT, o cento de peças. */
-export const PECAS_POR_CENTO = 100;
-
-export const LIMITE_DA_OBSERVACAO = 300;
 
 export type LinhaDoPedido = {
   codigo: string;
@@ -16,12 +13,49 @@ export type LinhaDoPedido = {
   quantidade: number;
   /** Peças por embalagem: os botões da quantidade andam de embalagem em embalagem. */
   embalagem: number;
-  /** Preço do cento na tabela do cliente. */
+  /** Preço do cento do item: o da última compra, o que o representante pôs ou o da tabela. */
   precoCento: number;
 };
 
-export function pecasEmCentos(pecas: number): number {
-  return pecas / PECAS_POR_CENTO;
+/** O preço com que o item entra no pedido: o da última compra do cliente, mas nunca abaixo da tabela dele, que é o mínimo. */
+export function precoInicialDoItem(produto: Pick<ProdutoDoCatalogo, "precoDaTabela" | "ultimaCompra">): number {
+  return Math.max(produto.ultimaCompra?.precoCento ?? 0, produto.precoDaTabela);
+}
+
+/**
+ * O preço do cento que o representante digitou, no centavo: "123,45", "1.234,56" ou "123.45". Abaixo
+ * do mínimo (a tabela do cliente com o desconto dele) sobe para o mínimo. O que não é preço volta null,
+ * e o campo fica com o preço de antes.
+ */
+export function precoDigitado(texto: string, minimo: number): { preco: number; subiuAoMinimo: boolean } | null {
+  const preco = arredondarAoCentavo(numeroDigitado(texto));
+  if (!Number.isFinite(preco) || preco <= 0) return null;
+  return preco < minimo ? { preco: minimo, subiuAoMinimo: true } : { preco, subiuAoMinimo: false };
+}
+
+/**
+ * O rascunho salvo diante do catálogo de hoje: o produto que saiu da lista do cliente sai do pedido, e o
+ * preço que ficou abaixo da tabela (ela subiu) sobe para ela. Diz quantos de cada, para a tela avisar.
+ */
+export function rascunhoNoCatalogo(
+  itens: readonly ItemDoPedido[],
+  produtos: readonly Pick<ProdutoDoCatalogo, "codigo" | "precoDaTabela">[],
+): { itens: ItemDoPedido[]; foraDoCatalogo: number; subiramAoMinimo: number } {
+  const tabela = new Map(produtos.map((produto) => [produto.codigo, produto.precoDaTabela]));
+  const noCatalogo = itens.filter((item) => tabela.has(item.codigo));
+  const minimoDe = (item: ItemDoPedido) => tabela.get(item.codigo) ?? item.precoCento;
+  return {
+    itens: noCatalogo.map((item) => ({ ...item, precoCento: Math.max(item.precoCento, minimoDe(item)) })),
+    foraDoCatalogo: itens.length - noCatalogo.length,
+    subiramAoMinimo: noCatalogo.filter((item) => item.precoCento < minimoDe(item)).length,
+  };
+}
+
+/** Com vírgula, o ponto separa os milhares; sem ela, o ponto com até duas casas depois é o decimal. */
+function numeroDigitado(texto: string): number {
+  const limpo = texto.replace(/R\$|\s/g, "");
+  if (limpo.includes(",")) return Number(limpo.replace(/\./g, "").replace(",", "."));
+  return Number(/^\d+\.\d{1,2}$/.test(limpo) ? limpo : limpo.replace(/\./g, ""));
 }
 
 /**
@@ -43,23 +77,9 @@ export function embalagemAnterior(pecas: number, embalagem: number): number {
   return Math.max(0, (Math.ceil(pecas / embalagem) - 1) * embalagem);
 }
 
-/** O valor do item, arredondado ao centavo: a tela mostra os centavos, e o total é a soma do que ela mostra. */
-export function valorDaLinha(linha: Pick<LinhaDoPedido, "quantidade" | "precoCento">): number {
-  return arredondarAoCentavo(pecasEmCentos(linha.quantidade) * linha.precoCento);
-}
-
 /** O preço do cento que o item do ERP pagou: o caminho de volta de valorDaLinha. Sem peças, 0. */
 export function precoDoCento(item: { pecas: number; valor: number }): number {
   return item.pecas > 0 ? item.valor / pecasEmCentos(item.pecas) : 0;
-}
-
-/** A soma dos itens, já no centavo; arredondar de novo tira o resto que a soma em ponto flutuante deixa. */
-export function totalDoPedido(linhas: readonly LinhaDoPedido[]): number {
-  return arredondarAoCentavo(linhas.reduce((total, linha) => total + valorDaLinha(linha), 0));
-}
-
-function arredondarAoCentavo(valor: number): number {
-  return Math.round(valor * 100) / 100;
 }
 
 /** Peças e valor de uma família no pedido; serve também para um item só. */

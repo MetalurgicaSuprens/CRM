@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 16;
+export const VERSAO_DO_ESQUEMA = 17;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -98,6 +98,8 @@ CREATE TABLE produto_part_number (
 CREATE TABLE produto_comprado (
   cliente TEXT NOT NULL,
   produto TEXT NOT NULL,
+  ultima_compra TEXT,
+  preco_cento_na_ultima REAL,
   PRIMARY KEY (cliente, produto)
 ) STRICT;
 
@@ -300,8 +302,12 @@ export type Foto = {
    * montadora, só dos produtos de alguma lista. Sem o nome da montadora, que nenhuma tela usa.
    */
   produto_part_number: { produto: string; part_number: string }[];
-  /** Os produtos da lista do cliente que ele comprou nos últimos 24 meses: a aba "Já comprados". */
-  produto_comprado: { cliente: string; produto: string }[];
+  /**
+   * Os produtos da lista do cliente que ele comprou nos últimos 24 meses: a aba "Já comprados". Com a
+   * última compra com preço (versão 17): o dia e o preço do cento na nota, o preço com que o item entra no
+   * pedido. Nulos quando o produto só veio sem valor, como bonificação.
+   */
+  produto_comprado: { cliente: string; produto: string; ultima_compra: string | null; preco_cento_na_ultima: number | null }[];
   ficha_produto: { cliente: string; produto: string; pecas_12m: number; valor_12m: number; ultima_compra: string }[];
   cliente_mix: { cliente: string; familia: string; penetracao: number; ordem: number }[];
   /** As listas das análises têm o grupo no lugar dos CNPJs dele. */

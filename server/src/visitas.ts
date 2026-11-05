@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import { dataDoMomento, diasEntre, momentoEmBrasilia } from "dominio/datas";
+import { dataDoMomento, diasEntre, isDataDeVerdade, momentoEmBrasilia } from "dominio/datas";
 
 /*
  * As visitas do representante aos clientes, no app.db: só o dia, por login e cliente (o id opaco da
@@ -46,10 +46,4 @@ export function visitasDosClientes(banco: DatabaseSync, usuario: string, cliente
 export function ultimasVisitas(banco: DatabaseSync, usuario: string): Record<string, string> {
   const linhas = banco.prepare("SELECT cliente, MAX(data) AS data FROM visitas WHERE usuario = ? GROUP BY cliente").all(usuario);
   return Object.fromEntries(linhas.map((linha) => [String(linha.cliente), String(linha.data)]));
-}
-
-/** "2026-02-30" passa no formato, mas não existe. */
-function isDataDeVerdade(data: string): boolean {
-  const momento = Date.parse(`${data}T00:00:00Z`);
-  return !Number.isNaN(momento) && new Date(momento).toISOString().slice(0, 10) === data;
 }

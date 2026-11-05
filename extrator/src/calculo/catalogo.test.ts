@@ -86,8 +86,10 @@ describe("montarCatalogo", () => {
         { produto: "FORA-DAS-LISTAS", familia: "MOLA", medidaMinimaMm: null, medidaMaximaMm: null, embalagem: 10 },
       ],
       jaComprados: [
-        { chave: "1/1", produto: "FAB1422P" },
-        { chave: "1/1", produto: "PRODUTO-FORA-DA-LISTA" },
+        { chave: "1/1", produto: "FAB1422P", ultimaCompra: { data: "2026-09-15", precoCento: 78.4 } },
+        { chave: "1/1", produto: "PRODUTO-FORA-DA-LISTA", ultimaCompra: null },
+        // Só bonificação, sem valor: comprou, mas sem preço.
+        { chave: "1/2", produto: "MAB1216P", ultimaCompra: null },
       ],
     },
   );
@@ -110,8 +112,11 @@ describe("montarCatalogo", () => {
     ]);
   });
 
-  it("marca como já comprado só o que está na lista do cliente", () => {
-    expect(catalogo.produto_comprado).toEqual([{ cliente: "id-1", produto: "FAB1422P" }]);
+  it("marca como já comprado só o que está na lista do cliente, com a última compra que tem preço", () => {
+    expect(catalogo.produto_comprado).toEqual([
+      { cliente: "id-1", produto: "FAB1422P", ultima_compra: "2026-09-15", preco_cento_na_ultima: 78.4 },
+      { cliente: "id-2", produto: "MAB1216P", ultima_compra: null, preco_cento_na_ultima: null },
+    ]);
   });
 
   it("leva os part numbers da Bíblia só dos produtos de alguma lista, sem repetir, em ordem", () => {

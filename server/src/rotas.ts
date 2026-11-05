@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import { LIMITE_DA_OBSERVACAO } from "dominio/pedido";
 import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
 import { auditar } from "./auditoria.ts";
 import type { FotoAtual } from "./foto/fotoAtual.ts";
@@ -9,6 +10,7 @@ import { isClienteDaCarteira, lerCarteira, lerFicha } from "./leituras/clientes.
 import { lerPainel } from "./leituras/painel.ts";
 import { lerPedidos } from "./leituras/pedidos.ts";
 import { lerSituacao } from "./leituras/situacao.ts";
+import { LIMITE_DE_ITENS, excluirRascunho, lerRascunho, rascunhosDoLogin, rascunhosNaFicha, salvarRascunho, type ConteudoDoRascunho } from "./rascunhos.ts";
 import type { Sessao } from "./sessao.ts";
 import { dataDaVisita, desfazerVisita, registrarVisita, ultimasVisitas, visitasDosClientes, type ProblemaNaData } from "./visitas.ts";
 
@@ -41,6 +43,46 @@ const PARAMETRO_CLIENTE = {
   additionalProperties: false,
 } as const;
 
+/** O id do rascunho: o UUID que a tela gera quando o pedido começa (crypto.randomUUID). */
+const PARAMETRO_RASCUNHO = {
+  type: "object",
+  properties: { id: { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" } },
+  required: ["id"],
+  additionalProperties: false,
+} as const;
+const RASCUNHO_NAO_ENCONTRADO = { erro: "Rascunho não encontrado." };
+
+/**
+ * O rascunho que a tela salva: o cliente, os itens (produto, peças e o preço do cento), a entrega e a
+ * observação. O representante vem da sessão. O servidor confere o resto: cliente da carteira, produto
+ * do catálogo dele e preço não abaixo da tabela (rascunhos.ts). A observação não leva caractere de
+ * controle além da quebra de linha.
+ */
+const CORPO_DO_RASCUNHO = {
+  type: "object",
+  properties: {
+    codigoCliente: { type: "string", pattern: "^[0-9a-f]{16}$" },
+    itens: {
+      type: "array",
+      maxItems: LIMITE_DE_ITENS,
+      items: {
+        type: "object",
+        properties: {
+          codigo: { type: "string", pattern: "^[A-Za-z0-9][A-Za-z0-9./-]{0,19}$" },
+          quantidade: { type: "integer", minimum: 1, maximum: 10_000_000 },
+          precoCento: { type: "number", exclusiveMinimum: 0, maximum: 10_000_000 },
+        },
+        required: ["codigo", "quantidade", "precoCento"],
+        additionalProperties: false,
+      },
+    },
+    entrega: { type: ["string", "null"], pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+    observacao: { type: "string", maxLength: LIMITE_DA_OBSERVACAO, pattern: "^[^\\u0000-\\u0009\\u000B-\\u001F\\u007F]*$" },
+  },
+  required: ["codigoCliente", "itens", "entrega", "observacao"],
+  additionalProperties: false,
+} as const;
+
 export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () => new Date() }: { foto: FotoAtual; banco: DatabaseSync; agora?: () => Date }): void {
   app.get("/api/situacao", DO_REPRESENTANTE, (requisicao) => lerSituacao(foto.abrir(), sessaoDa(requisicao)));
   app.get("/api/painel", DO_REPRESENTANTE, (requisicao) => lerPainel(foto.abrir(), sessaoDa(requisicao)));
@@ -55,7 +97,9 @@ export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () =
       auditar(banco, { usuario: sessao.idDoUsuario, evento: "ficha_consultada", alvo: requisicao.params.codigo });
       // No grupo, as visitas a qualquer CNPJ dele: a visita é sempre num CNPJ.
       const visitados = ficha.cnpjs ? ficha.cnpjs.map(({ codigo }) => codigo) : [ficha.codigo];
-      return { ...ficha, visitas: visitasDosClientes(banco, sessao.idDoUsuario, visitados) };
+      // Os rascunhos do login entram no histórico, do mais recente ao mais antigo, como os pedidos.
+      const pedidos = [...rascunhosNaFicha(banco, foto.abrir(), sessao, ficha), ...ficha.pedidos].sort((a, b) => b.emissao.localeCompare(a.emissao));
+      return { ...ficha, pedidos, visitas: visitasDosClientes(banco, sessao.idDoUsuario, visitados) };
     },
   );
   app.get<{ Params: { codigo: string } }>(
@@ -95,7 +139,42 @@ export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () =
       },
     });
   }
-  app.get("/api/pedidos", DO_REPRESENTANTE, (requisicao) => lerPedidos(foto.abrir(), sessaoDa(requisicao)));
+  app.get("/api/pedidos", DO_REPRESENTANTE, (requisicao) => {
+    const sessao = sessaoDa(requisicao);
+    return { ...lerPedidos(foto.abrir(), sessao), rascunhos: rascunhosDoLogin(banco, foto.abrir(), sessao) };
+  });
+  /**
+   * O rascunho do login: ler, salvar (criar ou atualizar pelo id que a tela gerou) e descartar. O de
+   * outro login responde 404, como se não existisse.
+   */
+  app.get<{ Params: { id: string } }>(
+    "/api/rascunhos/:id",
+    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_RASCUNHO } },
+    (requisicao, resposta) => lerRascunho(banco, foto.abrir(), sessaoDa(requisicao), requisicao.params.id) ?? resposta.code(404).send(RASCUNHO_NAO_ENCONTRADO),
+  );
+  app.put<{ Params: { id: string }; Body: ConteudoDoRascunho }>(
+    "/api/rascunhos/:id",
+    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_RASCUNHO, body: CORPO_DO_RASCUNHO } },
+    (requisicao, resposta) => {
+      const sessao = sessaoDa(requisicao);
+      const resultado = salvarRascunho(banco, foto.abrir(), sessao, requisicao.params.id, requisicao.body, agora());
+      if ("status" in resultado) return resposta.code(resultado.status).send({ erro: resultado.erro });
+      // Só a criação: a tela salva sozinha a cada mudança.
+      if (resultado.criado) auditar(banco, { usuario: sessao.idDoUsuario, evento: "rascunho_criado", alvo: requisicao.body.codigoCliente });
+      return resultado.rascunho;
+    },
+  );
+  app.delete<{ Params: { id: string } }>(
+    "/api/rascunhos/:id",
+    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_RASCUNHO } },
+    (requisicao, resposta) => {
+      const sessao = sessaoDa(requisicao);
+      const cliente = excluirRascunho(banco, sessao, requisicao.params.id);
+      if (!cliente) return resposta.code(404).send(RASCUNHO_NAO_ENCONTRADO);
+      auditar(banco, { usuario: sessao.idDoUsuario, evento: "rascunho_descartado", alvo: cliente });
+      return resposta.code(204).send();
+    },
+  );
 }
 
 /** A rota de representante só chega aqui com sessão (app.ts barra antes com 401). */

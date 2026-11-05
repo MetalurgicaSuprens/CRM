@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   formatarCep,
+  formatarComCentavos,
   formatarCodigoDoCliente,
   formatarCodigosDoRepresentante,
   formatarCompacto,
   formatarContagem,
   formatarData,
+  formatarDataCurta,
   formatarDiaPorExtenso,
   formatarEndereco,
   formatarMesAno,
@@ -42,6 +44,19 @@ describe("formatarReaisComCentavos", () => {
 
   it("usa o sinal de menos tipográfico", () => {
     expect(espacoFixo(formatarReaisComCentavos(-1_500.25))).toBe("−R$ 1.500,25");
+  });
+});
+
+describe("formatarDataCurta", () => {
+  it("mostra o ano com dois dígitos", () => {
+    expect(formatarDataCurta("2026-10-07")).toBe("07/10/26");
+  });
+});
+
+describe("formatarComCentavos", () => {
+  it("mostra duas casas e o ponto dos milhares, sem o R$, como se digita o preço", () => {
+    expect(formatarComCentavos(1234.5)).toBe("1.234,50");
+    expect(formatarComCentavos(95.5)).toBe("95,50");
   });
 });
 

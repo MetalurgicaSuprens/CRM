@@ -283,10 +283,12 @@ export type ProdutoDoCatalogo = {
   /** Peças por embalagem: o pedido anda de embalagem em embalagem. */
   embalagem: number;
   /**
-   * Preço do cento (100 peças): a tabela do cliente com o desconto do modelo do produto ou, sem ele,
-   * o desconto padrão do cliente. Só referência: o SGI recalcula.
+   * Preço do cento (100 peças) na tabela do cliente, com o desconto da família (o do modelo do produto)
+   * ou, sem ele, o desconto padrão do cliente. É o menor preço que o pedido aceita.
    */
-  precoCento: number;
+  precoDaTabela: number;
+  /** A última compra do produto nos 24 meses: o preço do cento na nota e o dia. Null se o cliente não comprou. */
+  ultimaCompra: { precoCento: number; data: string } | null;
   /**
    * Os part numbers da Bíblia Montadora: os códigos que as montadoras dão ao produto, só dos itens
    * ativos. Vazio quando nenhuma montadora tem o produto.
@@ -306,11 +308,14 @@ export type ItemDoPedido = {
   codigo: string;
   /** Em peças. */
   quantidade: number;
+  /** O preço do cento que vai no pedido: o da última compra ou o que o representante pôs, nunca abaixo da tabela. */
+  precoCento: number;
 };
 
 /** O que a tela manda para salvar: o representante vem sempre da sessão. */
 export type RascunhoParaSalvar = {
-  id: string | null;
+  /** Gerado na tela (UUID) quando o pedido começa: salvar de novo, até ao fechar a página, não duplica o rascunho. */
+  id: string;
   codigoCliente: string;
   itens: ItemDoPedido[];
   entrega: string | null;

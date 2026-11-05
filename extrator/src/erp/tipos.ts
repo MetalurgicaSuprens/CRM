@@ -174,7 +174,8 @@ export type ProdutoDaTabela = {
 };
 
 /** Produto que o cliente comprou nos últimos 24 meses: a aba "Já comprados" do pedido. */
-export type ProdutoJaComprado = { chave: string; produto: string };
+/** Produto que o cliente comprou nos 24 meses, com a última compra que tem preço: o dia e o preço do cento na nota. */
+export type ProdutoJaComprado = { chave: string; produto: string; ultimaCompra: { data: string; precoCento: number } | null };
 
 export type DadosDoErp = {
   geradaEm: string;

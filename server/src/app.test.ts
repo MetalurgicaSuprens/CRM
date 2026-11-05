@@ -7,7 +7,7 @@ import { criarAppDoAdmin } from "./admin/appDoAdmin.ts";
 import { criarApp } from "./app.ts";
 import { abrirBancoDoApp } from "./bancoDoApp.ts";
 import { criarFotoAtual, type FotoAtual } from "./foto/fotoAtual.ts";
-import type { Analises, ClienteResumo, FichaCliente } from "../../web/src/dados/tipos.ts";
+import type { Analises, ClienteResumo, FichaCliente, PainelDePedidos, Rascunho } from "../../web/src/dados/tipos.ts";
 import {
   CLIENTE_DE_A,
   CLIENTE_DE_B,
@@ -55,6 +55,31 @@ function comoA(app: FastifyInstance, url: string) {
   return app.inject({ method: "GET", url, headers: { cookie: loginDeA } });
 }
 
+const RASCUNHO = "3f1c2b8e-5d4a-4c6b-9e7f-0a1b2c3d4e5f";
+
+/** Um rascunho válido de A: 300 peças do F-100 pelo preço da última compra, acima da tabela (95,50). */
+function rascunhoDeA(parcial: object = {}) {
+  return { codigoCliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4 }], entrega: null, observacao: "", ...parcial };
+}
+
+function salvarComoA(app: FastifyInstance, id: string, corpo: object, origem = ORIGEM) {
+  return app.inject({ method: "PUT", url: `/api/rascunhos/${id}`, headers: { cookie: loginDeA, origin: origem }, payload: corpo });
+}
+
+/** O login B e um rascunho dele, no cliente dele: devolve o id. */
+async function criarRascunhoDeB(app: FastifyInstance): Promise<string> {
+  const id = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
+  const loginDeB = entrarComo(banco, ["9999"]);
+  const resposta = await app.inject({
+    method: "PUT",
+    url: `/api/rascunhos/${id}`,
+    headers: { cookie: loginDeB, origin: ORIGEM },
+    payload: { codigoCliente: CLIENTE_DE_B, itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 50, precoCento: 82 }], entrega: null, observacao: "" },
+  });
+  expect(resposta.statusCode, resposta.body).toBe(200);
+  return id;
+}
+
 describe("acesso declarado", () => {
   it("não sobe com uma rota que não declara config.acesso", async () => {
     const app = criarAppDeTeste();
@@ -85,10 +110,14 @@ describe("escopo: o login A nunca vê os dados de B", () => {
   it("percorre todas as rotas: ficha de B dá 404, e nenhuma resposta traz B", async () => {
     const app = criarAppDeTeste();
     await app.ready();
+    const rascunhoDeB = await criarRascunhoDeB(app);
     expect(app.rotasRegistradas.length).toBeGreaterThan(0);
     for (const { metodo, url } of app.rotasRegistradas) {
-      const resposta = await app.inject({ method: metodo, url: url.replace(":codigo", CLIENTE_DE_B), headers: { cookie: loginDeA, origin: ORIGEM }, payload: metodo === "GET" ? undefined : {} });
-      if (url.includes(":codigo")) expect(resposta.statusCode, url).toBe(404);
+      // No rascunho de B, o corpo é um rascunho válido de A: nem assim ele aparece ou muda.
+      const corpo = metodo === "GET" ? undefined : url.includes(":id") ? rascunhoDeA() : {};
+      const comB = url.replace(":codigo", CLIENTE_DE_B).replace(":id", rascunhoDeB);
+      const resposta = await app.inject({ method: metodo, url: comB, headers: { cookie: loginDeA, origin: ORIGEM }, payload: corpo });
+      if (url.includes(":codigo") || url.includes(":id")) expect(resposta.statusCode, url).toBe(404);
       else if (metodo === "GET") expect(resposta.statusCode, url).toBe(200);
       for (const marca of MARCAS_DE_B) expect(resposta.body, `${metodo} ${url} mostrou ${marca}`).not.toContain(marca);
     }
@@ -207,9 +236,18 @@ describe("escopo: o login A nunca vê os dados de B", () => {
       cliente: { codigo: CLIENTE_DE_A },
       tabela: "PADRAO - FEV",
       produtos: [
-        { codigo: "F-100", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100, precoCento: 95.5, partNumbers: ["CF420118", "N906227"], jaComprou: true },
-        // Produto sem EAN: qualquer quantidade de peças. Sem part number na Bíblia, a lista vem vazia.
-        { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoCento: 120, partNumbers: [], jaComprou: false },
+        {
+          codigo: "F-100",
+          familia: "FLEXIL",
+          medida: "14–22 mm",
+          embalagem: 100,
+          precoDaTabela: 95.5,
+          ultimaCompra: { precoCento: 98.4, data: "2026-09-15" },
+          partNumbers: ["CF420118", "N906227"],
+          jaComprou: true,
+        },
+        // Produto sem EAN: qualquer quantidade de peças. Sem part number na Bíblia, a lista vem vazia; sem compra, sem última compra.
+        { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoDaTabela: 120, ultimaCompra: null, partNumbers: [], jaComprou: false },
       ],
     });
   });
@@ -374,5 +412,122 @@ describe("entrada hostil: o campo que o schema não lista é recusado, e não ap
     const buscar = (busca: string) => admin.inject({ method: "GET", url: `/api/admin/registro?${busca}`, headers: { cookie } });
     expect((await buscar("antes=5&ordem=asc")).statusCode).toBe(400);
     expect((await buscar("antes=5")).statusCode).toBe(200);
+  });
+});
+
+describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
+  it("salva o rascunho e o devolve com o cliente e o total; ele aparece em Pedidos e na ficha", async () => {
+    const app = criarAppDeTeste();
+    const resposta = await salvarComoA(app, RASCUNHO, rascunhoDeA());
+    expect(resposta.statusCode, resposta.body).toBe(200);
+    expect(resposta.json()).toMatchObject({
+      id: RASCUNHO,
+      cliente: { codigo: CLIENTE_DE_A },
+      itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4 }],
+      entrega: null,
+      totalEstimado: 295.2,
+    });
+    expect((await comoA(app, `/api/rascunhos/${RASCUNHO}`)).json<Rascunho>().itens).toEqual([{ codigo: "F-100", quantidade: 300, precoCento: 98.4 }]);
+    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos.map(({ id }) => id)).toEqual([RASCUNHO]);
+    expect((await comoA(app, `/api/clientes/${CLIENTE_DE_A}`)).json<FichaCliente>().pedidos[0]).toMatchObject({
+      id: RASCUNHO,
+      status: "rascunho",
+      numero: null,
+      valor: 295.2,
+      itens: [{ codigo: "F-100", familia: "FLEXIL", pecas: 300, valor: 295.2 }],
+    });
+  });
+
+  it("salvar de novo com o mesmo id atualiza o rascunho, sem duplicar, e troca os itens", async () => {
+    const app = criarAppDeTeste();
+    await salvarComoA(app, RASCUNHO, rascunhoDeA());
+    const segunda = await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130 }], entrega: "2027-01-15", observacao: "Entregar\nna portaria" }));
+    expect(segunda.statusCode, segunda.body).toBe(200);
+    expect(segunda.json()).toMatchObject({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130 }], entrega: "2027-01-15", observacao: "Entregar\nna portaria", totalEstimado: 9.1 });
+    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos).toHaveLength(1);
+  });
+
+  it("guarda o rascunho no app.db: outro servidor, no mesmo banco, o encontra", async () => {
+    await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA());
+    expect((await comoA(criarAppDeTeste(), `/api/rascunhos/${RASCUNHO}`)).statusCode).toBe(200);
+  });
+
+  it("descarta o rascunho; depois dele, 404", async () => {
+    const app = criarAppDeTeste();
+    await salvarComoA(app, RASCUNHO, rascunhoDeA());
+    const descarte = await app.inject({ method: "DELETE", url: `/api/rascunhos/${RASCUNHO}`, headers: { cookie: loginDeA, origin: ORIGEM } });
+    expect(descarte.statusCode).toBe(204);
+    expect((await comoA(app, `/api/rascunhos/${RASCUNHO}`)).statusCode).toBe(404);
+    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos).toEqual([]);
+  });
+
+  it("recusa o produto fora do catálogo, o preço abaixo da tabela, o produto repetido e a data que não existe", async () => {
+    const app = criarAppDeTeste();
+    const casos: [object, RegExp][] = [
+      [{ itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 10, precoCento: 90 }] }, /não está no catálogo/],
+      [{ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 95.49 }] }, /abaixo da tabela do cliente/],
+      [{ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 96 }, { codigo: "F-100", quantidade: 20, precoCento: 96 }] }, /duas vezes/],
+      [{ entrega: "2027-02-30" }, /não existe/],
+    ];
+    for (const [parcial, erro] of casos) {
+      const resposta = await salvarComoA(app, RASCUNHO, rascunhoDeA(parcial));
+      expect(resposta.statusCode, JSON.stringify(parcial)).toBe(400);
+      expect(resposta.json().erro).toMatch(erro);
+    }
+  });
+
+  it("aceita o preço igual à tabela, que é o mínimo", async () => {
+    const resposta = await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA({ itens: [{ codigo: "F-100", quantidade: 100, precoCento: 95.5 }] }));
+    expect(resposta.statusCode, resposta.body).toBe(200);
+  });
+
+  it("não cria rascunho vazio, mas deixa esvaziar o que já existe", async () => {
+    const app = criarAppDeTeste();
+    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [] }))).statusCode).toBe(400);
+    await salvarComoA(app, RASCUNHO, rascunhoDeA());
+    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [] }))).statusCode).toBe(200);
+  });
+
+  it("recusa o cliente de B e o grupo (404) e o cliente inativo (409, com o aviso)", async () => {
+    const app = criarAppDeTeste();
+    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: CLIENTE_DE_B }))).statusCode).toBe(404);
+    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: GRUPO_DE_A }))).statusCode).toBe(404);
+    const inativo = await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: CLIENTE_INATIVO_DE_A }));
+    expect(inativo.statusCode).toBe(409);
+    expect(inativo.json().erro).toMatch(/inativo no cadastro/);
+  });
+
+  it("não deixa A ler, salvar por cima nem descartar o rascunho de B", async () => {
+    const app = criarAppDeTeste();
+    const deB = await criarRascunhoDeB(app);
+    expect((await comoA(app, `/api/rascunhos/${deB}`)).statusCode).toBe(404);
+    expect((await salvarComoA(app, deB, rascunhoDeA())).statusCode).toBe(404);
+    const descarte = await app.inject({ method: "DELETE", url: `/api/rascunhos/${deB}`, headers: { cookie: loginDeA, origin: ORIGEM } });
+    expect(descarte.statusCode).toBe(404);
+    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos).toEqual([]);
+  });
+
+  it("recusa o campo a mais, o preço zerado, o id fora do formato e a observação com caractere de controle", async () => {
+    const app = criarAppDeTeste();
+    expect((await salvarComoA(app, RASCUNHO, { ...rascunhoDeA(), representante: "9999" })).statusCode).toBe(400);
+    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 0 }] }))).statusCode).toBe(400);
+    expect((await salvarComoA(app, "R1", rascunhoDeA())).statusCode).toBe(400);
+    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ observacao: "a\u0000b" }))).statusCode).toBe(400);
+  });
+
+  it("recusa o rascunho pedido de outra origem", async () => {
+    expect((await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA(), "https://outro.exemplo")).statusCode).toBe(403);
+  });
+
+  it("registra na auditoria a criação e o descarte, com o id do cliente, e não cada salvamento", async () => {
+    const app = criarAppDeTeste();
+    await salvarComoA(app, RASCUNHO, rascunhoDeA());
+    await salvarComoA(app, RASCUNHO, rascunhoDeA({ observacao: "outra" }));
+    await app.inject({ method: "DELETE", url: `/api/rascunhos/${RASCUNHO}`, headers: { cookie: loginDeA, origin: ORIGEM } });
+    const eventos = banco.prepare("SELECT evento, alvo FROM auditoria WHERE evento LIKE 'rascunho_%' ORDER BY id").all();
+    expect(eventos.map((linha) => ({ ...linha }))).toEqual([
+      { evento: "rascunho_criado", alvo: CLIENTE_DE_A },
+      { evento: "rascunho_descartado", alvo: CLIENTE_DE_A },
+    ]);
   });
 });

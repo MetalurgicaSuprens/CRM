@@ -1,8 +1,9 @@
+import { arredondarAoCentavo } from "dominio/pedido";
 import type { Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
 import { condicaoDaCarteira } from "./carteira.ts";
 import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
-import { ITENS_DAS_NOTAS, NOTA_DE_VENDA, data, emLista, emListaDeTexto } from "./sql.ts";
+import { ITENS_DAS_NOTAS, NOTA_DE_VENDA, data, emLista, emListaDeTexto, precoDoCento, textoDaData } from "./sql.ts";
 import type { PartNumberDaBiblia, PrecoDoCliente, ProdutoDaTabela, ProdutoJaComprado, TabelaDoCliente } from "./tipos.ts";
 
 /*
@@ -99,17 +100,41 @@ export async function lerProdutosDasTabelas(oracle: Oracle, tabelas: string[]): 
   }));
 }
 
-/** Os produtos que cada cliente da carteira comprou nos últimos 24 meses, com o mês corrente. */
+/** A linha da nota com preço: a bonificação, sem valor, não conta. Alias D = NFDE. */
+const LINHA_COM_PRECO = "D.VLR_TOTAL > 0 AND D.VLR_UNIT > 0 AND D.QTDE > 0";
+
+/**
+ * Os produtos que cada cliente da carteira comprou nos últimos 24 meses, com o mês corrente, e a última
+ * compra de cada um com preço: o dia e o preço do cento da última linha de nota de venda em que o produto
+ * veio com valor. É o preço com que o item entra no pedido (pedido do Lucas em 2026-11-05).
+ * O preço vem do unitário da linha, e não do total ÷ peças: o total é arredondado ao centavo, e 7 peças a
+ * R$ 95,50 o cento voltariam como R$ 95,43. Em 05/11, nos representantes 1302 e 1109, o total era sempre a
+ * quantidade × o unitário, sem desconto na linha, e o unitário batia no centavo com o catálogo em 87% dos pares.
+ */
 export async function lerProdutosJaComprados(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<ProdutoJaComprado[]> {
   const lista = emLista("r", autorizados);
   const linhas = await oracle.consultar(
-    `SELECT DISTINCT M.EMP_FIL, M.FORNEC, TRIM(D.C_PROD)
-     ${ITENS_DAS_NOTAS}
-       JOIN ABC71.CRCL C ON C.EMP_FIL = M.EMP_FIL AND C.CLIENTE = M.FORNEC
-      WHERE ${NOTA_DE_VENDA} AND C.VEND_1 IN ${lista.sql} AND M.DT_EMISSAO >= ${data("inicio24")}`,
+    `SELECT EMP_FIL, FORNEC, PRODUTO, ${textoDaData("MAX(CASE WHEN ORDEM = 1 THEN DT_EMISSAO END)")}, MAX(CASE WHEN ORDEM = 1 THEN PRECO END)
+       FROM (SELECT M.EMP_FIL, M.FORNEC, TRIM(D.C_PROD) PRODUTO, M.DT_EMISSAO, ${precoDoCento("D.VLR_UNIT")} PRECO,
+                    CASE WHEN ${LINHA_COM_PRECO} THEN
+                      ROW_NUMBER() OVER (PARTITION BY M.EMP_FIL, M.FORNEC, TRIM(D.C_PROD), CASE WHEN ${LINHA_COM_PRECO} THEN 1 END
+                                         ORDER BY M.DT_EMISSAO DESC, M.N_FISCAL DESC, M.SERIE DESC, D.LINHA DESC)
+                    END ORDEM
+             ${ITENS_DAS_NOTAS}
+               JOIN ABC71.CRCL C ON C.EMP_FIL = M.EMP_FIL AND C.CLIENTE = M.FORNEC
+              WHERE ${NOTA_DE_VENDA} AND C.VEND_1 IN ${lista.sql} AND M.DT_EMISSAO >= ${data("inicio24")})
+      GROUP BY EMP_FIL, FORNEC, PRODUTO`,
     { ...lista.binds, inicio24: referencia.inicio24 },
   );
-  return linhas.map((linha) => ({ chave: chaveDoCliente(numero(linha, 0), numero(linha, 1)), produto: texto(linha, 2) }));
+  return linhas.map((linha) => {
+    const dia = textoOuNulo(linha, 3);
+    const precoCento = numero(linha, 4);
+    return {
+      chave: chaveDoCliente(numero(linha, 0), numero(linha, 1)),
+      produto: texto(linha, 2),
+      ultimaCompra: dia && precoCento > 0 ? { data: dia, precoCento: arredondarAoCentavo(precoCento) } : null,
+    };
+  });
 }
 
 function numeroPositivoOuNulo(valor: number): number | null {

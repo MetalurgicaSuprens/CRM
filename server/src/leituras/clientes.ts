@@ -2,7 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import type { Porte } from "dominio/tipos";
 import type { ClienteResumo, FichaCliente } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
-import { COLUNAS_DO_RESUMO, comResumos, escopo, lerLinhas, numero, numeroOuNulo, texto, textoOuNulo } from "./linhas.ts";
+import { COLUNAS_DO_RESUMO, comResumos, escopo, lerLinhas, numero, numeroOuNulo, resumoDoCliente, texto, textoOuNulo } from "./linhas.ts";
 import { lerPedidosDaFicha, lerPedidosDoGrupo } from "./pedidos.ts";
 
 /** A carteira do login: os clientes de todos os códigos dele, com o grupo no lugar dos CNPJs dele. */
@@ -18,8 +18,17 @@ export function lerCarteira(db: DatabaseSync, sessao: Sessao): ClienteResumo[] {
 
 /** O cliente sozinho ou o CNPJ de um grupo, da carteira do login: onde a visita acontece. O grupo, não. */
 export function isClienteDaCarteira(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): boolean {
+  return lerResumoNaCarteira(db, sessao, codigoDoCliente) !== null;
+}
+
+/** O resumo do CNPJ da carteira do login: o grupo não, porque visita e pedido são sempre de um CNPJ. Fora dela, null. */
+export function lerResumoNaCarteira(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): ClienteResumo | null {
   const { marcas, codigos } = escopo(sessao);
-  return lerLinhas(db, `SELECT 1 FROM cliente c WHERE c.cliente = ? AND c.cnpjs IS NULL AND c.representante IN (${marcas})`, [codigoDoCliente, ...codigos]).length > 0;
+  const [linha] = lerLinhas(db, `SELECT ${COLUNAS_DO_RESUMO} FROM cliente c WHERE c.cliente = ? AND c.cnpjs IS NULL AND c.representante IN (${marcas})`, [
+    codigoDoCliente,
+    ...codigos,
+  ]);
+  return linha ? resumoDoCliente(linha) : null;
 }
 
 /**

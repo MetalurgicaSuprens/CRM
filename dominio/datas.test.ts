@@ -3,6 +3,7 @@ import {
   dataDoMomento,
   diasEntre,
   horaDoMomento,
+  isDataDeVerdade,
   momentoEmBrasilia,
   somarDias,
   somarMeses,
@@ -53,5 +54,15 @@ describe("calendário", () => {
   it("sabe o último dia de fevereiro", () => {
     expect(ultimoDiaDoMes("2028-02")).toBe(29);
     expect(ultimoDiaDoMes("2026-02")).toBe(28);
+  });
+});
+
+describe("isDataDeVerdade", () => {
+  it("aceita a data que existe e recusa a que só passa no formato", () => {
+    expect(isDataDeVerdade("2026-02-28")).toBe(true);
+    expect(isDataDeVerdade("2028-02-29")).toBe(true);
+    expect(isDataDeVerdade("2026-02-30")).toBe(false);
+    expect(isDataDeVerdade("2026-13-01")).toBe(false);
+    expect(isDataDeVerdade("amanhã")).toBe(false);
   });
 });

@@ -3,14 +3,14 @@ import {
   STATUS_NA_FICHA,
   embalagemAnterior,
   passosDoAndamento,
-  pecasEmCentos,
+  precoDigitado,
   precoDoCento,
+  precoInicialDoItem,
   problemasDoPedido,
   proximaEmbalagem,
   quantidadeDigitada,
+  rascunhoNoCatalogo,
   resumirPorFamilia,
-  totalDoPedido,
-  valorDaLinha,
   type LinhaDoPedido,
 } from "./pedido";
 
@@ -19,12 +19,6 @@ const HOJE = "2026-10-08";
 function linha(parcial: Partial<LinhaDoPedido> = {}): LinhaDoPedido {
   return { codigo: "FAB12345", quantidade: 200, embalagem: 100, precoCento: 95, ...parcial };
 }
-
-describe("pecasEmCentos", () => {
-  it("converte peças em CT, o cento do ERP", () => {
-    expect(pecasEmCentos(250)).toBe(2.5);
-  });
-});
 
 describe("precoDoCento", () => {
   it("divide o valor do item do ERP pelos centos dele", () => {
@@ -69,22 +63,65 @@ describe("proximaEmbalagem e embalagemAnterior", () => {
   });
 });
 
-describe("valorDaLinha e totalDoPedido", () => {
-  it("cobra o preço do cento pela quantidade em centos", () => {
-    expect(valorDaLinha({ quantidade: 250, precoCento: 120 })).toBe(300);
+describe("precoInicialDoItem", () => {
+  it("usa o preço da última compra", () => {
+    expect(precoInicialDoItem({ precoDaTabela: 95.5, ultimaCompra: { precoCento: 98.4, data: "2026-09-15" } })).toBe(98.4);
   });
 
-  it("soma as linhas", () => {
-    expect(totalDoPedido([linha({ quantidade: 200, precoCento: 95 }), linha({ quantidade: 50, precoCento: 260 })])).toBe(320);
+  it("não fica abaixo da tabela do cliente, quando a última compra saiu mais barata", () => {
+    expect(precoInicialDoItem({ precoDaTabela: 95.5, ultimaCompra: { precoCento: 90, data: "2025-01-10" } })).toBe(95.5);
   });
 
-  it("arredonda cada linha ao centavo", () => {
-    expect(valorDaLinha({ quantidade: 333, precoCento: 12.35 })).toBe(41.13);
+  it("sem última compra, usa a tabela", () => {
+    expect(precoInicialDoItem({ precoDaTabela: 95.5, ultimaCompra: null })).toBe(95.5);
+  });
+});
+
+describe("rascunhoNoCatalogo", () => {
+  const produtos = [
+    { codigo: "FAB1422P", precoDaTabela: 95.5 },
+    { codigo: "MAB1216P", precoDaTabela: 120 },
+  ];
+
+  it("deixa como está o rascunho que cabe no catálogo de hoje", () => {
+    const itens = [{ codigo: "FAB1422P", quantidade: 300, precoCento: 98.4 }];
+    expect(rascunhoNoCatalogo(itens, produtos)).toEqual({ itens, foraDoCatalogo: 0, subiramAoMinimo: 0 });
   });
 
-  it("soma as linhas como a tela as mostra, no centavo", () => {
-    // Sem arredondar cada linha, 41,1255 + 41,1255 daria R$ 82,25, e a tela mostraria 41,13 + 41,13.
-    expect(totalDoPedido([linha({ quantidade: 333, precoCento: 12.35 }), linha({ quantidade: 333, precoCento: 12.35 })])).toBe(82.26);
+  it("tira o produto que saiu do catálogo e sobe para a tabela o preço que ficou abaixo dela", () => {
+    const itens = [
+      { codigo: "FAB1422P", quantidade: 300, precoCento: 90 },
+      { codigo: "SAIU", quantidade: 100, precoCento: 50 },
+      { codigo: "MAB1216P", quantidade: 500, precoCento: 130 },
+    ];
+    expect(rascunhoNoCatalogo(itens, produtos)).toEqual({
+      itens: [
+        { codigo: "FAB1422P", quantidade: 300, precoCento: 95.5 },
+        { codigo: "MAB1216P", quantidade: 500, precoCento: 130 },
+      ],
+      foraDoCatalogo: 1,
+      subiramAoMinimo: 1,
+    });
+  });
+});
+
+describe("precoDigitado", () => {
+  it("lê o preço com vírgula, com o ponto dos milhares ou com o ponto decimal, no centavo", () => {
+    expect(precoDigitado("123,45", 50)).toEqual({ preco: 123.45, subiuAoMinimo: false });
+    expect(precoDigitado("R$ 1.234,567", 50)).toEqual({ preco: 1234.57, subiuAoMinimo: false });
+    expect(precoDigitado("123.45", 50)).toEqual({ preco: 123.45, subiuAoMinimo: false });
+    expect(precoDigitado("1.234", 50)).toEqual({ preco: 1234, subiuAoMinimo: false });
+  });
+
+  it("sobe para o mínimo o preço abaixo da tabela do cliente", () => {
+    expect(precoDigitado("80", 95.5)).toEqual({ preco: 95.5, subiuAoMinimo: true });
+  });
+
+  it("devolve null para o que não é preço", () => {
+    expect(precoDigitado("", 95.5)).toBeNull();
+    expect(precoDigitado("abc", 95.5)).toBeNull();
+    expect(precoDigitado("0", 95.5)).toBeNull();
+    expect(precoDigitado("-10", 95.5)).toBeNull();
   });
 });
 
