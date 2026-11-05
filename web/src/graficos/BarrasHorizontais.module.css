@@ -36,6 +36,11 @@
   color: var(--cor-texto);
 }
 
+/* Parte, Faturado e Peças seguem a cor do cabeçalho, e não o cinza dos números da coluna */
+.cabecalho > span {
+  color: inherit;
+}
+
 .rotulo {
   font-weight: 500;
   overflow: hidden;
