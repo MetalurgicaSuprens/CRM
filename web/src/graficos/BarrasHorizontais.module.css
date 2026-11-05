@@ -26,14 +26,14 @@
 .cabecalho {
   margin: 0 calc(var(--esp-2) * -1);
   padding: var(--esp-2);
-  border-bottom: 1px solid var(--cor-linha-forte);
+  border-bottom: 1px solid var(--fundo-do-cabecalho);
   border-radius: var(--raio-pequeno);
   background: var(--fundo-do-cabecalho);
   font-size: var(--tam-legenda);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--cor-texto);
+  color: var(--texto-do-cabecalho);
 }
 
 /* Parte, Faturado e Peças seguem a cor do cabeçalho, e não o cinza dos números da coluna */

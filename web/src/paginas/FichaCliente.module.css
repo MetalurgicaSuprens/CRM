@@ -211,9 +211,20 @@
   margin: 0 calc(var(--esp-2) * -1);
 }
 
+/* "separate", e não o "collapse" da base: só assim a faixa do cabeçalho tem os cantos arredondados */
 .tabela {
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--tam-pequeno);
   font-variant-numeric: tabular-nums;
+}
+
+.tabela thead th:first-child {
+  border-radius: var(--raio-pequeno) 0 0 var(--raio-pequeno);
+}
+
+.tabela thead th:last-child {
+  border-radius: 0 var(--raio-pequeno) var(--raio-pequeno) 0;
 }
 
 .tabela th,
@@ -231,12 +242,12 @@
 
 .tabela thead th {
   background: var(--fundo-do-cabecalho);
-  border-bottom-color: var(--cor-linha-forte);
+  border-bottom-color: var(--fundo-do-cabecalho);
   font-size: var(--tam-legenda);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--cor-texto);
+  color: var(--texto-do-cabecalho);
 }
 
 .tabela tbody th {

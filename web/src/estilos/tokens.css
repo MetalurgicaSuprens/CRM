@@ -1,7 +1,8 @@
 /*
  * Visual do CRM: superfícies claras, o grafite como destaque da interface e o óxido da Suprens
  * como assinatura (logotipo, traço dos títulos e item ativo do menu). O preto fica nos ícones,
- * contornos, botões e no que está escolhido, nunca em superfícies grandes: o visual continua leve.
+ * contornos, botões, no que está escolhido e na faixa do título das colunas, nunca em superfícies
+ * grandes: o visual continua leve.
  * As cores de texto foram conferidas com o validador de contraste (WCAG) contra
  * --cor-superficie, que é o fundo dos cartões.
  */
@@ -13,10 +14,12 @@
   /* Um tom acima de --cor-superficie-2: o cabeçalho da linha aberta sobre os detalhes dela (texto suave a 4,6:1) */
   --cor-superficie-3: #efefed;
   /*
-   * Faixa do título das colunas, um tom abaixo de --cor-superficie-3, com o título em --cor-texto:
-   * em cinza claro sobre branco, ele sumia atrás das linhas (pedido do Lucas em 2026-11-05).
+   * Faixa do título das colunas: em cinza claro sobre branco, ele sumia atrás das linhas. O Lucas
+   * escolheu o grafite, um pouco mais claro que o dos botões (2026-11-05; a faixa cinza está na
+   * marca cabecalhos-cinza). Título branco a 11,4:1.
    */
-  --fundo-do-cabecalho: #e9e9e7;
+  --fundo-do-cabecalho: #3a3a38;
+  --texto-do-cabecalho: #ffffff;
   --cor-linha: #e6e6e4;
   --cor-linha-forte: #cfcfcc;
   /* Contorno dos cartões: quase invisível, a sombra é que separa do fundo */

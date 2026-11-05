@@ -22,14 +22,14 @@
   z-index: 1;
   min-height: 36px;
   background: var(--fundo-do-cabecalho);
-  border-bottom: 1px solid var(--cor-linha-forte);
+  border-bottom: 1px solid var(--fundo-do-cabecalho);
   border-radius: var(--raio-pequeno);
   font-size: var(--tam-legenda);
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--cor-texto);
+  color: var(--texto-do-cabecalho);
 }
 
 .tabela {
@@ -151,10 +151,12 @@ li:last-child > .detalheDaLinha {
 
 /*
  * O cabeçalho da tabela de dentro gruda no mesmo lugar e cobre o da lista enquanto os itens
- * passam; depois deles, o da lista volta.
+ * passam; depois deles, o da lista volta. Fica claro: duas faixas grafite empilhadas pesariam.
  */
 .detalheDaLinha .cabecalho {
   background: var(--cor-superficie-2);
+  border-bottom-color: var(--cor-linha-forte);
+  color: var(--cor-texto);
 }
 
 /* ------------------------------------------------ cartões: o componente liga quando as colunas não cabem */
