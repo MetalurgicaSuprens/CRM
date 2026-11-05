@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { KeyRound, PackageSearch, ShoppingBasket, Trash, Users } from "lucide-react";
+import { KeyRound, PackageSearch, ShoppingBasket, Trash, Users, X } from "lucide-react";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
@@ -15,7 +15,7 @@ import { Valor } from "../componentes/Valor";
 import { Voltar } from "../componentes/Voltar";
 import { useValores } from "../contexto/valores";
 import { dataDoMomento } from "dominio/datas";
-import { LIMITE_DA_OBSERVACAO, totalDoPedido, valorDaLinha } from "dominio/pedido";
+import { LIMITE_DA_OBSERVACAO, primeiraEntregaPossivel, totalDoPedido, valorDaLinha } from "dominio/pedido";
 import {
   carregarCatalogo,
   carregarClientes,
@@ -117,6 +117,7 @@ type PropsDoFormulario = { catalogo: CatalogoDoCliente; idDoRascunho: string; in
 function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormulario) {
   const navegar = useNavigate();
   const hoje = dataDoMomento(relogio);
+  const primeiraEntrega = primeiraEntregaPossivel(hoje);
   // O rascunho diante do catálogo de hoje: o produto que saiu dele fica de fora, e o preço abaixo da tabela sobe para ela.
   const [doRascunho] = useState(() => rascunhoNoCatalogo(inicial?.itens ?? [], catalogo.produtos));
   const [quantidades, setQuantidades] = useState<Quantidades>(() => Object.fromEntries(doRascunho.itens.map((item) => [item.codigo, item.quantidade])));
@@ -188,8 +189,10 @@ function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormula
           >
             <div className={estilos.campos}>
               <label className={`${estilos.campo} ${estilos.campoEmLinha}`}>
-                <span>Entrega desejada</span>
-                <input type="date" min={hoje} value={entrega ?? ""} onChange={(evento) => setEntrega(evento.target.value || null)} />
+                <span>
+                  Entrega desejada <span className={estilos.suave}>(a partir de {formatarDataCurta(primeiraEntrega)})</span>
+                </span>
+                <input type="date" min={primeiraEntrega} value={entrega ?? ""} onChange={(evento) => setEntrega(evento.target.value || null)} />
               </label>
               <label className={estilos.campo}>
                 <span>
@@ -408,6 +411,9 @@ function ItensEscolhidos({ linhas, alterar, alterarPreco }: PropsDosItens) {
           <span className={estilos.valorDoItem}>
             <Valor valor={valorDaLinha(linha)} comCentavos />
           </span>
+          <button type="button" className={estilos.tirarItem} aria-label={`Tirar ${linha.codigo} do pedido`} title="Tirar do pedido" onClick={() => alterar(linha.codigo, 0)}>
+            <X size={16} aria-hidden="true" />
+          </button>
           <PrecoDoItem linha={linha} aoMudar={(preco) => alterarPreco(linha.codigo, preco)} />
         </li>
       ))}

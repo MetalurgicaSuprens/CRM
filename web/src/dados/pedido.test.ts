@@ -228,9 +228,14 @@ describe("problemasDoPedido", () => {
     expect(problemasDoPedido([linha({ quantidade: 300, embalagem: 500 })], "", null, HOJE)).toEqual([]);
   });
 
-  it("recusa entrega antes de hoje e observação longa demais", () => {
-    expect(problemasDoPedido([linha()], "x".repeat(301), "2026-10-01", HOJE)).toEqual([
-      "A entrega desejada não pode ser antes de hoje.",
+  it("aceita a entrega no 5º dia útil depois de hoje", () => {
+    // HOJE é a quinta 08/10/2026, e o 12 é feriado: o 5º dia útil é a sexta 16.
+    expect(problemasDoPedido([linha()], "", "2026-10-16", HOJE)).toEqual([]);
+  });
+
+  it("recusa entrega a menos de 5 dias úteis e observação longa demais", () => {
+    expect(problemasDoPedido([linha()], "x".repeat(301), "2026-10-15", HOJE)).toEqual([
+      "A entrega desejada precisa ser a partir de 16/10/2026: 5 dias úteis depois de hoje.",
       "A observação passa de 300 caracteres.",
     ]);
   });

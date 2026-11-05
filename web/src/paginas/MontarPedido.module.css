@@ -54,18 +54,26 @@
   max-width: 420px;
 }
 
+/* O campo das peças mais estreito que no catálogo (cabem 7 dígitos): sobra lugar para o código e o X */
 .itens {
+  --largura-do-campo-da-quantidade: 3.5rem;
   display: flex;
   flex-direction: column;
   container-type: inline-size;
 }
 
-/* Um item por linha: o código (e a descrição, cortada), a quantidade e o valor */
+/*
+ * Um item por linha: o código (e a descrição, cortada), a quantidade, o valor e o X que tira o item;
+ * embaixo, o preço. A quantidade (componente sem classe daqui) cai na célula que sobra.
+ */
 .item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(4.5rem, auto);
+  grid-template-columns: minmax(0, 1fr) auto minmax(4.5rem, auto) auto;
+  grid-template-areas:
+    "produto quantidade valor tirar"
+    "preco preco preco preco";
   align-items: center;
-  gap: var(--esp-3);
+  gap: var(--esp-3) var(--esp-2);
   padding: var(--esp-2) 0;
   border-bottom: 1px solid var(--cor-linha);
   font-size: var(--tam-pequeno);
@@ -73,23 +81,45 @@
 }
 
 .descricaoDoItem {
+  grid-area: produto;
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.codigo {
-  font-weight: 600;
-}
-
+.codigo,
 .detalheDoItem {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.codigo {
+  font-weight: 600;
+}
+
 .valorDoItem {
+  grid-area: valor;
   text-align: right;
+}
+
+/* Pequeno e apagado; sob o mouse, fica vermelho, como o "Descartar rascunho" */
+.tirarItem {
+  grid-area: tirar;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  color: var(--cor-texto-suave);
+}
+
+.tirarItem:hover {
+  background: var(--cor-superficie-2);
+  color: var(--cor-queda);
 }
 
 /*
@@ -97,7 +127,7 @@
  * mínimo), cortado se faltar espaço, para cada item ficar em duas linhas e a lista mostrar vários.
  */
 .precoDoItem {
-  grid-column: 1 / -1;
+  grid-area: preco;
   display: flex;
   align-items: center;
   gap: var(--esp-3);
@@ -166,15 +196,15 @@
   font-size: var(--tam-pequeno);
 }
 
-/* Numa coluna estreita, o produto ocupa a linha toda; a quantidade e o valor ficam embaixo */
+/* Numa coluna estreita, o produto ocupa a linha com o X; a quantidade e o valor ficam embaixo */
 @container (max-width: 19rem) {
   .item {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "produto produto tirar"
+      "quantidade valor valor"
+      "preco preco preco";
     row-gap: var(--esp-2);
-  }
-
-  .descricaoDoItem {
-    grid-column: 1 / -1;
   }
 }
 

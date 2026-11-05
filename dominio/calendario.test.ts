@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { corteDoMesmoDiaUtil, diaUtilDoMes, diasUteisDoMes, isDiaUtil, isFeriadoNacional } from "./calendario.ts";
+import { corteDoMesmoDiaUtil, diaUtilDoMes, diasUteisDoMes, isDiaUtil, isFeriadoNacional, somarDiasUteis } from "./calendario.ts";
 
 describe("calendário padrão", () => {
   it("não conta fim de semana nem feriado nacional", () => {
@@ -43,5 +43,20 @@ describe("corteDoMesmoDiaUtil", () => {
 
   it("é nulo quando o mês não tem mais que N dias úteis: entra o mês inteiro", () => {
     expect(corteDoMesmoDiaUtil("2025-10", 23)).toBeNull();
+  });
+});
+
+describe("somarDiasUteis", () => {
+  it("começa a contar no dia seguinte: de quinta, 5 dias úteis dão a quinta seguinte", () => {
+    expect(somarDiasUteis("2026-11-05", 5)).toBe("2026-11-12");
+  });
+
+  it("pula o fim de semana e o feriado no caminho", () => {
+    // Da sexta 13/11/2026: segunda 16 a quinta 19 e, depois da Consciência Negra (sexta 20), a segunda 23.
+    expect(somarDiasUteis("2026-11-13", 5)).toBe("2026-11-23");
+  });
+
+  it("conta do sábado como da sexta", () => {
+    expect(somarDiasUteis("2026-11-07", 5)).toBe("2026-11-13");
   });
 });

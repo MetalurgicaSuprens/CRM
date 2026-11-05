@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arredondarAoCentavo, pecasEmCentos, totalDoPedido, valorDaLinha } from "./pedido.ts";
+import { arredondarAoCentavo, pecasEmCentos, primeiraEntregaPossivel, totalDoPedido, valorDaLinha } from "./pedido.ts";
 
 describe("pecasEmCentos", () => {
   it("converte peças em CT, o cento do ERP", () => {
@@ -30,5 +30,16 @@ describe("arredondarAoCentavo", () => {
   it("fica com duas casas", () => {
     expect(arredondarAoCentavo(123.456)).toBe(123.46);
     expect(arredondarAoCentavo(0.004)).toBe(0);
+  });
+});
+
+describe("primeiraEntregaPossivel", () => {
+  it("fica 5 dias úteis depois de hoje", () => {
+    expect(primeiraEntregaPossivel("2026-11-05")).toBe("2026-11-12");
+  });
+
+  it("não conta o feriado no caminho", () => {
+    // Da quinta 08/10/2026: sexta 9, o 12 é feriado, e terça 13 a sexta 16.
+    expect(primeiraEntregaPossivel("2026-10-08")).toBe("2026-10-16");
   });
 });

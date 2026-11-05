@@ -33,8 +33,9 @@
   opacity: 0.35;
 }
 
+/* A lista do pedido, mais apertada, estreita o campo pela variável (MontarPedido.module.css) */
 .campo {
-  width: 4.5rem;
+  width: var(--largura-do-campo-da-quantidade, 4.5rem);
   border: 0;
   border-left: 1px solid var(--cor-linha);
   border-right: 1px solid var(--cor-linha);

@@ -1,4 +1,5 @@
-import { LIMITE_DA_OBSERVACAO, arredondarAoCentavo, pecasEmCentos } from "dominio/pedido";
+import { DIAS_UTEIS_ATE_A_ENTREGA, LIMITE_DA_OBSERVACAO, arredondarAoCentavo, pecasEmCentos, primeiraEntregaPossivel } from "dominio/pedido";
+import { formatarData } from "../formato";
 import type { EtapaDoPedido, ItemDoPedido, PedidoEnviado, ProdutoDoCatalogo, StatusDoPedido } from "./tipos";
 
 /*
@@ -140,12 +141,15 @@ export const STATUS_NA_FICHA: Record<EtapaDoPedido, StatusDoPedido | null> = {
 
 /**
  * O que impede o envio, em frases para o representante; lista vazia quando dá para enviar.
- * `hoje` é a data do relógio de Brasília, nunca a da foto: com a foto atrasada, ontem passaria.
+ * `hoje` é a data do relógio de Brasília, nunca a da foto: com a foto atrasada, uma entrega cedo demais passaria.
  */
 export function problemasDoPedido(linhas: readonly LinhaDoPedido[], observacao: string, entrega: string | null, hoje: string): string[] {
   const problemas: string[] = [];
+  const primeiraEntrega = primeiraEntregaPossivel(hoje);
   if (!linhas.some((linha) => linha.quantidade > 0)) problemas.push("Inclua pelo menos um produto.");
-  if (entrega !== null && entrega < hoje) problemas.push("A entrega desejada não pode ser antes de hoje.");
+  if (entrega !== null && entrega < primeiraEntrega) {
+    problemas.push(`A entrega desejada precisa ser a partir de ${formatarData(primeiraEntrega)}: ${DIAS_UTEIS_ATE_A_ENTREGA} dias úteis depois de hoje.`);
+  }
   if (observacao.length > LIMITE_DA_OBSERVACAO) problemas.push(`A observação passa de ${LIMITE_DA_OBSERVACAO} caracteres.`);
   return problemas;
 }

@@ -33,6 +33,17 @@ export function diasUteisDoMes(mesIso: string): number {
   return diasDoMes(mesIso).filter(isDiaUtil).length;
 }
 
+/** O Nº dia útil depois da data, que não conta: de uma quinta comum, 5 dias úteis dão a quinta seguinte. */
+export function somarDiasUteis(dataIso: string, quantidade: number): string {
+  let dia = dataIso;
+  let faltam = quantidade;
+  while (faltam > 0) {
+    dia = somarDias(dia, 1);
+    if (isDiaUtil(dia)) faltam -= 1;
+  }
+  return dia;
+}
+
 /**
  * Onde acaba o "mesmo dia útil" num mês: a venda entra até antes do (N+1)º dia útil, para contar
  * as notas de sábado e de feriado logo depois do Nº (docs/dados-por-tela.md, Início). null quando
