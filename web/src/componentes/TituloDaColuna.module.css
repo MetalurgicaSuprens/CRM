@@ -1,4 +1,7 @@
-/* Herda a letra do cabeçalho da tabela: só o ícone mostra que o título ordena */
+/*
+ * Herda a letra e a cor do cabeçalho da tabela: só o ícone mostra que o título ordena e qual
+ * coluna está escolhida.
+ */
 .titulo {
   display: inline-flex;
   align-items: center;
@@ -11,17 +14,11 @@
   letter-spacing: inherit;
   text-align: inherit;
   text-transform: inherit;
-  transition: color var(--transicao);
-}
-
-.titulo:hover,
-.escolhido {
-  color: var(--cor-texto);
 }
 
 .icone {
   flex-shrink: 0;
-  opacity: 0.4;
+  opacity: 0.45;
   transition: opacity var(--transicao);
 }
 

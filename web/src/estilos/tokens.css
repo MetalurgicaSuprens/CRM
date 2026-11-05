@@ -12,6 +12,11 @@
   --cor-superficie-2: #f6f6f5;
   /* Um tom acima de --cor-superficie-2: o cabeçalho da linha aberta sobre os detalhes dela (texto suave a 4,6:1) */
   --cor-superficie-3: #efefed;
+  /*
+   * Faixa do título das colunas, um tom abaixo de --cor-superficie-3, com o título em --cor-texto:
+   * em cinza claro sobre branco, ele sumia atrás das linhas (pedido do Lucas em 2026-11-05).
+   */
+  --fundo-do-cabecalho: #e9e9e7;
   --cor-linha: #e6e6e4;
   --cor-linha-forte: #cfcfcc;
   /* Contorno dos cartões: quase invisível, a sombra é que separa do fundo */

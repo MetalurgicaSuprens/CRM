@@ -37,14 +37,14 @@
   top: var(--topo-do-cabecalho, var(--altura-barra-superior));
   z-index: 1;
   min-height: 40px;
-  background: var(--cor-superficie-2);
-  border-bottom: 1px solid var(--cor-linha);
+  background: var(--fundo-do-cabecalho);
+  border-bottom: 1px solid var(--cor-linha-forte);
   font-size: var(--tam-legenda);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: var(--cor-texto-2);
+  color: var(--cor-texto);
 }
 
 .linha {

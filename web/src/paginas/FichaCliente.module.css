@@ -230,11 +230,13 @@
 }
 
 .tabela thead th {
+  background: var(--fundo-do-cabecalho);
+  border-bottom-color: var(--cor-linha-forte);
   font-size: var(--tam-legenda);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--cor-texto-2);
+  color: var(--cor-texto);
 }
 
 .tabela tbody th {

@@ -169,7 +169,9 @@
 }
 
 .tabela thead th {
-  color: var(--cor-texto-2);
+  background: var(--fundo-do-cabecalho);
+  border-bottom-color: var(--cor-linha-forte);
+  color: var(--cor-texto);
   font-weight: 600;
 }
 

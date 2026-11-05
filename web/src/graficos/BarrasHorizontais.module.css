@@ -19,15 +19,21 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Como o cabeçalho das tabelas do CRM (componentes/TabelaResponsiva.module.css) */
+/*
+ * Como o cabeçalho das tabelas do CRM (componentes/TabelaResponsiva.module.css). A faixa avança o
+ * próprio recuo para as duas pontas: os títulos continuam alinhados com as linhas.
+ */
 .cabecalho {
-  padding-bottom: var(--esp-2);
-  border-bottom: 1px solid var(--cor-linha);
+  margin: 0 calc(var(--esp-2) * -1);
+  padding: var(--esp-2);
+  border-bottom: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--fundo-do-cabecalho);
   font-size: var(--tam-legenda);
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--cor-texto-2);
+  color: var(--cor-texto);
 }
 
 .rotulo {
