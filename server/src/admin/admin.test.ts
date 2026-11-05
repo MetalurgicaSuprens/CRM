@@ -237,6 +237,7 @@ describe("representantes, situação e registro", () => {
       admin: { id: idDoAdmin, nome: "Admin de teste" },
       // Os 6 CNPJs da foto de teste; as linhas dos 2 grupos não contam.
       foto: { dataRef: "2026-10-13", representantes: 2, clientes: 6 },
+      cargaRecusada: null,
     });
   });
 

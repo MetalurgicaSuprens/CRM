@@ -40,11 +40,16 @@ type BancoQueConta = {
 
 /** As linhas de cada tabela: o extrator as põe no manifesto, e o servidor confere a cópia com elas. */
 export function contarLinhasPorTabela(db: BancoQueConta): Record<string, number> {
+  return Object.fromEntries(tabelasDaFoto(db).map((tabela) => [tabela, Number(db.prepare(`SELECT COUNT(*) AS linhas FROM ${tabela}`).get()?.linhas)]));
+}
+
+/** As tabelas em ordem de nome, já conferidas: o nome pode entrar no SQL. */
+export function tabelasDaFoto(db: BancoQueConta): string[] {
   const tabelas = db
     .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' ORDER BY name")
     .all()
     .map((linha) => String(linha.name));
   const estranha = tabelas.find((tabela) => !NOME_DE_TABELA.test(tabela));
   if (estranha !== undefined) throw new Error(`A foto tem uma tabela fora do padrão de nome: "${estranha}".`);
-  return Object.fromEntries(tabelas.map((tabela) => [tabela, Number(db.prepare(`SELECT COUNT(*) AS linhas FROM ${tabela}`).get()?.linhas)]));
+  return tabelas;
 }

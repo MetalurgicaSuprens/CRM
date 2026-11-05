@@ -62,7 +62,7 @@ Lucas (LAN) ──────────────────────�
     - os dados reais ficam num arquivo local fora do git. O `.bat` da rede continua com os fictícios.
 - Gera a `foto.db` já com as regras de negócio calculadas, como a "tela servida pronta" do Gestao: situação, ciclo, análises, mix e município IBGE. A API só faz leituras com escopo e somas simples.
 - Antes de gravar:
-  - compara a impressão digital com a da última foto;
+  - compara a impressão digital com a da última foto. Feito em 2026-11-05 (`extrator/src/foto/impressaoDigital.ts`): a foto igual à anterior não é gravada nem enviada. A hora na tela passa a ser a da última mudança no ERP, e o alerta de atraso da foto vai ter de olhar a última conferência do extrator;
   - recusa a carga se o volume cair mais de 50% ou subir mais de 50%, ou se a data mais recente voltar no tempo. Feito em 2026-11-05 (`extrator/src/foto/comparacao.ts`):
     - o volume é o de cada tabela com pelo menos 1.000 linhas na foto anterior. As menores, como a dos pedidos em aberto, mudam muito de uma carga para a outra;
     - a data mais recente é a da foto, pelo relógio do Oracle, e a da nota mais recente;
@@ -164,7 +164,7 @@ Publicação:
 **Auditoria**
 - Eventos: login (sucesso e falha), convites, chaves, ficha consultada, pedido criado e enviado, ações de admin, foto trocada ou recusada.
 - Vai para o `app.db` e para `saida/auditoria/*.jsonl`, de onde a LAN busca a cada 5 min.
-- Guardada por 6–12 meses (o Marco Civil exige 6). Os representantes são avisados de que os acessos são registrados.
+- Guardada por 6–12 meses (o Marco Civil exige 6). Os representantes são avisados de que os acessos são registrados. Desde 2026-11-05 o servidor apaga, na subida e uma vez por dia, o registro, as sessões e os convites com mais de 12 meses (`server/src/limpeza.ts`), e registra a limpeza.
 - Logs da aplicação sem PII: só rota, status, tempo e id do usuário.
 
 ## Pedidos: caminho até o ERP
@@ -214,7 +214,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
    - Os nomes e os desenhos vêm da base atual do IBGE, o que resolve os nomes antigos do protótipo.
    - Os valores da dica obedecem "ocultar valores".
    - Detalhes em dados-por-tela.md, seção 10.
-7. **Admin**, só na rede interna: logins dos representantes, códigos, convites, chaves, sessões, auditoria e a hora da foto. Feita em 2026-10-16 como um site à parte, com API própria e login só de admin (dados-por-tela.md, seção 11). Falta a situação das cargas: trocas e recusas da foto.
+7. **Admin**, só na rede interna: logins dos representantes, códigos, convites, chaves, sessões, auditoria e a hora da foto. Feita em 2026-10-16 como um site à parte, com API própria e login só de admin (dados-por-tela.md, seção 11). Desde 2026-11-05, todas as telas avisam a carga recusada na conferência do servidor, com o motivo, e o registro guarda cada recusa. A recusa no extrator, na LAN, ainda não chega à administração.
 
 **Dois escopos, sempre explícitos**
 - **Visão do cliente** (o histórico completo do cliente, de qualquer representante): Clientes, Ficha, Análises e Mapa.

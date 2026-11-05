@@ -66,7 +66,12 @@ export function registrarRotasDoAdmin(app: FastifyInstance, dependencias: Depend
 
   app.get("/api/admin/situacao", DO_ADMIN, (requisicao): SituacaoDaAdministracao => {
     const admin = sessaoDa(requisicao);
-    return { admin: { id: admin.idDoUsuario, nome: admin.nome }, relogio: momentoEmBrasilia(dependencias.agora()), foto: situacaoDaFoto(dependencias.foto) };
+    return {
+      admin: { id: admin.idDoUsuario, nome: admin.nome },
+      relogio: momentoEmBrasilia(dependencias.agora()),
+      foto: situacaoDaFoto(dependencias.foto),
+      cargaRecusada: cargaRecusada(dependencias.foto),
+    };
   });
 
   app.get("/api/admin/logins", DO_ADMIN, () => verLogins(contexto()));
@@ -127,6 +132,11 @@ function executar<T>(resposta: FastifyReply, acao: () => T): T | FastifyReply {
     if (erro instanceof AcaoRecusada || erro instanceof UsuarioRecusado) return resposta.code(409).send({ erro: erro.message });
     throw erro;
   }
+}
+
+function cargaRecusada(foto: FotoAtual): SituacaoDaAdministracao["cargaRecusada"] {
+  const recusa = foto.ultimaRecusa();
+  return recusa ? { momento: recusa.momento, motivo: recusa.motivo } : null;
 }
 
 function situacaoDaFoto(foto: FotoAtual): SituacaoDaAdministracao["foto"] {

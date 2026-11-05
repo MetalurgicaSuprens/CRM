@@ -112,9 +112,29 @@ describe("gravarFoto", () => {
   });
 
   it("fica com as 3 fotos mais novas, cada uma com o seu manifesto", () => {
-    const arquivos = ["08:30", "09:00", "09:30", "10:00"].map((hora) => gravarFoto(fotoDe(`2026-11-05T${hora}`), pasta, COMPARANDO).arquivo);
+    const arquivos = ["08:30", "09:00", "09:30", "10:00"].map((hora, i) => gravarFoto(fotoDe(`2026-11-05T${hora}`, 1_200 + i), pasta, COMPARANDO).arquivo);
 
     const esperados = arquivos.slice(1).flatMap((arquivo) => [path.basename(arquivo), nomeDoManifesto(path.basename(arquivo))]);
     expect(fs.readdirSync(pasta).sort()).toEqual(esperados.sort());
+  });
+
+  it("não grava foto nova quando nada mudou no ERP, e a anterior segue valendo", () => {
+    const anterior = gravarFoto(fotoDe("2026-11-05T08:30"), pasta, COMPARANDO);
+
+    expect(gravarFoto(fotoDe("2026-11-05T09:00"), pasta, COMPARANDO)).toEqual({ arquivo: anterior.arquivo, isNova: false, semComparar: null });
+    expect(fs.readdirSync(pasta).sort()).toEqual([path.basename(anterior.arquivo), nomeDoManifesto(path.basename(anterior.arquivo))].sort());
+  });
+
+  it("grava foto nova na virada do dia, mesmo sem nada ter mudado no ERP", () => {
+    gravarFoto(fotoDe("2026-11-05T23:30"), pasta, COMPARANDO);
+
+    expect(gravarFoto(fotoDe("2026-11-06T00:10"), pasta, COMPARANDO).isNova).toBe(true);
+  });
+
+  it("compara com a mais nova que tem manifesto, que é a que o servidor pode estar usando", () => {
+    const anterior = gravarFoto(fotoDe("2026-11-05T08:30"), pasta, COMPARANDO);
+    fs.copyFileSync(anterior.arquivo, path.join(pasta, "foto-20261105-0900-1.db"));
+
+    expect(gravarFoto(fotoDe("2026-11-05T09:30"), pasta, COMPARANDO).arquivo).toBe(anterior.arquivo);
   });
 });

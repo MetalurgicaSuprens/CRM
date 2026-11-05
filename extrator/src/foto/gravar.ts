@@ -10,8 +10,9 @@ import { resumirFoto, type ResumoDaFoto } from "./resumo.ts";
 /*
  * Grava a foto num arquivo novo: primeiro como .part, e só no fim com o nome de verdade. Assim
  * quem lê nunca pega uma foto pela metade, e a foto anterior segue valendo até lá. Antes do nome de
- * verdade, a foto nova é comparada com a anterior; depois dele, vem o manifesto, por último, que é o
- * que o servidor procura (docs/plano.md, "Troca da foto").
+ * verdade, a foto nova é comparada com a anterior: igual a ela, não é gravada; diferente demais, é
+ * recusada. Depois do nome de verdade vem o manifesto, por último, que é o que o servidor procura
+ * (docs/plano.md, "Troca da foto").
  */
 
 const FOTOS_GUARDADAS = 3;
@@ -23,7 +24,9 @@ export type OpcoesDaGravacao = {
 };
 
 export type FotoGravada = {
+  /** A foto nova ou, quando nada mudou no ERP, a anterior, que segue valendo. */
   arquivo: string;
+  isNova: boolean;
   /** Por que a foto não foi comparada com a anterior; null se foi. */
   semComparar: string | null;
 };
@@ -31,13 +34,20 @@ export type FotoGravada = {
 /** A foto nova mudou demais desde a anterior: não foi gravada, e a anterior segue valendo. */
 export class FotoRecusada extends Error {}
 
+/** A foto que o servidor pode estar usando: a mais nova que já tem manifesto. */
+type FotoAnterior = { arquivo: string; resumo: ResumoDaFoto };
+
 /** O nome da foto gravada ordena da mais antiga para a mais nova. */
 export function gravarFoto(foto: Foto, pasta: string, { aceitarMudanca }: OpcoesDaGravacao): FotoGravada {
   fs.mkdirSync(pasta, { recursive: true });
-  const anterior = fotoMaisNova(pasta);
+  const anterior = lerFotoAnterior(pasta);
   const destino = path.join(pasta, `${PREFIXO}${foto.foto.gerada_em.replace(/[-:]/g, "").replace("T", "-")}-${Date.now()}.db`);
   const temporario = `${destino}.part`;
   const resumo = escreverBanco(foto, temporario);
+  if (anterior && resumo.impressaoDigital === anterior.resumo.impressaoDigital) {
+    fs.rmSync(temporario);
+    return { arquivo: anterior.arquivo, isNova: false, semComparar: null };
+  }
   const { recusa, semComparar } = aceitarMudanca
     ? { recusa: null, semComparar: "pedido com --aceitar-mudanca" }
     : conferirContraAAnterior(resumo, anterior);
@@ -48,7 +58,7 @@ export function gravarFoto(foto: Foto, pasta: string, { aceitarMudanca }: Opcoes
   fs.renameSync(temporario, destino);
   escreverManifesto(destino, resumo);
   apagarFotosAntigas(pasta);
-  return { arquivo: destino, semComparar };
+  return { arquivo: destino, isNova: true, semComparar };
 }
 
 function escreverBanco(foto: Foto, arquivo: string): ResumoDaFoto {
@@ -89,19 +99,25 @@ type Conferencia = {
   semComparar: string | null;
 };
 
-function conferirContraAAnterior(nova: ResumoDaFoto, anterior: string | null): Conferencia {
+function conferirContraAAnterior(nova: ResumoDaFoto, anterior: FotoAnterior | null): Conferencia {
   if (!anterior) return { recusa: null, semComparar: "é a primeira foto da pasta" };
-  const resumoAnterior = resumirArquivo(anterior);
-  const motivo = motivoParaNaoComparar(nova, resumoAnterior);
+  const motivo = motivoParaNaoComparar(nova, anterior.resumo);
   if (motivo) return { recusa: null, semComparar: motivo };
-  const problemas = problemasDaFotoNova(nova, resumoAnterior);
-  return { recusa: problemas.length > 0 ? explicarARecusa(problemas, anterior) : null, semComparar: null };
+  const problemas = problemasDaFotoNova(nova, anterior.resumo);
+  return { recusa: problemas.length > 0 ? explicarARecusa(problemas, anterior.arquivo) : null, semComparar: null };
 }
 
-function resumirArquivo(arquivo: string): ResumoDaFoto {
+/** A foto sem manifesto o servidor nem considera: não serve de base para a nova. */
+function lerFotoAnterior(pasta: string): FotoAnterior | null {
+  const arquivos = new Set(fs.readdirSync(pasta));
+  const nome = nomesDasFotos(pasta)
+    .filter((foto) => arquivos.has(nomeDoManifesto(foto)))
+    .at(-1);
+  if (nome === undefined) return null;
+  const arquivo = path.join(pasta, nome);
   const db = new DatabaseSync(arquivo, { readOnly: true });
   try {
-    return resumirFoto(db);
+    return { arquivo, resumo: resumirFoto(db) };
   } finally {
     db.close();
   }
@@ -128,11 +144,6 @@ function escreverManifesto(arquivoDaFoto: string, resumo: ResumoDaFoto): void {
   const destino = path.join(path.dirname(arquivoDaFoto), nomeDoManifesto(path.basename(arquivoDaFoto)));
   fs.writeFileSync(`${destino}.part`, JSON.stringify(manifesto, null, 2));
   fs.renameSync(`${destino}.part`, destino);
-}
-
-function fotoMaisNova(pasta: string): string | null {
-  const nome = nomesDasFotos(pasta).at(-1);
-  return nome === undefined ? null : path.join(pasta, nome);
 }
 
 function nomesDasFotos(pasta: string): string[] {

@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { Foto } from "dominio/esquemaDaFoto";
 import { montarFoto } from "./calculo/foto.ts";
 import { lerConfiguracao } from "./configuracao.ts";
@@ -8,7 +9,8 @@ import { abrirOracle } from "./oracle.ts";
 
 /*
  * Gera uma foto: lê o ERP, põe o ponto do endereço das empresas, aplica as regras e grava a foto.db
- * na pasta de fotos, com o manifesto. A foto que mudou demais desde a anterior não é gravada.
+ * na pasta de fotos, com o manifesto. A foto igual à anterior, porque nada mudou no ERP, e a que
+ * mudou demais desde ela não são gravadas.
  * Uso: npm run foto -- [--env <arquivo .env>] [--dados <pasta>] [--aceitar-mudanca]
  * O resumo só tem contagens: nenhum nome, código de cliente ou valor do .env.
  */
@@ -22,9 +24,13 @@ try {
   const { carteira, resumo: localizacao } = await localizarClientes(dados.carteira, configuracao.localizacao);
   console.log(`  pontos dos endereços: ${((Date.now() - inicioDaLocalizacao) / 1000).toFixed(1)} s`);
   const foto = montarFoto({ ...dados, carteira }, referencia, configuracao.autorizados, configuracao.chaveDoIdDoCliente);
-  const { arquivo, semComparar } = gravarFoto(foto, configuracao.pastaDasFotos, { aceitarMudanca: configuracao.aceitarMudanca });
-  console.log(resumir(foto, arquivo, Date.now() - inicio));
-  if (semComparar) console.log(`  sem comparar com a foto anterior: ${semComparar}`);
+  const { arquivo, isNova, semComparar } = gravarFoto(foto, configuracao.pastaDasFotos, { aceitarMudanca: configuracao.aceitarMudanca });
+  if (isNova) {
+    console.log(resumir(foto, arquivo, Date.now() - inicio));
+    if (semComparar) console.log(`  sem comparar com a foto anterior: ${semComparar}`);
+  } else {
+    console.log(`Nada mudou no ERP desde a foto ${path.basename(arquivo)}: ela segue valendo, sem foto nova (${((Date.now() - inicio) / 1000).toFixed(1)} s).`);
+  }
   console.log(resumirALocalizacao(localizacao));
 } catch (erro) {
   if (!(erro instanceof FotoRecusada)) throw erro;

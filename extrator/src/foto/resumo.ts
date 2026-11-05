@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { contarLinhasPorTabela } from "dominio/manifestoDaFoto";
+import { impressaoDigital } from "./impressaoDigital.ts";
 
 /** O que o extrator compara entre a foto nova e a anterior, e o que vai para o manifesto. */
 export type ResumoDaFoto = {
@@ -10,6 +11,8 @@ export type ResumoDaFoto = {
   /** A emissão da nota mais recente; null se a foto não tem nota. */
   notaMaisRecente: string | null;
   linhas: Record<string, number>;
+  /** Igual à da foto anterior quando nada mudou no ERP (impressaoDigital.ts). */
+  impressaoDigital: string;
 };
 
 /** Serve para foto de qualquer versão do esquema: a tabela `nota` só existe desde a 3. */
@@ -26,5 +29,6 @@ export function resumirFoto(db: DatabaseSync): ResumoDaFoto {
       .map((linha) => String(linha.codigo)),
     notaMaisRecente: typeof maisRecente === "string" ? maisRecente : null,
     linhas,
+    impressaoDigital: impressaoDigital(db),
   };
 }

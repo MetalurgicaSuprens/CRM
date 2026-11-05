@@ -39,6 +39,12 @@ const EVENTOS: Readonly<Record<string, string>> = {
   codigos_trocados: "Códigos trocados",
   usuario_desativado: "Login desativado",
   ficha_consultada: "Ficha consultada",
+  visita_registrada: "Visita registrada",
+  visita_desfeita: "Visita desfeita",
+  rascunho_criado: "Rascunho de pedido criado",
+  rascunho_descartado: "Rascunho de pedido descartado",
+  foto_recusada: "Carga do ERP recusada",
+  registros_apagados: "Registros antigos apagados",
 };
 
 const FIM_DA_SESSAO: Readonly<Record<string, string>> = {

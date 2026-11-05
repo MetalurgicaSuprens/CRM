@@ -8,6 +8,7 @@ const ANTERIOR: ResumoDaFoto = {
   representantes: ["1401", "1402"],
   notaMaisRecente: "2026-11-04",
   linhas: { foto: 1, representante: 2, cliente: 3_320, pedido_aberto: 51 },
+  impressaoDigital: "anterior",
 };
 
 function nova(mudanca: Partial<ResumoDaFoto> = {}): ResumoDaFoto {

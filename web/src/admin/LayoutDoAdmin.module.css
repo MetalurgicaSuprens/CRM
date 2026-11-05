@@ -16,3 +16,15 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* O aviso da carga recusada, no alto de todas as telas: o motivo vem embaixo, menor, para o TI */
+.aviso {
+  margin-bottom: var(--esp-6);
+}
+
+.motivo {
+  display: block;
+  margin-top: var(--esp-1);
+  font-size: var(--tam-legenda);
+  opacity: 0.85;
+}

@@ -74,6 +74,8 @@ export type SituacaoDaAdministracao = {
   /** Agora, em Brasília ("2026-10-16T09:15"). */
   relogio: string;
   foto: { geradaEm: string; dataRef: string; representantes: number; clientes: number } | null;
+  /** A carga do ERP que o servidor recusou desde a que está em uso; o momento é em Brasília. Null se não houve. */
+  cargaRecusada: { momento: string; motivo: string } | null;
 };
 
 /** O link sai uma vez só: o banco guarda só o hash do token. */

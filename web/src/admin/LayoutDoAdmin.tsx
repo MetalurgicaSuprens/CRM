@@ -1,17 +1,20 @@
 import { useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
-import { Clock, LogOut, ScrollText, Users } from "lucide-react";
+import { Clock, LogOut, ScrollText, TriangleAlert, Users } from "lucide-react";
 import { momentoEmBrasilia } from "dominio/datas";
 import { login } from "../acesso/login";
 import base from "../componentes/Layout.module.css";
 import { useCarga } from "../dados/useCarga";
 import { formatarMomento } from "../formato";
+import estilosDoAdmin from "./admin.module.css";
 import { carregarSituacao } from "./api";
 import estilos from "./LayoutDoAdmin.module.css";
+import type { SituacaoDaAdministracao } from "./tipos";
 
 /*
  * A moldura da administração: o mesmo menu do CRM (componentes/Layout.module.css), com as telas de
- * gestão, a marca com "Administração" e, no alto, a hora da foto do ERP.
+ * gestão, a marca com "Administração", no alto a hora da foto do ERP e, em todas as telas, o aviso
+ * da carga recusada.
  */
 
 const NAVEGACAO = [
@@ -72,6 +75,7 @@ export function LayoutDoAdmin() {
           ) : null}
         </header>
         <main className={base.conteudo}>
+          {situacao?.cargaRecusada ? <AvisoDeCargaRecusada {...situacao} recusa={situacao.cargaRecusada} /> : null}
           <Outlet />
         </main>
       </div>
@@ -84,6 +88,21 @@ export function LayoutDoAdmin() {
           </NavLink>
         ))}
       </nav>
+    </div>
+  );
+}
+
+/** O servidor recusou uma carga na conferência: o CRM segue com a anterior, e quem cuida dele precisa saber. */
+function AvisoDeCargaRecusada({ recusa, foto, relogio }: Pick<SituacaoDaAdministracao, "foto" | "relogio"> & { recusa: NonNullable<SituacaoDaAdministracao["cargaRecusada"]> }) {
+  return (
+    <div className={`${estilosDoAdmin.mensagem} ${estilosDoAdmin.erro} ${estilos.aviso}`} role="alert">
+      <TriangleAlert size={16} aria-hidden="true" />
+      <p>
+        Uma carga nova do ERP foi recusada na conferência ({formatarMomento(recusa.momento, relogio)}).{" "}
+        {foto ? `O CRM continua com os dados de ${formatarMomento(foto.geradaEm, relogio)}.` : "O CRM ainda não tem dados do ERP."} Se a próxima carga
+        também for recusada, avise o TI.
+        <span className={estilos.motivo}>Motivo: {recusa.motivo}</span>
+      </p>
     </div>
   );
 }

@@ -254,6 +254,8 @@ export function entregarFotoDeTeste(entrada: string, foto: Foto, mudarManifesto 
   const arquivo = path.join(entrada, nomeDaFoto);
   const db = new DatabaseSync(arquivo);
   db.exec(ESQUEMA);
+  // Numa transação só: linha por linha, cada uma vai ao disco, e os testes ficam lentos.
+  db.exec("BEGIN");
   for (const [tabela, conteudo] of Object.entries(foto)) {
     for (const linha of Array.isArray(conteudo) ? conteudo : [conteudo]) {
       const colunas = Object.keys(linha);
@@ -261,6 +263,7 @@ export function entregarFotoDeTeste(entrada: string, foto: Foto, mudarManifesto 
       db.prepare(`INSERT INTO ${tabela} (${colunas.join(", ")}) VALUES (${colunas.map(() => "?").join(", ")})`).run(...valores);
     }
   }
+  db.exec("COMMIT");
   const contagens = contarLinhasPorTabela(db);
   db.close();
   const conteudo = fs.readFileSync(arquivo);
