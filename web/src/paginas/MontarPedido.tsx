@@ -184,7 +184,7 @@ function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormula
           <Cartao
             titulo="Seu pedido"
             icone={ShoppingBasket}
-            subtitulo={`Preço da última compra; o mínimo é a ${catalogo.tabela}`}
+            subtitulo="Começa no preço da última compra; não pode ficar abaixo da tabela do cliente"
             className={estilos.cartaoDoPedido}
           >
             <div className={estilos.campos}>
