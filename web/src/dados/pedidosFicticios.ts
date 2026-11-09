@@ -3,7 +3,7 @@ import { arredondarAoCentavo, totalDoPedido, valorDaLinha } from "dominio/pedido
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
-import { STATUS_NA_FICHA, precoInicialDoItem } from "./pedido";
+import { STATUS_NA_FICHA, novoIdDeRascunho, precoInicialDoItem } from "./pedido";
 import { ROTULOS_DE_MERCADO } from "./rotulos";
 import type {
   CatalogoDoCliente,
@@ -253,7 +253,7 @@ function garantirRascunhoDeExemplo(): void {
     .filter((produto) => produto.jaComprou)
     .slice(0, 2)
     .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4, precoCento: precoInicialDoItem(produto) }));
-  salvarRascunhoFicticio({ id: crypto.randomUUID(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "" });
+  salvarRascunhoFicticio({ id: novoIdDeRascunho(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "" });
 }
 
 // ---------------------------------------------------------------- apoio

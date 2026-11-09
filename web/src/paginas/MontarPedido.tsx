@@ -28,7 +28,7 @@ import {
 } from "../dados/api";
 import { PedidoBloqueado } from "../dados/fonteDeDados";
 import { correspondeAoClienteOuCidade, correspondeAoProduto, partNumberDaBusca } from "../dados/busca";
-import { precoDigitado, precoInicialDoItem, problemasDoPedido, rascunhoNoCatalogo } from "../dados/pedido";
+import { novoIdDeRascunho, precoDigitado, precoInicialDoItem, problemasDoPedido, rascunhoNoCatalogo } from "../dados/pedido";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { CatalogoDoCliente, ItemDoPedido, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
@@ -54,7 +54,7 @@ export function MontarPedido() {
   useEffect(() => {
     if (id || !codigoCliente || idDoNovo) return;
     const proximos = new URLSearchParams(parametros);
-    proximos.set("rascunho", crypto.randomUUID());
+    proximos.set("rascunho", novoIdDeRascunho());
     setParametros(proximos, { replace: true });
   }, [id, codigoCliente, idDoNovo, parametros, setParametros]);
   if (id) return <ContinuarRascunho id={id} codigoDoNovo={null} />;

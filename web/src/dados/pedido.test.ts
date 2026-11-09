@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   STATUS_NA_FICHA,
   embalagemAnterior,
+  novoIdDeRascunho,
   passosDoAndamento,
   precoDigitado,
   precoDoCento,
@@ -238,5 +239,28 @@ describe("problemasDoPedido", () => {
       "A entrega desejada precisa ser a partir de 16/10/2026: 5 dias úteis depois de hoje.",
       "A observação passa de 300 caracteres.",
     ]);
+  });
+});
+
+describe("novoIdDeRascunho", () => {
+  // O mesmo padrão que o servidor confere no endereço do rascunho (server/src/rotas.ts).
+  const UUID_VERSAO_4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+  it("gera o UUID versão 4 que o servidor aceita", () => {
+    for (let i = 0; i < 200; i += 1) expect(novoIdDeRascunho()).toMatch(UUID_VERSAO_4);
+  });
+
+  it("não repete o id", () => {
+    const ids = new Set(Array.from({ length: 1_000 }, novoIdDeRascunho));
+    expect(ids.size).toBe(1_000);
+  });
+
+  it("funciona no navegador sem crypto.randomUUID, como no endereço sem HTTPS da rede interna", () => {
+    Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true });
+    try {
+      expect(novoIdDeRascunho()).toMatch(UUID_VERSAO_4);
+    } finally {
+      Reflect.deleteProperty(crypto, "randomUUID");
+    }
   });
 });

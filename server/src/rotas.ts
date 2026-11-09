@@ -43,7 +43,7 @@ const PARAMETRO_CLIENTE = {
   additionalProperties: false,
 } as const;
 
-/** O id do rascunho: o UUID que a tela gera quando o pedido começa (crypto.randomUUID). */
+/** O id do rascunho: o UUID versão 4 que a tela gera quando o pedido começa (novoIdDeRascunho, em web/src/dados/pedido.ts). */
 const PARAMETRO_RASCUNHO = {
   type: "object",
   properties: { id: { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" } },

@@ -153,3 +153,17 @@ export function problemasDoPedido(linhas: readonly LinhaDoPedido[], observacao: 
   if (observacao.length > LIMITE_DA_OBSERVACAO) problemas.push(`A observação passa de ${LIMITE_DA_OBSERVACAO} caracteres.`);
   return problemas;
 }
+
+/**
+ * O id de um rascunho novo: um UUID versão 4, o formato que o servidor aceita. Sai de
+ * crypto.getRandomValues, e não de crypto.randomUUID, que o navegador só tem em endereço seguro (HTTPS
+ * ou localhost): no protótipo aberto pelo IP da rede interna, a tela do pedido ficava em branco.
+ */
+export function novoIdDeRascunho(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  // Os bits que marcam a versão 4 e a variante do padrão (RFC 9562).
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
