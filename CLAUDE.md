@@ -2,6 +2,7 @@
 
 CRM dos representantes comerciais da Suprens, acessado pela internet.
 O plano aprovado está em `docs/plano.md`: arquitetura, fases, regras de negócio e pendências. Leia antes de começar uma fase.
+Quem continua o projeto lê também `docs/passagem.md`: onde paramos, as decisões do Lucas, o ERP e os cuidados no Windows.
 
 ## Estilo de código
 
@@ -47,12 +48,11 @@ O sistema fica exposto na internet e guarda dados comerciais da Suprens. Na dúv
 - O que o próprio CRM produz (usuários, chaves, sessões, auditoria, pré-pedidos) fica no `app.db`.
 - Toda tela mostra a hora do dado.
 - O faturamento segue a definição do Gestao/RELCUS001 (`docs/plano.md`).
-- O protótipo antigo, em `C:\ProjetosCursor\CRM-prototipo`, é só consulta. É de lá que vem o mapa. Leia o `REGRAS.md` de lá: as consultas Oracle do protótipo têm erros conhecidos.
 
 ## Git: commit e push a cada etapa
 
 - Sem branches: todo trabalho vai direto no `main`.
-- Ao terminar cada etapa, faça commit e `git push` para o `origin` (https://github.com/SUPRENS/CRM).
+- Ao terminar cada etapa, faça commit e `git push` para o `origin` (https://github.com/MetalurgicaSuprens/CRM).
 - Antes do push, rode `git fetch`. Só se estiver "behind", rode `git pull --rebase`.
 - Se o pull recusar por mudança sem commit de outro agente, não faça stash: avise o Lucas.
 - Commits pequenos, só com os arquivos que você alterou. Nunca use `--force`.
