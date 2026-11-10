@@ -5,7 +5,8 @@ import { criarLimitador, type Limite } from "./limite.ts";
 import { siteDaOrigem } from "./login/chaveDeAcesso.ts";
 import { cookieApagado, lerTokenDoCookie } from "./login/cookie.ts";
 import { criarDesafios } from "./login/desafios.ts";
-import { PORTAL_DO_CRM, type Portal } from "./login/portal.ts";
+import { registrarLoginProvisorio, type LoginProvisorio } from "./login/loginProvisorio.ts";
+import { PORTAL_DA_REDE_INTERNA, PORTAL_DO_CRM, type Portal } from "./login/portal.ts";
 import { registrarRotasDoLogin } from "./login/rotasDoLogin.ts";
 import { usarSessao, type ConsultaDaSessao } from "./login/sessoes.ts";
 import { registrarRotas } from "./rotas.ts";
@@ -43,6 +44,8 @@ export type Dependencias = {
   banco: DatabaseSync;
   /** O endereço do CRM (esquema, domínio e porta), como o navegador o declara. */
   origem: string;
+  /** Só no CRM aberto na rede interna (iniciar-crm-servidor.bat): a entrada por senha, além da chave de acesso. */
+  loginProvisorio?: LoginProvisorio;
   agora?: () => Date;
 };
 
@@ -50,7 +53,12 @@ export type DependenciasDaApi = { banco: DatabaseSync; origem: string; portal: P
 
 /** A API do CRM, a dos representantes. */
 export function criarApp(dependencias: Dependencias): FastifyInstance {
-  return criarApi({ ...dependencias, portal: PORTAL_DO_CRM }, (app) => registrarRotas(app, dependencias));
+  const { banco, foto, loginProvisorio, agora = () => new Date() } = dependencias;
+  const portal = loginProvisorio ? PORTAL_DA_REDE_INTERNA : PORTAL_DO_CRM;
+  return criarApi({ ...dependencias, portal }, (app) => {
+    registrarRotas(app, dependencias);
+    if (loginProvisorio) registrarLoginProvisorio(app, { banco, foto, portal, login: loginProvisorio, agora });
+  });
 }
 
 /** A base das duas APIs: as regras de segurança de toda rota, as rotas do portal e as do login dele. */

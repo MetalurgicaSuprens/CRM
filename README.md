@@ -24,7 +24,11 @@ Cada pasta é criada na fase em que começa a ser usada.
 
 ## Como rodar
 
-- **Protótipo com dados fictícios:** `npm run dev:web` (http://localhost:5175). Para o celular na rede interna, `iniciar-crm-servidor.bat`.
+- **Protótipo com dados fictícios:** `npm run dev:web` (http://localhost:5175).
+- **Dados reais no celular, pela rede interna:** `iniciar-crm-servidor.bat`. Ele gera a foto, sobe a API só nesta máquina (`npm run rede-interna --workspace server`, porta 5186) e serve o site montado no IP da rede interna, porta 4175.
+  - A chave de acesso não funciona por http no IP. Por isso se entra com um login provisório, por senha, pedido pelo Lucas para os testes.
+  - Precisa do `extrator/.env` e do `data/rede-interna.env`, fora do git, com `CRM_SENHA_PROVISORIA` e `CRM_LOGIN_PROVISORIO_CODIGOS` (os códigos que o login puxa, ex.: `1401,1402`).
+  - Para não conviver com as chaves de acesso, ele tem um app.db só dele, `data/app-rede-interna.db`. O servidor recusa esse modo na produção e fora de um IP de rede interna, e trava o login depois de 10 senhas erradas, até ser aberto de novo.
 - **Dados reais, só neste computador:** `ver-crm-com-dados-reais.bat`. Ele gera a foto, sobe a API e o site e abre o navegador. Para entrar, a chave de acesso (F3). Antes da primeira vez, crie:
   - `extrator/.env`, com o acesso ao Oracle (chaves em `extrator/.env.example`);
   - `data/representantes-autorizados.txt`, com os códigos que entram na foto, um por linha;

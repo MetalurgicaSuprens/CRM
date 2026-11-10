@@ -55,6 +55,11 @@ const loginSimulado: Login = {
 
 export const login: Login = isDadosReais ? loginDoServidor : loginSimulado;
 
+/** O login provisório do CRM de teste na rede interna (server/src/login/loginProvisorio.ts). */
+export function entrarComSenha(senha: string): Promise<void> {
+  return postar("/api/entrar/senha", { senha });
+}
+
 async function postar<T = void>(caminho: string, corpo?: object): Promise<T> {
   const resposta = await fetch(caminho, {
     method: "POST",

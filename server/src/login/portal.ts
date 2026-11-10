@@ -15,4 +15,6 @@ export type Portal = {
 };
 
 export const PORTAL_DO_CRM: Portal = { papel: "representante", cookie: "__Host-crm", nome: "CRM Suprens" };
+/** O CRM aberto na rede interna com o login provisório (loginProvisorio.ts), por http: o cookie fica sem o prefixo __Host-. */
+export const PORTAL_DA_REDE_INTERNA: Portal = { ...PORTAL_DO_CRM, cookie: "crm-rede-interna" };
 export const PORTAL_DO_ADMIN: Portal = { papel: "admin", cookie: "__Host-crm-admin", nome: "Administração do CRM Suprens" };

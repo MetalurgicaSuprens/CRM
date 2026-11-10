@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { Clock, Eye, EyeOff, FilePlus2, LogOut } from "lucide-react";
 import { login } from "../acesso/login";
 import { useValores } from "../contexto/valores";
-import { carregarSituacaoDosDados, isDadosReais } from "../dados/api";
+import { carregarSituacaoDosDados, isDadosReais, isRedeInterna } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
 import { formatarCodigosDoRepresentante, formatarMomento } from "../formato";
 import botoes from "./Botao.module.css";
@@ -62,7 +62,7 @@ export function Layout() {
           <div className={estilos.marcaCelular}>
             <Marca />
           </div>
-          <span className={estilos.prototipo}>{isDadosReais ? "Dados reais do ERP · só neste computador" : "Protótipo · dados fictícios"}</span>
+          <span className={estilos.prototipo}>{isRedeInterna ? "Dados reais do ERP · teste na rede interna" : isDadosReais ? "Dados reais do ERP · só neste computador" : "Protótipo · dados fictícios"}</span>
           {situacao ? <Atualizacao atualizadoEm={situacao.atualizadoEm} relogio={situacao.relogio} /> : null}
           <BotaoValores />
         </header>

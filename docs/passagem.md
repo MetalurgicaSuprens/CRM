@@ -96,6 +96,10 @@ Falta, em ordem:
    - Para não duplicar, ligue o pedido pelo número do CRM.
 7. **Cópia da auditoria e backup:** a cópia da auditoria para a LAN e o backup do servidor também ficam para a F5, porque antes não há o que buscar.
 
+Teste na rede interna (2026-11-10, pedido do Lucas): o `iniciar-crm-servidor.bat` abre os dados reais para o celular com um login provisório por senha (veja o `README.md`).
+- É só para teste: o login seguro é a chave de acesso.
+- Não leve o login por senha para o servidor da internet.
+
 Esperando resposta do Lucas, sem pressa:
 - **Visual que ele ainda não confirmou:**
   - ícone grande nos números do alto (o commit 3cb0f6b sai sozinho com `git revert`);
@@ -205,5 +209,5 @@ Pedidos:
   - 5176 é a API;
   - 5178 é a API de admin;
   - 5179 é a administração;
-  - 4175 é o protótipo na rede interna.
+  - 4175 é o teste na rede interna, com a API dele na 5186.
   - As configurações "web" e "web-real" do `.claude/launch.json` dividem a 5175.

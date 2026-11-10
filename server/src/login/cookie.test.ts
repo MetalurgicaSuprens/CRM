@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { lerTokenDoCookie } from "./cookie.ts";
+import { cookieApagado, cookieDaSessao, lerTokenDoCookie } from "./cookie.ts";
 
 const TOKEN = "a".repeat(43);
 const OUTRO = "b".repeat(43);
+
+describe("cookieDaSessao", () => {
+  it("põe Secure no cookie dos portais, que usam o prefixo __Host-", () => {
+    expect(cookieDaSessao("__Host-crm", TOKEN)).toMatch(/; Secure/);
+    expect(cookieApagado("__Host-crm")).toMatch(/; Secure/);
+  });
+
+  it("deixa sem Secure só o cookie sem o prefixo, o da rede interna por http", () => {
+    expect(cookieDaSessao("crm-rede-interna", TOKEN)).not.toMatch(/Secure/);
+  });
+});
 
 describe("lerTokenDoCookie", () => {
   it("acha o token do portal entre outros cookies", () => {

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch src/principal.ts",
     "start": "node src/principal.ts",
+    "rede-interna": "node src/principal.ts --rede-interna",
     "admin": "node src/admin/linhaDeComando.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
