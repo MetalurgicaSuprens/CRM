@@ -1,2 +1,4 @@
 # O cmd do Windows se perde nos rotulos e blocos de um .bat com quebra de linha LF
 *.bat text eol=crlf
+# Os arquivos do servidor Linux: o bash e o Apache não aceitam o CRLF do Windows
+deploy/servidor/** text eol=lf

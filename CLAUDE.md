@@ -27,7 +27,7 @@ O sistema fica exposto na internet e guarda dados comerciais da Suprens. Na dúv
    - Toda rota declara `config.acesso` (`publico`, `representante` ou `admin`).
    - Os códigos do representante vêm sempre da sessão. Um login pode ter mais de um código, e as telas somam todos.
    - Nenhuma rota `publico` ou `representante` aceita código de representante ou de tabela de preço vindo do navegador.
-   - Única exceção: a rota de admin que liga o login aos códigos. Ela só existe na API de admin (só LAN), confere o código contra a lista de autorizados da foto e grava auditoria.
+   - Única exceção: a rota de admin que liga o login aos códigos. Ela só existe na API de admin (nunca na internet: só por túnel SSH), confere o código contra a lista de autorizados da foto e grava auditoria.
    - Rota nova entra no teste que confere que o login A recebe 404 nos dados dos códigos de B.
 5. **Entrada é hostil.**
    - Valide na borda com o schema do Fastify (`additionalProperties: false`).

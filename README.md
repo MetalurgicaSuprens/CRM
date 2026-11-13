@@ -20,7 +20,7 @@ Cada pasta é criada na fase em que começa a ser usada.
 | `extrator/` | LAN | Lê o Oracle, gera a `foto.db`, envia ao servidor e leva os pedidos ao SGI |
 | `server/` | Servidor | API sem acesso ao banco: lê a foto e guarda usuários, sessões e pedidos no `app.db` |
 | `web/` | Navegador | Telas (React), servidas pelo Apache |
-| `deploy/` | Servidor | Apache, systemd, SFTP e firewall |
+| `deploy/` | Servidor | O pacote de publicação, Apache, systemd, SFTP e firewall ([deploy/README.md](deploy/README.md)) |
 
 ## Como rodar
 

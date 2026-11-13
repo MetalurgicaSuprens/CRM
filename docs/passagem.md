@@ -69,15 +69,10 @@ Feito até agora: F1, F2, F3 e parte da F4 (veja as fases no plano).
 Falta, em ordem:
 1. **Conferir na tela o aviso de carga recusada da administração,** no computador e no celular. Para provocar o aviso, entregue na entrada de uma API de teste uma foto com o manifesto estragado.
 2. **Investigar um teste que falhou uma vez.** O teste "recusa enviar sem foto com manifesto" falhou uma vez no `npm test` da raiz e não se repetiu em 20 rodadas. Suspeita: um erro sem ouvinte no servidor simulado, vindo do teste anterior.
-3. **Hospedagem na Locaweb.** Ela mudou em 2026-11-09: o CRM fica numa VPS Linux da Locaweb, e não mais dentro da empresa. O plano ainda diz "dentro da empresa" e precisa ser atualizado. O que muda:
-   - o IP fixo da empresa entra no `from=` da conta de troca do SFTP e no firewall do servidor;
-   - a administração abre por túnel SSH até 127.0.0.1:5179, porque deixa de existir "só LAN";
-   - a Locaweb vira operadora dos dados pela LGPD: precisa de contrato e de datacenter no Brasil;
-   - o firewall da empresa libera só a saída do extrator para o IP do servidor;
-   - plano sugerido: VPS de 4 GB (2 vCPU, 70 GB). O de 2 GB é o mínimo.
-   - Confirmar com a Locaweb: acesso root, IP público fixo, firewall por IP no painel e quantos snapshots o plano inclui.
-4. **Pasta da instalação do servidor (`deploy/`):** Apache, systemd, a conta SFTP `crm-troca` com chroot, o firewall e o pacote de publicação, prontos para só aplicar. O servidor recebe o código pelo pacote, nunca por `git pull`.
-   - No Apache, use `Permissions-Policy: geolocation=(self)` para o "Perto de mim".
+3. **Hospedagem na Locaweb.** O plano já foi atualizado (2026-11-13). Escolhida a VPS 4 GB Linux (2 vCPU, 70 GB), separada da do site. A Locaweb confirmou acesso root, IP fixo, firewall, snapshots, datacenter no Brasil e contrato LGPD.
+   - O firewall do painel não foi conferido quanto à regra por IP de origem. Não faz falta: o `ufw` do servidor e o `from=` da chave do extrator já limitam a porta 22 ao IP da Suprens.
+   - Falta contratar, apontar o DNS do domínio e saber o IP fixo da Suprens.
+4. **Instalar o servidor:** a pasta `deploy/` ficou pronta em 2026-11-13 (`deploy/README.md`). Ela traz o `npm run pacote`, que já foi testado aqui, e os scripts do servidor, que ainda não rodaram num Ubuntu de verdade: confira cada passo na primeira instalação. Faltam a rota `/api/saude` e os alertas.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
    - O Windows recusa a chave privada em `data/` ("bad permissions"), porque todo usuário do computador lê a pasta.
    - O mesmo vale para a chave do id do cliente e para a lista de autorizados: elas também saem de `data/` quando a máquina do extrator for escolhida.

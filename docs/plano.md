@@ -11,7 +11,7 @@ Objetivo: uma ferramenta, acessível pela **internet aberta**, para os **represe
 
 Requisitos:
 - Segurança máxima.
-- Servidor Linux + Apache **dentro da empresa**.
+- Servidor Linux + Apache numa **VPS da Locaweb**, separada do site da Suprens (decisão do Lucas em 2026-11-09; antes era dentro da empresa).
 - O site **nunca** acessa o banco.
 - Visual bonito, caprichado e sóbrio.
 
@@ -39,17 +39,17 @@ Requisitos:
 5. **Escopo seguro por padrão:**
    - toda rota declara `acesso` (`publico`, `representante` ou `admin`) e o servidor não sobe se alguma rota não declarar;
    - os códigos do representante vêm sempre da sessão. Um login pode ter mais de um código, e as telas somam todos (decisão do Lucas em 2026-10-13);
-   - nenhuma rota `publico` ou `representante` aceita código de representante ou de tabela vindo do navegador. A única exceção é a rota de admin que liga o login aos códigos: só existe na API de admin (só LAN), confere o código contra a lista de autorizados da foto e grava auditoria;
+   - nenhuma rota `publico` ou `representante` aceita código de representante ou de tabela vindo do navegador. A única exceção é a rota de admin que liga o login aos códigos: só existe na API de admin (só na máquina, por túnel SSH), confere o código contra a lista de autorizados da foto e grava auditoria;
    - um teste percorre todas as rotas e confirma que o login A recebe 404 em tudo o que é dos códigos de B.
-6. **Defesa em camadas, revisada pelo checklist OWASP ASVS 5.0 nível 2.** Rede isolada → Apache → API → serviço systemd confinado.
+6. **Defesa em camadas, revisada pelo checklist OWASP ASVS 5.0 nível 2.** Firewall → Apache → API → serviço systemd confinado.
 
 ## Arquitetura
 
 ```
-LAN (confiável)                                     Servidor (VM dedicada, rede isolada)
+LAN (confiável)                                     Servidor (VPS da Locaweb)
 Oracle ─leitura─► extrator ──SFTP──► entrada/foto-<data>.db + manifesto ──► API pública (127.0.0.1)
 pasta de cargas do SGI ◄─ validação ◄─ extrator ◄──SFTP── saida/pedidos, saida/auditoria, backup
-Lucas (LAN) ──────────────────────────────────────────────────────────────► API de admin (só LAN)
+Lucas (IP da Suprens ou VPN) ──túnel SSH──────────────────────────────────► administração (127.0.0.1)
 ```
 
 ### `extrator/` (Node/TS, numa máquina da LAN, conta própria do Windows)
@@ -76,7 +76,7 @@ Lucas (LAN) ──────────────────────�
 
 São **dois processos/ouvintes**:
 - a API pública, que só escuta em `127.0.0.1` atrás do Apache;
-- a API de admin, num vhost que só a LAN alcança. O primeiro admin é criado por linha de comando via SSH.
+- a API de admin, num vhost só em 127.0.0.1, aberto por túnel SSH. O primeiro admin é criado por linha de comando via SSH (`sudo crm-admin`).
 
 Bancos:
 - **`foto.db`**: somente leitura.
@@ -104,20 +104,27 @@ Outras regras:
 - Fontes hospedadas no próprio servidor.
 - Sem CORS, porque tudo fica na mesma origem.
 
-### `deploy/` (testado no WSL2 antes do servidor)
+### `deploy/` (VPS Linux da Locaweb: 4 GB, 2 vCPU, 70 GB, Ubuntu Server 24.04 LTS)
 
-Rede:
+Feito em 2026-11-13, ainda sem rodar num Ubuntu de verdade: o passo a passo está em [`deploy/README.md`](../deploy/README.md).
+
+Rede (o firewall do próprio servidor, `ufw`):
 - Internet → 443.
-- LAN → 22 e admin, só do IP do extrator e do Lucas.
-- **Servidor → LAN: tudo bloqueado.**
-- Saída só para DNS público, NTP, atualizações do sistema e certificado.
+- 22 (SSH e a troca da foto) só do IP fixo da Suprens. Quem administra de fora entra antes na VPN da empresa. A administração abre por túnel SSH.
+- Saída só para DNS, NTP e HTTP/HTTPS (atualizações e certificado). A API não sai da máquina (`IPAddressDeny`).
+- No firewall da empresa, o extrator só sai para o IP da VPS.
+- A Locaweb passa a ser operadora dos dados pela LGPD: contrato e datacenter no Brasil confirmados em 2026-11-13.
 
 Apache:
-- Certificado via mod_md, sem porta 80.
+- Certificado via mod_md, pelo desafio tls-alpn-01, sem porta 80.
 - HSTS, CSP (`default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'`), nosniff, `Referrer-Policy: no-referrer`, COOP/CORP.
 - `Permissions-Policy` com tudo desligado, menos `geolocation=(self)`: o "Perto de mim" do Mapa pede a posição ao aparelho, e ela fica no navegador (2026-10-18).
 - `ServerTokens Prod`, `TraceEnable off`, `mod_reqtimeout`.
 - Apaga o `X-Forwarded-For` vindo do cliente.
+- Registro de acesso sem IP, query string, cookie e navegador: hora, método, caminho, status e tempo.
+
+SSH:
+- Só chave, sem root e só duas contas: a de quem administra (com túnel só até a administração) e a `crm-troca`.
 
 Serviço systemd confinado:
 - `ProtectSystem=strict`, `IPAddressDeny=any` (com localhost liberado), `NoNewPrivileges`, sem capabilities.
@@ -129,11 +136,11 @@ SFTP:
   - `npm run enviar` usa o `sftp.exe` do Windows, com a chave do servidor fixada pelo apelido `crm-servidor`, e nunca pergunta nada;
   - leva a foto e o manifesto com nome provisório e deixa em `/entrada` só as 3 fotos mais novas;
   - a chave do extrator precisa ficar numa pasta que só a conta do extrator lê: o Windows recusa a chave em `data/`, que herda a leitura para todos os usuários.
-- Falta a conta `crm-troca` no servidor de verdade (I1) e a busca de pedidos, auditoria e backup, que entra junto com eles.
+- A conta `crm-troca` está no `deploy/servidor/preparar-servidor.sh`. Falta a busca de pedidos, auditoria e backup, que entra junto com eles.
 
 Publicação:
-- Um pacote montado no PC de desenvolvimento (`npm ci --omit=dev --ignore-scripts`).
-- O servidor nunca roda npm nem git. Versões fixas e Dependabot.
+- Um pacote montado no PC de desenvolvimento (`npm run pacote`: `npm ci --omit=dev --ignore-scripts` e os dois sites prontos). A montagem para se o pacote levaria segredo, banco de dados, o extrator ou o driver do Oracle.
+- O servidor nunca roda npm nem git: o `publicar.sh` desempacota a versão, troca o atalho da versão no ar e volta sozinho para a anterior se a API não responder. Versões fixas e Dependabot.
 
 ## Login e sessão
 
@@ -214,7 +221,7 @@ O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUE
    - Os nomes e os desenhos vêm da base atual do IBGE, o que resolve os nomes antigos do protótipo.
    - Os valores da dica obedecem "ocultar valores".
    - Detalhes em dados-por-tela.md, seção 10.
-7. **Admin**, só na rede interna: logins dos representantes, códigos, convites, chaves, sessões, auditoria e a hora da foto. Feita em 2026-10-16 como um site à parte, com API própria e login só de admin (dados-por-tela.md, seção 11). Desde 2026-11-05, todas as telas avisam a carga recusada na conferência do servidor, com o motivo, e o registro guarda cada recusa. A recusa no extrator, na LAN, ainda não chega à administração.
+7. **Admin**, nunca na internet (por túnel SSH até o servidor): logins dos representantes, códigos, convites, chaves, sessões, auditoria e a hora da foto. Feita em 2026-10-16 como um site à parte, com API própria e login só de admin (dados-por-tela.md, seção 11). Desde 2026-11-05, todas as telas avisam a carga recusada na conferência do servidor, com o motivo, e o registro guarda cada recusa. A recusa no extrator, na LAN, ainda não chega à administração.
 
 **Dois escopos, sempre explícitos**
 - **Visão do cliente** (o histórico completo do cliente, de qualquer representante): Clientes, Ficha, Análises e Mapa.
@@ -302,7 +309,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - a regra de "disponível" (físico menos o reservado para pedidos) é definida com o Lucas e o DBA. A view de reserva do SGI ficou legível para o `LUCAS_RO` com o `READ ANY TABLE` (2026-10-09); a conta do extrator vai precisar de uma view do CRM sobre ela, como os outros objetos (ver Pendências).
 
 **Trilha da infraestrutura**
-- **I1 — Esqueleto publicado**, assim que a VM, a rede e o domínio existirem:
+- **I1 — Esqueleto publicado**, assim que a VPS e o domínio existirem. Os arquivos da instalação ficaram prontos em 2026-11-13 (`deploy/`):
   - Apache com TLS, cabeçalhos e CSP; vhost de admin; systemd;
   - `/api/saude` e chave de admin;
   - SFTP com uma foto de teste e um pedido de teste numa pasta TESTE do SGI;
@@ -330,8 +337,8 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
 
 - **Antes da I1 e da F3:**
   - domínio (ex.: `crm.suprens.com.br`) e quem controla o DNS. Ele vira a identidade das chaves e não pode mudar depois;
-  - VM dedicada no servidor da empresa (não compartilhar com o site);
-  - quem administra a rede e o firewall, para as regras da seção Arquitetura.
+  - contratar a VPS de 4 GB da Locaweb, separada da do site (escolhida em 2026-11-13; acesso root, IP fixo, firewall, snapshots, datacenter no Brasil e contrato LGPD confirmados);
+  - o IP fixo da internet da Suprens e, no firewall da empresa, a saída do extrator liberada só para o IP da VPS.
 - **Antes do piloto da F4:**
   - a conta Oracle própria do extrator. O DBA cria, num esquema do CRM, uma view por objeto da lista que a F2 fecha, só com as colunas listadas, inclusive sobre a view de preço líquido `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`, e concede à conta SELECT só nessas views (decisão do Lucas em 2026-10-09). O esquema do CRM é o dono das views e não tem login (conta bloqueada). Ele recebe do ABC71 SELECT WITH GRANT OPTION, por grant direto, em cada objeto da lista; sem isso, o GRANT na view falha (ORA-01720). Como o Oracle não concede SELECT por coluna, são as views que impedem a conta de ler CNPJ, contatos e restrição financeira. O `LUCAS_RO` lê a view de preço líquido desde 2026-10-09, quando ganhou `READ ANY TABLE`; a conta do extrator não ganha esse privilégio;
   - qual máquina da LAN roda o extrator (o servidor do Gestao?).
@@ -357,7 +364,7 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
 - **Pedidos (F5):** arquivo malicioso de teste (campos extras, cliente de outro representante, quantidade absurda) **recusado** na LAN; pedido válido percorrendo CRM → SGI bloqueado → aprovações → Omega → situação visível no CRM.
 - **Infra (I1/I2):**
   - SSL Labs A+ e cabeçalhos em nota A;
-  - varredura de portas mostrando só a 443 aberta para a internet;
-  - teste confirmando que o servidor **não** alcança 1521, 445 nem 53 da LAN;
+  - varredura de portas mostrando só a 443 aberta para a internet (e a 22 só do IP da Suprens);
+  - teste confirmando que a API **não** abre conexão para fora da máquina;
   - `systemd-analyze security` com nota baixa (= bem isolado);
   - backup restaurado.

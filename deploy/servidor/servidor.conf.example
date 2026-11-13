@@ -1,0 +1,21 @@
+# Configuração do servidor do CRM, lida pelo preparar-servidor.sh. Copie para servidor.conf, preencha e
+# leve junto com esta pasta. Nada aqui é segredo: são endereços e chaves públicas.
+
+# O endereço do CRM. A chave de acesso dos representantes fica presa a ele: não muda depois.
+DOMINIO=crm.suprens.com.br
+
+# O IP fixo da internet da Suprens. Só dele o servidor aceita a manutenção (SSH) e o envio da foto.
+# Quem mexe no servidor de fora da empresa entra antes na VPN.
+IP_DA_EMPRESA=
+
+# O e-mail que o Let's Encrypt registra para o certificado do site.
+EMAIL_DO_CERTIFICADO=
+
+# A conta de quem administra o servidor (letras minúsculas, números e hífen) e a chave pública dela,
+# uma linha "ssh-ed25519 AAAA... nome". O root deixa de entrar pela rede.
+USUARIO_ADMIN=
+CHAVE_DO_ADMIN=""
+
+# A chave pública do extrator (data/envio/chave-do-extrator.pub na máquina do extrator). Pode ficar
+# vazia até a máquina do extrator ser escolhida; depois, preencha e rode o preparar-servidor.sh de novo.
+CHAVE_DO_EXTRATOR=""
