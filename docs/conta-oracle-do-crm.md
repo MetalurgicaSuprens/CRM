@@ -128,13 +128,13 @@ GRANT SELECT ON ABC71.NFDE TO CRM_EXTRATOR;
 
 ### 4. Só da máquina do extrator
 
-A conta só deve entrar a partir do IP da máquina do extrator na LAN. O endereço o Lucas informa quando a máquina for escolhida. Um gatilho de logon, de um usuário DBA, resolve:
+A conta só deve entrar a partir da máquina do extrator na LAN, a máquina virtual de IP **192.168.0.12** (informado pelo Lucas em 2026-11-17; a máquina ainda está sendo preparada pelo TI). Um gatilho de logon, de um usuário DBA, resolve:
 
 ```sql
 CREATE OR REPLACE TRIGGER <dono_dba>.CRM_EXTRATOR_SO_DA_LAN
 AFTER LOGON ON DATABASE
 BEGIN
-  IF USER = 'CRM_EXTRATOR' AND SYS_CONTEXT('USERENV', 'IP_ADDRESS') NOT IN ('<IP da máquina do extrator>') THEN
+  IF USER = 'CRM_EXTRATOR' AND SYS_CONTEXT('USERENV', 'IP_ADDRESS') NOT IN ('192.168.0.12') THEN
     RAISE_APPLICATION_ERROR(-20001, 'CRM_EXTRATOR só entra da máquina do extrator.');
   END IF;
 END;
