@@ -116,10 +116,12 @@ FIM
 }
 
 # restrict: sem terminal, túnel nem repasse. from=: só do IP da Suprens, mesmo com a chave roubada.
+# Fica em /etc/ssh, e não em /etc/crm: o SSH lê o arquivo como o crm-troca, que não entra em /etc/crm.
 gravar_chave_do_extrator() {
-  install -o root -g root -m 0644 /dev/null /etc/crm/troca-authorized_keys
+  rm -f /etc/crm/troca-authorized_keys
+  install -o root -g root -m 0644 /dev/null /etc/ssh/crm-troca_authorized_keys
   if [[ -n "${CHAVE_DO_EXTRATOR:-}" ]]; then
-    echo "restrict,from=\"$IP_DA_EMPRESA\" $CHAVE_DO_EXTRATOR" > /etc/crm/troca-authorized_keys
+    echo "restrict,from=\"$IP_DA_EMPRESA\" $CHAVE_DO_EXTRATOR" > /etc/ssh/crm-troca_authorized_keys
   fi
 }
 
@@ -127,7 +129,8 @@ configurar_ssh() {
   sed "s/@USUARIO_ADMIN@/$USUARIO_ADMIN/g" "$PASTA/ssh/10-crm.conf" > /etc/ssh/sshd_config.d/10-crm.conf
   chmod 0644 /etc/ssh/sshd_config.d/10-crm.conf
   sshd -t || falhar "A configuração do SSH tem erro; o SSH não foi reiniciado."
-  sshd -T -C "user=crm-troca,host=extrator,addr=$IP_DA_EMPRESA" | grep -q '^chrootdirectory /srv/crm-troca$' \
+  # Sem o -q: o grep lê tudo, e o sshd não morre por escrever num cano fechado (o pipefail o contaria como falha).
+  sshd -T -C "user=crm-troca,host=extrator,addr=$IP_DA_EMPRESA" | grep -x 'chrootdirectory /srv/crm-troca' >/dev/null \
     || falhar "O SSH não prendeu o crm-troca na pasta de troca; o SSH não foi reiniciado."
   systemctl restart ssh
 }
