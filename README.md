@@ -8,6 +8,7 @@ Ferramenta para os representantes comerciais da Suprens:
 O acesso é pela internet. O site nunca fala com o banco: os dados chegam por uma foto gerada na rede interna.
 
 - Plano, arquitetura e fases: [docs/plano.md](docs/plano.md)
+- Instalação do servidor, para o TI: [docs/instalacao-do-servidor.md](docs/instalacao-do-servidor.md)
 - Regras de trabalho: [CLAUDE.md](CLAUDE.md) e [CLEAN_CODE.md](CLEAN_CODE.md)
 
 ## Estrutura

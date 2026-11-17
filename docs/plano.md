@@ -11,7 +11,7 @@ Objetivo: uma ferramenta, acessível pela **internet aberta**, para os **represe
 
 Requisitos:
 - Segurança máxima.
-- Servidor Linux + Apache **dentro da empresa**.
+- Servidor Linux + Apache numa **VPS da Locaweb** (mudou em 2026-11-09; contratada em 2026-11-17). O passo a passo da instalação, que o TI faz, está em [`instalacao-do-servidor.md`](instalacao-do-servidor.md).
 - O site **nunca** acessa o banco.
 - Visual bonito, caprichado e sóbrio.
 
@@ -104,7 +104,9 @@ Outras regras:
 - Fontes hospedadas no próprio servidor.
 - Sem CORS, porque tudo fica na mesma origem.
 
-### `deploy/` (testado no WSL2 antes do servidor)
+### Instalação do servidor
+
+Desde 2026-11-17, quem instala o servidor é o TI, pelo roteiro [`instalacao-do-servidor.md`](instalacao-do-servidor.md). Com a VPS, a administração abre por túnel SSH, e a porta 22 aceita só o IP de saída da empresa.
 
 Rede:
 - Internet → 443.

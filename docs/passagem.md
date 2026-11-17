@@ -69,15 +69,14 @@ Feito até agora: F1, F2, F3 e parte da F4 (veja as fases no plano).
 Falta, em ordem:
 1. **Conferir na tela o aviso de carga recusada da administração,** no computador e no celular. Para provocar o aviso, entregue na entrada de uma API de teste uma foto com o manifesto estragado.
 2. **Investigar um teste que falhou uma vez.** O teste "recusa enviar sem foto com manifesto" falhou uma vez no `npm test` da raiz e não se repetiu em 20 rodadas. Suspeita: um erro sem ouvinte no servidor simulado, vindo do teste anterior.
-3. **Hospedagem na Locaweb.** Ela mudou em 2026-11-09: o CRM fica numa VPS Linux da Locaweb, e não mais dentro da empresa. O plano ainda diz "dentro da empresa" e precisa ser atualizado. O que muda:
+3. **Hospedagem na Locaweb.** Ela mudou em 2026-11-09: o CRM fica numa VPS Linux da Locaweb, e não mais dentro da empresa. A VPS foi contratada em 2026-11-17 (4 GB, 2 vCPU, 70 GB, IP 177.153.193.33), e o domínio será crm.suprens.com.br. Quem instala é o TI, pelo roteiro `docs/instalacao-do-servidor.md`. O que muda:
    - o IP fixo da empresa entra no `from=` da conta de troca do SFTP e no firewall do servidor;
    - a administração abre por túnel SSH até 127.0.0.1:5179, porque deixa de existir "só LAN";
    - a Locaweb vira operadora dos dados pela LGPD: precisa de contrato e de datacenter no Brasil;
    - o firewall da empresa libera só a saída do extrator para o IP do servidor;
    - plano sugerido: VPS de 4 GB (2 vCPU, 70 GB). O de 2 GB é o mínimo.
    - Confirmar com a Locaweb: acesso root, IP público fixo, firewall por IP no painel e quantos snapshots o plano inclui.
-4. **Pasta da instalação do servidor (`deploy/`):** Apache, systemd, a conta SFTP `crm-troca` com chroot, o firewall e o pacote de publicação, prontos para só aplicar. O servidor recebe o código pelo pacote, nunca por `git pull`.
-   - No Apache, use `Permissions-Policy: geolocation=(self)` para o "Perto de mim".
+4. **Instalação do servidor:** o TI segue `docs/instalacao-do-servidor.md` (Apache, systemd, a conta SFTP `crm-troca` com chroot, o firewall e o pacote de publicação). O servidor recebe o código pelo pacote, nunca por `git pull`. Quando a F5 trouxer a saída de pedidos, a auditoria e o backup, o roteiro precisa ser atualizado.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
    - O Windows recusa a chave privada em `data/` ("bad permissions"), porque todo usuário do computador lê a pasta.
    - O mesmo vale para a chave do id do cliente e para a lista de autorizados: elas também saem de `data/` quando a máquina do extrator for escolhida.
