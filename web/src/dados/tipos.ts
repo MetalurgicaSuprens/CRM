@@ -46,6 +46,8 @@ export type ClienteResumo = {
    * representantes (regra 3 do CLAUDE.md, mudada em 2026-11-17). Null na empresa e no grupo.
    */
   cpf: string | null;
+  /** O CNPJ da empresa, já com a pontuação, como o app antigo mostra. Null na pessoa física e no grupo. */
+  cnpj: string | null;
   nome: string;
   cidade: string;
   uf: string;
@@ -143,9 +145,21 @@ export type PedidoDaFicha = {
   entrega: string | null;
   /** O que a linha mostra ao abrir, na ordem do pedido. No faturado, um por produto, com as notas do período somadas. */
   itens: ItemDaFicha[];
-  /** Faturado: as notas do pedido no período. Em aberto: o saldo. No CRM: o total do SGI ou o estimado. */
+  /** Faturado: as notas do pedido no período. Em aberto: o saldo. No CRM: o total do SGI ou o estimado. Sem IPI. */
   valor: number;
+  /** O mesmo valor com o IPI, nos pedidos do ERP; null nos do CRM, que ainda não têm o IPI do ERP. */
+  valorComIpi: number | null;
+  /** Só nos pedidos do ERP. */
+  cfop: Cfop | null;
+  /** As notas do pedido faturado no período, da mais antiga à mais nova; vazio nos outros. */
+  notas: NotaDoPedido[];
 };
+
+/** O CFOP de um pedido ou de uma nota, com a descrição do ERP, como o app antigo dos representantes mostra. */
+export type Cfop = { codigo: string; descricao: string | null };
+
+/** Uma nota de um pedido faturado: o total é o da nota, com os impostos. */
+export type NotaDoPedido = { numero: string; emissao: string; valorTotal: number; transportadora: string | null };
 
 /** Item de um pedido da ficha; a entrega só no pedido em aberto. */
 export type ItemDaFicha = ItemDoErp & { entrega: string | null };
@@ -171,6 +185,8 @@ export type FichaCliente = ClienteResumo & {
   pedidos: PedidoDaFicha[];
   /** No CNPJ de um grupo: o grupo, para voltar à ficha dele. */
   grupo: { codigo: string; nome: string } | null;
+  /** O cadastro fiscal, como na tela de pedido; null no grupo e no cliente sem cadastro na foto. */
+  cadastro: CadastroDoCliente | null;
   /** Os dias em que o login visitou o cliente (no grupo, algum CNPJ dele), do mais recente ao mais antigo, até 10 (app.db). */
   visitas: string[];
 };
@@ -474,6 +490,9 @@ export type ItemEmAberto = ItemDoErp & { entrega: string };
 
 export type PedidoNoErp = PedidoEmAberto & {
   cliente: ClienteResumo;
+  /** O saldo com o IPI de cada item. */
+  valorComIpi: number;
+  cfop: Cfop | null;
   /** O que a linha mostra ao abrir: os itens com saldo, na ordem do pedido. */
   itensEmAberto: ItemEmAberto[];
 };
@@ -484,7 +503,13 @@ export type NotaFaturada = {
   numero: string;
   emissao: string;
   cliente: ClienteResumo;
+  /** Sem IPI, como o faturamento. */
   valor: number;
+  valorIpi: number;
+  /** O total da nota, com os impostos, como o app antigo dos representantes mostra. */
+  valorTotal: number;
+  transportadora: string | null;
+  cfop: Cfop | null;
   /** Os pedidos do ERP de onde a nota saiu; vazio na nota sem pedido. */
   pedidos: string[];
   /** O que a linha mostra ao abrir, na ordem da nota. */

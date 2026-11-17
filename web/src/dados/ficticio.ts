@@ -11,6 +11,8 @@ import { diaUtilDoMes, diasUteisDoMes } from "dominio/calendario";
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
 import { enderecoFicticio } from "./enderecoFicticio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
+import { cadastroFicticio, cnpjDeExemplo } from "./dadosDoPedidoFicticio";
+import { cfopFicticio, ipiFicticio, totalDaNotaFicticio, transportadoraFicticia } from "./fiscalFicticio";
 import { PECAS_POR_CENTO } from "dominio/pedido";
 import { analisarCliente, semestreDoRitmo, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
 import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
@@ -187,6 +189,8 @@ export function pedidosNoErpFicticios(): PedidoNoErp[] {
     .clientes.flatMap((cliente) =>
       cliente.pedidos.map((pedido) => ({
         ...pedido,
+        valorComIpi: pedido.valor + ipiFicticio(pedido.valor),
+        cfop: cfopFicticio(pedido.numero),
         cliente: resumirCliente(cliente),
         itensEmAberto: itensDoPedido(pedido, cliente.pesosFamilias),
       })),
@@ -235,9 +239,18 @@ function itensDoPedido(pedido: PedidoEmAberto, familias: ReadonlyMap<string, num
   }));
 }
 
-function detalheDaNota(numero: number, valor: number, familias: ReadonlyMap<string, number>): Pick<NotaFaturada, "pedidos" | "itens"> {
+function detalheDaNota(
+  numero: number,
+  valor: number,
+  familias: ReadonlyMap<string, number>,
+): Pick<NotaFaturada, "valorIpi" | "valorTotal" | "transportadora" | "cfop" | "pedidos" | "itens"> {
   const aleatorio = criarAleatorio(numero);
+  const cfop = cfopFicticio(String(numero));
   return {
+    valorIpi: ipiFicticio(valor),
+    valorTotal: totalDaNotaFicticio(valor, cfop),
+    transportadora: transportadoraFicticia(String(numero)),
+    cfop,
     pedidos: [String(aleatorio.inteiro(1_700_000, 1_850_000))],
     itens: sortearItens(aleatorio, valor, aleatorio.inteiro(2, 12), familias),
   };
@@ -470,6 +483,7 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
     codigo: cliente.codigo,
     codigoErp: cliente.codigoErp,
     cpf: cliente.cpf,
+    cnpj: cliente.codigoErp === null ? null : cnpjDeExemplo(cliente.codigo),
     nome: cliente.nome,
     cidade: cliente.cidade,
     uf: cliente.uf,
@@ -493,8 +507,9 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
   const baseFamilias = cliente.indicadores.faturamento12m || somarValores(cliente.mensal, 0, ULTIMO_FECHADO) / 3;
   const familias = distribuirPorFamilia(cliente, baseFamilias);
   const mix = sugerirMix(paraMix(cliente), dados.suprens);
+  const resumo = resumirCliente(cliente);
   return {
-    ...resumirCliente(cliente),
+    ...resumo,
     razaoSocial: cliente.razaoSocial,
     // Na carteira fictícia todo cliente já comprou um dia; o null fica para a foto de verdade.
     clienteDesde: Number(cliente.primeiraCompra.slice(0, 4)),
@@ -505,6 +520,7 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
     grupoDoMix: mix ? { porte: mix.porte } : null,
     pedidos: pedidosDaFicha(cliente, dados),
     grupo: null,
+    cadastro: cadastroFicticio({ ...resumo, razaoSocial: cliente.razaoSocial }),
     visitas: [],
   };
 }
@@ -520,6 +536,9 @@ function pedidosDaFicha(cliente: ClienteFicticio, contexto: Contexto): PedidoDaF
       entrega: pedido.entrega,
       itens: itensDoPedido(pedido, cliente.pesosFamilias),
       valor: pedido.valor,
+      valorComIpi: pedido.valor + ipiFicticio(pedido.valor),
+      cfop: cfopFicticio(pedido.numero),
+      notas: [],
     }),
   );
   return [...emAberto, ...pedidosFaturados(cliente, contexto)];
@@ -548,8 +567,16 @@ function pedidosFaturados(cliente: ClienteFicticio, { hoje, mesAtual }: Contexto
       entrega: data,
       itens: sortearItens(aleatorio, valor, aleatorio.inteiro(2, 14), cliente.pesosFamilias).map((item) => ({ ...item, entrega: null })),
       valor,
+      ...fiscalDoFaturado(String(numero), data, valor),
     };
   });
+}
+
+/** Uma nota por pedido faturado, com o número tirado do pedido: o CFOP, o IPI e o total dela. */
+function fiscalDoFaturado(numero: string, emissao: string, valor: number): Pick<PedidoDaFicha, "valorComIpi" | "cfop" | "notas"> {
+  const cfop = cfopFicticio(numero);
+  const nota = { numero: String(Number(numero) - 1_100_000), emissao, valorTotal: totalDaNotaFicticio(valor, cfop), transportadora: transportadoraFicticia(numero) };
+  return { valorComIpi: valor + ipiFicticio(valor), cfop, notas: [nota] };
 }
 
 function distribuirPorFamilia(cliente: ClienteFicticio, base: number) {

@@ -36,6 +36,7 @@ function cliente(codigo: string, municipio: string | null, faturamento12m: numbe
     codigo,
     codigoErp: null,
     cpf: null,
+    cnpj: null,
     nome: `Cliente ${codigo}`,
     cidade: "",
     uf: "GO",

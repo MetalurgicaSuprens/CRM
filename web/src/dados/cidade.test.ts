@@ -9,6 +9,7 @@ function cliente(codigo: string, faturamento12m: number, endereco: EnderecoDoCli
     codigo,
     codigoErp: endereco ? codigo : null,
     cpf: null,
+    cnpj: null,
     nome: `Cliente ${codigo}`,
     cidade: "CURITIBA",
     uf: "PR",

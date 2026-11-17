@@ -1,0 +1,69 @@
+/*
+ * Três partes numa faixa clara, como o cadastro na tela de pedido: os dados fiscais e o contato lado a
+ * lado e, embaixo, os três endereços em colunas. No celular, uma parte embaixo da outra.
+ */
+.cadastro {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+
+.parte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  min-width: 0;
+  padding: var(--esp-3) var(--esp-4);
+}
+
+.parte + .parte {
+  border-top: 1px solid var(--cor-linha);
+}
+
+/* Como os títulos das colunas das tabelas */
+.titulo {
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-2);
+}
+
+.fatos,
+.listaDeEnderecos {
+  container-type: inline-size;
+  display: grid;
+  gap: var(--esp-3) var(--esp-6);
+  margin: 0;
+}
+
+.fatos {
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+}
+
+.listaDeEnderecos {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container (min-width: 52rem) {
+  .cadastro {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+
+  /* Lado a lado, o traço entre as duas primeiras partes fica de pé */
+  .parte:nth-child(2) {
+    border-top: none;
+    border-left: 1px solid var(--cor-linha);
+  }
+
+  .enderecos {
+    grid-column: 1 / -1;
+  }
+
+  .listaDeEnderecos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

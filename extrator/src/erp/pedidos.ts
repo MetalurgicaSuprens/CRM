@@ -1,6 +1,6 @@
 import type { Linha, Oracle } from "../oracle.ts";
-import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
-import { FAMILIA_DO_ITEM, TIPOS_DE_VENDA, emPecas, representanteDaVenda, textoDaData } from "./sql.ts";
+import { cfopDa, chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
+import { FAMILIA_DO_ITEM, TIPOS_DE_VENDA, descricaoDoCfop, emPecas, representanteDaVenda, textoDaData } from "./sql.ts";
 import type { PedidoEmAbertoNoErp } from "./tipos.ts";
 
 /**
@@ -15,6 +15,9 @@ const VALOR_EM_ABERTO_DO_ITEM = `(D.SALDO * D.VLR_UNIT
 
 const ENTREGA_DO_ITEM = "NVL(D.DT_ENTREGA, M.DT_ENTREGA)";
 
+/** O IPI do saldo do item, pela alíquota dele no pedido. */
+const IPI_EM_ABERTO_DO_ITEM = `(${VALOR_EM_ABERTO_DO_ITEM} * NVL(D.PORC_IPI, 0) / 100)`;
+
 /**
  * Os itens com saldo dos pedidos do Omega nos tipos de venda e sem bloqueio, de qualquer
  * representante: o cliente com pedido em aberto não conta como parado, venha o pedido de quem vier.
@@ -23,11 +26,13 @@ export async function lerPedidosEmAberto(oracle: Oracle): Promise<PedidoEmAberto
   const representante = representanteDaVenda("M.VENDEDOR");
   const linhas = await oracle.consultar(
     `SELECT M.EMP_FIL, M.NUMERO, M.CLIENTE, ${representante}, ${textoDaData("M.DT_PED")},
-            TRIM(D.C_PROD), TRIM(G.GRP_DES), ${emPecas("D.SALDO")}, ${textoDaData(ENTREGA_DO_ITEM)}, ${VALOR_EM_ABERTO_DO_ITEM}
+            TRIM(D.C_PROD), TRIM(G.GRP_DES), ${emPecas("D.SALDO")}, ${textoDaData(ENTREGA_DO_ITEM)}, ${VALOR_EM_ABERTO_DO_ITEM},
+            ${IPI_EM_ABERTO_DO_ITEM}, M.CFO, F.DESCRICAO
        FROM ABC71.VEPM M
        JOIN ABC71.VEPD D ON D.EMP_FIL = M.EMP_FIL AND D.NUMERO = M.NUMERO
        LEFT JOIN ABC71.CRCL C ON C.EMP_FIL = M.EMP_FIL AND C.CLIENTE = M.CLIENTE
      ${FAMILIA_DO_ITEM}
+     ${descricaoDoCfop("M.CFO")}
       WHERE D.SALDO > 0 AND D.TIPO_MOVTO IN (${TIPOS_DE_VENDA}) AND NVL(TRIM(M.BLOQUEADO), 'N') <> 'S'
       ORDER BY M.EMP_FIL, M.NUMERO, D.SEQUENCIA`,
   );
@@ -44,6 +49,7 @@ function agruparPorPedido(linhas: Linha[]): PedidoEmAbertoNoErp[] {
       chave: chaveDoCliente(numero(linha, 0), numero(linha, 2)),
       representante: String(numero(linha, 3)),
       emissao: texto(linha, 4),
+      cfop: cfopDa(linha, 11),
       itens: [],
     };
     pedido.itens.push({
@@ -52,6 +58,7 @@ function agruparPorPedido(linhas: Linha[]): PedidoEmAbertoNoErp[] {
       pecas: numero(linha, 7),
       entrega: texto(linha, 8),
       valor: numero(linha, 9),
+      ipi: numero(linha, 10),
     });
     pedidos.set(chaveDoPedido, pedido);
   }

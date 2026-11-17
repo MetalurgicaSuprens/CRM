@@ -8,7 +8,11 @@ import { useOrdenacao } from "./useOrdenacao";
 import estilos from "./TabelaResponsiva.module.css";
 
 export type ColunaDaTabela<T> = ColunaOrdenavel<T> & {
-  /** Largura mínima, em rem. Quando a soma das mínimas não cabe, a tabela vira cartões. */
+  /**
+   * Largura mínima, em rem. Quando a soma das mínimas não cabe, a tabela vira cartões. Na primeira
+   * coluna, a da identificação, ela troca a largura de nome de cliente por uma curta, como a de um
+   * número de nota, que não cresce mais que as outras.
+   */
   largura?: number;
   celula: (item: T) => ReactNode;
 };
@@ -41,9 +45,10 @@ type Props<T> = ToqueNaLinha<T> & {
 export const ORDEM_DOS_ITENS = "ordem-itens";
 
 const LARGURA_DA_IDENTIFICACAO_REM = 12;
+const CRESCIMENTO_DA_IDENTIFICACAO = 2.2;
 const LARGURA_PADRAO_REM = 6.5;
 /** A coluna da seta, no fim da linha que abre: não cresce com a sobra. */
-const COLUNA_DA_SETA: ColunaDaGrade = { minima: 1.25, cresce: false };
+const COLUNA_DA_SETA: ColunaDaGrade = { minima: 1.25, cresce: 0 };
 /** Iguais ao CSS: o espaço entre as colunas (--esp-4) e o recuo das duas pontas (--esp-3 cada). */
 const ESPACO_ENTRE_COLUNAS_PX = 16;
 const RECUO_DAS_PONTAS_PX = 24;
@@ -64,7 +69,8 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, orde
   const [chaveAberta, setChaveAberta] = useState<string | null>(null);
   const [identificacao, ...demais] = colunas;
   const grade: ColunaDaGrade[] = [
-    ...demais.map((coluna) => ({ minima: coluna.largura ?? LARGURA_PADRAO_REM, cresce: true })),
+    colunaDaIdentificacao(identificacao.largura),
+    ...demais.map((coluna) => ({ minima: coluna.largura ?? LARGURA_PADRAO_REM, cresce: 1 })),
     ...(detalheDe ? [COLUNA_DA_SETA] : []),
   ];
   const emCartoes = largura > 0 && largura < larguraMinima(grade);
@@ -165,19 +171,22 @@ function classeDoTitulo<T>(coluna: ColunaDaTabela<T>): string | undefined {
   return [coluna.numerica ? estilos.numerica : "", coluna.ordenarPor ? "" : estilos.semOrdem].filter(Boolean).join(" ") || undefined;
 }
 
-/** Cada coluna depois da identificação: a largura mínima, em rem, e se cresce com a sobra. */
-type ColunaDaGrade = { minima: number; cresce: boolean };
+/** Cada coluna: a largura mínima, em rem, e quanto cresce com a sobra (0: não cresce). */
+type ColunaDaGrade = { minima: number; cresce: number };
 
-/** A identificação, mais larga, e as demais colunas, que crescem por igual a partir da mínima. */
+/** A identificação de nome, mais larga, cresce mais que as outras; a curta, como as outras. */
+function colunaDaIdentificacao(largura: number | undefined): ColunaDaGrade {
+  return largura === undefined ? { minima: LARGURA_DA_IDENTIFICACAO_REM, cresce: CRESCIMENTO_DA_IDENTIFICACAO } : { minima: largura, cresce: 1 };
+}
+
 function gradeDasColunas(grade: ColunaDaGrade[]): string {
-  const demais = grade.map(({ minima, cresce }) => (cresce ? `minmax(${minima}rem, 1fr)` : `${minima}rem`));
-  return [`minmax(${LARGURA_DA_IDENTIFICACAO_REM}rem, 2.2fr)`, ...demais].join(" ");
+  return grade.map(({ minima, cresce }) => (cresce > 0 ? `minmax(${minima}rem, ${cresce}fr)` : `${minima}rem`)).join(" ");
 }
 
 /** Abaixo desta largura, em px, as colunas não cabem lado a lado. */
 function larguraMinima(grade: ColunaDaGrade[]): number {
-  const colunasEmRem = LARGURA_DA_IDENTIFICACAO_REM + grade.reduce((soma, { minima }) => soma + minima, 0);
-  return colunasEmRem * pixelsPorRem() + grade.length * ESPACO_ENTRE_COLUNAS_PX + RECUO_DAS_PONTAS_PX;
+  const colunasEmRem = grade.reduce((soma, { minima }) => soma + minima, 0);
+  return colunasEmRem * pixelsPorRem() + (grade.length - 1) * ESPACO_ENTRE_COLUNAS_PX + RECUO_DAS_PONTAS_PX;
 }
 
 /** O rem segue o tamanho de letra escolhido no navegador. */

@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
 import { Building2 } from "lucide-react";
 import cartao from "../../componentes/Cartao.module.css";
+import { EnderecosDoCadastro } from "../../componentes/EnderecosDoCadastro";
+import { Fato } from "../../componentes/Fato";
 import { SeloDoStatus } from "../../componentes/StatusDoCliente";
 import { ROTULOS_DE_STATUS } from "../../dados/rotulos";
-import type { CadastroDoCliente, ClienteResumo, EnderecoDoCadastro, LocalDoCadastro } from "../../dados/tipos";
-import { formatarCep, formatarCodigoDoCliente, formatarEndereco } from "../../formato";
+import type { CadastroDoCliente, ClienteResumo } from "../../dados/tipos";
+import { formatarCodigoDoCliente, formatarEndereco } from "../../formato";
 import estilos from "./ClienteDoPedido.module.css";
 
 /*
@@ -49,13 +50,7 @@ function FatosDoCadastro({ cliente, tabela, cadastro }: Props & { cadastro: Cada
         {cadastro.emailDoXml ? <Fato rotulo="E-mail do XML" largo>{cadastro.emailDoXml}</Fato> : null}
       </dl>
       <dl className={estilos.enderecos}>
-        <Fato rotulo="Endereço">{formatarEnderecoDoCadastro(cadastro.faturamento)}</Fato>
-        <Fato rotulo="Entrega">
-          <OutroLocal local={cadastro.entrega} />
-        </Fato>
-        <Fato rotulo="Cobrança">
-          <OutroLocal local={cadastro.cobranca} />
-        </Fato>
+        <EnderecosDoCadastro cadastro={cadastro} />
       </dl>
     </div>
   );
@@ -82,33 +77,5 @@ function FatosDaVenda({ cliente, tabela }: Omit<Props, "cadastro">) {
       <Fato rotulo="Status">{ROTULOS_DE_STATUS[cliente.status]}</Fato>
       <Fato rotulo="Tabela de preço">{tabela || "Sem tabela"}</Fato>
     </>
-  );
-}
-
-/** A entrega ou a cobrança: em outro endereço, ele aparece inteiro, com de quem é; senão, só o aviso de que é o mesmo. */
-function OutroLocal({ local }: { local: LocalDoCadastro | null }) {
-  if (!local) return <span className={estilos.mesmo}>No endereço acima</span>;
-  return (
-    <span className={estilos.outroLocal}>
-      {formatarEnderecoDoCadastro(local)}
-      <span className={estilos.donoDoLocal}>
-        {local.razaoSocial} · {local.documento}
-      </span>
-    </span>
-  );
-}
-
-/** "RUA XV DE NOVEMBRO, 1200 · CENTRO · Curitiba/PR · 80020-310" */
-function formatarEnderecoDoCadastro({ texto, bairro, cidade, uf, cep }: EnderecoDoCadastro): string {
-  return [texto, bairro, `${cidade}/${uf}`, cep === null ? null : formatarCep(cep)].filter(Boolean).join(" · ");
-}
-
-/** "largo": o valor comprido, como o e-mail, ocupa duas colunas em vez de quebrar numa estreita. */
-function Fato({ rotulo, largo = false, children }: { rotulo: string; largo?: boolean; children: ReactNode }) {
-  return (
-    <div className={largo ? `${estilos.fato} ${estilos.largo}` : estilos.fato}>
-      <dt>{rotulo}</dt>
-      <dd>{children}</dd>
-    </div>
   );
 }

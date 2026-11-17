@@ -3,6 +3,7 @@ import type { Porte } from "dominio/tipos";
 import type { ClienteResumo, FichaCliente } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { COLUNAS_DO_RESUMO, comResumos, escopo, lerLinhas, numero, numeroOuNulo, resumoDoCliente, texto, textoOuNulo } from "./linhas.ts";
+import { lerCadastro } from "./dadosDoPedido.ts";
 import { lerPedidosDaFicha, lerPedidosDoGrupo } from "./pedidos.ts";
 
 /** A carteira do login: os clientes de todos os códigos dele, com o grupo no lugar dos CNPJs dele. */
@@ -79,6 +80,7 @@ export function lerFicha(db: DatabaseSync, sessao: Sessao, codigoDoCliente: stri
     grupoDoMix: grupoDoMix(textoOuNulo(linha, "grupo_mix")),
     pedidos: resumo.cnpjs ? lerPedidosDoGrupo(db, sessao, resumo.cnpjs) : lerPedidosDaFicha(db, sessao, codigoDoCliente),
     grupo: lerGrupo(db, sessao, textoOuNulo(linha, "grupo")),
+    cadastro: resumo.cnpjs ? null : lerCadastro(db, resumo),
   };
 }
 

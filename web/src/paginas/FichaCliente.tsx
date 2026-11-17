@@ -41,7 +41,7 @@ import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCa
 import { carregarFicha, carregarSituacaoDosDados, desfazerVisita, registrarVisita } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import { aFaturarNoMes, montarMesAMes, resumirOAno, type ResumoDoAno } from "../dados/faturamentoDoCliente";
-import type { ClienteResumo, EnderecoDoCliente, FichaCliente as Ficha, Mercado, Porte, ProdutoComprado } from "../dados/tipos";
+import type { ClienteResumo, EnderecoDoCliente, FichaCliente as Ficha, Mercado, PedidoDaFicha, Porte, ProdutoComprado } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { linkDoEnderecoNoGoogleMaps } from "../dados/viagem";
 import { dataDoMomento } from "dominio/datas";
@@ -59,6 +59,7 @@ import {
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
 import { BarrasMensais } from "../graficos/BarrasMensais";
 import moldura from "../graficos/moldura.module.css";
+import { CadastroDaFicha } from "./CadastroDaFicha";
 import { Carregando } from "./Carregando";
 import { useRoteiro } from "./mapa/Roteiro";
 import { DetalheDoPedidoDaFicha } from "./DetalhesDosPedidos";
@@ -129,6 +130,7 @@ export function FichaCliente() {
       <Cartao titulo="Pedidos" icone={ClipboardList} subtitulo="Últimos 12 meses e o mês atual, e todos os em aberto">
         <TabelaPedidos ficha={ficha} hoje={situacao.hoje} />
       </Cartao>
+      {ficha.cadastro ? <CadastroDaFicha cadastro={ficha.cadastro} isPessoaFisica={ficha.cpf !== null} /> : null}
     </div>
   );
 }
@@ -480,14 +482,28 @@ function TabelaPedidos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
       colunas={[
         // Na ficha do grupo, cada pedido diz de que CNPJ é.
         { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero ?? "—"} detalhe={pedido.cnpj?.nome ?? null} /> },
+        { titulo: "Nota", largura: 6, ordenarPor: (pedido) => pedido.notas.at(-1)?.numero ?? null, celula: (pedido) => descreverNotas(pedido) },
         { titulo: "Status", largura: 9, ordenarPor: (pedido) => STATUS_DO_PEDIDO[pedido.status].rotulo, celula: (pedido) => <SeloDoPedido status={pedido.status} /> },
         { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
         { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => (pedido.entrega ? formatarData(pedido.entrega) : "—") },
         { titulo: "Itens", numerica: true, largura: 4.5, ordenarPor: (pedido) => pedido.itens.length, celula: (pedido) => pedido.itens.length },
-        { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
+        { titulo: "Sem IPI", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
+        {
+          titulo: "Com IPI",
+          numerica: true,
+          ordenarPor: (pedido) => pedido.valorComIpi,
+          celula: (pedido) => (pedido.valorComIpi === null ? "—" : <Valor valor={pedido.valorComIpi} comCentavos />),
+        },
       ]}
     />
   );
+}
+
+/** A última nota do pedido faturado e quantas mais ele teve: "NF 180020", "NF 180020 +1"; "—" nos outros. */
+function descreverNotas({ notas }: PedidoDaFicha): string {
+  const ultima = notas.at(-1);
+  if (!ultima) return "—";
+  return notas.length > 1 ? `NF ${ultima.numero} +${notas.length - 1}` : `NF ${ultima.numero}`;
 }
 
 /** A análise por CNPJ do grupo: os números de cada um e a parte dele no faturado do grupo. */

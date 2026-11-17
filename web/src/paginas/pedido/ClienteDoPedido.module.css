@@ -44,59 +44,9 @@
   border-top: 1px solid var(--cor-linha);
 }
 
-.fato {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.largo {
-  grid-column: span 2;
-}
-
-.fato dt {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--cor-texto-suave);
-}
-
-.fato dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: var(--tam-texto);
-  font-weight: 500;
-  color: var(--cor-texto);
-}
-
-.mesmo {
-  font-weight: 400;
-  color: var(--cor-texto-2);
-}
-
-.outroLocal {
-  display: flex;
-  flex-direction: column;
-}
-
-.donoDoLocal {
-  font-size: var(--tam-legenda);
-  font-weight: 400;
-  color: var(--cor-texto-suave);
-}
-
 /* O endereço do faturamento é o mais longo e fica com mais largura */
 @container (min-width: 44rem) {
   .enderecos {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-
-/* Com uma coluna só, o valor longo fica nela e quebra a linha */
-@container (max-width: 25rem) {
-  .largo {
-    grid-column: auto;
   }
 }

@@ -84,6 +84,9 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
       entrega: rascunho.entrega,
       itens: itensDaFicha(itensEnviados(rascunho.itens, catalogo)),
       valor: rascunho.totalEstimado,
+      valorComIpi: null,
+      cfop: null,
+      notas: [],
     }),
   );
   const enviados = [...enviadosNaSessao, ...pedidosDeExemplo()].filter(doCliente).flatMap((pedido): PedidoDaFicha[] => {
@@ -100,6 +103,9 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
         entrega: pedido.entrega,
         itens: itensDaFicha(pedido.itens),
         valor: pedido.totalSgi ?? pedido.totalEstimado,
+        valorComIpi: null,
+        cfop: null,
+        notas: [],
       },
     ];
   });
@@ -282,9 +288,9 @@ function itensEnviados(itens: ItemDoPedido[], catalogo: CatalogoDoCliente): Item
 }
 
 function resumoDe(ficha: FichaCliente): ClienteResumo {
-  const { codigo, codigoErp, cpf, nome, cidade, uf, municipio, endereco, mercado, situacao, status, ultimaCompra, cicloDias, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs } =
+  const { codigo, codigoErp, cpf, cnpj, nome, cidade, uf, municipio, endereco, mercado, situacao, status, ultimaCompra, cicloDias, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs } =
     ficha;
-  return { codigo, codigoErp, cpf, nome, cidade, uf, municipio, endereco, mercado, situacao, status, ultimaCompra, cicloDias, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs };
+  return { codigo, codigoErp, cpf, cnpj, nome, cidade, uf, municipio, endereco, mercado, situacao, status, ultimaCompra, cicloDias, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs };
 }
 
 function numeroCrm(numero: number): string {

@@ -13,6 +13,12 @@ import { escopo, lerLinhas, numero, texto, textoOuNulo, type Linha } from "./lin
 /** As que o representante mais usa, para o cliente sem histórico: as primeiras bastam. */
 const TRANSPORTADORAS_DO_REPRESENTANTE = 5;
 
+/** O cadastro fiscal do CNPJ ou da pessoa física, para a tela de pedido e a ficha; null sem cadastro na foto. */
+export function lerCadastro(db: DatabaseSync, cliente: ClienteResumo): CadastroDoCliente | null {
+  const [cadastro] = lerLinhas(db, "SELECT * FROM cliente_cadastro WHERE cliente = ?", [cliente.codigo]);
+  return cadastro ? montarCadastro(db, cliente, cadastro) : null;
+}
+
 export function lerDadosDoPedido(db: DatabaseSync, sessao: Sessao, cliente: ClienteResumo, produtosDaLista: readonly string[]): DadosDoPedido | null {
   const [cadastro] = lerLinhas(db, "SELECT * FROM cliente_cadastro WHERE cliente = ?", [cliente.codigo]);
   if (!cadastro) return null;

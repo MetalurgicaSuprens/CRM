@@ -70,13 +70,13 @@ const BAIRROS = ["Centro", "Distrito Industrial", "Jardim das Américas", "Vila 
  * mexer no histórico das escolhas. Um em cada quatro clientes entrega em outro endereço, e um em cada
  * dez cobra de outro.
  */
-function cadastroFicticio(cliente: ClienteDoCadastro): CadastroDoCliente {
+export function cadastroFicticio(cliente: ClienteDoCadastro): CadastroDoCliente {
   const aleatorio = criarAleatorio(Number.parseInt(cliente.codigo.slice(0, 8), 16) + 31);
   const isEmpresa = cliente.codigoErp !== null;
   const faturamento: EnderecoDoCadastro = cliente.endereco
     ? { texto: cliente.endereco.texto, bairro: cliente.endereco.bairro, cidade: cliente.cidade, uf: cliente.uf, cep: cliente.endereco.cep }
     : enderecoFicticio(aleatorio, cliente);
-  const documento = isEmpresa ? cnpjFicticio(Number(cliente.codigo.slice(0, 8)), Number(cliente.codigo.slice(8)) || 1) : (cliente.cpf ?? "");
+  const documento = isEmpresa ? cnpjDeExemplo(cliente.codigo) : (cliente.cpf ?? "");
   const outroLocal = () => ({ ...enderecoFicticio(aleatorio, cliente), razaoSocial: cliente.razaoSocial, documento });
   return {
     razaoSocial: cliente.razaoSocial,
@@ -101,7 +101,7 @@ function enderecoFicticio(aleatorio: Aleatorio, cliente: Pick<ClienteResumo, "ci
   };
 }
 
-function transportadorasFicticias(): Transportadora[] {
+export function transportadorasFicticias(): Transportadora[] {
   transportadorasEmCache ??= NOMES_DAS_TRANSPORTADORAS.map(([nome, cidade, uf], i) => ({
     codigo: String(i + 1),
     nome,
@@ -148,6 +148,11 @@ function aliquotaDaFamilia(familia: string): number {
 }
 
 /** Um CNPJ com os dígitos verificadores certos, a partir da raiz de 8 dígitos e da filial. */
+/** O CNPJ da empresa fictícia, tirado do código dela: o mesmo na lista, na ficha e no pedido. */
+export function cnpjDeExemplo(codigo: string): string {
+  return cnpjFicticio(Number(codigo.slice(0, 8)), Number(codigo.slice(8)) || 1);
+}
+
 function cnpjFicticio(raiz: number, filial: number): string {
   const base = [...`${String(raiz).padStart(8, "0")}${String(filial).padStart(4, "0")}`].map(Number);
   const digito = (numeros: number[]) => {

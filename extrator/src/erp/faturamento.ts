@@ -1,18 +1,21 @@
 import type { Referencia } from "../calculo/referencia.ts";
 import type { Linha, Oracle } from "../oracle.ts";
-import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
+import { cfopDa, chaveDoCliente, numero, texto, textoOuNulo, transportadoraDa } from "./linha.ts";
 import {
+  COLUNAS_DA_TRANSPORTADORA,
   FAMILIA_DO_ITEM,
   ITENS_DAS_NOTAS,
   NOTA_DE_VENDA,
   PECAS_DO_ITEM,
+  TRANSPORTADORA_DA_NOTA,
   VALOR_DO_ITEM,
   data,
+  descricaoDoCfop,
   emLista,
   representanteDaVenda,
   textoDaData,
 } from "./sql.ts";
-import type { NotaRecente, PedidoFaturadoNoErp, VendaDoDia } from "./tipos.ts";
+import type { ItemDaNota, NotaRecente, PedidoFaturadoNoErp, VendaDoDia } from "./tipos.ts";
 
 /*
  * A visão do representante: o que foi faturado em nome de cada autorizado, seja o cliente da
@@ -41,17 +44,21 @@ export async function lerVendasPorDia(oracle: Oracle, referencia: Referencia, au
 
 /**
  * Notas dos últimos 45 dias, item a item: aba Faturados. Uma nota pode ter linhas de mais de um tipo
- * de movimento no Oracle; para o CRM ela é uma só, pelo número e pela série.
+ * de movimento no Oracle; para o CRM ela é uma só, pelo número e pela série. Com o total, a
+ * transportadora e o CFOP, como o app antigo dos representantes.
  */
 export async function lerNotasRecentes(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<NotaRecente[]> {
   const lista = emLista("r", autorizados);
   const representante = representanteDaVenda("M.VENDEDOR");
   const linhas = await oracle.consultar(
     `SELECT M.N_FISCAL, TRIM(M.SERIE), M.EMP_FIL, M.FORNEC, ${representante}, ${textoDaData("M.DT_EMISSAO")}, M.NRO_PEDIDO,
-            TRIM(D.C_PROD), TRIM(G.GRP_DES), ${PECAS_DO_ITEM}, ${VALOR_DO_ITEM}
+            TRIM(D.C_PROD), TRIM(G.GRP_DES), ${PECAS_DO_ITEM}, ${VALOR_DO_ITEM}, NVL(D.VLR_IPI, 0),
+            M.TIPO_MOVTO, M.VLR_N_FISC, ${COLUNAS_DA_TRANSPORTADORA}, M.CFO, F.DESCRICAO
      ${ITENS_DAS_NOTAS}
      ${CLIENTE_DA_NOTA}
      ${FAMILIA_DO_ITEM}
+     ${TRANSPORTADORA_DA_NOTA}
+     ${descricaoDoCfop("M.CFO")}
       WHERE ${NOTA_DE_VENDA} AND M.DT_EMISSAO >= ${data("inicio")} AND ${representante} IN ${lista.sql}
       ORDER BY M.N_FISCAL, M.SERIE, M.TIPO_MOVTO, D.LINHA`,
     { ...lista.binds, inicio: referencia.inicioDosFaturados },
@@ -61,19 +68,22 @@ export async function lerNotasRecentes(oracle: Oracle, referencia: Referencia, a
 
 /**
  * Pedidos com nota de venda nos 12 meses fechados e no corrente, com as linhas dessas notas: o
- * histórico da ficha. O cliente, o representante e a emissão são os do pedido (VEPM, alias O, porque
- * P é o produto da família). Nota sem pedido no VEPM fica de fora (nenhuma da Star Vendas, em 2026-10-15).
+ * histórico da ficha. O cliente, o representante, a emissão e o CFOP são os do pedido (VEPM, alias O,
+ * porque P é o produto da família). Nota sem pedido no VEPM fica de fora (nenhuma da Star Vendas, em 2026-10-15).
  */
 export async function lerPedidosFaturados(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<PedidoFaturadoNoErp[]> {
   const lista = emLista("r", autorizados);
   const representante = representanteDaVenda("O.VENDEDOR");
   const linhas = await oracle.consultar(
     `SELECT O.EMP_FIL, O.NUMERO, O.CLIENTE, ${representante}, ${textoDaData("O.DT_PED")}, ${textoDaData("M.DT_EMISSAO")},
-            TRIM(D.C_PROD), TRIM(G.GRP_DES), ${PECAS_DO_ITEM}, ${VALOR_DO_ITEM}
+            TRIM(D.C_PROD), TRIM(G.GRP_DES), ${PECAS_DO_ITEM}, ${VALOR_DO_ITEM}, NVL(D.VLR_IPI, 0),
+            M.N_FISCAL, TRIM(M.SERIE), M.TIPO_MOVTO, M.VLR_N_FISC, ${COLUNAS_DA_TRANSPORTADORA}, O.CFO, F.DESCRICAO
      ${ITENS_DAS_NOTAS}
        JOIN ABC71.VEPM O ON O.EMP_FIL = M.EMP_FIL AND O.NUMERO = M.NRO_PEDIDO
        LEFT JOIN ABC71.CRCL C ON C.EMP_FIL = O.EMP_FIL AND C.CLIENTE = O.CLIENTE
      ${FAMILIA_DO_ITEM}
+     ${TRANSPORTADORA_DA_NOTA}
+     ${descricaoDoCfop("O.CFO")}
       WHERE ${NOTA_DE_VENDA} AND M.DT_EMISSAO >= ${data("inicio")} AND ${representante} IN ${lista.sql}
       ORDER BY O.EMP_FIL, O.NUMERO, M.DT_EMISSAO, M.N_FISCAL, D.LINHA`,
     { ...lista.binds, inicio: referencia.inicio12 },
@@ -81,9 +91,20 @@ export async function lerPedidosFaturados(oracle: Oracle, referencia: Referencia
   return agruparPorPedidoFaturado(linhas);
 }
 
+/**
+ * O total de uma nota vem no cabeçalho, que se repete em cada item: conta uma vez por tipo de
+ * movimento. `chave` identifica a nota e o tipo; devolve se é a primeira vez.
+ */
+function isPrimeiraVezDoCabecalho(vistos: Set<string>, chave: string): boolean {
+  if (vistos.has(chave)) return false;
+  vistos.add(chave);
+  return true;
+}
+
 /** Uma linha por item de nota; o cabeçalho do pedido se repete em cada uma, e a última nota fica. */
 function agruparPorPedidoFaturado(linhas: Linha[]): PedidoFaturadoNoErp[] {
   const pedidos = new Map<string, PedidoFaturadoNoErp>();
+  const cabecalhos = new Set<string>();
   for (const linha of linhas) {
     const chaveDoPedido = `${numero(linha, 0)}/${numero(linha, 1)}`;
     const pedido = pedidos.get(chaveDoPedido) ?? {
@@ -92,22 +113,39 @@ function agruparPorPedidoFaturado(linhas: Linha[]): PedidoFaturadoNoErp[] {
       representante: String(numero(linha, 3)),
       emissao: texto(linha, 4),
       faturadoEm: texto(linha, 5),
+      cfop: cfopDa(linha, 18),
+      notas: [],
       itens: [],
     };
     pedido.faturadoEm = texto(linha, 5);
-    pedido.itens.push({ produto: texto(linha, 6), familia: textoOuNulo(linha, 7), pecas: numero(linha, 8), valor: numero(linha, 9) });
+    pedido.itens.push(itemDaNota(linha, 6));
+    acrescentarNotaDoPedido(pedido, linha, cabecalhos);
     pedidos.set(chaveDoPedido, pedido);
   }
   return [...pedidos.values()];
 }
 
+/** A nota da linha na lista do pedido, uma vez só; o total soma os tipos de movimento dela. */
+function acrescentarNotaDoPedido(pedido: PedidoFaturadoNoErp, linha: Linha, cabecalhos: Set<string>): void {
+  const numeroDaNota = String(numero(linha, 11));
+  const serie = texto(linha, 12);
+  let nota = pedido.notas.find((outra) => outra.numero === numeroDaNota && outra.serie === serie);
+  if (!nota) {
+    nota = { numero: numeroDaNota, serie, emissao: texto(linha, 5), valorTotal: 0, transportadora: transportadoraDa(linha, 15) };
+    pedido.notas.push(nota);
+  }
+  if (isPrimeiraVezDoCabecalho(cabecalhos, `${pedido.pedido}/${serie}/${numeroDaNota}/${texto(linha, 13)}`)) nota.valorTotal += numero(linha, 14);
+}
+
 /** Uma linha por item; o cabeçalho se repete em cada uma. */
 function agruparPorNota(linhas: Linha[]): NotaRecente[] {
   const notas = new Map<string, NotaRecente>();
+  const cabecalhos = new Set<string>();
   for (const linha of linhas) {
     const id = idDaNota(linha);
     const nota = notas.get(id) ?? notaSemItens(linha);
     acrescentarLinha(nota, linha);
+    if (isPrimeiraVezDoCabecalho(cabecalhos, `${id}/${texto(linha, 12)}`)) nota.valorTotal += numero(linha, 13);
     notas.set(id, nota);
   }
   return [...notas.values()];
@@ -125,6 +163,9 @@ function notaSemItens(linha: Linha): NotaRecente {
     chave: chaveDoCliente(numero(linha, 2), numero(linha, 3)),
     representante: String(numero(linha, 4)),
     emissao: texto(linha, 5),
+    valorTotal: 0,
+    transportadora: transportadoraDa(linha, 14),
+    cfop: cfopDa(linha, 17),
     pedidos: [],
     itens: [],
   };
@@ -136,5 +177,16 @@ function acrescentarLinha(nota: NotaRecente, linha: Linha): void {
   if (emissao < nota.emissao) nota.emissao = emissao;
   const pedido = String(numero(linha, 6));
   if (pedido !== "0" && !nota.pedidos.includes(pedido)) nota.pedidos.push(pedido);
-  nota.itens.push({ produto: texto(linha, 7), familia: textoOuNulo(linha, 8), pecas: numero(linha, 9), valor: numero(linha, 10) });
+  nota.itens.push(itemDaNota(linha, 7));
+}
+
+/** Produto, família, peças, valor e IPI, a partir da coluna `primeira`. */
+function itemDaNota(linha: Linha, primeira: number): ItemDaNota {
+  return {
+    produto: texto(linha, primeira),
+    familia: textoOuNulo(linha, primeira + 1),
+    pecas: numero(linha, primeira + 2),
+    valor: numero(linha, primeira + 3),
+    ipi: numero(linha, primeira + 4),
+  };
 }

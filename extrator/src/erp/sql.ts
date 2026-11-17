@@ -43,6 +43,20 @@ export function representanteDaVenda(vendedor: string): string {
   return `NVL(NULLIF(${vendedor}, 0), C.VEND_1)`;
 }
 
+/**
+ * A descrição de cada CFOP no ERP (NFCF), como o app antigo dos representantes mostra. A tabela repete o
+ * código por empresa; a descrição é a mesma. Alias novo F, com a coluna DESCRICAO.
+ */
+export function descricaoDoCfop(cfop: string): string {
+  return `LEFT JOIN (SELECT COD_CFO, MAX(TRIM(DESCR_CFO)) AS DESCRICAO FROM ABC71.NFCF GROUP BY COD_CFO) F ON F.COD_CFO = ${cfop}`;
+}
+
+/** A transportadora da nota no cadastro de fornecedores, como no app antigo. Aliases M = NFME e T novo. */
+export const TRANSPORTADORA_DA_NOTA = "LEFT JOIN ABC71.CFOR T ON T.FORNEC = M.TRANSPORTADOR";
+
+/** As colunas da transportadora da nota, na ordem que `transportadoraDa` lê: código, fantasia e razão social. */
+export const COLUNAS_DA_TRANSPORTADORA = "M.TRANSPORTADOR, TRIM(T.NOME_FANTAS), TRIM(T.RAZ_SOCIAL)";
+
 /** Família do produto do item: o grupo de custo de nível 2. Aliases D = NFDE ou VEPD, P e G novos. */
 export const FAMILIA_DO_ITEM = `
   LEFT JOIN ABC71.SGI5_TAB_ENG_PAC P ON TRIM(P.PAC_COD) = TRIM(D.C_PROD)

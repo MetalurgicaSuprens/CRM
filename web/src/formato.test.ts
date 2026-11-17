@@ -3,6 +3,7 @@ import {
   formatarCep,
   formatarComCentavos,
   formatarCodigoDoCliente,
+  formatarDocumentoDoCliente,
   formatarCodigosDoRepresentante,
   formatarCompacto,
   formatarContagem,
@@ -205,3 +206,16 @@ describe("formatarCodigoDoCliente", () => {
     expect(formatarCodigoDoCliente({ codigoErp: null, cpf: null })).toBe("Pessoa física");
   });
 });
+
+describe("formatarDocumentoDoCliente", () => {
+  it("mostra o CNPJ da empresa e o CPF da pessoa física, como a coluna CNPJ/CPF do app antigo", () => {
+    expect(formatarDocumentoDoCliente({ cnpj: "12.345.678/0001-95", cpf: null, codigoErp: "123456780001" })).toBe("12.345.678/0001-95");
+    expect(formatarDocumentoDoCliente({ cnpj: null, cpf: "123.456.789-01", codigoErp: null })).toBe("123.456.789-01");
+  });
+
+  it("cai no código do ERP quando a foto não traz o documento, e no traço sem nenhum", () => {
+    expect(formatarDocumentoDoCliente({ cnpj: null, cpf: null, codigoErp: "123456780001" })).toBe("123456780001");
+    expect(formatarDocumentoDoCliente({ cnpj: null, cpf: null, codigoErp: null })).toBe("—");
+  });
+});
+

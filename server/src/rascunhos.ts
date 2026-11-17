@@ -96,6 +96,9 @@ export function rascunhosNaFicha(
       entrega: rascunho.entrega,
       itens: itensNaFicha(foto, rascunho.itens),
       valor: rascunho.totalEstimado,
+      valorComIpi: null,
+      cfop: null,
+      notas: [],
     }));
 }
 

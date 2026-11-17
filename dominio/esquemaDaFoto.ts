@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 19;
+export const VERSAO_DO_ESQUEMA = 20;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -29,6 +29,7 @@ CREATE TABLE cliente (
   cliente TEXT PRIMARY KEY,
   codigo_erp TEXT,
   cpf TEXT,
+  cnpj TEXT,
   representante TEXT NOT NULL,
   nome TEXT NOT NULL,
   razao_social TEXT NOT NULL,
@@ -175,7 +176,10 @@ CREATE TABLE pedido_aberto (
   entrega TEXT NOT NULL,
   itens INTEGER NOT NULL,
   valor REAL NOT NULL,
-  valor_entrega_no_mes REAL NOT NULL
+  valor_ipi REAL NOT NULL,
+  valor_entrega_no_mes REAL NOT NULL,
+  cfop TEXT,
+  cfop_descricao TEXT
 ) STRICT;
 CREATE INDEX pedido_aberto_representante ON pedido_aberto (representante);
 
@@ -196,7 +200,11 @@ CREATE TABLE pedido_faturado (
   emissao TEXT NOT NULL,
   faturado_em TEXT NOT NULL,
   itens INTEGER NOT NULL,
-  valor REAL NOT NULL
+  valor REAL NOT NULL,
+  valor_ipi REAL NOT NULL,
+  cfop TEXT,
+  cfop_descricao TEXT,
+  notas TEXT NOT NULL
 ) STRICT;
 CREATE INDEX pedido_faturado_cliente ON pedido_faturado (cliente);
 
@@ -216,6 +224,11 @@ CREATE TABLE nota (
   cliente TEXT,
   emissao TEXT NOT NULL,
   valor REAL NOT NULL,
+  valor_ipi REAL NOT NULL,
+  valor_total REAL NOT NULL,
+  transportadora TEXT,
+  cfop TEXT,
+  cfop_descricao TEXT,
   pedidos TEXT NOT NULL,
   PRIMARY KEY (nota, serie)
 ) STRICT;
@@ -301,6 +314,9 @@ CREATE TABLE produto_ipi (
 ) STRICT;
 `;
 
+/** Uma nota de um pedido faturado, na lista em JSON de `pedido_faturado.notas`. */
+export type NotaDoPedidoNaFoto = { numero: string; emissao: string; valor_total: number; transportadora: string | null };
+
 /** O conteúdo da foto, tabela a tabela: o nome de cada campo é o nome da tabela e das colunas. */
 export type Foto = {
   foto: {
@@ -319,6 +335,8 @@ export type Foto = {
     codigo_erp: string | null;
     /** Só da pessoa física (versão 19): o CPF com a pontuação, como o app antigo dos representantes mostra. */
     cpf: string | null;
+    /** Só da empresa (versão 20): o CNPJ com a pontuação, como o app antigo dos representantes mostra. */
+    cnpj: string | null;
     representante: string;
     nome: string;
     razao_social: string;
@@ -413,8 +431,14 @@ export type Foto = {
     emissao: string;
     entrega: string;
     itens: number;
+    /** Sem IPI, como o faturamento. */
     valor: number;
+    /** O IPI do saldo, pela alíquota de cada item do pedido (VEPD.PORC_IPI), desde a versão 20. */
+    valor_ipi: number;
     valor_entrega_no_mes: number;
+    /** O CFOP do pedido (VEPM.CFO) e a descrição dele no ERP (NFCF), desde a versão 20. */
+    cfop: string | null;
+    cfop_descricao: string | null;
   }[];
   /** Os itens com saldo de cada pedido, na ordem do pedido; o mesmo produto pode vir em duas entregas. */
   pedido_aberto_item: { pedido: string; ordem: number; produto: string; pecas: number; entrega: string; valor: number }[];
@@ -430,6 +454,12 @@ export type Foto = {
     faturado_em: string;
     itens: number;
     valor: number;
+    /** O IPI das notas do pedido (NFDE.VLR_IPI), desde a versão 20. */
+    valor_ipi: number;
+    cfop: string | null;
+    cfop_descricao: string | null;
+    /** Lista em JSON das notas do pedido no período (NotaDoPedidoNaFoto), da mais antiga à mais nova. */
+    notas: string;
   }[];
   /** Os produtos de cada pedido faturado, um por produto, na ordem em que foram faturados. */
   pedido_faturado_item: { pedido: string; ordem: number; produto: string; pecas: number; valor: number }[];
@@ -439,7 +469,17 @@ export type Foto = {
     representante: string;
     cliente: string | null;
     emissao: string;
+    /** Sem IPI, como o faturamento. */
     valor: number;
+    /**
+     * Desde a versão 20, como o app antigo dos representantes: o IPI, o total da nota com os impostos
+     * (NFME.VLR_N_FISC), a transportadora e o CFOP.
+     */
+    valor_ipi: number;
+    valor_total: number;
+    transportadora: string | null;
+    cfop: string | null;
+    cfop_descricao: string | null;
     /** Lista em JSON dos pedidos do ERP de onde a nota saiu. */
     pedidos: string;
   }[];

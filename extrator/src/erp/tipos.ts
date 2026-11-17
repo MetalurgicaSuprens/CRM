@@ -21,7 +21,7 @@ export type ClienteDaCarteira = {
   municipio: string | null;
   /** O endereço do cadastro, da empresa e da pessoa física (regra 3 do CLAUDE.md, mudada em 2026-11-17). */
   endereco: EnderecoDoCliente | null;
-  /** Só da pessoa física: os dígitos do CPF, como o app antigo dos representantes lê. */
+  /** Os dígitos do CNPJ ou do CPF, como o app antigo dos representantes lê. */
   documento: string | null;
   /** O ponto do endereço no mapa. Quem preenche é a localização (localizacao/), não o ERP. */
   ponto: PontoLocalizado | null;
@@ -87,7 +87,18 @@ export type ItemEmAbertoNoErp = {
   entrega: string;
   /** Saldo × preço, com os descontos do item e a Zona Franca do pedido. */
   valor: number;
+  /** O IPI do saldo, pela alíquota do item (VEPD.PORC_IPI). */
+  ipi: number;
 };
+
+/** O CFOP de um pedido ou de uma nota, com a descrição do ERP (NFCF). */
+export type CfopDoErp = { codigo: string; descricao: string | null };
+
+/** A transportadora de uma nota (NFME.TRANSPORTADOR), como está no cadastro de fornecedores (CFOR). */
+export type TransportadoraDaNota = { codigo: string; fantasia: string | null; razaoSocial: string | null };
+
+/** Uma nota de um pedido faturado: o número, o total com os impostos (NFME.VLR_N_FISC) e quem levou. */
+export type NotaDoPedidoDoErp = { numero: string; serie: string; emissao: string; valorTotal: number; transportadora: TransportadoraDaNota | null };
 
 /** Pedido do Omega com saldo, de qualquer representante. */
 export type PedidoEmAbertoNoErp = {
@@ -96,6 +107,7 @@ export type PedidoEmAbertoNoErp = {
   /** VEPM.VENDEDOR e, sem ele, o dono atual do cliente. */
   representante: string;
   emissao: string;
+  cfop: CfopDoErp | null;
   /** Os itens com saldo, na ordem do pedido: sempre pelo menos um. */
   itens: ItemEmAbertoNoErp[];
 };
@@ -109,6 +121,9 @@ export type PedidoFaturadoNoErp = {
   emissao: string;
   /** A última nota do pedido no período. */
   faturadoEm: string;
+  cfop: CfopDoErp | null;
+  /** As notas do pedido no período, da mais antiga à mais nova. */
+  notas: NotaDoPedidoDoErp[];
   /** As linhas das notas do pedido no período, em ordem; o mesmo produto pode vir em mais de uma. */
   itens: ItemDaNota[];
 };
@@ -121,6 +136,8 @@ export type ItemDaNota = {
   pecas: number;
   /** O valor da RF: sem IPI e sem o desconto da Zona Franca. */
   valor: number;
+  /** NFDE.VLR_IPI. */
+  ipi: number;
 };
 
 /** Nota de venda dos últimos 45 dias de um representante autorizado. */
@@ -130,6 +147,10 @@ export type NotaRecente = {
   chave: string;
   representante: string;
   emissao: string;
+  /** O total com os impostos (NFME.VLR_N_FISC), somado nos tipos de movimento da nota. */
+  valorTotal: number;
+  transportadora: TransportadoraDaNota | null;
+  cfop: CfopDoErp | null;
   /** Os pedidos do Omega de onde a nota saiu (NFME.NRO_PEDIDO), sem repetir. */
   pedidos: string[];
   /** Na ordem da nota: sempre pelo menos um. */

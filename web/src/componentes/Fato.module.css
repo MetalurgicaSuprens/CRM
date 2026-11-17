@@ -1,0 +1,42 @@
+.fato {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.largo {
+  grid-column: span 2;
+}
+
+.fato dt {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cor-texto-suave);
+}
+
+.fato dd {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--tam-texto);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto);
+}
+
+.detalhe {
+  font-size: var(--tam-legenda);
+  font-weight: 400;
+  color: var(--cor-texto-suave);
+}
+
+/* Com uma coluna só, o valor longo fica nela e quebra a linha */
+@container (max-width: 25rem) {
+  .largo {
+    grid-column: auto;
+  }
+}

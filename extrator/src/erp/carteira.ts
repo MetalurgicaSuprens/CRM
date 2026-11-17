@@ -11,8 +11,8 @@ import type { ClienteDaCarteira, DatasDeCompra, EnderecoDoCliente, VendaDoMes } 
  * A carteira dos representantes autorizados e a história de compras de cada cliente dela.
  * Carteira: clientes com VEND_1 de um autorizado e nota de venda nos 36 meses da janela, com o
  * status do cadastro do SGI, que a tela mostra quando não é ativo. O código do ERP só sai na empresa
- * (FIS_JURID = 'J'); na pessoa física sai o CPF, à parte, e o endereço sai das duas, como no app antigo
- * dos representantes (CLAUDE.md, regra 3, mudada em 2026-11-17).
+ * (FIS_JURID = 'J'). O documento, CNPJ ou CPF, e o endereço saem das duas, como no app antigo dos
+ * representantes (CLAUDE.md, regra 3, mudada em 2026-11-17).
  */
 
 /**
@@ -38,7 +38,7 @@ export async function lerCarteira(oracle: Oracle, referencia: Referencia, autori
             TRIM(C.CIDADE), TRIM(C.ESTADO), TRIM(C.TIPO_CLI), C.VEND_1, TRIM(G.CLI3_STA), C.RESERVADO7,
             UPPER(TRIM(G.CLI3_GRP)),
             TRIM(C.ENDERECO), TRIM(C.BAIRRO), C.CEP,
-            CASE WHEN TRIM(C.FIS_JURID) = 'F' THEN ${documento("C", "'F'")} END
+            ${documento("C", "TRIM(C.FIS_JURID)")}
        FROM ABC71.CRCL C
        LEFT JOIN ABC71.SGI5_TAB_VEN_CLI3 G ON G.CLI3_CLI = C.CLIENTE
       WHERE ${condicaoDaCarteira(lista.sql)}`,

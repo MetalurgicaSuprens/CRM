@@ -1,5 +1,5 @@
 import { dataDoMomento, diasEntre, horaDoMomento, paraDiaUtc, somarMeses } from "dominio/datas";
-import type { ClienteResumo, EnderecoDoCliente, Semestre } from "./dados/tipos";
+import type { ClienteResumo, EnderecoDoCadastro, EnderecoDoCliente, Semestre } from "./dados/tipos";
 
 const REAIS = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -158,6 +158,11 @@ export function formatarCodigoDoCliente(cliente: Pick<ClienteResumo, "codigoErp"
   return cliente.codigoErp ?? (cliente.cpf ? `CPF ${cliente.cpf}` : "Pessoa física");
 }
 
+/** O CNPJ da empresa ou o CPF da pessoa física, com a pontuação, como na coluna CNPJ/CPF do app antigo. */
+export function formatarDocumentoDoCliente(cliente: Pick<ClienteResumo, "cnpj" | "cpf" | "codigoErp">): string {
+  return cliente.cnpj ?? cliente.cpf ?? cliente.codigoErp ?? "—";
+}
+
 /** A linha de baixo do nome: "Campinas/SP" ou, no grupo, que não tem cidade e leva o selo ao lado do nome, "8 CNPJs". */
 export function formatarLocalDoCliente(cliente: Pick<ClienteResumo, "cidade" | "uf" | "cnpjs">): string {
   return cliente.cnpjs ? formatarContagem(cliente.cnpjs.length, "CNPJ", "CNPJs") : `${cliente.cidade}/${cliente.uf}`;
@@ -177,6 +182,11 @@ export function formatarCep(cep: string): string {
 /** O endereço numa linha: "R XV DE NOVEMBRO, 1200 · CENTRO · 80020-310". */
 export function formatarEndereco({ texto, bairro, cep }: Pick<EnderecoDoCliente, "texto" | "bairro" | "cep">): string {
   return [texto, bairro, cep === null ? null : formatarCep(cep)].filter((parte) => parte !== null).join(" · ");
+}
+
+/** Um endereço do cadastro numa linha: "RUA XV DE NOVEMBRO, 1200 · CENTRO · Curitiba/PR · 80020-310". */
+export function formatarEnderecoDoCadastro({ texto, bairro, cidade, uf, cep }: EnderecoDoCadastro): string {
+  return [texto, bairro, `${cidade}/${uf}`, cep === null ? null : formatarCep(cep)].filter(Boolean).join(" · ");
 }
 
 /** "1 cliente", "9 clientes". */

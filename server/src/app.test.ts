@@ -154,6 +154,9 @@ describe("escopo: o login A nunca vê os dados de B", () => {
           { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 500, valor: 2_000, entrega: "2026-10-27" },
         ],
         valor: 5_000,
+        valorComIpi: 5_250,
+        cfop: { codigo: "6101", descricao: "VENDA DE PRODUCAO DO ESTABELECIMENTO" },
+        notas: [],
       },
       {
         id: "100003",
@@ -167,8 +170,32 @@ describe("escopo: o login A nunca vê os dados de B", () => {
           { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 1_000, valor: 1_500, entrega: null },
         ],
         valor: 4_500,
+        valorComIpi: 4_725,
+        cfop: { codigo: "6101", descricao: "VENDA DE PRODUCAO DO ESTABELECIMENTO" },
+        notas: [{ numero: "100013", emissao: "2026-09-10", valorTotal: 4_725, transportadora: "RODONAVES" }],
       },
     ]);
+  });
+
+  it("dá na ficha o cadastro fiscal do cliente, como na tela de pedido, e nenhum no grupo", async () => {
+    const app = criarAppDeTeste();
+    const { cadastro } = (await comoA(app, `/api/clientes/${CLIENTE_DE_A}`)).json();
+    expect(cadastro).toMatchObject({ documento: "12.345.678/0001-95" });
+    expect((await comoA(app, `/api/clientes/${GRUPO_DE_A}`)).json().cadastro).toBeNull();
+  });
+
+  it("dá nas notas da aba Faturados o total com os impostos, o IPI, a transportadora e o CFOP", async () => {
+    const app = criarAppDeTeste();
+    const [nota] = (await comoA(app, "/api/pedidos")).json().faturados;
+    expect(nota).toMatchObject({
+      numero: "100002",
+      valor: 1_000,
+      valorIpi: 50,
+      valorTotal: 1_050,
+      transportadora: "RODONAVES",
+      cfop: { codigo: "5101", descricao: "VENDA DE PRODUCAO DO ESTABELECIMENTO" },
+    });
+    expect(nota.cliente.cnpj).toBe("12.345.678/0001-95");
   });
 
   it("conta no Início o pedido do A para cliente de outra carteira, sem listá-lo", async () => {

@@ -6,7 +6,7 @@ import { montarReferencia } from "./referencia.ts";
 const REFERENCIA = montarReferencia("2026-10-13T09:50");
 
 function item(produto: string, entrega: string, valor: number): ItemEmAbertoNoErp {
-  return { produto, familia: "FLEXIL", pecas: 100, entrega, valor };
+  return { produto, familia: "FLEXIL", pecas: 100, entrega, valor, ipi: valor * 0.05 };
 }
 
 describe("resumirPedido", () => {
@@ -31,6 +31,7 @@ describe("montarPedidos", () => {
     chave: "1/123",
     representante: "1401",
     emissao: "2026-10-01",
+    cfop: { codigo: "6401", descricao: "VENDA PROD SUJEITA A SUBS TRIBUTARIA" },
     // O mesmo produto em duas entregas: duas linhas.
     itens: [item("A", "2026-10-20", 1_000), item("A", "2026-11-20", 400)],
   };
@@ -40,15 +41,18 @@ describe("montarPedidos", () => {
     chave: "1/456",
     representante: "1401",
     emissao: "2026-10-05",
+    valorTotal: 1_250,
+    transportadora: { codigo: "78499999", fantasia: null, razaoSocial: "SUPRENS RETIRA" },
+    cfop: { codigo: "5101", descricao: "VENDA DE PRODUCAO DO ESTABELECIMENTO" },
     pedidos: ["1801200"],
     itens: [
-      { produto: "B", familia: null, pecas: 200, valor: 700 },
-      { produto: "C", familia: "MICRO", pecas: 100, valor: 300 },
+      { produto: "B", familia: null, pecas: 200, valor: 700, ipi: 35 },
+      { produto: "C", familia: "MICRO", pecas: 100, valor: 300, ipi: 15 },
     ],
   };
   const tabelas = montarPedidos({ pedidos: [pedido], notas: [nota] }, REFERENCIA, (chave) => (chave === "1/123" ? "id-do-cliente" : null));
 
-  it("grava o pedido com o resumo dos itens e cada item na ordem do pedido", () => {
+  it("grava o pedido com o resumo dos itens, o IPI do saldo e o CFOP, e cada item na ordem do pedido", () => {
     expect(tabelas.pedido_aberto).toEqual([
       {
         pedido: "1801234",
@@ -58,7 +62,10 @@ describe("montarPedidos", () => {
         entrega: "2026-10-20",
         itens: 2,
         valor: 1_400,
+        valor_ipi: 70,
         valor_entrega_no_mes: 1_000,
+        cfop: "6401",
+        cfop_descricao: "VENDA PROD SUJEITA A SUBS TRIBUTARIA",
       },
     ]);
     expect(tabelas.pedido_aberto_item.map(({ ordem, entrega }) => [ordem, entrega])).toEqual([
@@ -67,9 +74,22 @@ describe("montarPedidos", () => {
     ]);
   });
 
-  it("grava a nota com a soma dos itens e os pedidos de origem, e o cliente de fora da carteira nulo", () => {
+  it("grava a nota com a soma dos itens, o IPI, o total, a transportadora, o CFOP e os pedidos de origem, e o cliente de fora da carteira nulo", () => {
     expect(tabelas.nota).toEqual([
-      { nota: "180001", serie: "1", representante: "1401", cliente: null, emissao: "2026-10-05", valor: 1_000, pedidos: '["1801200"]' },
+      {
+        nota: "180001",
+        serie: "1",
+        representante: "1401",
+        cliente: null,
+        emissao: "2026-10-05",
+        valor: 1_000,
+        valor_ipi: 50,
+        valor_total: 1_250,
+        transportadora: "Cliente retira",
+        cfop: "5101",
+        cfop_descricao: "VENDA DE PRODUCAO DO ESTABELECIMENTO",
+        pedidos: '["1801200"]',
+      },
     ]);
     expect(tabelas.nota_item).toEqual([
       { nota: "180001", serie: "1", ordem: 1, produto: "B", pecas: 200, valor: 700 },
@@ -86,20 +106,44 @@ describe("montarPedidosFaturados", () => {
       representante: "1401",
       emissao: "2026-09-02",
       faturadoEm: "2026-09-10",
+      cfop: { codigo: "6101", descricao: null },
       // Duas notas: o produto A veio nas duas.
+      notas: [
+        { numero: "180010", serie: "1", emissao: "2026-09-05", valorTotal: 3_800, transportadora: { codigo: "100", fantasia: "RODONAVES", razaoSocial: "RTE RODONAVES LTDA" } },
+        { numero: "180020", serie: "1", emissao: "2026-09-10", valorTotal: 1_050, transportadora: null },
+      ],
       itens: [
-        { produto: "A", familia: "FLEXIL", pecas: 1_000, valor: 2_000 },
-        { produto: "B", familia: "PRESIL", pecas: 200, valor: 1_500 },
-        { produto: "A", familia: "FLEXIL", pecas: 500, valor: 1_000 },
+        { produto: "A", familia: "FLEXIL", pecas: 1_000, valor: 2_000, ipi: 100 },
+        { produto: "B", familia: "PRESIL", pecas: 200, valor: 1_500, ipi: 75 },
+        { produto: "A", familia: "FLEXIL", pecas: 500, valor: 1_000, ipi: 50 },
       ],
     };
   }
-  const emAberto: PedidoEmAbertoNoErp = { pedido: "1801234", chave: "1/123", representante: "9999", emissao: "2026-09-01", itens: [item("A", "2026-10-20", 1_000)] };
+  const emAberto: PedidoEmAbertoNoErp = { pedido: "1801234", chave: "1/123", representante: "9999", emissao: "2026-09-01", cfop: null, itens: [item("A", "2026-10-20", 1_000)] };
   const idDoCliente = (chave: string) => (chave === "1/123" ? "id-do-cliente" : null);
 
-  it("grava o pedido faturado com o id do cliente, os produtos e a soma das notas", () => {
-    expect(montarPedidosFaturados([faturado("1801000", "1/123")], [], idDoCliente).pedido_faturado).toEqual([
-      { pedido: "1801000", representante: "1401", cliente: "id-do-cliente", emissao: "2026-09-02", faturado_em: "2026-09-10", itens: 2, valor: 4_500 },
+  it("grava o pedido faturado com o id do cliente, os produtos, a soma das notas, o IPI e o CFOP", () => {
+    expect(montarPedidosFaturados([faturado("1801000", "1/123")], [], idDoCliente).pedido_faturado).toMatchObject([
+      {
+        pedido: "1801000",
+        representante: "1401",
+        cliente: "id-do-cliente",
+        emissao: "2026-09-02",
+        faturado_em: "2026-09-10",
+        itens: 2,
+        valor: 4_500,
+        valor_ipi: 225,
+        cfop: "6101",
+        cfop_descricao: null,
+      },
+    ]);
+  });
+
+  it("grava as notas do pedido com o número, a emissão, o total e o nome da transportadora", () => {
+    const [pedido] = montarPedidosFaturados([faturado("1801000", "1/123")], [], idDoCliente).pedido_faturado;
+    expect(JSON.parse(pedido?.notas ?? "[]")).toEqual([
+      { numero: "180010", emissao: "2026-09-05", valor_total: 3_800, transportadora: "RODONAVES" },
+      { numero: "180020", emissao: "2026-09-10", valor_total: 1_050, transportadora: null },
     ]);
   });
 

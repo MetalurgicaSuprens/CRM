@@ -1,5 +1,6 @@
-import type { Foto } from "dominio/esquemaDaFoto";
-import type { ItemDaNota, ItemEmAbertoNoErp, NotaRecente, PedidoEmAbertoNoErp, PedidoFaturadoNoErp } from "../erp/tipos.ts";
+import type { Foto, NotaDoPedidoNaFoto } from "dominio/esquemaDaFoto";
+import type { CfopDoErp, ItemDaNota, ItemEmAbertoNoErp, NotaDoPedidoDoErp, NotaRecente, PedidoEmAbertoNoErp, PedidoFaturadoNoErp, TransportadoraDaNota } from "../erp/tipos.ts";
+import { nomeDaTransportadora } from "./dadosDoPedido.ts";
 import type { Referencia } from "./referencia.ts";
 
 /*
@@ -44,7 +45,9 @@ export function montarPedidos(
         entrega,
         itens: pedido.itens.length,
         valor,
+        valor_ipi: somarIpi(pedido.itens),
         valor_entrega_no_mes: valorEntregaNoMes,
+        ...colunasDoCfop(pedido.cfop),
       };
     }),
     pedido_aberto_item: pedidos.flatMap(({ pedido, itens }) =>
@@ -57,6 +60,10 @@ export function montarPedidos(
       cliente: idDoCliente(nota.chave),
       emissao: nota.emissao,
       valor: somarValores(nota.itens),
+      valor_ipi: somarIpi(nota.itens),
+      valor_total: nota.valorTotal,
+      transportadora: nomeOuNulo(nota.transportadora),
+      ...colunasDoCfop(nota.cfop),
       pedidos: JSON.stringify(nota.pedidos),
     })),
     nota_item: notas.flatMap(({ nota, serie, itens }) =>
@@ -83,7 +90,7 @@ export function montarPedidosFaturados(
     return cliente && !comSaldo.has(pedido.pedido) ? [{ ...pedido, cliente, itens: somarPorProduto(pedido.itens) }] : [];
   });
   return {
-    pedido_faturado: daFicha.map(({ pedido, representante, cliente, emissao, faturadoEm, itens }) => ({
+    pedido_faturado: daFicha.map(({ pedido, representante, cliente, emissao, faturadoEm, cfop, notas, itens }) => ({
       pedido,
       representante,
       cliente,
@@ -91,6 +98,9 @@ export function montarPedidosFaturados(
       faturado_em: faturadoEm,
       itens: itens.length,
       valor: somarValores(itens),
+      valor_ipi: somarIpi(itens),
+      ...colunasDoCfop(cfop),
+      notas: JSON.stringify(notas.map(notaDoPedidoNaFoto)),
     })),
     pedido_faturado_item: daFicha.flatMap(({ pedido, itens }) =>
       itens.map(({ produto, pecas, valor }, i) => ({ pedido, ordem: i + 1, produto, pecas, valor })),
@@ -103,11 +113,27 @@ function somarPorProduto(itens: readonly ItemDaNota[]): ItemDaNota[] {
   const porProduto = new Map<string, ItemDaNota>();
   for (const item of itens) {
     const soma = porProduto.get(item.produto);
-    porProduto.set(item.produto, soma ? { ...soma, pecas: soma.pecas + item.pecas, valor: soma.valor + item.valor } : item);
+    porProduto.set(item.produto, soma ? { ...soma, pecas: soma.pecas + item.pecas, valor: soma.valor + item.valor, ipi: soma.ipi + item.ipi } : item);
   }
   return [...porProduto.values()];
 }
 
 function somarValores(itens: readonly { valor: number }[]): number {
   return itens.reduce((soma, item) => soma + item.valor, 0);
+}
+
+function somarIpi(itens: readonly { ipi: number }[]): number {
+  return itens.reduce((soma, item) => soma + item.ipi, 0);
+}
+
+function colunasDoCfop(cfop: CfopDoErp | null): { cfop: string | null; cfop_descricao: string | null } {
+  return { cfop: cfop?.codigo ?? null, cfop_descricao: cfop?.descricao ?? null };
+}
+
+function nomeOuNulo(transportadora: TransportadoraDaNota | null): string | null {
+  return transportadora ? nomeDaTransportadora(transportadora) : null;
+}
+
+function notaDoPedidoNaFoto(nota: NotaDoPedidoDoErp): NotaDoPedidoNaFoto {
+  return { numero: nota.numero, emissao: nota.emissao, valor_total: nota.valorTotal, transportadora: nomeOuNulo(nota.transportadora) };
 }

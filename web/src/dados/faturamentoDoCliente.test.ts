@@ -18,6 +18,9 @@ function pedido(status: PedidoDaFicha["status"], itens: { valor: number; entrega
     entrega: itens[0]?.entrega ?? null,
     itens: itens.map((item, i) => ({ ordem: i + 1, codigo: "F-100", familia: "FLEXIL", pecas: 10, ...item })),
     valor: itens.reduce((soma, { valor }) => soma + valor, 0),
+    valorComIpi: null,
+    cfop: null,
+    notas: [],
   };
 }
 

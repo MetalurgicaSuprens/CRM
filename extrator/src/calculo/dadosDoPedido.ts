@@ -87,11 +87,16 @@ function linhaDoCadastro(id: string, cadastro: CadastroDoErp, ultimoPedidoEm: st
 function linhaDaTransportadora(transportadora: TransportadoraDoErp): Foto["transportadora"][number] {
   return {
     codigo: transportadora.codigo,
-    nome: NOMES_FIXOS[transportadora.codigo] ?? semEspacosSobrando(transportadora.fantasia ?? transportadora.razaoSocial),
+    nome: nomeDaTransportadora(transportadora),
     cnpj: formatarDocumento(transportadora.documento),
     cidade: transportadora.cidade,
     uf: transportadora.uf,
   };
+}
+
+/** O nome que as telas mostram: o fantasia ou, sem ele, a razão social; o código de "cliente retira" tem nome fixo. */
+export function nomeDaTransportadora({ codigo, fantasia, razaoSocial }: { codigo: string; fantasia: string | null; razaoSocial: string | null }): string {
+  return NOMES_FIXOS[codigo] ?? semEspacosSobrando(fantasia ?? razaoSocial ?? codigo);
 }
 
 /** Os pedidos de cada cliente, somados por escolha: o mesmo pedido conta uma vez em cada tipo. */

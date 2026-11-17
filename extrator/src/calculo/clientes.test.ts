@@ -174,3 +174,20 @@ describe("montarClientes: pessoa física", () => {
     expect(montarClientes(dadosDaCarteira(), referencia, ids).cliente.find((linha) => linha.cliente === "cliente-4")?.cpf).toBeNull();
   });
 });
+
+describe("montarClientes: CNPJ da empresa", () => {
+  it("leva o CNPJ com a pontuação e os zeros da esquerda, como o app antigo, e nenhum CPF", () => {
+    const dados = dadosDaCarteira();
+    dados.carteira = [cliente(4, { documento: "111650000164" })];
+    const [empresa] = montarClientes(dados, referencia, ids).cliente;
+    expect(empresa).toMatchObject({ cnpj: "00.111.650/0001-64", cpf: null });
+  });
+
+  it("não leva CNPJ na pessoa física nem no grupo", () => {
+    const dados = dadosDaCarteira();
+    dados.carteira = dados.carteira.map((outro) => (outro.cliente === 4 ? { ...outro, isPessoaFisica: true, documento: "1234567801" } : outro));
+    const tabelas = montarClientes(dados, referencia, ids).cliente;
+    expect(tabelas.find((linha) => linha.cliente === "cliente-4")?.cnpj).toBeNull();
+    expect(tabelas.find((linha) => linha.cliente === "grupo-1302-OVD")?.cnpj).toBeNull();
+  });
+});

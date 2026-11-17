@@ -105,6 +105,7 @@ GRANT SELECT ON CRM_DADOS.VEPM TO CRM_EXTRATOR;
 | `CPAG` | descrição da condição de pagamento |
 | `TPUF` | alíquota de ICMS por estado |
 | `NFTF` | base de IPI e de ICMS por CFOP |
+| `NFCF` | descrição do CFOP do pedido e da nota, como o app antigo mostra |
 | `ESTQ`, `ESTQ_VW` | produtos vendáveis e saldo dos modelos ZIP/ZPP/ZPU |
 | `SGI5_TAB_VEN_CLI`, `SGI5_TAB_VEN_CLI2`, `SGI5_TAB_VEN_CLI3` | tabela de preço, descontos e status/grupo do cliente |
 | `SGI5_TAB_VEN_DES` | desconto do cliente |

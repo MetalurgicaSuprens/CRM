@@ -10,13 +10,13 @@ import { Filtros } from "../componentes/Filtros";
 import type { TomDoSelo } from "../componentes/Selo";
 import { STATUS_DO_PEDIDO } from "../componentes/StatusDoPedido";
 import travada from "../componentes/PaginaTravada.module.css";
-import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
+import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho, isDadosReais } from "../dados/api";
 import { correspondeAoCliente } from "../dados/busca";
 import type { ClienteResumo, NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Rascunho, SituacaoDosDados } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarContagem, formatarData, formatarTempoDesde } from "../formato";
+import { formatarContagem, formatarData, formatarDocumentoDoCliente, formatarTempoDesde } from "../formato";
 import { DataRelativa, MomentoRelativo } from "../componentes/Quando";
 import { Carregando } from "./Carregando";
 import { DetalheDaNota, DetalheDoEnviado, DetalheDoPedidoNoErp } from "./DetalhesDosPedidos";
@@ -37,6 +37,21 @@ const ORDEM_DAS_ABAS: readonly Aba[] = ["faturados", "emAberto", "enviados", "ra
 const ABA_INICIAL: Aba = "faturados";
 /** A lista vazia por causa da busca de cliente, no lugar do texto de cada aba. */
 const SEM_RESULTADO = "Nada nesta aba para esse cliente.";
+
+type ComCliente = { cliente: ClienteResumo };
+
+/** O cliente e o documento em colunas próprias, iguais em todas as abas, como no app antigo dos representantes. */
+function colunasDoCliente<T extends ComCliente>(): [ColunaDaTabela<T>, ColunaDaTabela<T>] {
+  return [
+    {
+      titulo: "Cliente",
+      largura: 11,
+      ordenarPor: (item) => item.cliente.nome,
+      celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={`${item.cliente.cidade}/${item.cliente.uf}`} />,
+    },
+    { titulo: "CNPJ/CPF", largura: 10, ordenarPor: (item) => formatarDocumentoDoCliente(item.cliente), celula: (item) => formatarDocumentoDoCliente(item.cliente) },
+  ];
+}
 
 export function Pedidos() {
   const { dados: painel, recarregar } = useCarga("pedidos", carregarPedidos);
@@ -131,7 +146,8 @@ function Enviados({ pedidos, relogio, vazio }: { pedidos: PedidoEnviado[]; relog
         vazio={vazio ?? "Nenhum pedido enviado pelo CRM ainda."}
         ordemInicial={{ coluna: "Enviado", sentido: "decrescente" }}
         colunas={[
-          { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
+          { titulo: "Pedido", largura: 6, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
+          ...colunasDoCliente<PedidoEnviado>(),
           { titulo: "Enviado", ordenarPor: (pedido) => pedido.enviadoEm, celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} relogio={relogio} /> },
           { titulo: "Situação", largura: 10, ordenarPor: (pedido) => ETAPAS[pedido.etapa].rotulo, celula: (pedido) => <EtapaDoPedido etapa={pedido.etapa} /> },
           {
@@ -166,11 +182,7 @@ function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascu
         vazio={vazio ?? "Nenhum rascunho. Os pedidos começados e não enviados aparecem aqui."}
         ordemInicial={{ coluna: "Atualizado", sentido: "decrescente" }}
         colunas={[
-          {
-            titulo: "Cliente",
-            ordenarPor: (rascunho) => rascunho.cliente.nome,
-            celula: (rascunho) => <Identificacao titulo={rascunho.cliente.nome} detalhe={`${rascunho.cliente.cidade}/${rascunho.cliente.uf}`} />,
-          },
+          ...colunasDoCliente<Rascunho>(),
           { titulo: "Produtos", ordenarPor: (rascunho) => rascunho.itens.length, celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
           { titulo: "Atualizado", ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} relogio={relogio} /> },
           { titulo: "Total estimado", numerica: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} comCentavos /> },
@@ -213,11 +225,13 @@ function EmAberto({ pedidos, hoje, vazio }: { pedidos: PedidoNoErp[]; hoje: stri
         vazio={vazio ?? "Nenhum pedido em aberto."}
         ordemInicial={{ coluna: "Entrega", sentido: "crescente" }}
         colunas={[
-          { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero} detalhe={pedido.cliente.nome} /> },
-          { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
+          { titulo: "Pedido", largura: 6, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
+          ...colunasDoCliente<PedidoNoErp>(),
+          { titulo: "Emissão", largura: 5.5, ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
           { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => <DataRelativa data={pedido.entrega} hoje={hoje} /> },
-          { titulo: "Itens", numerica: true, ordenarPor: (pedido) => pedido.itens, celula: (pedido) => pedido.itens },
-          { titulo: "Valor", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
+          { titulo: "Itens", numerica: true, largura: 4, ordenarPor: (pedido) => pedido.itens, celula: (pedido) => pedido.itens },
+          { titulo: "Sem IPI", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
+          { titulo: "Com IPI", numerica: true, ordenarPor: (pedido) => pedido.valorComIpi, celula: (pedido) => <Valor valor={pedido.valorComIpi} comCentavos /> },
         ]}
       />
     </CartaoDaAba>
@@ -236,9 +250,12 @@ function Faturados({ notas, hoje, vazio }: { notas: NotaFaturada[]; hoje: string
         vazio={vazio ?? "Nenhuma nota nos últimos 45 dias."}
         ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
         colunas={[
-          { titulo: "Nota", ordenarPor: (nota) => nota.numero, celula: (nota) => <Identificacao titulo={`NF ${nota.numero}`} detalhe={nota.cliente.nome} /> },
+          { titulo: "Nota", largura: 6, ordenarPor: (nota) => nota.numero, celula: (nota) => `NF ${nota.numero}` },
+          { titulo: "Pedido", largura: 6, ordenarPor: (nota) => nota.pedidos[0] ?? null, celula: (nota) => (nota.pedidos.length > 0 ? nota.pedidos.join(", ") : "—") },
+          ...colunasDoCliente<NotaFaturada>(),
           { titulo: "Emissão", ordenarPor: (nota) => nota.emissao, celula: (nota) => <span title={formatarData(nota.emissao)}>{formatarTempoDesde(nota.emissao, hoje)}</span> },
-          { titulo: "Valor", numerica: true, ordenarPor: (nota) => nota.valor, celula: (nota) => <Valor valor={nota.valor} comCentavos /> },
+          { titulo: "Sem IPI", numerica: true, ordenarPor: (nota) => nota.valor, celula: (nota) => <Valor valor={nota.valor} comCentavos /> },
+          { titulo: "Total da nota", numerica: true, ordenarPor: (nota) => nota.valorTotal, celula: (nota) => <Valor valor={nota.valorTotal} comCentavos /> },
         ]}
       />
     </CartaoDaAba>

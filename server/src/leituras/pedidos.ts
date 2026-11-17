@@ -1,5 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { ClienteResumo, ItemDaFicha, ItemDoErp, ItemEmAberto, PainelDePedidos, PedidoDaFicha, StatusDoPedido } from "../../../web/src/dados/tipos.ts";
+import type { NotaDoPedidoNaFoto } from "dominio/esquemaDaFoto";
+import type { Cfop, ClienteResumo, ItemDaFicha, ItemDoErp, ItemEmAberto, NotaDoPedido, PainelDePedidos, PedidoDaFicha, StatusDoPedido } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, resumoDoCliente, texto, textoOuNulo, type Linha } from "./linhas.ts";
 
@@ -43,24 +44,34 @@ export function lerPedidos(db: DatabaseSync, sessao: Sessao): Omit<PainelDePedid
   );
   return {
     enviados: [],
-    emAberto: doLogin("pedido_aberto x", `${COLUNAS_DO_RESUMO}, x.pedido, x.emissao, x.entrega, x.itens, x.valor`, "x.entrega").map(
+    emAberto: doLogin("pedido_aberto x", `${COLUNAS_DO_RESUMO}, x.pedido, x.emissao, x.entrega, x.itens, x.valor, x.valor_ipi, x.cfop, x.cfop_descricao`, "x.entrega").map(
       (linha) => ({
         numero: texto(linha, "pedido"),
         emissao: texto(linha, "emissao"),
         entrega: texto(linha, "entrega"),
         itens: numero(linha, "itens"),
         valor: numero(linha, "valor"),
+        valorComIpi: numero(linha, "valor") + numero(linha, "valor_ipi"),
+        cfop: cfopDa(linha),
         cliente: resumoDoCliente(linha),
         itensEmAberto: itensEmAberto.get(texto(linha, "pedido")) ?? [],
       }),
     ),
-    faturados: doLogin("nota x", `${COLUNAS_DO_RESUMO}, x.nota, x.serie, x.emissao, x.valor, x.pedidos`, "x.emissao DESC, x.nota DESC").map(
+    faturados: doLogin(
+      "nota x",
+      `${COLUNAS_DO_RESUMO}, x.nota, x.serie, x.emissao, x.valor, x.valor_ipi, x.valor_total, x.transportadora, x.cfop, x.cfop_descricao, x.pedidos`,
+      "x.emissao DESC, x.nota DESC",
+    ).map(
       (linha) => ({
         id: idDaNota(linha),
         numero: texto(linha, "nota"),
         emissao: texto(linha, "emissao"),
         cliente: resumoDoCliente(linha),
         valor: numero(linha, "valor"),
+        valorIpi: numero(linha, "valor_ipi"),
+        valorTotal: numero(linha, "valor_total"),
+        transportadora: textoOuNulo(linha, "transportadora"),
+        cfop: cfopDa(linha),
         pedidos: JSON.parse(texto(linha, "pedidos")) as string[],
         itens: itensDasNotas.get(idDaNota(linha)) ?? [],
       }),
@@ -96,9 +107,11 @@ export function lerPedidosDaFicha(db: DatabaseSync, sessao: Sessao, codigoDoClie
   );
   return lerLinhas(
     db,
-    `SELECT 'em_aberto' AS status, x.pedido, x.emissao, x.entrega, x.valor FROM pedido_aberto x WHERE ${doCliente}
+    `SELECT 'em_aberto' AS status, x.pedido, x.emissao, x.entrega, x.valor, x.valor_ipi, x.cfop, x.cfop_descricao, '[]' AS notas
+       FROM pedido_aberto x WHERE ${doCliente}
      UNION ALL
-     SELECT 'faturado', x.pedido, x.emissao, x.faturado_em, x.valor FROM pedido_faturado x WHERE ${doCliente}
+     SELECT 'faturado', x.pedido, x.emissao, x.faturado_em, x.valor, x.valor_ipi, x.cfop, x.cfop_descricao, x.notas
+       FROM pedido_faturado x WHERE ${doCliente}
      ORDER BY 3 DESC, 2 DESC`,
     parametros,
   ).map((linha) => ({
@@ -110,6 +123,9 @@ export function lerPedidosDaFicha(db: DatabaseSync, sessao: Sessao, codigoDoClie
     entrega: texto(linha, "entrega"),
     itens: itens.get(texto(linha, "pedido")) ?? [],
     valor: numero(linha, "valor"),
+    valorComIpi: numero(linha, "valor") + numero(linha, "valor_ipi"),
+    cfop: cfopDa(linha),
+    notas: notasDoPedido(texto(linha, "notas")),
   }));
 }
 
@@ -120,6 +136,20 @@ export function lerPedidosDoGrupo(db: DatabaseSync, sessao: Sessao, cnpjs: reado
       lerPedidosDaFicha(db, sessao, cnpj.codigo).map((pedido) => ({ ...pedido, cnpj: { codigo: cnpj.codigo, nome: cnpj.nome } })),
     )
     .sort((a, b) => b.emissao.localeCompare(a.emissao) || (b.numero ?? "").localeCompare(a.numero ?? ""));
+}
+
+function cfopDa(linha: Linha): Cfop | null {
+  const codigo = textoOuNulo(linha, "cfop");
+  return codigo === null ? null : { codigo, descricao: textoOuNulo(linha, "cfop_descricao") };
+}
+
+function notasDoPedido(json: string): NotaDoPedido[] {
+  return (JSON.parse(json) as NotaDoPedidoNaFoto[]).map((nota) => ({
+    numero: nota.numero,
+    emissao: nota.emissao,
+    valorTotal: nota.valor_total,
+    transportadora: nota.transportadora,
+  }));
 }
 
 /** Série e número: o número sozinho se repete entre séries. */
