@@ -41,8 +41,10 @@ carregar_configuracao() {
 
 # O firewall vai aceitar SSH só do IP da Suprens. Quem roda isto de outro IP ficaria trancado para fora.
 conferir_de_onde_vem_a_conexao() {
-  local ip_da_conexao="${SSH_CONNECTION%% *}"
-  [[ -z "${SSH_CONNECTION:-}" || "$ip_da_conexao" == "$IP_DA_EMPRESA" ]] || falhar \
+  # Pelo sudo ou pelo console, o SSH_CONNECTION não existe: aí não há conexão de fora a conferir.
+  local conexao="${SSH_CONNECTION:-}"
+  local ip_da_conexao="${conexao%% *}"
+  [[ -z "$conexao" || "$ip_da_conexao" == "$IP_DA_EMPRESA" ]] || falhar \
     "Você está conectado do IP $ip_da_conexao, e o servidor vai aceitar SSH só de $IP_DA_EMPRESA. Conecte pela rede da Suprens (ou pela VPN) ou pelo console da Locaweb e rode de novo."
 }
 
