@@ -2,6 +2,8 @@ node_modules/
 dist/
 dist-admin/
 deploy/pacotes/
+# O preenchido, com o IP da Suprens: fica só aqui (o modelo é o servidor.conf.example)
+deploy/servidor/servidor.conf
 coverage/
 .vite/
 *.tsbuildinfo
