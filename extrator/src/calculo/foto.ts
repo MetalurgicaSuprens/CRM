@@ -4,6 +4,7 @@ import { VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
 import type { ClienteDaCarteira, DadosDoErp } from "../erp/tipos.ts";
 import { idDoCliente, idDoGrupo } from "../idDoCliente.ts";
 import { montarClientes } from "./clientes.ts";
+import { montarTabelasDoPedido } from "./dadosDoPedido.ts";
 import { montarHistoricoDoPainel, montarPainel } from "./painel.ts";
 import { montarPedidos, montarPedidosFaturados } from "./pedidos.ts";
 import { juntarProdutos } from "./produtos.ts";
@@ -49,5 +50,6 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
     painel_historico: montarHistoricoDoPainel(dados.vendasDoDia, autorizados, referencia),
     ...montarPedidos({ pedidos, notas: dados.notas }, referencia, idNaCarteira),
     ...montarPedidosFaturados(dados.pedidosFaturados, dados.pedidos, idNaCarteira),
+    ...montarTabelasDoPedido(dados.dadosDoPedido, dados.precos, new Set(clientes.lista_de_precos.map(({ produto }) => produto)), idNaCarteira),
   };
 }

@@ -3,6 +3,7 @@ import { podeReceberPedido, type StatusForaDeAtivo } from "dominio/statusDoCadas
 import type { CatalogoDoCliente, ClienteResumo, ProdutoDoCatalogo } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { lerResumoNaCarteira } from "./clientes.ts";
+import { lerDadosDoPedido } from "./dadosDoPedido.ts";
 import { lerLinhas, numero, numeroOuNulo, texto, textoOuNulo, type Linha } from "./linhas.ts";
 
 /*
@@ -23,8 +24,9 @@ export type ClienteDoPedido = { resumo: ClienteResumo; tabela: string; lista: nu
 export function lerCatalogo(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): ResultadoDoCatalogo {
   const cliente = clienteDoPedido(db, sessao, codigoDoCliente);
   if (!cliente || "foraDeAtivo" in cliente) return cliente;
-  // Os dados do pedido (transportadoras, condições, histórico de escolhas) entram na foto na F5.
-  return { catalogo: { cliente: cliente.resumo, tabela: cliente.tabela, produtos: lerProdutos(db, codigoDoCliente, cliente.lista), dadosDoPedido: null } };
+  const produtos = lerProdutos(db, codigoDoCliente, cliente.lista);
+  const dadosDoPedido = lerDadosDoPedido(db, sessao, cliente.resumo, produtos.map(({ codigo }) => codigo));
+  return { catalogo: { cliente: cliente.resumo, tabela: cliente.tabela, produtos, dadosDoPedido } };
 }
 
 /**

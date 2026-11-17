@@ -96,7 +96,7 @@ function OutroLocal({ local }: { local: LocalDoCadastro | null }) {
 
 /** "RUA XV DE NOVEMBRO, 1200 · CENTRO · Curitiba/PR · 80020-310" */
 function formatarEnderecoDoCadastro({ texto, bairro, cidade, uf, cep }: EnderecoDoCadastro): string {
-  return [texto, bairro, `${cidade}/${uf}`, cep === null ? null : formatarCep(cep)].filter((parte) => parte !== null).join(" · ");
+  return [texto, bairro, `${cidade}/${uf}`, cep === null ? null : formatarCep(cep)].filter(Boolean).join(" · ");
 }
 
 function Fato({ rotulo, children }: { rotulo: string; children: ReactNode }) {

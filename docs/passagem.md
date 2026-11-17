@@ -121,9 +121,23 @@ Nova tela de inclusão de pedidos (proposta aceita pelo Lucas em 2026-11-17), ba
   - **No celular** (menos de 768 px de largura útil), as mesmas partes viram quatro etapas: Cliente, Itens, Condições e Revisar. Quem decide é o CSS, por `data-etapa`; a etapa fica no endereço (`?etapa=`), e o voltar do navegador volta uma etapa.
   - **A folha dos itens** tem pelo menos a altura da janela: ao clicar na busca numa tela baixa, a página rola até ela e a lista cabe inteira.
   - **O rascunho** guarda as escolhas no app.db (migração 5, coluna `escolhas` em JSON, com formato conferido na rota).
-  - **No modo real**, o catálogo ainda responde `dadosDoPedido: null`: a tela mostra o cliente com o que a carteira traz e, nas condições, só a entrega e as observações. Falta a foto trazer o cadastro do cliente, as transportadoras, as condições, o IPI, o último pedido e a frequência de cada escolha.
+  - **Dados reais (foto versão 18, 2026-11-17):** o extrator lê como o SGI6R lê (`extrator/src/erp/dadosDoPedido.ts`):
+    - o cadastro (CRCL, CRCX para o e-mail do XML, NFTF para a base do IPI);
+    - a cobrança e a entrega (CRCA C e E);
+    - as transportadoras (CFOR `TIPO_FORN = 'T'`, sem as de fantasia INATIVO);
+    - as condições (`SGI5_VIEW_COND_PAGTO` de 1000 a 1349 e as dos cadastros);
+    - o histórico de escolhas e o último pedido, dos pedidos do SGI (PV1/PV2_V2) dos 24 meses em PEDIDO, PEDIDO BLOQUEADO ou PEDIDO OMEGA;
+    - o IPI vem do `VIEW_ALI_IPI` da view de preço, que lerPrecos já lia.
+
+    O servidor junta tudo no catálogo (`server/src/leituras/dadosDoPedido.ts`). O cliente sem cadastro na foto recebe `dadosDoPedido: null`, e a tela mostra só a entrega e as observações.
+  - **Na foto de 17/11, em 400 clientes da carteira:**
+    - a transportadora sugerida (80% dos pedidos) vem em 293, e 55 não têm histórico;
+    - 345 têm último pedido e 385 pagam IPI;
+    - o catálogo maior tem 416 KB, porque leva as 2.470 transportadoras. Se pesar no celular, a busca de transportadora vira uma rota.
+  - **Transportadoras com código especial:** 78499999 é "Cliente retira" (o fantasia no ERP é "R E T I R A -"), e 85819999 está com o fantasia INATIVO, por isso fica fora da lista.
+  - **A condição do cadastro bate com a do pedido em só 37% dos pedidos de 24 meses** (6.095 de 16.570). A tela começa na do cadastro, como o SGI6R, e mostra as usadas com o cliente no alto da lista. Vale perguntar ao Lucas se ela deveria começar na mais usada.
   - **Falta também** o item da OC por produto, para os clientes que o usam.
-- **Transportadoras com código especial:** 616108610001 = Suprens (a própria empresa). O Lucas ficou de dizer o que são 85819999 e 78499999.
+- **Transportadoras com código especial:** 616108610001 = Suprens (a própria empresa); 78499999 = cliente retira; 85819999 está inativa.
 
 Esperando resposta do Lucas, sem pressa:
 - **Visual que ele ainda não confirmou:**

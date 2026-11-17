@@ -46,7 +46,7 @@ export async function lerTabelasDosClientes(oracle: Oracle, referencia: Referenc
 export async function lerPrecos(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<PrecoDoCliente[]> {
   const lista = emLista("r", autorizados);
   const linhas = await oracle.consultar(
-    `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ)
+    `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ), MAX(V.VIEW_ALI_IPI)
        FROM ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI V
       WHERE V.VIEW_CLI IN (${clientesDaCarteira(lista.sql)}) AND V.VIEW_STA LIKE 'ATIVO%' AND V.VIEW_VLR_LIQ > 0
         AND NOT EXISTS (SELECT 1 FROM ABC71.ESTQ E WHERE TRIM(E.C_PROD) = TRIM(V.VIEW_PAC) AND NVL(TRIM(E.QT_ALT_OBR), 'A') = 'I')
@@ -59,6 +59,7 @@ export async function lerPrecos(oracle: Oracle, referencia: Referencia, autoriza
     tabela: texto(linha, 1),
     produto: texto(linha, 2),
     precoCento: numero(linha, 3),
+    aliquotaIpi: numero(linha, 4),
   }));
 }
 

@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 17;
+export const VERSAO_DO_ESQUEMA = 18;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -229,6 +229,75 @@ CREATE TABLE nota_item (
   valor REAL NOT NULL,
   PRIMARY KEY (nota, serie, ordem)
 ) STRICT;
+
+CREATE TABLE cliente_cadastro (
+  cliente TEXT PRIMARY KEY,
+  documento TEXT NOT NULL,
+  inscricao_estadual TEXT,
+  suframa TEXT,
+  telefone TEXT,
+  email_xml TEXT,
+  endereco TEXT,
+  bairro TEXT,
+  cep TEXT,
+  condicao_pagamento TEXT,
+  base_ipi INTEGER NOT NULL,
+  ultimo_pedido_em TEXT
+) STRICT;
+
+CREATE TABLE cliente_local (
+  cliente TEXT NOT NULL,
+  tipo TEXT NOT NULL,
+  razao_social TEXT NOT NULL,
+  documento TEXT NOT NULL,
+  endereco TEXT NOT NULL,
+  bairro TEXT,
+  cidade TEXT NOT NULL,
+  uf TEXT NOT NULL,
+  cep TEXT,
+  PRIMARY KEY (cliente, tipo)
+) STRICT;
+
+CREATE TABLE cliente_escolha (
+  cliente TEXT NOT NULL,
+  tipo TEXT NOT NULL,
+  valor TEXT NOT NULL,
+  pedidos INTEGER NOT NULL,
+  PRIMARY KEY (cliente, tipo, valor)
+) STRICT;
+
+CREATE TABLE ultimo_pedido_item (
+  cliente TEXT NOT NULL,
+  ordem INTEGER NOT NULL,
+  produto TEXT NOT NULL,
+  pecas REAL NOT NULL,
+  PRIMARY KEY (cliente, ordem)
+) STRICT;
+
+CREATE TABLE transportadora (
+  codigo TEXT PRIMARY KEY,
+  nome TEXT NOT NULL,
+  cnpj TEXT NOT NULL,
+  cidade TEXT NOT NULL,
+  uf TEXT NOT NULL
+) STRICT;
+
+CREATE TABLE representante_transportadora (
+  representante TEXT NOT NULL,
+  transportadora TEXT NOT NULL,
+  pedidos INTEGER NOT NULL,
+  PRIMARY KEY (representante, transportadora)
+) STRICT;
+
+CREATE TABLE condicao_pagamento (
+  codigo TEXT PRIMARY KEY,
+  descricao TEXT NOT NULL
+) STRICT;
+
+CREATE TABLE produto_ipi (
+  produto TEXT PRIMARY KEY,
+  aliquota REAL NOT NULL
+) STRICT;
 `;
 
 /** O conteúdo da foto, tabela a tabela: o nome de cada campo é o nome da tabela e das colunas. */
@@ -373,4 +442,55 @@ export type Foto = {
   }[];
   /** Os itens de cada nota, na ordem da nota. */
   nota_item: { nota: string; serie: string; ordem: number; produto: string; pecas: number; valor: number }[];
+  /*
+   * Os dados da tela de pedido (versão 18), como no app antigo dos representantes (SGI6R). Só dos CNPJs
+   * da carteira, porque o pedido é sempre de um CNPJ, e também da pessoa física: pela regra 3 do
+   * CLAUDE.md, mudada em 2026-11-17, entra o que o SGI6R mostra. Nada de crédito, banco ou contato de pessoa.
+   */
+  /** O cadastro que o representante confere. `base_ipi` é 1 quando o CFOP do cliente cobra IPI (NFTF.BASE_IPI = 'S'), como no SGI6R. */
+  cliente_cadastro: {
+    cliente: string;
+    /** O CNPJ ou o CPF, já com a pontuação. */
+    documento: string;
+    inscricao_estadual: string | null;
+    suframa: string | null;
+    telefone: string | null;
+    email_xml: string | null;
+    /** O endereço do faturamento (CRCL), também da pessoa física. */
+    endereco: string | null;
+    bairro: string | null;
+    cep: string | null;
+    /** O código da condição de pagamento do cadastro (CRCL.COND_PGTO). */
+    condicao_pagamento: string | null;
+    base_ipi: number;
+    /** O dia do último pedido do cliente nos 24 meses; null sem pedido. */
+    ultimo_pedido_em: string | null;
+  }[];
+  /** A cobrança e a entrega do cadastro (CRCA, TIPO_REG C e E), quando o cliente as tem: `tipo` é cobranca ou entrega. */
+  cliente_local: {
+    cliente: string;
+    tipo: string;
+    razao_social: string;
+    documento: string;
+    endereco: string;
+    bairro: string | null;
+    cidade: string;
+    uf: string;
+    cep: string | null;
+  }[];
+  /**
+   * Quantos pedidos do cliente nos 24 meses usaram cada escolha: `tipo` é transportadora (o código),
+   * condicao (o código), classificacao (comercializacao, industrializacao, uso_consumo) ou parcial (sim, nao).
+   */
+  cliente_escolha: { cliente: string; tipo: string; valor: string; pedidos: number }[];
+  /** Os itens do último pedido do cliente, na ordem dele, em peças: o "repetir o último pedido". */
+  ultimo_pedido_item: { cliente: string; ordem: number; produto: string; pecas: number }[];
+  /** As transportadoras do ERP (CFOR, TIPO_FORN = 'T', fora as marcadas INATIVO): dado de empresa. */
+  transportadora: { codigo: string; nome: string; cnpj: string; cidade: string; uf: string }[];
+  /** Quantos pedidos de cada representante autorizado foram com cada transportadora, nos 24 meses. */
+  representante_transportadora: { representante: string; transportadora: string; pedidos: number }[];
+  /** As condições de pagamento que o representante escolhe (1000 a 1349, como no SGI6R) e as dos cadastros da carteira. */
+  condicao_pagamento: { codigo: string; descricao: string }[];
+  /** A alíquota de IPI de cada produto de alguma lista, em %. */
+  produto_ipi: { produto: string; aliquota: number }[];
 };

@@ -7,7 +7,7 @@ import { criarAppDoAdmin } from "./admin/appDoAdmin.ts";
 import { criarApp } from "./app.ts";
 import { abrirBancoDoApp } from "./bancoDoApp.ts";
 import { criarFotoAtual, type FotoAtual } from "./foto/fotoAtual.ts";
-import type { Analises, ClienteResumo, FichaCliente, PainelDePedidos, Rascunho } from "../../web/src/dados/tipos.ts";
+import type { Analises, CatalogoDoCliente, ClienteResumo, FichaCliente, PainelDePedidos, Rascunho } from "../../web/src/dados/tipos.ts";
 import {
   CLIENTE_DE_A,
   CLIENTE_DE_B,
@@ -251,6 +251,44 @@ describe("escopo: o login A nunca vê os dados de B", () => {
         { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoDaTabela: 120, ultimaCompra: null, partNumbers: [], jaComprou: false },
       ],
     });
+  });
+
+  it("leva no catálogo os dados da tela de pedido: o cadastro, o histórico de escolhas, o IPI e o último pedido", async () => {
+    const resposta = await comoA(criarAppDeTeste(), `/api/clientes/${CLIENTE_DE_A}/catalogo`);
+    const { dadosDoPedido } = resposta.json<CatalogoDoCliente>();
+    expect(dadosDoPedido).toMatchObject({
+      cadastro: {
+        razaoSocial: "CLIENTE DE A LTDA",
+        documento: "12.345.678/0001-95",
+        telefone: "(19) 3232-1000",
+        faturamento: { texto: "R BARAO DE JAGUARA, 1200 SALA 3", cidade: "CAMPINAS", uf: "SP", cep: "13015002" },
+        cobranca: null,
+        entrega: { razaoSocial: "CLIENTE DE A LTDA", cidade: "VALINHOS" },
+      },
+      condicaoDoCadastro: "1002",
+      condicoesUsadas: [{ valor: "1002", pedidos: 10 }],
+      classificacoesUsadas: [{ valor: "industrializacao", pedidos: 10 }],
+      parcialUsado: { aceita: 7, naoAceita: 3 },
+      transportadorasDoCliente: [
+        { valor: "101", pedidos: 9 },
+        { valor: "102", pedidos: 1 },
+      ],
+      transportadorasDoRepresentante: [{ valor: "101", pedidos: 40 }],
+      ipi: { "F-100": 5, "P-200": 9.75 },
+      ultimoPedido: {
+        data: "2026-09-02",
+        itens: [
+          { codigo: "P-200", quantidade: 300 },
+          { codigo: "F-100", quantidade: 500 },
+        ],
+      },
+    });
+    expect(dadosDoPedido?.transportadoras.map(({ codigo }) => codigo)).toEqual(["102", "101"]);
+  });
+
+  it("não leva dados da tela de pedido ao cliente sem cadastro na foto", async () => {
+    const resposta = await comoA(criarAppDeTeste(), `/api/clientes/${FILIAL_BAHIA_DE_A}/catalogo`);
+    expect(resposta.json<CatalogoDoCliente>().dadosDoPedido).toBeNull();
   });
 
   it("não dá catálogo ao cliente inativo: 409, com o aviso para pedir a reativação", async () => {

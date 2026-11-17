@@ -158,6 +158,8 @@ export type PrecoDoCliente = {
   produto: string;
   /** Preço do cento com o desconto do modelo do produto, ou o padrão do cliente; sem IPI. */
   precoCento: number;
+  /** A alíquota de IPI do produto na view, em %: a mesma em toda tabela (conferido em 2026-11-17). */
+  aliquotaIpi: number;
 };
 
 /** Um part number da Bíblia Montadora: o código que uma montadora dá ao produto. */
@@ -177,6 +179,70 @@ export type ProdutoDaTabela = {
 /** Produto que o cliente comprou nos 24 meses, com a última compra que tem preço: o dia e o preço do cento na nota. */
 export type ProdutoJaComprado = { chave: string; produto: string; ultimaCompra: { data: string; precoCento: number } | null };
 
+/** O cadastro do cliente que a tela de pedido mostra, como o SGI6R lê (erp/dadosDoPedido.ts). */
+export type CadastroDoErp = {
+  chave: string;
+  isPessoaFisica: boolean;
+  /** Só os dígitos do CNPJ ou do CPF, sem os zeros da esquerda que o número perde. */
+  documento: string;
+  inscricaoEstadual: string | null;
+  suframa: string | null;
+  ddd: number;
+  telefone: number;
+  emailDoXml: string | null;
+  endereco: string | null;
+  bairro: string | null;
+  cep: number;
+  condicaoDePagamento: string | null;
+  /** O CFOP do cliente cobra IPI (NFTF.BASE_IPI = 'S'): sem isso, o SGI6R não põe IPI no item. */
+  isBaseDoIpi: boolean;
+};
+
+/** A cobrança ou a entrega do cadastro (CRCA). */
+export type LocalDoErp = {
+  chave: string;
+  tipo: "cobranca" | "entrega";
+  razaoSocial: string;
+  documento: string;
+  endereco: string;
+  bairro: string | null;
+  cidade: string;
+  uf: string;
+  cep: number;
+};
+
+export type TransportadoraDoErp = { codigo: string; fantasia: string | null; razaoSocial: string; documento: string; cidade: string; uf: string };
+
+export type CondicaoDoErp = { codigo: string; descricao: string };
+
+/** Pedidos do cliente com a mesma combinação de escolhas. */
+export type EscolhasDoErp = {
+  chave: string;
+  transportadora: string | null;
+  condicao: string | null;
+  /** COMERCIALIZACAO, INDUSTRIALIZACAO ou USO/CONSUMO (PV1_CVE). */
+  classificacao: string | null;
+  /** ACEITA FRETE PARCIAL ou NAO ACEITA FRETE PARCIAL (PV1_TFR). */
+  freteParcial: string | null;
+  pedidos: number;
+};
+
+export type UsoDaTransportadora = { representante: string; transportadora: string; pedidos: number };
+
+/** Um item do último pedido do cliente. */
+export type UltimoPedidoDoErp = { chave: string; dia: string; produto: string; pecas: number };
+
+/** Tudo o que a tela de pedido precisa, além do catálogo. */
+export type DadosDoPedidoDoErp = {
+  cadastros: CadastroDoErp[];
+  locais: LocalDoErp[];
+  transportadoras: TransportadoraDoErp[];
+  condicoes: CondicaoDoErp[];
+  escolhas: EscolhasDoErp[];
+  transportadorasDosRepresentantes: UsoDaTransportadora[];
+  ultimosPedidos: UltimoPedidoDoErp[];
+};
+
 export type DadosDoErp = {
   geradaEm: string;
   /** Código → nome (CRVN) dos representantes autorizados. */
@@ -195,4 +261,5 @@ export type DadosDoErp = {
   partNumbers: PartNumberDaBiblia[];
   produtosDasTabelas: ProdutoDaTabela[];
   jaComprados: ProdutoJaComprado[];
+  dadosDoPedido: DadosDoPedidoDoErp;
 };

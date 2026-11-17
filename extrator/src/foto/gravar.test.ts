@@ -55,6 +55,14 @@ function fotoDe(geradaEm: string, vendasPorMes = 1_200): Foto {
     pedido_faturado_item: [],
     nota: [],
     nota_item: [],
+    cliente_cadastro: [],
+    cliente_local: [],
+    cliente_escolha: [],
+    ultimo_pedido_item: [],
+    transportadora: [],
+    representante_transportadora: [],
+    condicao_pagamento: [],
+    produto_ipi: [],
   };
 }
 

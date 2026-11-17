@@ -39,6 +39,9 @@ export const MARCAS_DE_B = [
   "GRUPO SO DE B",
   FILIAL_DE_B,
   "FILIAL SO DE B",
+  "87.654.321/0001-99",
+  "999005",
+  "ENTREGA SO DE B",
 ];
 
 function cliente(id: string, representante: string, nome: string, status: StatusDoCadastro = "ativo"): Foto["cliente"][number] {
@@ -229,6 +232,68 @@ export function montarFotoDeTeste(): Foto {
     nota_item: [
       { nota: "100002", serie: "1", ordem: 1, produto: "F-100", pecas: 100, valor: 1_000 },
       { nota: "888001", serie: "1", ordem: 1, produto: "PRODUTO-SO-DE-B", pecas: 200, valor: 2_000 },
+    ],
+    ...dadosDoPedidoDeTeste(),
+  };
+}
+
+/**
+ * A tela de pedido: o cadastro e o histórico de escolhas do cliente de A e do de B. A transportadora 999005
+ * só aparece no uso de B, para o teste do escopo achar se ela vazar para A.
+ */
+function dadosDoPedidoDeTeste(): Pick<
+  Foto,
+  "cliente_cadastro" | "cliente_local" | "cliente_escolha" | "ultimo_pedido_item" | "transportadora" | "representante_transportadora" | "condicao_pagamento" | "produto_ipi"
+> {
+  const cadastro = (cliente: string, documento: string) => ({
+    cliente,
+    documento,
+    inscricao_estadual: "123259029",
+    suframa: null,
+    telefone: "(19) 3232-1000",
+    email_xml: "nfe@cliente.exemplo.com.br",
+    endereco: "R BARAO DE JAGUARA, 1200 SALA 3",
+    bairro: "CENTRO",
+    cep: "13015002",
+    condicao_pagamento: "1002",
+    base_ipi: 1,
+    ultimo_pedido_em: "2026-09-02",
+  });
+  return {
+    cliente_cadastro: [cadastro(CLIENTE_DE_A, "12.345.678/0001-95"), cadastro(CLIENTE_DE_B, "87.654.321/0001-99")],
+    cliente_local: [
+      { cliente: CLIENTE_DE_A, tipo: "entrega", razao_social: "CLIENTE DE A LTDA", documento: "12.345.678/0002-76", endereco: "R DA ENTREGA, 10", bairro: null, cidade: "VALINHOS", uf: "SP", cep: null },
+      { cliente: CLIENTE_DE_B, tipo: "entrega", razao_social: "ENTREGA SO DE B", documento: "87.654.321/0002-70", endereco: "R B, 1", bairro: null, cidade: "OSASCO", uf: "SP", cep: null },
+    ],
+    cliente_escolha: [
+      { cliente: CLIENTE_DE_A, tipo: "transportadora", valor: "101", pedidos: 9 },
+      { cliente: CLIENTE_DE_A, tipo: "transportadora", valor: "102", pedidos: 1 },
+      { cliente: CLIENTE_DE_A, tipo: "condicao", valor: "1002", pedidos: 10 },
+      { cliente: CLIENTE_DE_A, tipo: "classificacao", valor: "industrializacao", pedidos: 10 },
+      { cliente: CLIENTE_DE_A, tipo: "parcial", valor: "sim", pedidos: 7 },
+      { cliente: CLIENTE_DE_A, tipo: "parcial", valor: "nao", pedidos: 3 },
+      { cliente: CLIENTE_DE_B, tipo: "transportadora", valor: "102", pedidos: 4 },
+    ],
+    ultimo_pedido_item: [
+      { cliente: CLIENTE_DE_A, ordem: 1, produto: "P-200", pecas: 300 },
+      { cliente: CLIENTE_DE_A, ordem: 2, produto: "F-100", pecas: 500 },
+    ],
+    transportadora: [
+      { codigo: "101", nome: "TRANSPORTES IPE", cnpj: "11.222.333/0001-81", cidade: "CURITIBA", uf: "PR" },
+      { codigo: "102", nome: "ROTA AZUL", cnpj: "45.997.418/0001-53", cidade: "JOINVILLE", uf: "SC" },
+    ],
+    representante_transportadora: [
+      { representante: "1401", transportadora: "101", pedidos: 40 },
+      { representante: "9999", transportadora: "999005", pedidos: 30 },
+    ],
+    condicao_pagamento: [
+      { codigo: "1002", descricao: "30 DDL" },
+      { codigo: "1010", descricao: "30/60 DDL" },
+    ],
+    produto_ipi: [
+      { produto: "F-100", aliquota: 5 },
+      { produto: "P-200", aliquota: 9.75 },
+      { produto: "PRODUTO-SO-DE-B", aliquota: 5 },
     ],
   };
 }

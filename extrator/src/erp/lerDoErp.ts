@@ -5,6 +5,7 @@ import { lerCarteira, lerDatasDeCompra, lerVendasPorMes } from "./carteira.ts";
 import { lerPartNumbersDaBiblia, lerPrecos, lerProdutosDasTabelas, lerProdutosJaComprados, lerTabelasDosClientes } from "./catalogo.ts";
 import { lerNotasRecentes, lerPedidosFaturados, lerVendasPorDia } from "./faturamento.ts";
 import { lerFamiliasDaSuprens, lerProdutosDoAno } from "./familias.ts";
+import { lerCadastros, lerCondicoes, lerEscolhas, lerLocais, lerTransportadoras, lerTransportadorasDosRepresentantes, lerUltimosPedidos } from "./dadosDoPedido.ts";
 import { lerPedidosEmAberto } from "./pedidos.ts";
 import type { DadosDoErp } from "./tipos.ts";
 
@@ -44,6 +45,15 @@ export async function lerDadosDoErp(
       lerProdutosDasTabelas(oracle, [...new Set(tabelas.map((tabela) => tabela.tabela))]),
     ),
     jaComprados: await etapa("produtos já comprados", () => lerProdutosJaComprados(oracle, referencia, autorizados)),
+    dadosDoPedido: {
+      cadastros: await etapa("cadastro dos clientes", () => lerCadastros(oracle, referencia, autorizados)),
+      locais: await etapa("cobrança e entrega", () => lerLocais(oracle, referencia, autorizados)),
+      transportadoras: await etapa("transportadoras", () => lerTransportadoras(oracle)),
+      condicoes: await etapa("condições de pagamento", () => lerCondicoes(oracle, referencia, autorizados)),
+      escolhas: await etapa("escolhas dos pedidos", () => lerEscolhas(oracle, referencia, autorizados)),
+      transportadorasDosRepresentantes: await etapa("transportadoras dos representantes", () => lerTransportadorasDosRepresentantes(oracle, referencia, autorizados)),
+      ultimosPedidos: await etapa("últimos pedidos", () => lerUltimosPedidos(oracle, referencia, autorizados)),
+    },
   };
   return { referencia, dados };
 }

@@ -77,6 +77,7 @@ function dadosDaCarteira(): DadosDoErp {
     ],
     produtos: [produto(1, "F-100", 500), produto(2, "F-100", 600), produto(2, "P-200", 900), produto(4, "F-100", 300)],
     pedidos: [],
+    dadosDoPedido: { cadastros: [], locais: [], transportadoras: [], condicoes: [], escolhas: [], transportadorasDosRepresentantes: [], ultimosPedidos: [] },
     pedidosFaturados: [],
     notas: [],
     vendasDoDia: [],

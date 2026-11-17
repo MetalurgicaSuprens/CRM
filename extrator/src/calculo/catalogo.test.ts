@@ -27,7 +27,7 @@ function cliente(numero: number, mercado: ClienteDaCarteira["mercado"] = "PRACA"
 }
 
 function preco(clienteNumero: number, produto: string, precoCento: number, tabelaCodigo = "PDR02"): PrecoDoCliente {
-  return { cliente: clienteNumero, tabela: tabelaCodigo, produto, precoCento };
+  return { cliente: clienteNumero, tabela: tabelaCodigo, produto, precoCento, aliquotaIpi: 5 };
 }
 
 describe("escolherTabela", () => {
