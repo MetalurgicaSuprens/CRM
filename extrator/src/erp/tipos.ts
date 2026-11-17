@@ -19,8 +19,10 @@ export type ClienteDaCarteira = {
   uf: string;
   /** Código IBGE do município; null fora do formato (erp/carteira.ts, municipioDoCadastro). */
   municipio: string | null;
-  /** Só da empresa, que tem o endereço público no CNPJ; o da pessoa física nem sai do Oracle. */
+  /** O endereço do cadastro, da empresa e da pessoa física (regra 3 do CLAUDE.md, mudada em 2026-11-17). */
   endereco: EnderecoDoCliente | null;
+  /** Só da pessoa física: os dígitos do CPF, como o app antigo dos representantes lê. */
+  documento: string | null;
   /** O ponto do endereço no mapa. Quem preenche é a localização (localizacao/), não o ERP. */
   ponto: PontoLocalizado | null;
   mercado: Mercado;

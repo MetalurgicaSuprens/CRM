@@ -22,6 +22,7 @@ function cliente(numero: number, parcial: Partial<ClienteDaCarteira>): ClienteDa
     municipio: "4106902",
     endereco: { texto: "R XV DE NOVEMBRO, 1200 SALA 3", bairro: "CENTRO", cep: "80020310" },
     ponto: null,
+    documento: null,
     mercado: "PRACA",
     representante: "1302",
     status: "ativo",

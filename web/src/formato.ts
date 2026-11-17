@@ -153,9 +153,9 @@ function comRotulo(itens: string[], singular: string, plural: string): string {
   return `${itens.length === 1 ? singular : plural} ${LISTA.format(itens)}`;
 }
 
-/** O código do ERP do cliente. A pessoa física aparece sem ele, porque lá o código é o CPF. */
-export function formatarCodigoDoCliente(codigoErp: string | null): string {
-  return codigoErp ?? "Pessoa física";
+/** O código do ERP da empresa ou, na pessoa física, o CPF, como o app antigo dos representantes mostra. */
+export function formatarCodigoDoCliente(cliente: Pick<ClienteResumo, "codigoErp" | "cpf">): string {
+  return cliente.codigoErp ?? (cliente.cpf ? `CPF ${cliente.cpf}` : "Pessoa física");
 }
 
 /** A linha de baixo do nome: "Campinas/SP" ou, no grupo, que não tem cidade e leva o selo ao lado do nome, "8 CNPJs". */
@@ -164,9 +164,9 @@ export function formatarLocalDoCliente(cliente: Pick<ClienteResumo, "cidade" | "
 }
 
 /** O local e o código do ERP: "Campinas/SP · 591328580003"; o grupo não tem código. */
-export function formatarLocalECodigo(cliente: Pick<ClienteResumo, "cidade" | "uf" | "cnpjs" | "codigoErp">): string {
+export function formatarLocalECodigo(cliente: Pick<ClienteResumo, "cidade" | "uf" | "cnpjs" | "codigoErp" | "cpf">): string {
   const local = formatarLocalDoCliente(cliente);
-  return cliente.cnpjs ? local : `${local} · ${formatarCodigoDoCliente(cliente.codigoErp)}`;
+  return cliente.cnpjs ? local : `${local} · ${formatarCodigoDoCliente(cliente)}`;
 }
 
 /** "80020-310". */

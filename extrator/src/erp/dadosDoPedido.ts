@@ -20,7 +20,7 @@ const PEDIDO_QUE_VALEU = "TRIM(A.PV1_STA) IN ('PEDIDO', 'PEDIDO BLOQUEADO', 'PED
  * O documento como o SGI6R monta: no CNPJ, a raiz e a filial (CGC_CPF) com os dois dígitos; no CPF, o
  * CGC_CPF guarda quatro caracteres a mais no fim, que o SGI6R corta. Alias C = CRCL ou CRCA.
  */
-function documento(alias: string, fisicaOuJuridica: string): string {
+export function documento(alias: string, fisicaOuJuridica: string): string {
   return `CASE WHEN ${fisicaOuJuridica} = 'F'
             THEN TRIM(REVERSE(SUBSTR(REVERSE(TRIM(${alias}.CGC_CPF)), 5, 15))) || TRIM(TO_CHAR(${alias}.DIG_CGC_CPF, '00'))
             ELSE TRIM(${alias}.CGC_CPF) || TRIM(TO_CHAR(${alias}.DIG_CGC_CPF, '00')) END`;

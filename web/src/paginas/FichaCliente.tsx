@@ -229,7 +229,7 @@ function DadosDoCliente({ ficha }: { ficha: Ficha }) {
         <Dado icone={MapPin} rotulo="Cidade" valor={`${ficha.cidade}/${ficha.uf}`} />
       )}
       <Dado icone={Store} rotulo="Mercado" valor={ROTULOS_DE_MERCADO[ficha.mercado]} />
-      {cnpjs ? null : <Dado icone={Hash} rotulo="Código" valor={formatarCodigoDoCliente(ficha.codigoErp)} />}
+      {cnpjs ? null : <Dado icone={Hash} rotulo="Código" valor={formatarCodigoDoCliente(ficha)} />}
       <Dado icone={Handshake} rotulo="Cliente desde" valor={ficha.clienteDesde === null ? "—" : String(ficha.clienteDesde)} />
     </dl>
   );

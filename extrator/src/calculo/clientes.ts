@@ -1,6 +1,7 @@
 import { analisarCliente, type AnaliseDoCliente, type HistoricoDoCliente } from "dominio/analises";
 import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
 import type { Foto } from "dominio/esquemaDaFoto";
+import { formatarDocumento } from "./dadosDoPedido.ts";
 import { evolucao12m, variacao12m } from "dominio/indicadores";
 import { sugerirMix, type ClienteNoMix, type SugestaoDeMix } from "dominio/mix";
 import type { ClienteDaCarteira, DadosDoErp, FamiliaDoCliente, ProdutoDoCliente } from "../erp/tipos.ts";
@@ -160,6 +161,7 @@ function linhaDoCliente(
   return {
     cliente: analisado.id,
     codigo_erp: cliente.isPessoaFisica ? null : String(cliente.cliente),
+    cpf: cliente.isPessoaFisica && cliente.documento ? formatarDocumento(cliente.documento, true) : null,
     representante: cliente.representante,
     nome: nomeDoCliente(cliente.fantasia, cliente.razaoSocial),
     razao_social: cliente.razaoSocial,
@@ -191,6 +193,7 @@ function linhaDoGrupo(grupo: GrupoAnalisado): Foto["cliente"][number] {
   return {
     cliente: grupo.id,
     codigo_erp: null,
+    cpf: null,
     representante: grupo.representante,
     nome: grupo.nome,
     razao_social: "",

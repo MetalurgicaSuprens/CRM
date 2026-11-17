@@ -48,6 +48,7 @@ function cliente(id: string, representante: string, nome: string, status: Status
   return {
     cliente: id,
     codigo_erp: representante === "1401" ? "123456780001" : "876543210001",
+    cpf: null,
     representante,
     nome,
     razao_social: `${nome} LTDA`,

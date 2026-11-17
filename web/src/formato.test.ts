@@ -194,10 +194,14 @@ describe("formatarPedidosDaNota", () => {
 
 describe("formatarCodigoDoCliente", () => {
   it("mostra o código do ERP da empresa", () => {
-    expect(formatarCodigoDoCliente("123456780001")).toBe("123456780001");
+    expect(formatarCodigoDoCliente({ codigoErp: "123456780001", cpf: null })).toBe("123456780001");
   });
 
-  it("mostra a pessoa física sem código, porque o código dela no ERP é o CPF", () => {
-    expect(formatarCodigoDoCliente(null)).toBe("Pessoa física");
+  it("mostra o CPF da pessoa física, como o app antigo dos representantes", () => {
+    expect(formatarCodigoDoCliente({ codigoErp: null, cpf: "123.456.789-01" })).toBe("CPF 123.456.789-01");
+  });
+
+  it("diz pessoa física quando a foto ainda não traz o CPF", () => {
+    expect(formatarCodigoDoCliente({ codigoErp: null, cpf: null })).toBe("Pessoa física");
   });
 });

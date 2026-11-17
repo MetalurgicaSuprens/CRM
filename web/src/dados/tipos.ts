@@ -41,6 +41,11 @@ export type ClienteResumo = {
   codigo: string;
   /** Código do cliente no ERP, para mostrar e buscar. Nulo na pessoa física, em que ele é o CPF, e no grupo. */
   codigoErp: string | null;
+  /**
+   * O CPF da pessoa física, já com a pontuação, para mostrar e buscar como o app antigo dos
+   * representantes (regra 3 do CLAUDE.md, mudada em 2026-11-17). Null na empresa e no grupo.
+   */
+  cpf: string | null;
   nome: string;
   cidade: string;
   uf: string;

@@ -74,6 +74,12 @@ const NOMES = [
 const SUFIXOS = ["Ltda", "Comércio Ltda", "Distribuição Ltda", "S.A.", "Indústria e Comércio Ltda"];
 /** Como no ERP, há pessoas físicas na carteira, todas do mercado praça. */
 const PESSOAS_FISICAS = ["Rogério Tavares", "Sandra Moreira", "Valter Nunes"];
+
+/** "123.456.789-01": os dígitos do código do cliente, no formato do CPF (não é um CPF de verdade). */
+function cpfDeExemplo(codigo: string): string {
+  const digitos = codigo.padStart(11, "0").slice(0, 11);
+  return `${digitos.slice(0, 3)}.${digitos.slice(3, 6)}.${digitos.slice(6, 9)}-${digitos.slice(9)}`;
+}
 const CLIENTES_DA_PRACA_ENTRE_PESSOAS_FISICAS = 15;
 /**
  * Como no SGI, alguns clientes estão fora de ativo no cadastro: um a cada 29 da carteira, a partir
@@ -107,6 +113,8 @@ type MesFicticio = FaturamentoMensal & { pecas: number };
 type ClienteFicticio = {
   codigo: string;
   codigoErp: string | null;
+  /** Só na pessoa física: um CPF de exemplo, tirado do código. */
+  cpf: string | null;
   nome: string;
   razaoSocial: string;
   cidade: string;
@@ -280,6 +288,7 @@ function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Per
   const base = {
     codigo,
     codigoErp: codigo,
+    cpf: null,
     nome,
     razaoSocial: `${nome} ${aleatorio.escolher(SUFIXOS)}`,
     cidade,
@@ -297,7 +306,7 @@ function gerarCliente(aleatorio: Aleatorio, contexto: Contexto, perfilFixo?: Per
   return { ...base, indicadores: calcularIndicadores(base, contexto) };
 }
 
-/** Troca algumas empresas da praça por pessoas físicas: nome de gente e nenhum código do ERP. */
+/** Troca algumas empresas da praça por pessoas físicas: nome de gente, o CPF e nenhum código do ERP. */
 function comPessoasFisicas(clientes: ClienteFicticio[]): ClienteFicticio[] {
   const daPraca = clientes.filter((cliente) => cliente.mercado === "PRACA");
   const nomes = new Map(
@@ -305,7 +314,7 @@ function comPessoasFisicas(clientes: ClienteFicticio[]): ClienteFicticio[] {
   );
   return clientes.map((cliente) => {
     const nome = nomes.get(cliente);
-    return nome ? { ...cliente, nome, razaoSocial: nome, codigoErp: null } : cliente;
+    return nome ? { ...cliente, nome, razaoSocial: nome, codigoErp: null, cpf: cpfDeExemplo(cliente.codigo) } : cliente;
   });
 }
 
@@ -460,11 +469,12 @@ function resumirCliente(cliente: ClienteFicticio): ClienteResumo {
   return {
     codigo: cliente.codigo,
     codigoErp: cliente.codigoErp,
+    cpf: cliente.cpf,
     nome: cliente.nome,
     cidade: cliente.cidade,
     uf: cliente.uf,
     municipio: cliente.municipio,
-    endereco: cliente.codigoErp === null ? null : enderecoFicticio(cliente.codigo, cliente.municipio),
+    endereco: enderecoFicticio(cliente.codigo, cliente.municipio),
     mercado: cliente.mercado,
     situacao: indicadores.situacao,
     status: cliente.status,

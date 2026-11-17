@@ -45,7 +45,7 @@ export function numeroOuNulo(linha: Linha, coluna: string): number | null {
 }
 
 /** Colunas de `cliente` (alias c) que formam o ClienteResumo. */
-export const COLUNAS_DO_RESUMO = `c.cliente, c.codigo_erp, c.nome, c.cidade, c.uf, c.municipio_ibge, c.mercado, c.situacao, c.status, c.ultima_compra,
+export const COLUNAS_DO_RESUMO = `c.cliente, c.codigo_erp, c.cpf, c.nome, c.cidade, c.uf, c.municipio_ibge, c.mercado, c.situacao, c.status, c.ultima_compra,
   c.ciclo_dias, c.faturamento_12m, c.variacao_12m, c.evolucao_12m, c.queda_no_semestre, c.cnpjs,
   c.endereco, c.bairro, c.cep, c.latitude, c.longitude, c.precisao_do_ponto`;
 
@@ -87,6 +87,7 @@ export function resumoDoCliente(linha: Linha): ClienteResumo {
   return {
     codigo: texto(linha, "cliente"),
     codigoErp: textoOuNulo(linha, "codigo_erp"),
+    cpf: textoOuNulo(linha, "cpf"),
     nome: texto(linha, "nome"),
     cidade: texto(linha, "cidade"),
     uf: texto(linha, "uf"),

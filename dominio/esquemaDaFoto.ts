@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 18;
+export const VERSAO_DO_ESQUEMA = 19;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -28,6 +28,7 @@ CREATE TABLE representante (
 CREATE TABLE cliente (
   cliente TEXT PRIMARY KEY,
   codigo_erp TEXT,
+  cpf TEXT,
   representante TEXT NOT NULL,
   nome TEXT NOT NULL,
   razao_social TEXT NOT NULL,
@@ -316,6 +317,8 @@ export type Foto = {
   cliente: {
     cliente: string;
     codigo_erp: string | null;
+    /** Só da pessoa física (versão 19): o CPF com a pontuação, como o app antigo dos representantes mostra. */
+    cpf: string | null;
     representante: string;
     nome: string;
     razao_social: string;
@@ -323,7 +326,7 @@ export type Foto = {
     uf: string;
     /** Código IBGE de 7 dígitos do município (CRCL.RESERVADO7); null fora do formato ou de outro estado. */
     municipio_ibge: string | null;
-    /** Só da empresa (versão 14): CRCL.ENDERECO como está, com o número e o complemento. */
+    /** CRCL.ENDERECO como está, com o número e o complemento; da empresa desde a versão 14 e da pessoa física desde a 19. */
     endereco: string | null;
     bairro: string | null;
     /** 8 dígitos. */

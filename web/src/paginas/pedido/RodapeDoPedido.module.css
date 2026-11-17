@@ -25,10 +25,11 @@
   background: var(--cor-fundo);
 }
 
+/* O cliente fica com a sobra da largura: o nome aparece inteiro sempre que cabe */
 .cliente {
   display: flex;
   flex-direction: column;
-  flex: 0 1 14rem;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -46,10 +47,14 @@
   white-space: nowrap;
 }
 
+/*
+ * Os totais em colunas, como a faixa do app antigo: cada número alinhado à direita, embaixo do nome dele,
+ * com uma linha fina entre as colunas, para não se misturarem.
+ */
 .totais {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-2) var(--esp-6);
+  flex: none;
+  align-items: stretch;
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -57,12 +62,27 @@
 .total {
   display: flex;
   flex-direction: column;
+  /* O nome no alto e o número embaixo, na mesma altura em todas as colunas, mesmo com o destaque maior */
+  justify-content: space-between;
+  gap: 2px;
+  min-width: 5.5rem;
+  padding: 0 var(--esp-4);
+  text-align: right;
+}
+
+.total + .total {
+  border-left: 1px solid var(--cor-linha);
+}
+
+.total dt {
+  white-space: nowrap;
 }
 
 .total dd {
   margin: 0;
   font-size: var(--tam-rotulo);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 /* O número que o cliente pergunta, maior que os outros */
@@ -73,9 +93,10 @@
 
 .envio {
   display: flex;
+  flex: none;
   align-items: center;
   gap: var(--esp-3);
-  margin-left: auto;
+  padding-left: var(--esp-2);
 }
 
 .problema {

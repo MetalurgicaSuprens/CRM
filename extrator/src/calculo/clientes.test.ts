@@ -23,6 +23,7 @@ function cliente(numero: number, parcial: Partial<ClienteDaCarteira> = {}): Clie
     municipio: "3509502",
     endereco: null,
     ponto: null,
+    documento: null,
     mercado: "PRACA",
     representante: "1302",
     status: "ativo",
@@ -157,5 +158,19 @@ describe("montarClientes: grupos do SGI", () => {
 
   it("não muda o cliente sem grupo", () => {
     expect(linha("cliente-4")).toMatchObject({ nome: "CLIENTE 4", grupo: null, cnpjs: null, situacao: "ativo" });
+  });
+});
+
+describe("montarClientes: pessoa física", () => {
+  it("leva o CPF com a pontuação e o endereço, como o app antigo, e nenhum código do ERP", () => {
+    const dados = dadosDaCarteira();
+    const endereco = { texto: "R DAS FLORES, 10", bairro: "CENTRO", cep: "13015002" };
+    dados.carteira = [cliente(4, { isPessoaFisica: true, documento: "1234567801", endereco })];
+    const [pessoa] = montarClientes(dados, referencia, ids).cliente;
+    expect(pessoa).toMatchObject({ codigo_erp: null, cpf: "012.345.678-01", endereco: "R DAS FLORES, 10", bairro: "CENTRO" });
+  });
+
+  it("não leva CPF na empresa", () => {
+    expect(montarClientes(dadosDaCarteira(), referencia, ids).cliente.find((linha) => linha.cliente === "cliente-4")?.cpf).toBeNull();
   });
 });

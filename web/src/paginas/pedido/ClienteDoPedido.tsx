@@ -41,7 +41,7 @@ function FatosDoCadastro({ cliente, tabela, cadastro }: Props & { cadastro: Cada
   return (
     <>
       <dl className={estilos.fatos}>
-        <Fato rotulo={cliente.codigoErp === null ? "CPF" : "CNPJ"}>{cadastro.documento}</Fato>
+        <Fato rotulo={cliente.cpf === null ? "CNPJ" : "CPF"}>{cadastro.documento}</Fato>
         {cadastro.inscricaoEstadual ? <Fato rotulo="Inscrição estadual">{cadastro.inscricaoEstadual}</Fato> : null}
         {cadastro.suframa ? <Fato rotulo="Suframa">{cadastro.suframa}</Fato> : null}
         <FatosDaVenda cliente={cliente} tabela={tabela} />
@@ -65,7 +65,7 @@ function FatosDaCarteira({ cliente, tabela }: Omit<Props, "cadastro">) {
   const local = `${cliente.cidade}/${cliente.uf}`;
   return (
     <dl className={estilos.fatos}>
-      <Fato rotulo="Código no ERP">{formatarCodigoDoCliente(cliente.codigoErp)}</Fato>
+      <Fato rotulo={cliente.cpf === null ? "Código no ERP" : "CPF"}>{cliente.cpf ?? formatarCodigoDoCliente(cliente)}</Fato>
       <FatosDaVenda cliente={cliente} tabela={tabela} />
       <Fato rotulo="Endereço">{cliente.endereco ? `${formatarEndereco(cliente.endereco)} · ${local}` : local}</Fato>
     </dl>

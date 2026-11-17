@@ -35,7 +35,7 @@ const ALIQUOTAS_DE_IPI = [0, 3.25, 5, 9.75];
 let transportadorasEmCache: Transportadora[] | null = null;
 
 /** O cliente como a ficha o conhece: o resumo e a razão social. */
-export type ClienteDoCadastro = Pick<ClienteResumo, "codigo" | "codigoErp" | "cidade" | "uf" | "endereco"> & { razaoSocial: string };
+export type ClienteDoCadastro = Pick<ClienteResumo, "codigo" | "codigoErp" | "cpf" | "cidade" | "uf" | "endereco"> & { razaoSocial: string };
 
 export function dadosDoPedidoFicticio(cliente: ClienteDoCadastro, produtos: readonly ProdutoDoCatalogo[]): DadosDoPedido {
   const aleatorio = criarAleatorio(Number.parseInt(cliente.codigo.slice(0, 8), 16) + 17);
@@ -76,7 +76,7 @@ function cadastroFicticio(cliente: ClienteDoCadastro): CadastroDoCliente {
   const faturamento: EnderecoDoCadastro = cliente.endereco
     ? { texto: cliente.endereco.texto, bairro: cliente.endereco.bairro, cidade: cliente.cidade, uf: cliente.uf, cep: cliente.endereco.cep }
     : enderecoFicticio(aleatorio, cliente);
-  const documento = isEmpresa ? cnpjFicticio(Number(cliente.codigo.slice(0, 8)), Number(cliente.codigo.slice(8)) || 1) : cpfFicticio(aleatorio);
+  const documento = isEmpresa ? cnpjFicticio(Number(cliente.codigo.slice(0, 8)), Number(cliente.codigo.slice(8)) || 1) : (cliente.cpf ?? "");
   const outroLocal = () => ({ ...enderecoFicticio(aleatorio, cliente), razaoSocial: cliente.razaoSocial, documento });
   return {
     razaoSocial: cliente.razaoSocial,
@@ -99,11 +99,6 @@ function enderecoFicticio(aleatorio: Aleatorio, cliente: Pick<ClienteResumo, "ci
     uf: cliente.uf,
     cep: String(aleatorio.inteiro(80_000_000, 89_999_999)),
   };
-}
-
-/** Um CPF só no formato: os dígitos do meio ficam escondidos, como num documento de exemplo. */
-function cpfFicticio(aleatorio: Aleatorio): string {
-  return `${aleatorio.inteiro(100, 999)}.***.***-${aleatorio.inteiro(10, 99)}`;
 }
 
 function transportadorasFicticias(): Transportadora[] {

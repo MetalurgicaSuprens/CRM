@@ -11,16 +11,16 @@ import type { ClienteResumo, ProdutoDoCatalogo } from "./tipos";
 const SO_CNPJ = /^[\d./\s-]+$/;
 const DIGITOS_DA_RAIZ_E_FILIAL = 12;
 
-/** Pelo nome fantasia ou pelo CNPJ, com ou sem pontuação e verificadores. A pessoa física, que não tem CNPJ, só pelo nome. */
-export function correspondeAoCliente(cliente: Pick<ClienteResumo, "nome" | "codigoErp">, busca: string): boolean {
+/** Pelo nome fantasia, pelo CNPJ ou, na pessoa física, pelo CPF, com ou sem pontuação e verificadores. */
+export function correspondeAoCliente(cliente: Pick<ClienteResumo, "nome" | "codigoErp" | "cpf">, busca: string): boolean {
   const termo = busca.trim();
   if (!termo) return true;
-  if (SO_CNPJ.test(termo)) return correspondeAoCnpj(cliente.codigoErp, termo);
+  if (SO_CNPJ.test(termo)) return correspondeAoCnpj(cliente.codigoErp, termo) || correspondeAoCpf(cliente.cpf, termo);
   return normalizarParaBusca(cliente.nome).includes(normalizarParaBusca(termo));
 }
 
 /** O que a busca olha do cliente e, no grupo, de cada CNPJ dele. */
-type ClienteDaBusca = Pick<ClienteResumo, "nome" | "codigoErp" | "cidade"> & { cnpjs: readonly ClienteDaBusca[] | null };
+type ClienteDaBusca = Pick<ClienteResumo, "nome" | "codigoErp" | "cpf" | "cidade"> & { cnpjs: readonly ClienteDaBusca[] | null };
 
 /**
  * Como `correspondeAoCliente`, e também pela cidade; o grupo, também pelo nome, pelo CNPJ ou pela
@@ -54,6 +54,12 @@ export function partNumberDaBusca(partNumbers: readonly string[], busca: string)
 
 function soLetrasEDigitos(texto: string): string {
   return normalizarParaBusca(texto).replace(/[^a-z0-9]/g, "");
+}
+
+/** O CPF digitado com ou sem pontuação, inteiro ou um pedaço. */
+function correspondeAoCpf(cpf: string | null, termo: string): boolean {
+  const digitos = termo.replace(/\D/g, "");
+  return cpf !== null && digitos.length > 0 && cpf.replace(/\D/g, "").includes(digitos);
 }
 
 function correspondeAoCnpj(codigoErp: string | null, termo: string): boolean {
