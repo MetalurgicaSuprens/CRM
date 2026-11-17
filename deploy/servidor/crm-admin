@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Os comandos de admin do CRM no servidor (server/src/admin/linhaDeComando.ts), como a conta do CRM:
+#   sudo crm-admin criar-admin --nome "Seu nome"
+#   sudo crm-admin usuarios
+set -euo pipefail
+cd /opt/crm/atual/server
+exec sudo -u crm env NODE_ENV=production /usr/bin/node src/admin/linhaDeComando.ts "$@"

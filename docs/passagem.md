@@ -69,14 +69,13 @@ Feito até agora: F1, F2, F3 e parte da F4 (veja as fases no plano).
 Falta, em ordem:
 1. **Conferir na tela o aviso de carga recusada da administração,** no computador e no celular. Para provocar o aviso, entregue na entrada de uma API de teste uma foto com o manifesto estragado.
 2. **Investigar um teste que falhou uma vez.** O teste "recusa enviar sem foto com manifesto" falhou uma vez no `npm test` da raiz e não se repetiu em 20 rodadas. Suspeita: um erro sem ouvinte no servidor simulado, vindo do teste anterior.
-3. **Hospedagem na Locaweb.** Ela mudou em 2026-11-09: o CRM fica numa VPS Linux da Locaweb, e não mais dentro da empresa. A VPS foi contratada em 2026-11-17 (4 GB, 2 vCPU, 70 GB, IP 177.153.193.33), e o domínio será crm.suprens.com.br. Quem instala é o TI, pelo roteiro `docs/instalacao-do-servidor.md`. O que muda:
-   - o IP fixo da empresa entra no `from=` da conta de troca do SFTP e no firewall do servidor;
-   - a administração abre por túnel SSH até 127.0.0.1:5179, porque deixa de existir "só LAN";
-   - a Locaweb vira operadora dos dados pela LGPD: precisa de contrato e de datacenter no Brasil;
-   - o firewall da empresa libera só a saída do extrator para o IP do servidor;
-   - plano sugerido: VPS de 4 GB (2 vCPU, 70 GB). O de 2 GB é o mínimo.
-   - Confirmar com a Locaweb: acesso root, IP público fixo, firewall por IP no painel e quantos snapshots o plano inclui.
-4. **Instalação do servidor:** o TI segue `docs/instalacao-do-servidor.md` (Apache, systemd, a conta SFTP `crm-troca` com chroot, o firewall e o pacote de publicação). O servidor recebe o código pelo pacote, nunca por `git pull`. Quando a F5 trouxer a saída de pedidos, a auditoria e o backup, o roteiro precisa ser atualizado.
+3. **Servidor na Locaweb: no ar desde 2026-11-17.** VPS 4 GB Linux (2 vCPU, 70 GB, Ubuntu 24.04), separada da do site, em `https://crm.suprens.com.br`.
+   - O DNS do `suprens.com.br` é o da própria empresa (`dns1`/`dns2.suprens.com.br`), e não o da Locaweb: o registro A do `crm` foi criado lá.
+   - Instalado com o `deploy/` (`deploy/README.md`). A conta de administração do servidor é a `cpd`, só com chave. O root não entra pela rede.
+   - O IP fixo da Suprens está no `servidor.conf` local, fora do git.
+   - Conferido de fora: só a 443 aberta para todos, a 22 só da Suprens, a 80 fechada, certificado do Let's Encrypt e cabeçalhos de segurança; a entrada por senha não existe no servidor.
+   - Na primeira instalação, o root não entrava com senha pelo SSH (padrão do Ubuntu): a chave foi posta pelo console da Locaweb.
+4. **Falta no servidor:** a chave do extrator (rodar o `preparar-servidor.sh` de novo com a `CHAVE_DO_EXTRATOR`), a primeira foto, a rota `/api/saude` e os alertas.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
    - O Windows recusa a chave privada em `data/` ("bad permissions"), porque todo usuário do computador lê a pasta.
    - O mesmo vale para a chave do id do cliente e para a lista de autorizados: elas também saem de `data/` quando a máquina do extrator for escolhida.

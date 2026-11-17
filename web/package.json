@@ -7,6 +7,7 @@
     "dev:real": "vite --mode real",
     "dev:admin": "vite --config vite.admin.config.ts --mode real",
     "build": "tsc --noEmit && vite build",
+    "build:real": "tsc --noEmit && vite build --mode real",
     "build:admin": "tsc --noEmit && vite build --config vite.admin.config.ts --mode real",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

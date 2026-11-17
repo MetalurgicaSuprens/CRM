@@ -1,0 +1,7 @@
+# O mod_md renova o certificado sozinho, mas o novo só vale depois de recarregar o Apache.
+[Unit]
+Description=Recarregar o Apache para valer o certificado renovado
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl reload apache2

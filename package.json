@@ -9,7 +9,8 @@
     "dominio",
     "extrator",
     "server",
-    "web"
+    "web",
+    "deploy"
   ],
   "scripts": {
     "dev:web": "npm run dev --workspace web",
@@ -19,6 +20,7 @@
     "foto": "npm run foto --workspace extrator --",
     "enviar": "npm run enviar --workspace extrator --",
     "admin": "npm run admin --workspace server --",
+    "pacote": "npm run pacote --workspace deploy --",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
