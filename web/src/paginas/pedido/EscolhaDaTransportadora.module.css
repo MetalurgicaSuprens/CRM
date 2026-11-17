@@ -1,0 +1,68 @@
+.cadastrar {
+  align-self: flex-start;
+  gap: 6px;
+}
+
+.nota {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+}
+
+.erro {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-queda);
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-acento);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.cadastro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.campoRotulado {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--tam-pequeno);
+  font-weight: 500;
+}
+
+.campo {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  font: inherit;
+  font-weight: 400;
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
+}
+
+.cidadeEUf {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem;
+  gap: var(--esp-3);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+}

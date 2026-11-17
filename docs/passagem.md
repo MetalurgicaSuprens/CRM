@@ -109,11 +109,20 @@ Nova tela de inclusão de pedidos (proposta aceita pelo Lucas em 2026-11-17), ba
   - "Assim que possível" = 5 dias úteis depois de hoje;
   - "Programada" = a data que o representante escolher, desde que seja a partir de 5 dias úteis.
 - **Também aceitos:** começar pelo último pedido, aviso de pedido repetido para o mesmo cliente e resumo antes de enviar, com o total com IPI.
-- **Protótipo feito em 2026-11-17, com dados fictícios** (`web/src/paginas/DadosDoPedido.tsx`, regras em `web/src/dados/dadosDoPedido.ts`):
-  - o bloco começa fechado num resumo e só abre sozinho quando falta a transportadora;
-  - o rascunho guarda as escolhas no app.db (migração 5, coluna `escolhas` em JSON, com formato conferido na rota);
-  - no modo real, o catálogo ainda responde `dadosDoPedido: null` e a tela mostra só a entrega, como antes. Falta a foto trazer as transportadoras, as condições, o IPI, o último pedido e a frequência de cada escolha;
-  - falta também o item da OC por produto, para os clientes que o usam.
+- **Protótipo feito em 2026-11-17, com dados fictícios** (`web/src/paginas/pedido/`, regras em `web/src/dados/dadosDoPedido.ts` e `web/src/dados/pedido.ts`). A primeira versão escondia os dados num resumo com "Alterar". O Lucas quis ver tudo, como no app antigo, e aprovou o redesenho como um **documento de pedido**:
+  - **Cliente**, no alto, em texto discreto, porque é o que se confere: CNPJ, inscrição estadual, status, tabela, telefone, e-mail do XML e os endereços. A entrega e a cobrança em outro endereço aparecem em destaque.
+  - **Condições do pedido**, sempre abertas e mudadas ali mesmo, com os nomes do app antigo: transportadora, condição de pagamento, tipo de entrega, ordem de compra, classificação da venda, frete parcial e observações. Embaixo de cada uma vai de onde a escolha veio. O que falta escolher fica no tom de alerta, no próprio campo.
+  - **Itens**, o corpo do documento:
+    - a busca fica na linha do título. Enter inclui o produto e leva o cursor à quantidade; Enter de novo volta à busca;
+    - com a busca vazia, o clique mostra o que o cliente já comprou;
+    - as colunas são as da grade do app antigo: quantidade, cento, valor sem IPI, IPI e valor com IPI;
+    - os itens ficam na ordem em que entraram. O catálogo deixou de ser uma lista fixa ao lado.
+  - **Totais** num rodapé preso embaixo da janela: itens, peças, valor sem IPI, IPI, valor com IPI e o envio, com o que falta ao lado do botão.
+  - **No celular** (menos de 768 px de largura útil), as mesmas partes viram quatro etapas: Cliente, Itens, Condições e Revisar. Quem decide é o CSS, por `data-etapa`; a etapa fica no endereço (`?etapa=`), e o voltar do navegador volta uma etapa.
+  - **A folha dos itens** tem pelo menos a altura da janela: ao clicar na busca numa tela baixa, a página rola até ela e a lista cabe inteira.
+  - **O rascunho** guarda as escolhas no app.db (migração 5, coluna `escolhas` em JSON, com formato conferido na rota).
+  - **No modo real**, o catálogo ainda responde `dadosDoPedido: null`: a tela mostra o cliente com o que a carteira traz e, nas condições, só a entrega e as observações. Falta a foto trazer o cadastro do cliente, as transportadoras, as condições, o IPI, o último pedido e a frequência de cada escolha.
+  - **Falta também** o item da OC por produto, para os clientes que o usam.
 - **Transportadoras com código especial:** 616108610001 = Suprens (a própria empresa). O Lucas ficou de dizer o que são 85819999 e 78499999.
 
 Esperando resposta do Lucas, sem pressa:

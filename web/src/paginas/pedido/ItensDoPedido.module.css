@@ -1,0 +1,322 @@
+/*
+ * A folha dos itens tem pelo menos a altura da janela, menos a barra superior e o rodapé preso: ao rolar
+ * até ela, a tela inteira fica para os itens e para a lista da busca, e a página não muda de altura
+ * quando a lista abre e fecha.
+ */
+.itens {
+  min-height: calc(100dvh - var(--altura-barra-superior) - 8.5rem);
+  container-type: inline-size;
+}
+
+/* O título, a busca e o repetir numa linha; sem lugar, a busca desce e ocupa a largura toda */
+.cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-3) var(--esp-5);
+}
+
+/* Quebra a linha no celular, em vez de alargar a página */
+.repetir {
+  max-width: 100%;
+  height: auto;
+  min-height: 2.75rem;
+  gap: 6px;
+  white-space: normal;
+  text-align: left;
+}
+
+.vazio {
+  padding: var(--esp-5) var(--esp-4);
+  border: 1px dashed var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  font-size: var(--tam-pequeno);
+  text-align: center;
+  color: var(--cor-texto-suave);
+}
+
+/* O campo das peças mais estreito que o padrão (cabem 7 dígitos): sobra lugar para o código */
+.lista {
+  --largura-do-campo-da-quantidade: 3.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * No celular, cada item é um bloco de quatro linhas: o produto, o valor e o X; a quantidade e o preço
+ * do cento; de onde o preço vem; o IPI e o valor com IPI. Com lugar (50 rem), vira uma linha de tabela
+ * embaixo dos títulos das colunas, como a grade do app antigo.
+ */
+.item,
+.titulos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 28px;
+  align-items: center;
+  column-gap: var(--esp-2);
+}
+
+.item {
+  grid-template-areas:
+    "produto valor tirar"
+    "quantidade preco preco"
+    "referencias referencias referencias"
+    "ipi comipi comipi";
+  row-gap: var(--esp-2);
+  padding: var(--esp-3) 0;
+  border-bottom: 1px solid var(--cor-linha);
+  font-size: var(--tam-pequeno);
+  font-variant-numeric: tabular-nums;
+}
+
+.semIpi .item {
+  grid-template-areas:
+    "produto valor tirar"
+    "quantidade preco preco"
+    "referencias referencias referencias";
+}
+
+/* A quantidade é o componente Quantidade, sem classe daqui: cai na célula dela pelo papel */
+.item > [role="group"] {
+  grid-area: quantidade;
+  justify-self: start;
+}
+
+.titulos {
+  display: none;
+}
+
+.produto {
+  grid-area: produto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.codigo,
+.descricao {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codigo {
+  font-weight: 600;
+}
+
+.descricao {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.valor {
+  grid-area: valor;
+  font-weight: 600;
+  text-align: right;
+}
+
+.ipi {
+  grid-area: ipi;
+}
+
+.comIpi {
+  grid-area: comipi;
+  text-align: right;
+}
+
+.ipi,
+.comIpi {
+  font-size: var(--tam-legenda);
+}
+
+.rotuloNoCelular {
+  color: var(--cor-texto-suave);
+}
+
+/* Pequeno e apagado; sob o mouse, fica vermelho, como o "Descartar rascunho" */
+.tirar {
+  grid-area: tirar;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  color: var(--cor-texto-suave);
+}
+
+.tirar:hover {
+  background: var(--cor-superficie-2);
+  color: var(--cor-queda);
+}
+
+/* O preço do cento, da altura e do contorno da quantidade, com o "R$" dentro */
+.preco {
+  grid-area: preco;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  width: 7.5rem;
+  height: 2.25rem;
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+}
+
+.preco:focus-within {
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
+}
+
+.prefixoDoPreco {
+  padding-left: var(--esp-2);
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.preco input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--esp-2) 0 4px;
+  border: 0;
+  background: none;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  outline: none;
+}
+
+.preco input:focus-visible {
+  box-shadow: none;
+}
+
+.precoOculto {
+  flex: 1 1 auto;
+  padding-right: var(--esp-2);
+  letter-spacing: 0.08em;
+  text-align: right;
+  color: var(--cor-texto-suave);
+}
+
+/* De onde o preço vem, em cinza: o verde do dinheiro fica no valor do item */
+.referencias,
+.avisoDoPreco {
+  grid-area: referencias;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--tam-legenda);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.referencias,
+.referencias span {
+  color: var(--cor-texto-suave);
+}
+
+.avisoDoPreco {
+  color: var(--cor-alerta);
+  font-weight: 500;
+}
+
+@container (min-width: 50rem) {
+  .item,
+  .titulos {
+    grid-template-columns: minmax(0, 1fr) 8.5rem 7.5rem 7rem 6rem 7rem 28px;
+    column-gap: var(--esp-3);
+  }
+
+  .semIpi .item,
+  .semIpi .titulos {
+    grid-template-columns: minmax(0, 1fr) 8.5rem 7.5rem 7rem 28px;
+  }
+
+  .item {
+    grid-template-areas:
+      "produto quantidade preco valor ipi comipi tirar"
+      "referencias referencias referencias referencias referencias referencias referencias";
+    row-gap: 4px;
+    padding: var(--esp-2) var(--esp-3);
+  }
+
+  .semIpi .item {
+    grid-template-areas:
+      "produto quantidade preco valor tirar"
+      "referencias referencias referencias referencias referencias";
+  }
+
+  .item:hover {
+    background: var(--cor-superficie-2);
+  }
+
+  .preco {
+    justify-self: stretch;
+    width: auto;
+  }
+
+  .valor {
+    font-weight: 400;
+  }
+
+  .ipi,
+  .comIpi {
+    font-size: inherit;
+    text-align: right;
+  }
+
+  .comIpi {
+    font-weight: 600;
+  }
+
+  .rotuloNoCelular {
+    display: none;
+  }
+
+  /* A faixa grafite do título das colunas, como nas outras tabelas (tokens --fundo-do-cabecalho) */
+  .titulos {
+    display: grid;
+    grid-template-areas: "produto quantidade preco valor ipi comipi tirar";
+    padding: var(--esp-2) var(--esp-3);
+    border-radius: var(--raio-pequeno);
+    background: var(--fundo-do-cabecalho);
+    color: var(--texto-do-cabecalho);
+    font-size: var(--tam-legenda);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .semIpi .titulos {
+    grid-template-areas: "produto quantidade preco valor tirar";
+  }
+
+  .tituloDoProduto {
+    grid-area: produto;
+  }
+
+  .tituloDaQuantidade {
+    grid-area: quantidade;
+    text-align: center;
+  }
+
+  .tituloDoPreco {
+    grid-area: preco;
+    text-align: right;
+  }
+
+  .tituloDoValor {
+    grid-area: valor;
+    text-align: right;
+  }
+
+  .tituloDoIpi {
+    grid-area: ipi;
+    text-align: right;
+  }
+
+  .tituloDoComIpi {
+    grid-area: comipi;
+    text-align: right;
+  }
+}

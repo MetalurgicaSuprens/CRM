@@ -1,0 +1,149 @@
+.busca {
+  /* Ao rolar até a busca (darLugarParaALista), ela para logo abaixo da barra superior, com a borda do cartão à vista */
+  scroll-margin-top: calc(var(--altura-barra-superior) + 2.25rem);
+  position: relative;
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+/* Maior que os outros campos: é por onde o pedido anda */
+.campo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  height: 2.75rem;
+  padding: 0 var(--esp-3);
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-1);
+  color: var(--cor-texto-suave);
+}
+
+.campo:focus-within {
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
+  color: var(--cor-acento);
+}
+
+.campo input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  outline: none;
+  color: var(--cor-texto);
+  font-size: var(--tam-texto);
+  text-overflow: ellipsis;
+}
+
+/* O foco global (base.css) desenharia um segundo contorno, dentro da caixa */
+.campo input:focus-visible {
+  box-shadow: none;
+}
+
+/* A lista abre por cima dos itens, colada no campo, e por baixo do rodapé preso (z-index 4), que não some */
+.lista {
+  position: absolute;
+  inset: calc(100% + 4px) 0 auto 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  max-height: min(24rem, 55dvh);
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-3);
+  overflow: hidden;
+}
+
+.titulo {
+  padding: var(--esp-2) var(--esp-3);
+  border-bottom: 1px solid var(--cor-linha);
+  background: var(--cor-superficie-2);
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  color: var(--cor-texto-2);
+}
+
+.opcoes {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* O produto à esquerda; à direita, a situação, a embalagem e o preço do cento */
+.opcao {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 4.5rem 5.5rem;
+  align-items: center;
+  gap: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  border-bottom: 1px solid var(--cor-linha);
+  font-size: var(--tam-pequeno);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.opcao:last-child {
+  border-bottom: 0;
+}
+
+.opcao[aria-selected="true"] {
+  background: var(--cor-acento-fundo);
+}
+
+.produto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.codigo {
+  font-weight: 600;
+}
+
+.descricao,
+.situacao {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.embalagem,
+.preco {
+  text-align: right;
+}
+
+.embalagem {
+  color: var(--cor-texto-2);
+}
+
+/* No celular, a situação desce para baixo do produto e sobra largura para o código */
+@media (max-width: 560px) {
+  .opcao {
+    grid-template-columns: minmax(0, 1fr) 4rem 5.5rem;
+    grid-template-areas:
+      "produto embalagem preco"
+      "situacao situacao situacao";
+    row-gap: 0;
+  }
+
+  .produto {
+    grid-area: produto;
+  }
+
+  .situacao {
+    grid-area: situacao;
+  }
+
+  .embalagem {
+    grid-area: embalagem;
+  }
+
+  .preco {
+    grid-area: preco;
+  }
+}

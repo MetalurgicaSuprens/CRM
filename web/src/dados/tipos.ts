@@ -317,11 +317,38 @@ export type Transportadora = { codigo: string; nome: string; cnpj: string; cidad
 
 export type CondicaoDePagamento = { codigo: string; descricao: string };
 
+/** Um endereço do cadastro do cliente, como está no ERP. */
+export type EnderecoDoCadastro = { texto: string; bairro: string | null; cidade: string; uf: string; cep: string | null };
+
+/** O local de cobrança ou de entrega que não é o do faturamento: pode ser de outro CNPJ. */
+export type LocalDoCadastro = EnderecoDoCadastro & { razaoSocial: string; documento: string };
+
 /**
- * O histórico que deixa os dados do pedido já preenchidos com o que o representante costuma escolher
- * para o cliente (proposta aceita pelo Lucas em 2026-11-17), e as listas para escolher outra coisa.
+ * O cadastro que o representante confere ao incluir o pedido, como no app antigo dos representantes
+ * (regra 3 do CLAUDE.md, mudada em 2026-11-17). Só de clientes da carteira do login.
+ */
+export type CadastroDoCliente = {
+  razaoSocial: string;
+  /** O CNPJ ou o CPF, já com a pontuação. */
+  documento: string;
+  inscricaoEstadual: string | null;
+  suframa: string | null;
+  telefone: string | null;
+  /** O e-mail que recebe o XML da nota. */
+  emailDoXml: string | null;
+  faturamento: EnderecoDoCadastro;
+  /** null = no endereço do faturamento. */
+  cobranca: LocalDoCadastro | null;
+  entrega: LocalDoCadastro | null;
+};
+
+/**
+ * O que o representante confere (o cadastro) e o histórico que deixa as condições do pedido já
+ * preenchidas com o que ele costuma escolher para o cliente (proposta aceita pelo Lucas em
+ * 2026-11-17), com as listas para escolher outra coisa.
  */
 export type DadosDoPedido = {
+  cadastro: CadastroDoCliente;
   /** A condição de pagamento do cadastro do cliente (CRCL.COND_PGTO). */
   condicaoDoCadastro: string;
   condicoes: CondicaoDePagamento[];

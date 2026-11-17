@@ -115,18 +115,33 @@ export function transportadoraDoCnpj(dados: Pick<DadosDoPedido, "transportadoras
   return dados.transportadoras.find((transportadora) => digitosDoCnpj(transportadora.cnpj) === digitos) ?? null;
 }
 
-/** O total com o IPI de cada produto, como o SGI6R mostra: o cliente costuma perguntar por ele. */
-export function totalComIpi(itens: readonly (ItemComPreco & { codigo: string })[], ipi: Readonly<Record<string, number>>): number {
-  return arredondarAoCentavo(itens.reduce((total, item) => total + valorDaLinha(item) * (1 + (ipi[item.codigo] ?? 0) / 100), 0));
+type ItemComCodigo = ItemComPreco & { codigo: string };
+
+/** O IPI do item em reais, no centavo: a alíquota do produto sobre o valor dele. */
+export function valorDoIpi(item: ItemComCodigo, ipi: Readonly<Record<string, number>>): number {
+  return arredondarAoCentavo((valorDaLinha(item) * (ipi[item.codigo] ?? 0)) / 100);
 }
 
-/** As quantidades do último pedido do cliente, só dos produtos que ainda estão no catálogo dele. */
-export function quantidadesDoUltimoPedido(
-  ultimo: NonNullable<DadosDoPedido["ultimoPedido"]>,
-  produtos: readonly { codigo: string }[],
-): Record<string, number> {
+/** O rodapé do pedido, como a faixa de totais do SGI6R. Sem as alíquotas (foto antes da F5), o IPI fica null. */
+export type TotaisDoPedido = { itens: number; pecas: number; semIpi: number; ipi: number | null; comIpi: number | null };
+
+/** O valor com IPI é a soma do que a tela mostra em cada item: valor sem IPI mais o IPI, cada um no centavo. */
+export function totaisDoPedido(itens: readonly ItemComCodigo[], ipi: Readonly<Record<string, number>> | null): TotaisDoPedido {
+  const semIpi = arredondarAoCentavo(itens.reduce((total, item) => total + valorDaLinha(item), 0));
+  const totalDoIpi = ipi ? arredondarAoCentavo(itens.reduce((total, item) => total + valorDoIpi(item, ipi), 0)) : null;
+  return {
+    itens: itens.length,
+    pecas: itens.reduce((total, item) => total + item.quantidade, 0),
+    semIpi,
+    ipi: totalDoIpi,
+    comIpi: totalDoIpi === null ? null : arredondarAoCentavo(semIpi + totalDoIpi),
+  };
+}
+
+/** Os itens do último pedido do cliente, na ordem dele, só dos produtos que ainda estão no catálogo. */
+export function itensDoUltimoPedido(ultimo: NonNullable<DadosDoPedido["ultimoPedido"]>, produtos: readonly { codigo: string }[]): { codigo: string; quantidade: number }[] {
   const noCatalogo = new Set(produtos.map(({ codigo }) => codigo));
-  return Object.fromEntries(ultimo.itens.filter((item) => noCatalogo.has(item.codigo) && item.quantidade > 0).map((item) => [item.codigo, item.quantidade]));
+  return ultimo.itens.filter((item) => noCatalogo.has(item.codigo) && item.quantidade > 0);
 }
 
 /**

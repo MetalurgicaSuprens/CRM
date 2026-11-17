@@ -68,6 +68,34 @@ export function quantidadeDigitada(texto: string): number {
   return Number.isFinite(pecas) && pecas > 0 ? pecas : 0;
 }
 
+/** Um produto do pedido e as peças dele, na ordem em que o representante incluiu. */
+export type ItemEscolhido = { codigo: string; quantidade: number };
+
+/**
+ * O pedido com a quantidade nova do produto: o que já está nele fica no lugar, o novo entra no fim,
+ * como numa nota, e o que zera sai.
+ */
+export function comQuantidade(itens: readonly ItemEscolhido[], codigo: string, quantidade: number): ItemEscolhido[] {
+  if (quantidade <= 0) return itens.filter((item) => item.codigo !== codigo);
+  if (!itens.some((item) => item.codigo === codigo)) return [...itens, { codigo, quantidade }];
+  return itens.map((item) => (item.codigo === codigo ? { codigo, quantidade } : item));
+}
+
+/** Um item do pedido com tudo o que a tela mostra dele: o produto do catálogo, as peças e o preço do cento. */
+export type LinhaEscolhida = ProdutoDoCatalogo & { quantidade: number; precoCento: number };
+
+/**
+ * Os itens do pedido, na ordem em que entraram, com o produto do catálogo e o preço: o que o
+ * representante mudou ou, sem mudança, o preço inicial do item. O produto que saiu do catálogo fica de fora.
+ */
+export function linhasEscolhidas(itens: readonly ItemEscolhido[], precos: Readonly<Record<string, number>>, produtos: readonly ProdutoDoCatalogo[]): LinhaEscolhida[] {
+  const noCatalogo = new Map(produtos.map((produto) => [produto.codigo, produto]));
+  return itens.flatMap(({ codigo, quantidade }) => {
+    const produto = noCatalogo.get(codigo);
+    return produto && quantidade > 0 ? [{ ...produto, quantidade, precoCento: precos[codigo] ?? precoInicialDoItem(produto) }] : [];
+  });
+}
+
 /** O botão "+": a próxima embalagem fechada. De 300, num item de 500, vai a 500; de 500, a 1.000. */
 export function proximaEmbalagem(pecas: number, embalagem: number): number {
   return (Math.floor(pecas / embalagem) + 1) * embalagem;

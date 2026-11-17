@@ -1,0 +1,74 @@
+.cliente {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  container-type: inline-size;
+}
+
+/* O nome do cliente um pouco maior que o título dos cartões: é ele que o representante confere primeiro */
+.cliente .nome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2);
+  font-size: var(--tam-destaque);
+}
+
+/*
+ * O que se confere fica em texto, sem contorno de campo: o nome do dado em cinza e o valor embaixo.
+ * Os dados curtos correm numa linha, cada um do seu tamanho; os três endereços, embaixo, lado a lado.
+ */
+.fatos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-6);
+  margin: 0;
+}
+
+.enderecos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--esp-2) var(--esp-6);
+  margin: 0;
+}
+
+.fato {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--tam-pequeno);
+}
+
+.fato dt {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.fato dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--cor-texto);
+}
+
+.mesmo {
+  color: var(--cor-texto-2);
+}
+
+.outroLocal {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+}
+
+.donoDoLocal {
+  font-size: var(--tam-legenda);
+  font-weight: 400;
+  color: var(--cor-texto-suave);
+}
+
+/* O endereço do faturamento é o mais longo e fica com mais largura */
+@container (min-width: 44rem) {
+  .enderecos {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

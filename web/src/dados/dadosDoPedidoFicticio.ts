@@ -1,5 +1,5 @@
 import { criarAleatorio, type Aleatorio } from "./aleatorio";
-import type { Classificacao, CondicaoDePagamento, DadosDoPedido, ProdutoDoCatalogo, Transportadora, Uso } from "./tipos";
+import type { CadastroDoCliente, Classificacao, ClienteResumo, CondicaoDePagamento, DadosDoPedido, EnderecoDoCadastro, ProdutoDoCatalogo, Transportadora, Uso } from "./tipos";
 
 /*
  * Os dados do pedido no protótipo: transportadoras e condições de pagamento inventadas, e um histórico
@@ -34,12 +34,16 @@ const ALIQUOTAS_DE_IPI = [0, 3.25, 5, 9.75];
 
 let transportadorasEmCache: Transportadora[] | null = null;
 
-export function dadosDoPedidoFicticio(codigoCliente: string, produtos: readonly ProdutoDoCatalogo[]): DadosDoPedido {
-  const aleatorio = criarAleatorio(Number.parseInt(codigoCliente.slice(0, 8), 16) + 17);
+/** O cliente como a ficha o conhece: o resumo e a razão social. */
+export type ClienteDoCadastro = Pick<ClienteResumo, "codigo" | "codigoErp" | "cidade" | "uf" | "endereco"> & { razaoSocial: string };
+
+export function dadosDoPedidoFicticio(cliente: ClienteDoCadastro, produtos: readonly ProdutoDoCatalogo[]): DadosDoPedido {
+  const aleatorio = criarAleatorio(Number.parseInt(cliente.codigo.slice(0, 8), 16) + 17);
   const transportadoras = transportadorasFicticias();
   const comHistorico = !aleatorio.chance(0.12);
   const condicaoDoCadastro = aleatorio.escolher(CONDICOES).codigo;
   return {
+    cadastro: cadastroFicticio(cliente),
     condicaoDoCadastro,
     condicoes: CONDICOES,
     condicoesUsadas: comHistorico ? usosDe(aleatorio, [condicaoDoCadastro, aleatorio.escolher(CONDICOES).codigo]) : [],
@@ -58,11 +62,55 @@ export function dadosDoPedidoFicticio(codigoCliente: string, produtos: readonly 
   };
 }
 
+const RUAS = ["Rua das Indústrias", "Av. Brasil", "Rod. BR-277, km", "Rua Sete de Setembro", "Av. das Torres", "Rua Marechal Deodoro"];
+const BAIRROS = ["Centro", "Distrito Industrial", "Jardim das Américas", "Vila Nova", "Parque Industrial"];
+
+/**
+ * O cadastro que o representante confere, tirado do código do cliente por um sorteio só dele, para não
+ * mexer no histórico das escolhas. Um em cada quatro clientes entrega em outro endereço, e um em cada
+ * dez cobra de outro.
+ */
+function cadastroFicticio(cliente: ClienteDoCadastro): CadastroDoCliente {
+  const aleatorio = criarAleatorio(Number.parseInt(cliente.codigo.slice(0, 8), 16) + 31);
+  const isEmpresa = cliente.codigoErp !== null;
+  const faturamento: EnderecoDoCadastro = cliente.endereco
+    ? { texto: cliente.endereco.texto, bairro: cliente.endereco.bairro, cidade: cliente.cidade, uf: cliente.uf, cep: cliente.endereco.cep }
+    : enderecoFicticio(aleatorio, cliente);
+  const documento = isEmpresa ? cnpjFicticio(Number(cliente.codigo.slice(0, 8)), Number(cliente.codigo.slice(8)) || 1) : cpfFicticio(aleatorio);
+  const outroLocal = () => ({ ...enderecoFicticio(aleatorio, cliente), razaoSocial: cliente.razaoSocial, documento });
+  return {
+    razaoSocial: cliente.razaoSocial,
+    documento,
+    inscricaoEstadual: isEmpresa ? String(aleatorio.inteiro(100_000_000, 999_999_999)) : null,
+    suframa: null,
+    telefone: `(${aleatorio.inteiro(41, 49)}) 3${aleatorio.inteiro(100, 999)}-${aleatorio.inteiro(1_000, 9_999)}`,
+    emailDoXml: isEmpresa ? `nfe@cliente${cliente.codigo.slice(0, 4)}.exemplo.com.br` : null,
+    faturamento,
+    cobranca: isEmpresa && aleatorio.chance(0.1) ? outroLocal() : null,
+    entrega: isEmpresa && aleatorio.chance(0.25) ? outroLocal() : null,
+  };
+}
+
+function enderecoFicticio(aleatorio: Aleatorio, cliente: Pick<ClienteResumo, "cidade" | "uf">): EnderecoDoCadastro {
+  return {
+    texto: `${aleatorio.escolher(RUAS)} ${aleatorio.inteiro(10, 2_900)}`,
+    bairro: aleatorio.escolher(BAIRROS),
+    cidade: cliente.cidade,
+    uf: cliente.uf,
+    cep: String(aleatorio.inteiro(80_000_000, 89_999_999)),
+  };
+}
+
+/** Um CPF só no formato: os dígitos do meio ficam escondidos, como num documento de exemplo. */
+function cpfFicticio(aleatorio: Aleatorio): string {
+  return `${aleatorio.inteiro(100, 999)}.***.***-${aleatorio.inteiro(10, 99)}`;
+}
+
 function transportadorasFicticias(): Transportadora[] {
   transportadorasEmCache ??= NOMES_DAS_TRANSPORTADORAS.map(([nome, cidade, uf], i) => ({
     codigo: String(i + 1),
     nome,
-    cnpj: cnpjFicticio(10_203_040 + i * 1_111_111),
+    cnpj: cnpjFicticio(10_203_040 + i * 1_111_111, 1),
     cidade,
     uf,
   }));
@@ -104,9 +152,9 @@ function aliquotaDaFamilia(familia: string): number {
   return ALIQUOTAS_DE_IPI[semente % ALIQUOTAS_DE_IPI.length] ?? 0;
 }
 
-/** Um CNPJ de matriz com os dígitos verificadores certos, a partir de uma raiz de 8 dígitos. */
-function cnpjFicticio(raiz: number): string {
-  const base = [...`${String(raiz).padStart(8, "0")}0001`].map(Number);
+/** Um CNPJ com os dígitos verificadores certos, a partir da raiz de 8 dígitos e da filial. */
+function cnpjFicticio(raiz: number, filial: number): string {
+  const base = [...`${String(raiz).padStart(8, "0")}${String(filial).padStart(4, "0")}`].map(Number);
   const digito = (numeros: number[]) => {
     const pesos = numeros.length === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
     const resto = pesos.reduce((soma, peso, i) => soma + peso * (numeros[i] ?? 0), 0) % 11;

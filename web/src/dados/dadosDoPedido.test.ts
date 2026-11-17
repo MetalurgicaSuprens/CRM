@@ -8,8 +8,8 @@ import {
   isCnpjValido,
   pedidoJaEnviadoHoje,
   problemasDasEscolhas,
-  quantidadesDoUltimoPedido,
-  totalComIpi,
+  itensDoUltimoPedido,
+  totaisDoPedido,
   transportadoraDoCnpj,
   transportadoraSugerida,
   vezesQueOClienteEscolheu,
@@ -18,6 +18,17 @@ import type { DadosDoPedido } from "./tipos";
 
 function dados(mudancas: Partial<DadosDoPedido> = {}): DadosDoPedido {
   return {
+    cadastro: {
+      razaoSocial: "Cliente de Teste Ltda",
+      documento: "11.444.777/0001-61",
+      inscricaoEstadual: null,
+      suframa: null,
+      telefone: null,
+      emailDoXml: null,
+      faturamento: { texto: "Rua A, 1", bairro: null, cidade: "Curitiba", uf: "PR", cep: null },
+      cobranca: null,
+      entrega: null,
+    },
     condicaoDoCadastro: "1030",
     condicoes: [
       { codigo: "1030", descricao: "30 DIAS" },
@@ -142,20 +153,30 @@ describe("problemasDasEscolhas", () => {
   });
 });
 
-describe("totalComIpi", () => {
-  it("soma o IPI de cada produto ao valor dele", () => {
-    const itens = [
-      { codigo: "A", quantidade: 1_000, precoCento: 10 },
-      { codigo: "B", quantidade: 500, precoCento: 20 },
-    ];
-    expect(totalComIpi(itens, { A: 5, B: 0 })).toBe(205);
+describe("totaisDoPedido", () => {
+  const itens = [
+    { codigo: "A", quantidade: 1_000, precoCento: 10 },
+    { codigo: "B", quantidade: 500, precoCento: 20 },
+  ];
+
+  it("conta os itens e as peças e soma o IPI de cada produto ao valor dele", () => {
+    expect(totaisDoPedido(itens, { A: 5, B: 0 })).toEqual({ itens: 2, pecas: 1_500, semIpi: 200, ipi: 5, comIpi: 205 });
+  });
+
+  it("fecha no centavo: o valor com IPI é o sem IPI mais o IPI que a tela mostra", () => {
+    const totais = totaisDoPedido([{ codigo: "A", quantidade: 333, precoCento: 9.99 }], { A: 3.25 });
+    expect(totais).toMatchObject({ semIpi: 33.27, ipi: 1.08, comIpi: 34.35 });
+  });
+
+  it("sem as alíquotas, deixa o IPI de fora", () => {
+    expect(totaisDoPedido(itens, null)).toMatchObject({ semIpi: 200, ipi: null, comIpi: null });
   });
 });
 
-describe("quantidadesDoUltimoPedido", () => {
-  it("repete as quantidades só dos produtos que continuam no catálogo", () => {
-    const ultimo = { data: "2026-10-01", itens: [{ codigo: "A", quantidade: 500 }, { codigo: "SAIU", quantidade: 200 }] };
-    expect(quantidadesDoUltimoPedido(ultimo, [{ codigo: "A" }, { codigo: "B" }])).toEqual({ A: 500 });
+describe("itensDoUltimoPedido", () => {
+  it("repete, na ordem do pedido, só os produtos que continuam no catálogo", () => {
+    const ultimo = { data: "2026-10-01", itens: [{ codigo: "B", quantidade: 300 }, { codigo: "SAIU", quantidade: 200 }, { codigo: "A", quantidade: 500 }] };
+    expect(itensDoUltimoPedido(ultimo, [{ codigo: "A" }, { codigo: "B" }])).toEqual([{ codigo: "B", quantidade: 300 }, { codigo: "A", quantidade: 500 }]);
   });
 });
 

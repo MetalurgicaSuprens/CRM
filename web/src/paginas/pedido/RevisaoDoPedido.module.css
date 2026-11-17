@@ -1,0 +1,73 @@
+.resumo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.linha {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: var(--esp-2);
+  font-size: var(--tam-pequeno);
+}
+
+.linha dt {
+  color: var(--cor-texto-2);
+}
+
+.linha dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.falta {
+  color: var(--cor-alerta);
+  font-weight: 500;
+}
+
+.problemas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--esp-3);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+  font-size: var(--tam-pequeno);
+}
+
+.observacao {
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+  overflow-wrap: anywhere;
+}
+
+.itens {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--cor-linha);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 6.5rem;
+  gap: var(--esp-3);
+  padding: var(--esp-2) 0;
+  border-bottom: 1px solid var(--cor-linha);
+  font-size: var(--tam-pequeno);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.codigo {
+  overflow: hidden;
+  font-weight: 600;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pecas {
+  color: var(--cor-texto-2);
+}

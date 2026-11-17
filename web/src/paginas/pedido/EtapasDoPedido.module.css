@@ -1,0 +1,65 @@
+/* Só no celular: no computador, o documento inteiro cabe na tela e não há etapas */
+.etapas {
+  display: none;
+}
+
+@container (max-width: 47.99rem) {
+  .etapas {
+    display: block;
+  }
+}
+
+.etapas ol {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-1);
+}
+
+/* O número no círculo, o nome embaixo e um traço: cinza no que falta, verde no que passou, grafite onde está */
+.etapa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: var(--esp-1) 2px var(--esp-2);
+  border: 0;
+  border-bottom: 3px solid var(--cor-linha);
+  background: none;
+  font-size: var(--tam-legenda);
+  font-weight: 500;
+  color: var(--cor-texto-suave);
+}
+
+.numero {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--cor-superficie-3);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto-2);
+}
+
+.etapa[data-feita] {
+  border-color: var(--cor-ok);
+  color: var(--cor-texto-2);
+}
+
+.etapa[data-feita] .numero {
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
+}
+
+.etapa[aria-current="step"] {
+  border-color: var(--cor-acento);
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+
+.etapa[aria-current="step"] .numero {
+  background: var(--cor-acento);
+  color: var(--cor-superficie);
+}

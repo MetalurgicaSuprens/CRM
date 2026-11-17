@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   STATUS_NA_FICHA,
+  comQuantidade,
   embalagemAnterior,
+  linhasEscolhidas,
   novoIdDeRascunho,
   passosDoAndamento,
   precoDigitado,
@@ -46,6 +48,41 @@ describe("quantidadeDigitada", () => {
     expect(quantidadeDigitada("0")).toBe(0);
     expect(quantidadeDigitada("")).toBe(0);
     expect(quantidadeDigitada("abc")).toBe(0);
+  });
+});
+
+describe("comQuantidade", () => {
+  const itens = [{ codigo: "A", quantidade: 100 }, { codigo: "B", quantidade: 200 }];
+
+  it("põe o produto novo no fim do pedido, na ordem em que foi incluído", () => {
+    expect(comQuantidade(itens, "C", 50)).toEqual([...itens, { codigo: "C", quantidade: 50 }]);
+  });
+
+  it("muda a quantidade do produto que já está no pedido sem tirá-lo do lugar", () => {
+    expect(comQuantidade(itens, "A", 300)).toEqual([{ codigo: "A", quantidade: 300 }, { codigo: "B", quantidade: 200 }]);
+  });
+
+  it("tira do pedido o produto que zerou", () => {
+    expect(comQuantidade(itens, "A", 0)).toEqual([{ codigo: "B", quantidade: 200 }]);
+  });
+});
+
+describe("linhasEscolhidas", () => {
+  const produto = (codigo: string, precoDaTabela: number) => ({ codigo, familia: "FLEXIL", medida: null, embalagem: 100, precoDaTabela, ultimaCompra: null, partNumbers: [], jaComprou: false });
+  const produtos = [produto("A", 90), produto("B", 120)];
+
+  it("segue a ordem em que os itens entraram, e não a do catálogo", () => {
+    const linhas = linhasEscolhidas([{ codigo: "B", quantidade: 200 }, { codigo: "A", quantidade: 100 }], {}, produtos);
+    expect(linhas.map(({ codigo, quantidade }) => [codigo, quantidade])).toEqual([["B", 200], ["A", 100]]);
+  });
+
+  it("usa o preço que o representante mudou e, sem mudança, o preço inicial do item", () => {
+    const linhas = linhasEscolhidas([{ codigo: "A", quantidade: 100 }, { codigo: "B", quantidade: 100 }], { A: 95.5 }, produtos);
+    expect(linhas.map(({ precoCento }) => precoCento)).toEqual([95.5, 120]);
+  });
+
+  it("deixa de fora o produto que saiu do catálogo", () => {
+    expect(linhasEscolhidas([{ codigo: "SAIU", quantidade: 100 }], {}, produtos)).toEqual([]);
   });
 });
 

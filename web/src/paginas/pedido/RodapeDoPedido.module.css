@@ -1,0 +1,170 @@
+/*
+ * Preso embaixo da janela enquanto a página rola; no fim dela, descansa no lugar. No computador, uma
+ * faixa: o cliente, os totais e o envio.
+ */
+.rodape {
+  position: sticky;
+  bottom: var(--esp-4);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4) var(--esp-6);
+  padding: var(--esp-2) var(--esp-2) var(--esp-2) var(--esp-5);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-superficie);
+  box-shadow: var(--sombra-3);
+}
+
+/* Tapa a fresta entre o rodapé preso e a borda da janela, por onde os itens apareceriam passando */
+.rodape::after {
+  content: "";
+  position: absolute;
+  inset: 100% -1px auto -1px;
+  height: calc(var(--esp-4) + 1px);
+  background: var(--cor-fundo);
+}
+
+.cliente {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 14rem;
+  min-width: 0;
+}
+
+.rotulo,
+.total dt {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.nomeDoCliente {
+  overflow: hidden;
+  font-size: var(--tam-rotulo);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.totais {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-6);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  display: flex;
+  flex-direction: column;
+}
+
+.total dd {
+  margin: 0;
+  font-size: var(--tam-rotulo);
+  font-weight: 500;
+}
+
+/* O número que o cliente pergunta, maior que os outros */
+.destaque dd {
+  font-size: var(--tam-destaque);
+  font-weight: 600;
+}
+
+.envio {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-3);
+  margin-left: auto;
+}
+
+.problema {
+  max-width: 16rem;
+  font-size: var(--tam-pequeno);
+  text-align: right;
+  color: var(--cor-alerta);
+}
+
+.enviar,
+.avancar {
+  flex-shrink: 0;
+  height: 2.75rem;
+  padding: 0 var(--esp-5);
+  border-radius: var(--raio);
+  font-size: var(--tam-titulo-cartao);
+}
+
+.totaisNoCelular,
+.passos {
+  display: none;
+}
+
+/* Sem largura para tudo (tablet), o nome do cliente sai: ele está no alto do documento */
+@container (max-width: 62rem) {
+  .cliente {
+    display: none;
+  }
+}
+
+/* Até 960 px, a tela tem as abas embaixo (Layout.module.css): o rodapé prende acima delas */
+@media (max-width: 960px) {
+  .rodape {
+    bottom: calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom) + var(--esp-2));
+  }
+
+  .rodape::after {
+    height: calc(var(--esp-2) + 1px);
+  }
+}
+
+/* No celular: os totais numa coluna curta e, à direita, o voltar e o avançar da etapa, acima das abas */
+@container (max-width: 47.99rem) {
+  .rodape {
+    gap: var(--esp-3);
+    padding: var(--esp-2) var(--esp-3);
+  }
+
+  .cliente,
+  .totais,
+  .envio {
+    display: none;
+  }
+
+  .totaisNoCelular {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    font-size: var(--tam-pequeno);
+    font-variant-numeric: tabular-nums;
+    color: var(--cor-texto-2);
+  }
+
+  .comIpiNoCelular {
+    font-size: var(--tam-rotulo);
+    font-weight: 600;
+    color: var(--cor-texto);
+  }
+
+  .passos {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+
+  .voltar {
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    border-radius: var(--raio);
+  }
+
+  .avancar {
+    gap: 6px;
+  }
+
+  .enviar,
+  .avancar {
+    padding: 0 var(--esp-4);
+  }
+}

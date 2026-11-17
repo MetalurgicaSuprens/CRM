@@ -55,7 +55,7 @@ export function catalogoDoClienteFicticio(codigoCliente: string): CatalogoDoClie
       jaComprou,
     };
   });
-  return { cliente: resumoDe(ficha), tabela, produtos, dadosDoPedido: dadosDoPedidoFicticio(codigoCliente, produtos) };
+  return { cliente: resumoDe(ficha), tabela, produtos, dadosDoPedido: dadosDoPedidoFicticio(ficha, produtos) };
 }
 
 export function painelDePedidosFicticio(): PainelDePedidos {

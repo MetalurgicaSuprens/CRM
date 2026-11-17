@@ -1,0 +1,102 @@
+.documento {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+/*
+ * O alto do documento num cartão só, em duas partes: o cliente, que se confere, e as condições, que
+ * se escolhem, separadas por uma linha. Menos altura que dois cartões: sobra tela para os itens.
+ */
+.documento .cabecalho {
+  gap: 0;
+  padding-top: var(--esp-4);
+  padding-bottom: var(--esp-4);
+}
+
+.cabecalho .parte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+}
+
+.cabecalho .parte + .parte {
+  margin-top: var(--esp-3);
+  padding-top: var(--esp-3);
+  border-top: 1px solid var(--cor-linha);
+}
+
+/* A revisão é uma etapa do celular: no computador, o documento inteiro já está na tela */
+.parte[data-parte="revisar"] {
+  display: none;
+}
+
+/* Embaixo dos itens: se o rascunho foi salvo e o descartar */
+.rascunho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2) var(--esp-4);
+}
+
+.salvo {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.descartar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
+}
+
+.descartar:hover {
+  color: var(--cor-queda);
+}
+
+/* O rascunho que voltou diferente do salvo: produto que saiu do catálogo ou preço que subiu para a tabela */
+.avisoDoRascunho {
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+  font-size: var(--tam-pequeno);
+}
+
+/*
+ * No celular, uma parte por vez, a da etapa (data-etapa, do endereço). O cartão do alto some inteiro
+ * nas etapas em que nenhuma das duas partes dele aparece.
+ */
+@container (max-width: 47.99rem) {
+  .parte,
+  .cabecalho .parte {
+    display: none;
+  }
+
+  .documento[data-etapa="cliente"] .parte[data-parte="cliente"],
+  .documento[data-etapa="condicoes"] .parte[data-parte="condicoes"] {
+    display: flex;
+  }
+
+  .documento[data-etapa="itens"] .parte[data-parte="itens"],
+  .documento[data-etapa="revisar"] .parte[data-parte="revisar"] {
+    display: block;
+  }
+
+  .documento[data-etapa="itens"] .cabecalho,
+  .documento[data-etapa="revisar"] .cabecalho {
+    display: none;
+  }
+
+  .cabecalho .parte + .parte {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+}
