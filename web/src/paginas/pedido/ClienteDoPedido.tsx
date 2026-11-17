@@ -39,14 +39,14 @@ export function ClienteDoPedido({ cliente, tabela, cadastro }: Props) {
 
 function FatosDoCadastro({ cliente, tabela, cadastro }: Props & { cadastro: CadastroDoCliente }) {
   return (
-    <>
+    <div className={estilos.cadastro}>
       <dl className={estilos.fatos}>
         <Fato rotulo={cliente.cpf === null ? "CNPJ" : "CPF"}>{cadastro.documento}</Fato>
         {cadastro.inscricaoEstadual ? <Fato rotulo="Inscrição estadual">{cadastro.inscricaoEstadual}</Fato> : null}
         {cadastro.suframa ? <Fato rotulo="Suframa">{cadastro.suframa}</Fato> : null}
         <FatosDaVenda cliente={cliente} tabela={tabela} />
         {cadastro.telefone ? <Fato rotulo="Fone comercial">{cadastro.telefone}</Fato> : null}
-        {cadastro.emailDoXml ? <Fato rotulo="E-mail do XML">{cadastro.emailDoXml}</Fato> : null}
+        {cadastro.emailDoXml ? <Fato rotulo="E-mail do XML" largo>{cadastro.emailDoXml}</Fato> : null}
       </dl>
       <dl className={estilos.enderecos}>
         <Fato rotulo="Endereço">{formatarEnderecoDoCadastro(cadastro.faturamento)}</Fato>
@@ -57,18 +57,22 @@ function FatosDoCadastro({ cliente, tabela, cadastro }: Props & { cadastro: Cada
           <OutroLocal local={cadastro.cobranca} />
         </Fato>
       </dl>
-    </>
+    </div>
   );
 }
 
 function FatosDaCarteira({ cliente, tabela }: Omit<Props, "cadastro">) {
   const local = `${cliente.cidade}/${cliente.uf}`;
   return (
-    <dl className={estilos.fatos}>
-      <Fato rotulo={cliente.cpf === null ? "Código no ERP" : "CPF"}>{cliente.cpf ?? formatarCodigoDoCliente(cliente)}</Fato>
+    <div className={estilos.cadastro}>
+      <dl className={estilos.fatos}>
+        <Fato rotulo={cliente.cpf === null ? "Código no ERP" : "CPF"}>{cliente.cpf ?? formatarCodigoDoCliente(cliente)}</Fato>
       <FatosDaVenda cliente={cliente} tabela={tabela} />
-      <Fato rotulo="Endereço">{cliente.endereco ? `${formatarEndereco(cliente.endereco)} · ${local}` : local}</Fato>
-    </dl>
+      </dl>
+      <dl className={estilos.enderecos}>
+        <Fato rotulo="Endereço">{cliente.endereco ? `${formatarEndereco(cliente.endereco)} · ${local}` : local}</Fato>
+      </dl>
+    </div>
   );
 }
 
@@ -99,9 +103,10 @@ function formatarEnderecoDoCadastro({ texto, bairro, cidade, uf, cep }: Endereco
   return [texto, bairro, `${cidade}/${uf}`, cep === null ? null : formatarCep(cep)].filter(Boolean).join(" · ");
 }
 
-function Fato({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+/** "largo": o valor comprido, como o e-mail, ocupa duas colunas em vez de quebrar numa estreita. */
+function Fato({ rotulo, largo = false, children }: { rotulo: string; largo?: boolean; children: ReactNode }) {
   return (
-    <div className={estilos.fato}>
+    <div className={largo ? `${estilos.fato} ${estilos.largo}` : estilos.fato}>
       <dt>{rotulo}</dt>
       <dd>{children}</dd>
     </div>

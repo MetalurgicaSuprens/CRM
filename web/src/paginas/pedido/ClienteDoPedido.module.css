@@ -15,49 +15,70 @@
 }
 
 /*
- * O que se confere fica em texto, sem contorno de campo: o nome do dado em cinza e o valor embaixo.
- * Os dados curtos correm numa linha, cada um do seu tamanho; os três endereços, embaixo, lado a lado.
+ * O que se confere fica numa faixa clara, sem contorno de campo: aqui nada se muda. Duas linhas
+ * separadas por um traço, os dados do cadastro e os endereços, cada uma em colunas alinhadas. O nome do
+ * dado é pequeno, em maiúsculas e cinza, e o valor, maior e escuro: os dois não se confundem.
  */
-.fatos {
+.cadastro {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-2) var(--esp-6);
+  flex-direction: column;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+
+.fatos,
+.enderecos {
+  display: grid;
+  gap: var(--esp-3) var(--esp-6);
   margin: 0;
+  padding: var(--esp-3) var(--esp-4);
+}
+
+.fatos {
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
 }
 
 .enderecos {
-  display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--esp-2) var(--esp-6);
-  margin: 0;
+  border-top: 1px solid var(--cor-linha);
 }
 
 .fato {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
-  font-size: var(--tam-pequeno);
+}
+
+.largo {
+  grid-column: span 2;
 }
 
 .fato dt {
-  font-size: var(--tam-legenda);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--cor-texto-suave);
 }
 
 .fato dd {
   margin: 0;
   overflow-wrap: anywhere;
+  font-size: var(--tam-texto);
+  font-weight: 500;
   color: var(--cor-texto);
 }
 
 .mesmo {
+  font-weight: 400;
   color: var(--cor-texto-2);
 }
 
 .outroLocal {
   display: flex;
   flex-direction: column;
-  font-weight: 600;
 }
 
 .donoDoLocal {
@@ -69,6 +90,13 @@
 /* O endereço do faturamento é o mais longo e fica com mais largura */
 @container (min-width: 44rem) {
   .enderecos {
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* Com uma coluna só, o valor longo fica nela e quebra a linha */
+@container (max-width: 25rem) {
+  .largo {
+    grid-column: auto;
   }
 }
