@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { KeyRound, PackageSearch, ShoppingBasket, Trash, Users, X } from "lucide-react";
+import { History, KeyRound, PackageSearch, ShoppingBasket, Trash, TriangleAlert, Users, X } from "lucide-react";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
@@ -19,6 +19,7 @@ import { LIMITE_DA_OBSERVACAO, primeiraEntregaPossivel, totalDoPedido, valorDaLi
 import {
   carregarCatalogo,
   carregarClientes,
+  carregarPedidos,
   carregarRascunho,
   carregarSituacaoDosDados,
   enviarPedido,
@@ -28,12 +29,21 @@ import {
 } from "../dados/api";
 import { PedidoBloqueado } from "../dados/fonteDeDados";
 import { correspondeAoClienteOuCidade, correspondeAoProduto, partNumberDaBusca } from "../dados/busca";
+import {
+  nomeDaTransportadora,
+  escolhasNoCatalogo,
+  pedidoJaEnviadoHoje,
+  problemasDasEscolhas,
+  quantidadesDoUltimoPedido,
+  totalComIpi,
+} from "../dados/dadosDoPedido";
 import { novoIdDeRascunho, precoDigitado, precoInicialDoItem, problemasDoPedido, rascunhoNoCatalogo } from "../dados/pedido";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
-import type { CatalogoDoCliente, ItemDoPedido, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
+import type { CatalogoDoCliente, DadosDoPedido as DadosDoPedidoDoCliente, EscolhasDoPedido, ItemDoPedido, ProdutoDoCatalogo, Rascunho, RascunhoParaSalvar } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarComCentavos, formatarContagem, formatarDataCurta, formatarLocalECodigo, formatarMomento, formatarNumero } from "../formato";
 import { Carregando } from "./Carregando";
+import { DadosDoPedido } from "./DadosDoPedido";
 import estilos from "./MontarPedido.module.css";
 
 /** Tempo sem mexer no pedido até o rascunho ser salvo. */
@@ -124,6 +134,10 @@ function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormula
   const [precos, setPrecos] = useState<Precos>(() => Object.fromEntries(doRascunho.itens.map((item) => [item.codigo, item.precoCento])));
   const [entrega, setEntrega] = useState<string | null>(inicial?.entrega ?? null);
   const [observacao, setObservacao] = useState(inicial?.observacao ?? "");
+  const dados = catalogo.dadosDoPedido;
+  const [escolhas, setEscolhas] = useState<EscolhasDoPedido | null>(() => (dados ? escolhasNoCatalogo(inicial?.escolhas ?? null, dados) : null));
+  const { dados: pedidos } = useCarga("pedidos", carregarPedidos);
+  const enviadoHojeAs = pedidos ? pedidoJaEnviadoHoje(pedidos.enviados, catalogo.cliente.codigo, hoje) : null;
   const [confirmando, setConfirmando] = useState(false);
   const [erroAoEnviar, setErroAoEnviar] = useState<string | null>(null);
 
@@ -134,10 +148,13 @@ function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormula
         .map((produto) => ({ ...produto, quantidade: quantidades[produto.codigo] ?? 0, precoCento: precos[produto.codigo] ?? precoInicialDoItem(produto) })),
     [catalogo, quantidades, precos],
   );
-  const conteudo = useMemo(() => conteudoDoPedido(catalogo.cliente.codigo, linhas, entrega, observacao), [catalogo, linhas, entrega, observacao]);
+  const conteudo = useMemo(() => conteudoDoPedido(catalogo.cliente.codigo, linhas, entrega, observacao, escolhas), [catalogo, linhas, entrega, observacao, escolhas]);
   const { existe, salvoEm, erroAoSalvar, salvarAgora, pararDeSalvar } = useRascunhoAutomatico(idDoRascunho, inicial, conteudo);
   const total = totalDoPedido(linhas);
-  const problemas = problemasDoPedido(linhas, observacao, entrega, hoje);
+  const comIpi = dados ? totalComIpi(linhas, dados.ipi) : null;
+  const problemas = [...problemasDoPedido(linhas, observacao, entrega, hoje), ...(escolhas ? problemasDasEscolhas(escolhas) : [])];
+  const ultimoPedido = dados?.ultimoPedido ?? null;
+  const repetirUltimoPedido = ultimoPedido ? () => setQuantidades(quantidadesDoUltimoPedido(ultimoPedido, catalogo.produtos)) : null;
   const alterar = useCallback((codigo: string, pecas: number) => setQuantidades((atuais) => ({ ...atuais, [codigo]: pecas })), []);
   const alterarPreco = useCallback((codigo: string, preco: number) => setPrecos((atuais) => ({ ...atuais, [codigo]: preco })), []);
 
@@ -188,12 +205,16 @@ function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormula
             className={estilos.cartaoDoPedido}
           >
             <div className={estilos.campos}>
-              <label className={`${estilos.campo} ${estilos.campoEmLinha}`}>
-                <span>
-                  Entrega desejada <span className={estilos.suave}>(a partir de {formatarDataCurta(primeiraEntrega)})</span>
-                </span>
-                <input type="date" min={primeiraEntrega} value={entrega ?? ""} onChange={(evento) => setEntrega(evento.target.value || null)} />
-              </label>
+              {dados && escolhas ? (
+                <DadosDoPedido dados={dados} escolhas={escolhas} aoMudar={setEscolhas} entrega={entrega} aoMudarEntrega={setEntrega} primeiraEntrega={primeiraEntrega} />
+              ) : (
+                <label className={`${estilos.campo} ${estilos.campoEmLinha}`}>
+                  <span>
+                    Entrega desejada <span className={estilos.suave}>(a partir de {formatarDataCurta(primeiraEntrega)})</span>
+                  </span>
+                  <input type="date" min={primeiraEntrega} value={entrega ?? ""} onChange={(evento) => setEntrega(evento.target.value || null)} />
+                </label>
+              )}
               <label className={estilos.campo}>
                 <span>
                   Observação{" "}
@@ -206,11 +227,18 @@ function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormula
             </div>
             <Fechamento
               total={total}
+              comIpi={comIpi}
               problemas={linhas.length > 0 ? problemas : []}
               podeEnviar={problemas.length === 0}
               aoEnviar={() => setConfirmando(true)}
             />
             <AvisoDoRascunho foraDoCatalogo={doRascunho.foraDoCatalogo} subiramAoMinimo={doRascunho.subiramAoMinimo} />
+            {linhas.length === 0 && ultimoPedido && repetirUltimoPedido ? (
+              <button type="button" className={`${botoes.secundario} ${estilos.repetir}`} onClick={repetirUltimoPedido}>
+                <History size={16} aria-hidden="true" />
+                Repetir o último pedido ({formatarDataCurta(ultimoPedido.data)}, {formatarContagem(ultimoPedido.itens.length, "produto", "produtos")})
+              </button>
+            ) : null}
             <ItensEscolhidos linhas={linhas} alterar={alterar} alterarPreco={alterarPreco} />
             <div className={estilos.rodapeDoPedido}>
               <p className={estilos.salvo} role="status">
@@ -233,18 +261,32 @@ function Formulario({ catalogo, idDoRascunho, inicial, relogio }: PropsDoFormula
         aoFechar={() => setConfirmando(false)}
         aoConfirmar={enviar}
         resumo={
-          <>
-            {catalogo.cliente.nome} · {formatarContagem(linhas.length, "produto", "produtos")} · <Valor valor={total} comCentavos /> estimado
-          </>
+          <ResumoDoEnvio
+            cliente={catalogo.cliente.nome}
+            produtos={linhas.length}
+            total={total}
+            comIpi={comIpi}
+            entrega={entrega ?? primeiraEntrega}
+            isProgramada={entrega !== null}
+            dados={dados}
+            escolhas={escolhas}
+          />
         }
+        aviso={enviadoHojeAs ? `Você já enviou um pedido para este cliente hoje, às ${enviadoHojeAs.slice(11, 16)}. Enviar outro?` : null}
       />
     </div>
   );
 }
 
 /** O que vai para o servidor: a mesma ordem de chaves sempre, para comparar com o que já foi salvo. */
-function conteudoDoPedido(codigoCliente: string, itens: readonly ItemDoPedido[], entrega: string | null, observacao: string): Omit<RascunhoParaSalvar, "id"> {
-  return { codigoCliente, itens: itens.map(({ codigo, quantidade, precoCento }) => ({ codigo, quantidade, precoCento })), entrega, observacao };
+function conteudoDoPedido(
+  codigoCliente: string,
+  itens: readonly ItemDoPedido[],
+  entrega: string | null,
+  observacao: string,
+  escolhas: EscolhasDoPedido | null,
+): Omit<RascunhoParaSalvar, "id"> {
+  return { codigoCliente, itens: itens.map(({ codigo, quantidade, precoCento }) => ({ codigo, quantidade, precoCento })), entrega, observacao, escolhas };
 }
 
 /**
@@ -258,7 +300,7 @@ function useRascunhoAutomatico(id: string, inicial: Rascunho | null, conteudo: O
   const [salvoEm, setSalvoEm] = useState(inicial?.atualizadoEm ?? null);
   const [erroAoSalvar, setErroAoSalvar] = useState<string | null>(null);
   const conteudoAtual = JSON.stringify(conteudo);
-  const ultimoSalvo = useRef(inicial ? JSON.stringify(conteudoDoPedido(inicial.cliente.codigo, inicial.itens, inicial.entrega, inicial.observacao)) : conteudoAtual);
+  const ultimoSalvo = useRef(inicial ? JSON.stringify(conteudoDoPedido(inicial.cliente.codigo, inicial.itens, inicial.entrega, inicial.observacao, inicial.escolhas)) : conteudoAtual);
   const parado = useRef(false);
   const temOQueGuardar = existe || conteudo.itens.length > 0;
 
@@ -504,18 +546,25 @@ function ReferenciasDoPreco({ linha }: { linha: LinhaEscolhida }) {
 
 type PropsDoFechamento = {
   total: number;
+  /** O total com o IPI de cada produto; null sem os dados do pedido. */
+  comIpi: number | null;
   /** Os que a tela mostra: nenhum enquanto o pedido está vazio. */
   problemas: string[];
   podeEnviar: boolean;
   aoEnviar: () => void;
 };
 
-function Fechamento({ total, problemas, podeEnviar, aoEnviar }: PropsDoFechamento) {
+function Fechamento({ total, comIpi, problemas, podeEnviar, aoEnviar }: PropsDoFechamento) {
   return (
     <div className={estilos.fechamento}>
       <div className={estilos.total}>
         <span className={estilos.rotuloDoTotal}>Total estimado</span>
         <Valor valor={total} comCentavos />
+        {comIpi !== null ? (
+          <span className={estilos.comIpi}>
+            com IPI <Valor valor={comIpi} comCentavos />
+          </span>
+        ) : null}
       </div>
       {problemas.length > 0 ? (
         <ul className={estilos.problemas} role="status">
@@ -536,10 +585,58 @@ type PropsDoEnvio = {
   aoFechar: () => void;
   aoConfirmar: () => Promise<void>;
   resumo: ReactNode;
+  /** O pedido já enviado hoje para o mesmo cliente: o SGI recusa outro em menos de 4 minutos. */
+  aviso: string | null;
 };
 
+type PropsDoResumo = {
+  cliente: string;
+  produtos: number;
+  total: number;
+  comIpi: number | null;
+  entrega: string;
+  isProgramada: boolean;
+  dados: DadosDoPedidoDoCliente | null;
+  escolhas: EscolhasDoPedido | null;
+};
+
+/** O pedido de relance antes de enviar: cliente, entrega, transportadora, pagamento e total com IPI. */
+function ResumoDoEnvio({ cliente, produtos, total, comIpi, entrega, isProgramada, dados, escolhas }: PropsDoResumo) {
+  const transportadora = dados && escolhas?.transportadora ? nomeDaTransportadora(dados, escolhas.transportadora) : null;
+  const pagamento = dados && escolhas ? (dados.condicoes.find((condicao) => condicao.codigo === escolhas.condicaoDePagamento)?.descricao ?? null) : null;
+  const isNova = escolhas?.transportadora ? "nova" in escolhas.transportadora : false;
+  return (
+    <dl className={estilos.resumoDoEnvio}>
+      <LinhaDoResumo rotulo="Cliente">{cliente}</LinhaDoResumo>
+      <LinhaDoResumo rotulo="Entrega">
+        {isProgramada ? "Programada para" : "Assim que possível, a partir de"} {formatarDataCurta(entrega)}
+      </LinhaDoResumo>
+      {transportadora ? <LinhaDoResumo rotulo="Transportadora">{isNova ? `${transportadora} (nova: espera o cadastro de vendas)` : transportadora}</LinhaDoResumo> : null}
+      {pagamento ? <LinhaDoResumo rotulo="Pagamento">{pagamento}</LinhaDoResumo> : null}
+      <LinhaDoResumo rotulo="Total">
+        {formatarContagem(produtos, "produto", "produtos")} · <Valor valor={total} comCentavos />
+        {comIpi !== null ? (
+          <>
+            {" "}
+            · com IPI <Valor valor={comIpi} comCentavos />
+          </>
+        ) : null}
+      </LinhaDoResumo>
+    </dl>
+  );
+}
+
+function LinhaDoResumo({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+  return (
+    <div className={estilos.linhaDoResumo}>
+      <dt>{rotulo}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
 /** Confirmação do envio: na F5, pede a digital ou o PIN de novo, ligado ao conteúdo do pedido. */
-function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo }: PropsDoEnvio) {
+function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo, aviso }: PropsDoEnvio) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const [aguardando, setAguardando] = useState(false);
 
@@ -561,10 +658,15 @@ function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo }: PropsDoEnvio)
       <h2 id="titulo-do-envio" className={estilos.tituloDoDialogo}>
         Enviar o pedido?
       </h2>
-      <p className={estilos.resumoDoEnvio}>{resumo}</p>
+      {aviso ? (
+        <p className={estilos.avisoDoEnvio} role="status">
+          <TriangleAlert size={16} aria-hidden="true" />
+          {aviso}
+        </p>
+      ) : null}
+      {resumo}
       <p className={estilos.texto}>
-        O pedido entra bloqueado no SGI e passa pelas aprovações de sempre, e o SGI recalcula os preços pela tabela do cliente. Depois de enviado, não dá
-        para alterar pelo CRM.
+        O pedido entra bloqueado no SGI e passa pelas aprovações de sempre. Depois de enviado, não dá para alterar pelo CRM.
       </p>
       <div className={estilos.acoesDoDialogo}>
         <button type="button" className={botoes.secundario} onClick={aoFechar} disabled={aguardando}>

@@ -302,6 +302,54 @@ export type CatalogoDoCliente = {
   /** Nome da tabela de preço do cliente no SGI (a tabela vem do cliente, nunca do navegador). */
   tabela: string;
   produtos: ProdutoDoCatalogo[];
+  /** O que preenche os dados do pedido; null enquanto a foto não traz (o modo real, antes da F5). */
+  dadosDoPedido: DadosDoPedido | null;
+};
+
+/** A classificação da venda do SGI (PV1_CVE): COMERCIALIZACAO, INDUSTRIALIZACAO ou USO/CONSUMO. */
+export type Classificacao = "comercializacao" | "industrializacao" | "uso_consumo";
+
+/** Quantos pedidos do cliente (ou do representante) usaram cada escolha, nos últimos 24 meses. */
+export type Uso<T extends string = string> = { valor: T; pedidos: number };
+
+/** Uma transportadora do ERP (CFOR, TIPO_FORN = 'T'): dado de empresa, público no CNPJ. */
+export type Transportadora = { codigo: string; nome: string; cnpj: string; cidade: string; uf: string };
+
+export type CondicaoDePagamento = { codigo: string; descricao: string };
+
+/**
+ * O histórico que deixa os dados do pedido já preenchidos com o que o representante costuma escolher
+ * para o cliente (proposta aceita pelo Lucas em 2026-11-17), e as listas para escolher outra coisa.
+ */
+export type DadosDoPedido = {
+  /** A condição de pagamento do cadastro do cliente (CRCL.COND_PGTO). */
+  condicaoDoCadastro: string;
+  condicoes: CondicaoDePagamento[];
+  condicoesUsadas: Uso[];
+  classificacoesUsadas: Uso<Classificacao>[];
+  parcialUsado: { aceita: number; naoAceita: number };
+  transportadoras: Transportadora[];
+  transportadorasDoCliente: Uso[];
+  /** As que o representante mais usa com os outros clientes: o ponto de partida do cliente novo. */
+  transportadorasDoRepresentante: Uso[];
+  /** A alíquota de IPI de cada produto do catálogo, em %. */
+  ipi: Record<string, number>;
+  ultimoPedido: { data: string; itens: { codigo: string; quantidade: number }[] } | null;
+};
+
+/** A transportadora que o representante informou e que ainda não está no ERP: o pedido espera vendas cadastrá-la. */
+export type TransportadoraNova = { cnpj: string; nome: string; cidade: string; uf: string };
+
+export type EscolhaDaTransportadora = { codigo: string } | { nova: TransportadoraNova };
+
+/** O que o representante escolhe no pedido, além dos itens, da entrega e da observação. */
+export type EscolhasDoPedido = {
+  condicaoDePagamento: string;
+  classificacao: Classificacao;
+  /** O número do pedido de compra do cliente (PV1_OCO); vazio quando não há. */
+  pedidoDoCliente: string;
+  aceitaParcial: boolean;
+  transportadora: EscolhaDaTransportadora | null;
 };
 
 export type ItemDoPedido = {
@@ -318,8 +366,11 @@ export type RascunhoParaSalvar = {
   id: string;
   codigoCliente: string;
   itens: ItemDoPedido[];
+  /** null = "assim que possível", 5 dias úteis depois de hoje; uma data = programada. */
   entrega: string | null;
   observacao: string;
+  /** null enquanto a foto não traz os dados do pedido (modo real antes da F5). */
+  escolhas: EscolhasDoPedido | null;
 };
 
 export type Rascunho = {
@@ -328,6 +379,7 @@ export type Rascunho = {
   itens: ItemDoPedido[];
   entrega: string | null;
   observacao: string;
+  escolhas: EscolhasDoPedido | null;
   /** "2026-10-08T16:42" */
   atualizadoEm: string;
   totalEstimado: number;

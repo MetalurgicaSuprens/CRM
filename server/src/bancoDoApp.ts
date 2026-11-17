@@ -109,6 +109,10 @@ const MIGRACOES: readonly string[] = [
     PRIMARY KEY (rascunho, produto)
   ) STRICT;
   `,
+  // 5. Dados do pedido (2026-11-17): condição de pagamento, classificação, pedido do cliente, frete parcial e transportadora, em JSON.
+  `
+  ALTER TABLE rascunhos ADD COLUMN escolhas TEXT;
+  `,
 ];
 
 /** Abre o app.db (cria a pasta e o arquivo na primeira vez) e aplica as migrações que faltam. ":memory:" nos testes. */

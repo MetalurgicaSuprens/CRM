@@ -23,7 +23,8 @@ export type ClienteDoPedido = { resumo: ClienteResumo; tabela: string; lista: nu
 export function lerCatalogo(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): ResultadoDoCatalogo {
   const cliente = clienteDoPedido(db, sessao, codigoDoCliente);
   if (!cliente || "foraDeAtivo" in cliente) return cliente;
-  return { catalogo: { cliente: cliente.resumo, tabela: cliente.tabela, produtos: lerProdutos(db, codigoDoCliente, cliente.lista) } };
+  // Os dados do pedido (transportadoras, condições, histórico de escolhas) entram na foto na F5.
+  return { catalogo: { cliente: cliente.resumo, tabela: cliente.tabela, produtos: lerProdutos(db, codigoDoCliente, cliente.lista), dadosDoPedido: null } };
 }
 
 /**

@@ -448,6 +448,33 @@ describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
     expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos).toHaveLength(1);
   });
 
+  it("guarda os dados do pedido escolhidos, com a transportadora do ERP ou uma nova", async () => {
+    const app = criarAppDeTeste();
+    const escolhas = { condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "OC 4512", aceitaParcial: true, transportadora: { codigo: "101" } };
+    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ escolhas }))).json<Rascunho>().escolhas).toEqual(escolhas);
+    const nova = { ...escolhas, transportadora: { nova: { cnpj: "11222333000181", nome: "Nova Log", cidade: "Maringá", uf: "PR" } } };
+    await salvarComoA(app, RASCUNHO, rascunhoDeA({ escolhas: nova }));
+    expect((await comoA(app, `/api/rascunhos/${RASCUNHO}`)).json<Rascunho>().escolhas).toEqual(nova);
+  });
+
+  it("aceita o rascunho sem os dados do pedido, da tela aberta antes deles", async () => {
+    const resposta = await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA());
+    expect(resposta.json<Rascunho>().escolhas).toBeNull();
+  });
+
+  it("recusa dados do pedido com campo a mais, classificação desconhecida ou CNPJ fora do formato", async () => {
+    const app = criarAppDeTeste();
+    const base = { condicaoDePagamento: "1030", classificacao: "comercializacao", pedidoDoCliente: "", aceitaParcial: false, transportadora: null };
+    for (const escolhas of [
+      { ...base, representante: "1402" },
+      { ...base, classificacao: "revenda" },
+      { ...base, transportadora: { nova: { cnpj: "11.222.333/0001-81", nome: "X Log", cidade: "Maringá", uf: "PR" } } },
+      { ...base, transportadora: { codigo: "101", nova: { cnpj: "11222333000181", nome: "X Log", cidade: "Maringá", uf: "PR" } } },
+    ]) {
+      expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ escolhas }))).statusCode, JSON.stringify(escolhas)).toBe(400);
+    }
+  });
+
   it("guarda o rascunho no app.db: outro servidor, no mesmo banco, o encontra", async () => {
     await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA());
     expect((await comoA(criarAppDeTeste(), `/api/rascunhos/${RASCUNHO}`)).statusCode).toBe(200);

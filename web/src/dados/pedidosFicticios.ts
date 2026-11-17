@@ -2,6 +2,7 @@ import { dataDoMomento, momentoEmBrasilia, somarDias } from "dominio/datas";
 import { arredondarAoCentavo, totalDoPedido, valorDaLinha } from "dominio/pedido";
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
+import { dadosDoPedidoFicticio } from "./dadosDoPedidoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
 import { STATUS_NA_FICHA, novoIdDeRascunho, precoInicialDoItem } from "./pedido";
 import { ROTULOS_DE_MERCADO } from "./rotulos";
@@ -16,6 +17,7 @@ import type {
   PainelDePedidos,
   PedidoDaFicha,
   PedidoEnviado,
+  ProdutoDoCatalogo,
   Rascunho,
   RascunhoParaSalvar,
 } from "./tipos";
@@ -38,24 +40,22 @@ export function catalogoDoClienteFicticio(codigoCliente: string): CatalogoDoClie
   const fatorDaTabela = aleatorio.entre(0.9, 1.1);
   const comprados = new Set(ficha.produtos.map((produto) => produto.codigo));
   const sigla = siglaDe(ficha.nome);
-  return {
-    cliente: resumoDe(ficha),
-    tabela: `Tabela ${aleatorio.inteiro(10, 40)} · ${ROTULOS_DE_MERCADO[ficha.mercado]}`,
-    produtos: catalogoFicticio().map((produto) => {
-      const jaComprou = comprados.has(produto.codigo);
-      const precoDaTabela = Math.round(produto.precoBase * fatorDaTabela);
-      return {
-        codigo: produto.codigo,
-        familia: produto.familia,
-        medida: produto.medida,
-        embalagem: produto.embalagem,
-        precoDaTabela,
-        ultimaCompra: jaComprou ? ultimaCompraFicticia(produto.codigo, precoDaTabela) : null,
-        partNumbers: jaComprou && aleatorio.chance(0.6) ? [`${sigla}-${aleatorio.inteiro(1_000, 9_999)}`] : [],
-        jaComprou,
-      };
-    }),
-  };
+  const tabela = `Tabela ${aleatorio.inteiro(10, 40)} · ${ROTULOS_DE_MERCADO[ficha.mercado]}`;
+  const produtos = catalogoFicticio().map((produto): ProdutoDoCatalogo => {
+    const jaComprou = comprados.has(produto.codigo);
+    const precoDaTabela = Math.round(produto.precoBase * fatorDaTabela);
+    return {
+      codigo: produto.codigo,
+      familia: produto.familia,
+      medida: produto.medida,
+      embalagem: produto.embalagem,
+      precoDaTabela,
+      ultimaCompra: jaComprou ? ultimaCompraFicticia(produto.codigo, precoDaTabela) : null,
+      partNumbers: jaComprou && aleatorio.chance(0.6) ? [`${sigla}-${aleatorio.inteiro(1_000, 9_999)}`] : [],
+      jaComprou,
+    };
+  });
+  return { cliente: resumoDe(ficha), tabela, produtos, dadosDoPedido: dadosDoPedidoFicticio(codigoCliente, produtos) };
 }
 
 export function painelDePedidosFicticio(): PainelDePedidos {
@@ -125,6 +125,7 @@ export function salvarRascunhoFicticio(dados: RascunhoParaSalvar): Rascunho | nu
     itens,
     entrega: dados.entrega,
     observacao: dados.observacao,
+    escolhas: dados.escolhas,
     atualizadoEm: momentoEmBrasilia(),
     totalEstimado: totalDoPedido(itens),
   };
@@ -253,7 +254,7 @@ function garantirRascunhoDeExemplo(): void {
     .filter((produto) => produto.jaComprou)
     .slice(0, 2)
     .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4, precoCento: precoInicialDoItem(produto) }));
-  salvarRascunhoFicticio({ id: novoIdDeRascunho(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "" });
+  salvarRascunhoFicticio({ id: novoIdDeRascunho(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "", escolhas: null });
 }
 
 // ---------------------------------------------------------------- apoio

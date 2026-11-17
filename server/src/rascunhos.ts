@@ -2,7 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { dataDoMomento, isDataDeVerdade, momentoEmBrasilia } from "dominio/datas";
 import { arredondarAoCentavo, totalDoPedido, valorDaLinha } from "dominio/pedido";
 import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
-import type { ClienteResumo, ItemDoPedido, PedidoDaFicha, Rascunho, RascunhoParaSalvar } from "../../web/src/dados/tipos.ts";
+import type { ClienteResumo, EscolhasDoPedido, ItemDoPedido, PedidoDaFicha, Rascunho, RascunhoParaSalvar } from "../../web/src/dados/tipos.ts";
 import { emTransacao } from "./bancoDoApp.ts";
 import { clienteDoPedido } from "./leituras/catalogo.ts";
 import { lerResumoNaCarteira } from "./leituras/clientes.ts";
@@ -23,7 +23,8 @@ export const LIMITE_DE_ITENS = 300;
 /** Rascunhos guardados por login: acima disso, é enviar ou descartar algum. */
 export const LIMITE_DE_RASCUNHOS = 100;
 
-export type ConteudoDoRascunho = Omit<RascunhoParaSalvar, "id">;
+/** As escolhas são opcionais no corpo: a tela aberta antes de 2026-11-17 não as manda. */
+export type ConteudoDoRascunho = Omit<RascunhoParaSalvar, "id" | "escolhas"> & { escolhas?: EscolhasDoPedido | null };
 export type RecusaDoRascunho = { status: 400 | 404 | 409; erro: string };
 
 const NAO_ENCONTRADO: RecusaDoRascunho = { status: 404, erro: "Rascunho não encontrado." };
@@ -61,14 +62,14 @@ export function salvarRascunho(
 
 /** O rascunho do login, com o cliente da foto; null se não existe, é de outro login ou o cliente saiu da carteira. */
 export function lerRascunho(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao, id: string): Rascunho | null {
-  const linha = banco.prepare("SELECT id, cliente, entrega, observacao, atualizado_em FROM rascunhos WHERE id = ? AND usuario = ?").get(id, sessao.idDoUsuario);
+  const linha = banco.prepare("SELECT id, cliente, entrega, observacao, escolhas, atualizado_em FROM rascunhos WHERE id = ? AND usuario = ?").get(id, sessao.idDoUsuario);
   return linha ? montarRascunho(banco, foto, sessao, linha) : null;
 }
 
 /** Os rascunhos do login, do salvo por último ao mais antigo: a aba Rascunhos de Pedidos. */
 export function rascunhosDoLogin(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao): Rascunho[] {
   return banco
-    .prepare("SELECT id, cliente, entrega, observacao, atualizado_em FROM rascunhos WHERE usuario = ? ORDER BY atualizado_em DESC")
+    .prepare("SELECT id, cliente, entrega, observacao, escolhas, atualizado_em FROM rascunhos WHERE usuario = ? ORDER BY atualizado_em DESC")
     .all(sessao.idDoUsuario)
     .flatMap((linha) => montarRascunho(banco, foto, sessao, linha) ?? []);
 }
@@ -139,10 +140,11 @@ function gravar(banco: DatabaseSync, sessao: Sessao, id: string, conteudo: Conte
   emTransacao(banco, () => {
     banco
       .prepare(
-        `INSERT INTO rascunhos (id, usuario, cliente, entrega, observacao, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT (id) DO UPDATE SET entrega = excluded.entrega, observacao = excluded.observacao, atualizado_em = excluded.atualizado_em`,
+        `INSERT INTO rascunhos (id, usuario, cliente, entrega, observacao, escolhas, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (id) DO UPDATE SET entrega = excluded.entrega, observacao = excluded.observacao, escolhas = excluded.escolhas,
+                                        atualizado_em = excluded.atualizado_em`,
       )
-      .run(id, sessao.idDoUsuario, conteudo.codigoCliente, conteudo.entrega, conteudo.observacao, momento, momento);
+      .run(id, sessao.idDoUsuario, conteudo.codigoCliente, conteudo.entrega, conteudo.observacao, conteudo.escolhas ? JSON.stringify(conteudo.escolhas) : null, momento, momento);
     banco.prepare("DELETE FROM rascunho_itens WHERE rascunho = ?").run(id);
     const inserir = banco.prepare("INSERT INTO rascunho_itens (rascunho, ordem, produto, quantidade, preco_cento) VALUES (?, ?, ?, ?, ?)");
     conteudo.itens.forEach((item, i) => inserir.run(id, i + 1, item.codigo, item.quantidade, arredondarAoCentavo(item.precoCento)));
@@ -163,6 +165,7 @@ function montarRascunho(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao,
     itens,
     entrega: linha.entrega === null ? null : String(linha.entrega),
     observacao: String(linha.observacao),
+    escolhas: linha.escolhas === null ? null : (JSON.parse(String(linha.escolhas)) as EscolhasDoPedido),
     atualizadoEm: String(linha.atualizado_em),
     totalEstimado: totalDoPedido(itens),
   };

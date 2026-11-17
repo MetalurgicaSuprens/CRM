@@ -109,6 +109,11 @@ Nova tela de inclusão de pedidos (proposta aceita pelo Lucas em 2026-11-17), ba
   - "Assim que possível" = 5 dias úteis depois de hoje;
   - "Programada" = a data que o representante escolher, desde que seja a partir de 5 dias úteis.
 - **Também aceitos:** começar pelo último pedido, aviso de pedido repetido para o mesmo cliente e resumo antes de enviar, com o total com IPI.
+- **Protótipo feito em 2026-11-17, com dados fictícios** (`web/src/paginas/DadosDoPedido.tsx`, regras em `web/src/dados/dadosDoPedido.ts`):
+  - o bloco começa fechado num resumo e só abre sozinho quando falta a transportadora;
+  - o rascunho guarda as escolhas no app.db (migração 5, coluna `escolhas` em JSON, com formato conferido na rota);
+  - no modo real, o catálogo ainda responde `dadosDoPedido: null` e a tela mostra só a entrega, como antes. Falta a foto trazer as transportadoras, as condições, o IPI, o último pedido e a frequência de cada escolha;
+  - falta também o item da OC por produto, para os clientes que o usam.
 - **Transportadoras com código especial:** 616108610001 = Suprens (a própria empresa). O Lucas ficou de dizer o que são 85819999 e 78499999.
 
 Esperando resposta do Lucas, sem pressa:

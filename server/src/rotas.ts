@@ -52,6 +52,50 @@ const PARAMETRO_RASCUNHO = {
 } as const;
 const RASCUNHO_NAO_ENCONTRADO = { erro: "Rascunho não encontrado." };
 
+/** Texto curto de uma linha, sem caractere de controle: nomes, cidades e o número do pedido do cliente. */
+const LINHA_DE_TEXTO = (maximo: number) => ({ type: "string", maxLength: maximo, pattern: "^[^\\u0000-\\u001F\\u007F]*$" }) as const;
+
+/**
+ * Os dados do pedido que o representante escolhe (proposta aceita pelo Lucas em 2026-11-17). O
+ * servidor só confere o formato: a LAN confere no Oracle a condição de pagamento e a transportadora, e
+ * a transportadora nova espera o cadastro de vendas.
+ */
+const ESCOLHAS_DO_PEDIDO = {
+  type: "object",
+  properties: {
+    condicaoDePagamento: { type: "string", pattern: "^\\d{1,6}$" },
+    classificacao: { type: "string", enum: ["comercializacao", "industrializacao", "uso_consumo"] },
+    pedidoDoCliente: LINHA_DE_TEXTO(30),
+    aceitaParcial: { type: "boolean" },
+    transportadora: {
+      anyOf: [
+        { type: "null" },
+        { type: "object", properties: { codigo: { type: "string", pattern: "^\\d{1,15}$" } }, required: ["codigo"], additionalProperties: false },
+        {
+          type: "object",
+          properties: {
+            nova: {
+              type: "object",
+              properties: {
+                cnpj: { type: "string", pattern: "^\\d{14}$" },
+                nome: { ...LINHA_DE_TEXTO(60), minLength: 2 },
+                cidade: { ...LINHA_DE_TEXTO(40), minLength: 2 },
+                uf: { type: "string", pattern: "^[A-Z]{2}$" },
+              },
+              required: ["cnpj", "nome", "cidade", "uf"],
+              additionalProperties: false,
+            },
+          },
+          required: ["nova"],
+          additionalProperties: false,
+        },
+      ],
+    },
+  },
+  required: ["condicaoDePagamento", "classificacao", "pedidoDoCliente", "aceitaParcial", "transportadora"],
+  additionalProperties: false,
+} as const;
+
 /**
  * O rascunho que a tela salva: o cliente, os itens (produto, peças e o preço do cento), a entrega e a
  * observação. O representante vem da sessão. O servidor confere o resto: cliente da carteira, produto
@@ -78,6 +122,7 @@ const CORPO_DO_RASCUNHO = {
     },
     entrega: { type: ["string", "null"], pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
     observacao: { type: "string", maxLength: LIMITE_DA_OBSERVACAO, pattern: "^[^\\u0000-\\u0009\\u000B-\\u001F\\u007F]*$" },
+    escolhas: { anyOf: [{ type: "null" }, ESCOLHAS_DO_PEDIDO] },
   },
   required: ["codigoCliente", "itens", "entrega", "observacao"],
   additionalProperties: false,

@@ -433,10 +433,6 @@
   font-weight: 500;
 }
 
-.resumoDoEnvio {
-  font-weight: 600;
-}
-
 .texto {
   color: var(--cor-texto-2);
 }
@@ -522,4 +518,62 @@
       --topo-do-cabecalho: 0px;
     }
   }
+}
+
+/* ------------------------------------------------ dados do pedido (2026-11-17) */
+
+.comIpi {
+  font-size: var(--tam-pequeno);
+  font-weight: 500;
+  color: var(--cor-texto-2);
+}
+
+/* Quebra a linha no celular, em vez de alargar a página */
+.repetir {
+  align-self: flex-start;
+  max-width: 100%;
+  height: auto;
+  min-height: 2.5rem;
+  gap: 6px;
+  white-space: normal;
+  text-align: left;
+}
+
+.resumoDoEnvio {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.linhaDoResumo {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: var(--esp-2);
+  font-size: var(--tam-pequeno);
+}
+
+.linhaDoResumo dt {
+  color: var(--cor-texto-2);
+}
+
+.linhaDoResumo dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.avisoDoEnvio {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-2);
+  padding: var(--esp-3);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-alerta);
+  font-size: var(--tam-pequeno);
+}
+
+.avisoDoEnvio svg {
+  flex-shrink: 0;
+  margin-top: 2px;
 }
