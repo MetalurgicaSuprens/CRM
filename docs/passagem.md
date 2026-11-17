@@ -69,10 +69,13 @@ Feito até agora: F1, F2, F3 e parte da F4 (veja as fases no plano).
 Falta, em ordem:
 1. **Conferir na tela o aviso de carga recusada da administração,** no computador e no celular. Para provocar o aviso, entregue na entrada de uma API de teste uma foto com o manifesto estragado.
 2. **Investigar um teste que falhou uma vez.** O teste "recusa enviar sem foto com manifesto" falhou uma vez no `npm test` da raiz e não se repetiu em 20 rodadas. Suspeita: um erro sem ouvinte no servidor simulado, vindo do teste anterior.
-3. **Hospedagem na Locaweb.** O plano já foi atualizado (2026-11-13). Escolhida a VPS 4 GB Linux (2 vCPU, 70 GB), separada da do site. A Locaweb confirmou acesso root, IP fixo, firewall, snapshots, datacenter no Brasil e contrato LGPD.
-   - O firewall do painel não foi conferido quanto à regra por IP de origem. Não faz falta: o `ufw` do servidor e o `from=` da chave do extrator já limitam a porta 22 ao IP da Suprens.
-   - Falta contratar, apontar o DNS do domínio e saber o IP fixo da Suprens.
-4. **Instalar o servidor:** a pasta `deploy/` ficou pronta em 2026-11-13 (`deploy/README.md`). Ela traz o `npm run pacote`, que já foi testado aqui, e os scripts do servidor, que ainda não rodaram num Ubuntu de verdade: confira cada passo na primeira instalação. Faltam a rota `/api/saude` e os alertas.
+3. **Servidor na Locaweb: no ar desde 2026-11-17.** VPS 4 GB Linux (2 vCPU, 70 GB, Ubuntu 24.04), separada da do site, em `https://crm.suprens.com.br`.
+   - O DNS do `suprens.com.br` é o da própria empresa (`dns1`/`dns2.suprens.com.br`), e não o da Locaweb: o registro A do `crm` foi criado lá.
+   - Instalado com o `deploy/` (`deploy/README.md`). A conta de administração do servidor é a `cpd`, só com chave. O root não entra pela rede.
+   - O IP fixo da Suprens está no `servidor.conf` local, fora do git.
+   - Conferido de fora: só a 443 aberta para todos, a 22 só da Suprens, a 80 fechada, certificado do Let's Encrypt e cabeçalhos de segurança; a entrada por senha não existe no servidor.
+   - Na primeira instalação, o root não entrava com senha pelo SSH (padrão do Ubuntu): a chave foi posta pelo console da Locaweb.
+4. **Falta no servidor:** a chave do extrator (rodar o `preparar-servidor.sh` de novo com a `CHAVE_DO_EXTRATOR`), a primeira foto, a rota `/api/saude` e os alertas.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
    - O Windows recusa a chave privada em `data/` ("bad permissions"), porque todo usuário do computador lê a pasta.
    - O mesmo vale para a chave do id do cliente e para a lista de autorizados: elas também saem de `data/` quando a máquina do extrator for escolhida.
