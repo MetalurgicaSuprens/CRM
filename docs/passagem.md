@@ -28,7 +28,7 @@ Nomes:
 
 O que proteger:
 - **A carteira**, ou seja, quem compra o quê e quanto: só dentro do escopo do login.
-- **A pessoa física:** fica fora do CRM.
+- **Dados de cadastro, também de pessoa física:** desde 2026-11-17 podem entrar, porque o CRM substitui o app antigo dos representantes, que os mostrava (regra 3 do `CLAUDE.md`). Ficam sempre dentro do escopo do login.
 - **O dado público da empresa,** como o endereço do CNPJ: pode entrar se alguma tela usa. O Lucas acha exagero protegê-lo.
 - **Serviços de fora:** antes de mandar qualquer dado a um, leia os termos dele. A geocodificação do Google, por exemplo, proíbe usar o ponto fora do mapa dele.
 
@@ -99,6 +99,18 @@ Falta, em ordem:
 Teste na rede interna (2026-11-10, pedido do Lucas): o `iniciar-crm-servidor.bat` abre os dados reais para o celular com um login provisório por senha (veja o `README.md`).
 - É só para teste: o login seguro é a chave de acesso.
 - Não leve o login por senha para o servidor da internet.
+
+Nova tela de inclusão de pedidos (proposta aceita pelo Lucas em 2026-11-17), baseada no app antigo dos representantes (SGI6R):
+- **Dados do pedido** já preenchidos com o que esse representante costuma escolher para o cliente, cada um mostrando de onde veio: condição de pagamento, classificação da venda, nº do pedido do cliente, entrega, frete parcial e transportadora.
+- **Transportadora:**
+  - a lista mostra primeiro as usadas com o cliente, com a %. A que passa de 80% já vem escolhida;
+  - depois vêm as que o representante mais usa e a busca em todas;
+  - o botão "cadastrar nova" deixa o pedido "Aguardando cadastro da transportadora" até vendas cadastrá-la no ERP. A próxima carga reconhece o CNPJ, e o pedido segue.
+- **Entrega:**
+  - "Assim que possível" = 5 dias úteis depois de hoje;
+  - "Programada" = a data que o representante escolher, desde que seja a partir de 5 dias úteis.
+- **Também aceitos:** começar pelo último pedido, aviso de pedido repetido para o mesmo cliente e resumo antes de enviar, com o total com IPI.
+- **Transportadoras com código especial:** 616108610001 = Suprens (a própria empresa). O Lucas ficou de dizer o que são 85819999 e 78499999.
 
 Esperando resposta do Lucas, sem pressa:
 - **Visual que ele ainda não confirmou:**

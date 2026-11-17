@@ -20,9 +20,9 @@ O sistema fica exposto na internet e guarda dados comerciais da Suprens. Na dúv
    - Não leia nem imprima valores de `.env`, só os nomes das chaves.
 3. **Minimização de dados.**
    - Só entra na foto o campo que alguma tela usa.
-   - Nunca extrair: contatos, telefones, e-mails, CPF, restrição financeira, dados bancários, senhas, endereço de pessoa física.
-   - O código do cliente no ERP só sai da LAN quando é de empresa: ele contém o CNPJ, que é público. Na pessoa física ele é o CPF, e a tela mostra "Pessoa física".
-   - O endereço também só sai quando é de empresa, porque é público no CNPJ (decisão do Lucas em 2026-10-19). O ponto no mapa sai do Cadastro de Endereços do IBGE, buscado aqui dentro: o extrator não manda endereço a serviço de fora. Só o link do Google Maps leva um endereço ao Google, quando o representante clica.
+   - Desde 2026-11-17 (decisão do Lucas), pode entrar tudo o que o app antigo dos representantes (SGI6R) mostra, porque o CRM o substitui: CNPJ ou CPF, inscrição estadual, Suframa, telefone comercial, e-mail do XML e endereços de faturamento, cobrança e entrega, também de pessoa física. Esses dados só aparecem dentro do escopo do login (regra 4).
+   - Nunca extrair o que o SGI6R não mostra: restrição financeira, dados bancários, senhas e contatos de pessoas da agenda do cliente.
+   - O ponto no mapa sai do Cadastro de Endereços do IBGE, buscado aqui dentro: o extrator não manda endereço a serviço de fora. Só o link do Google Maps leva um endereço ao Google, quando o representante clica.
 4. **Escopo seguro por padrão.**
    - Toda rota declara `config.acesso` (`publico`, `representante` ou `admin`).
    - Os códigos do representante vêm sempre da sessão. Um login pode ter mais de um código, e as telas somam todos.
