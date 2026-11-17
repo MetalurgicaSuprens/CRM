@@ -34,7 +34,7 @@ Requisitos:
 2. **O servidor não guarda segredo que abra outra coisa.** Só a chave do certificado TLS e as chaves do SSH.
 3. **Minimização de dados.** Só os campos que as telas usam e só os representantes autorizados. O histórico de troca de vendedor (CRCLH) fica na LAN.
 4. **Tudo o que vem da internet é hostil:**
-   - um pedido só entra no ERP depois da revalidação na LAN, pelo importador do SGI, que recalcula os preços;
+   - um pedido só entra no ERP depois da revalidação na LAN, pelas procedures de pedido do SGI (ver "Pedidos");
    - todo pedido nasce **bloqueado** e passa pelas aprovações humanas, inclusive o de montadora.
 5. **Escopo seguro por padrão:**
    - toda rota declara `acesso` (`publico`, `representante` ou `admin`) e o servidor não sobe se alguma rota não declarar;
@@ -54,7 +54,7 @@ Lucas (LAN) ──────────────────────�
 
 ### `extrator/` (Node/TS, numa máquina da LAN, conta própria do Windows)
 
-- Conta Oracle **própria**, só com SELECT em views do CRM com as colunas necessárias (ver Pendências), obrigatória **antes do piloto da F4**, quando o extrator passa a rodar sozinho na LAN.
+- Conta Oracle **própria**, `CRM_EXTRATOR`, especificada em [`conta-oracle-do-crm.md`](conta-oracle-do-crm.md), obrigatória **antes do piloto da F4**, quando o extrator passa a rodar sozinho na LAN.
   - Na F2 o desenvolvimento usa o `LUCAS_RO` (decisão do Lucas em 2026-10-09), com quatro cuidados:
     - a senha fica num `extrator/.env` local, que o git ignora e que só o Lucas preenche;
     - só o `extrator/` usa a conexão;
@@ -169,22 +169,29 @@ Publicação:
 
 ## Pedidos: caminho até o ERP
 
-O caminho de hoje: SGI → "Incluir Pedido Por Carga Arquivo" → `PEDIDO BLOQUEADO` → aprovações → "Exportar Pedido Omega".
-
-**Especificação v0 do layout "CRM"** (alteração no Delphi, em `untVenPvd_PvdIncluirCarga.pas`):
-- parser genérico, que não depende do código do cliente;
-- **sempre `PEDIDO BLOQUEADO`, inclusive para os tipos 320, 325 e 326**;
-- origem `REPRESENTANTE`: o CPV já entende essa origem, e o código atual não grava pedidos com ela. Confirmar com quem mantém o SGI que ela não é usada por outro caminho;
-- número CRM num campo livre (`PV1_LR1`, a confirmar), com índice único;
-- importação de todos os arquivos pendentes de uma vez, com pastas `processados\` e `erros\` (com o motivo);
-- codificação CP1252.
+**Decidido em 2026-11-17 (Lucas): o pedido entra pelas procedures do SGI, como no app antigo dos representantes (SGI6R), e não pelo importador de arquivo.** Assim o código do SGI não muda.
+- **O SGI6R** grava `SGI5_IUD_VEN_PV1_V2` / `SGI5_IUD_VEN_PV2_V2` com `V_OPE = 1`, `PV1_ORI = 'REPRESENTANTE'` e `PV1_STA = 'COTACAO'`; a "efetivação" chama `V_OPE = 13`.
+- **O que as procedures fazem** (código lido em 2026-11-17):
+  - a operação 13 só troca o status para `PEDIDO BLOQUEADO`;
+  - nenhuma das duas aprova sozinha os tipos 320, 325 e 326: quem aprova montadora é a tela PVD do Delphi;
+  - as tabelas `PV1_V2` e `PV2_V2` não têm gatilho.
+- **No CRM**, o rascunho faz o papel da cotação. No envio, a LAN chama a operação 1 e logo em seguida a 13, e o pedido chega ao SGI em `PEDIDO BLOQUEADO`, esperando as aprovações de sempre. Gravar direto em `PEDIDO BLOQUEADO` pularia as regras que a procedure aplica à cotação do representante, como a forma de pagamento do cadastro.
+- **Campos:** `PV1_ORC = 'CRM'`; número CRM em `PV1_LR1` (a confirmar). O número do pedido é `MAX(PV1_NPE) + 1`, como no SGI6R; numa colisão com a tela do SGI (violação da PK), a LAN tenta de novo com o número seguinte.
+- **O que as procedures já recusam**, e que o CRM confere antes, para avisar o representante na tela:
+  - pedido de representante para o mesmo cliente com menos de 4 minutos do anterior (FK28);
+  - transportadora sem cadastro (FK26): o pedido espera vendas cadastrá-la e segue sozinho quando ela aparece na foto;
+  - modelos ZIP, ZPP e ZPU com quantidade acima do saldo (PV2 FK21);
+  - condição de pagamento, vendedor, CFOP, tipo de movimento ou cliente inválidos.
+- **As procedures não conferem o preço:** a revalidação da LAN é a única trava de preço.
+- **A conta Oracle** do extrator: [`conta-oracle-do-crm.md`](conta-oracle-do-crm.md), com EXECUTE só nas duas procedures.
+- Fica de fora o layout "CRM" do importador de arquivo, que dependeria de alterar o Delphi.
 
 **Na LAN, antes de gravar na pasta do SGI**, a rotina do extrator:
 - só aceita arquivos com nome no padrão, até 64 KB, com limite de quantidade por execução e por representante por dia;
 - valida o schema estrito: limites de tamanho, conjunto de caracteres permitido e datas válidas pelas regras do SGI;
 - **revalida no Oracle** que o representante está ativo, que o cliente é de um dos códigos do login e está ATIVO no status do SGI (`NVL(CLI3_STA,'ATIVO')`; o CRM mostra o status do cliente fora de ativo e não aceita pedido para ele, decisões de 2026-10-14 e 2026-10-15; sem ler `CRCL.SUSPENSO` nem a restrição financeira; decisão do Lucas em 2026-10-09), que cada produto é vendável e tem preço, e que as quantidades estão dentro dos limites. O pedido vai para o SGI com o código dono do cliente (`VEND_1`), escolhido na LAN e nunca pelo navegador;
 - manda pedidos acima de um valor-teto para revisão manual;
-- monta o arquivo do SGI **só com os campos validados**, gravando `.tmp` e depois renomeando;
+- chama as procedures do SGI **só com os campos validados**, numa transação por pedido;
 - mantém um registro de idempotência e uma quarentena;
 - tem um arquivo "pausar" que suspende a entrada de pedidos.
 
@@ -333,12 +340,14 @@ São duas trilhas em paralelo. Cada etapa termina com commit e push em `SUPRENS/
   - VM dedicada no servidor da empresa (não compartilhar com o site);
   - quem administra a rede e o firewall, para as regras da seção Arquitetura.
 - **Antes do piloto da F4:**
-  - a conta Oracle própria do extrator. O DBA cria, num esquema do CRM, uma view por objeto da lista que a F2 fecha, só com as colunas listadas, inclusive sobre a view de preço líquido `SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`, e concede à conta SELECT só nessas views (decisão do Lucas em 2026-10-09). O esquema do CRM é o dono das views e não tem login (conta bloqueada). Ele recebe do ABC71 SELECT WITH GRANT OPTION, por grant direto, em cada objeto da lista; sem isso, o GRANT na view falha (ORA-01720). Como o Oracle não concede SELECT por coluna, são as views que impedem a conta de ler CNPJ, contatos e restrição financeira. O `LUCAS_RO` lê a view de preço líquido desde 2026-10-09, quando ganhou `READ ANY TABLE`; a conta do extrator não ganha esse privilégio;
+  - a conta Oracle própria do extrator, pedida ao DBA com [`conta-oracle-do-crm.md`](conta-oracle-do-crm.md):
+    - SELECT nos objetos da lista e EXECUTE nas duas procedures de pedido, sem `READ ANY TABLE`;
+    - as tabelas com dado bancário ou de crédito (`CRCL`, `CFOR`, `NFME`, `VEPM`) são lidas por views do esquema `CRM_DADOS`, sem essas colunas;
+    - isso simplifica a decisão de 2026-10-09, que punha uma view com as colunas listadas sobre todo objeto. Desde a mudança da regra 3, em 2026-11-17, o CNPJ e os contatos podem entrar, e só os dados bancários e de crédito pedem as views;
   - qual máquina da LAN roda o extrator (o servidor do Gestao?).
 - **Antes da F5:**
-  - quem mantém o código do SGI (layout "CRM");
-  - quem importa os arquivos do CRM e com que frequência;
-  - como os pedidos dos representantes chegam hoje;
+  - a conta Oracle com EXECUTE nas procedures de pedido (acima). O layout "CRM" do importador de arquivo saiu do plano em 2026-11-17;
+  - os pedidos dos representantes chegam hoje pelo app SGI6R, que grava pelas procedures (código lido em 2026-11-17, em `C:\ProjetosCursor\SGIRepresentantesCodigoFonte`);
   - levantamento dos celulares dos representantes (Android 9+ / iOS 16+).
 - **Vendas (em elaboração desde 2026-10-08):** classificação dos clientes por ramo de atividade, para o critério de clientes parecidos do mix.
   - O ERP não tem essa informação hoje: `GRUPO_1`, `SUB_GRUPO_1` e `SEGMENTO` do cadastro de clientes vêm vazios.

@@ -85,9 +85,8 @@ Falta, em ordem:
 6. **F5, pedidos sem depender do TI:**
    - a rota de envio, com confirmação pela chave de acesso;
    - a saída do pedido no servidor;
-   - uma rotina na LAN que busca os pedidos, revalida no Oracle e grava o arquivo na pasta de cargas do SGI;
-   - um operador importa o arquivo.
-   - O importador do SGI precisa de um layout "CRM". Só isso depende de quem mantém o SGI.
+   - uma rotina na LAN que busca os pedidos, revalida no Oracle e grava no SGI pelas procedures de pedido, como o app antigo dos representantes: cotação (operação 1) e efetivação logo em seguida (operação 13). Veja "Pedidos: caminho até o ERP" no plano;
+   - só depende da conta Oracle com EXECUTE nas duas procedures (`docs/conta-oracle-do-crm.md`), que o Lucas pediu ao DBA em 2026-11-17.
    - Na revalidação:
      - o preço não pode ficar abaixo da tabela do cliente, porque o navegador manda o preço do cento;
      - a entrega fica a pelo menos 5 dias úteis, com a mesma `primeiraEntregaPossivel` da tela;
@@ -192,9 +191,9 @@ Banco:
 
 Pedidos:
 - O pedido nasce no SGI como PEDIDO BLOQUEADO e passa por aprovações (CTR/VD1/CON/VD2). Depois um operador o exporta ao Omega.
-- O importador de arquivo do SGI tem dois cuidados:
-  - aprova sozinho os TMO 320/325/326 (montadora). Por isso o layout "CRM" força PEDIDO BLOQUEADO em todo pedido;
-  - recalcula o preço pela tabela do cliente.
+- O CRM não usa o importador de arquivo do SGI, que aprova sozinho os TMO 320/325/326 (montadora). Usa as procedures `SGI5_IUD_VEN_PV1_V2` e `PV2_V2`, que não aprovam nada e não conferem preço.
+- O código das procedures é lido pela `DBA_SOURCE`, porque a `ALL_SOURCE` vem vazia para a conta de leitura.
+- O app antigo dos representantes (SGI6R) está em `C:\ProjetosCursor\SGIRepresentantesCodigoFonte`, só no computador do Lucas: é a referência de campos e regras da inclusão de pedidos.
 
 ## Cuidados no Windows
 
