@@ -11,6 +11,16 @@ import botoes from "./Botao.module.css";
 import { NAVEGACAO, ProvedorDaOrigem, useMemoriaDaNavegacao } from "./navegacao";
 import estilos from "./Layout.module.css";
 
+// Avisa em que ambiente o CRM está fora do site publicado. No ar (a montagem real), o representante não vê
+// etiqueta: "só neste computador" valia para o teste no computador do Lucas e confundia em crm.suprens.com.br.
+const ETIQUETA_DO_AMBIENTE = isRedeInterna
+  ? "Dados reais do ERP · teste na rede interna"
+  : !isDadosReais
+    ? "Protótipo · dados fictícios"
+    : import.meta.env.DEV
+      ? "Dados reais do ERP · só neste computador"
+      : null;
+
 export function Layout() {
   const { pathname } = useLocation();
   const { dados: situacao, erro, recarregar } = useCarga("situacao", carregarSituacaoDosDados);
@@ -67,7 +77,7 @@ export function Layout() {
           <div className={estilos.marcaCelular}>
             <Marca />
           </div>
-          <span className={estilos.prototipo}>{isRedeInterna ? "Dados reais do ERP · teste na rede interna" : isDadosReais ? "Dados reais do ERP · só neste computador" : "Protótipo · dados fictícios"}</span>
+          {ETIQUETA_DO_AMBIENTE ? <span className={estilos.prototipo}>{ETIQUETA_DO_AMBIENTE}</span> : null}
           {situacao ? <Atualizacao atualizadoEm={situacao.atualizadoEm} relogio={situacao.relogio} /> : null}
           <BotaoValores />
         </header>
