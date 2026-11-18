@@ -5,6 +5,7 @@ import { login } from "../acesso/login";
 import { useValores } from "../contexto/valores";
 import { carregarSituacaoDosDados, isDadosReais, isRedeInterna } from "../dados/api";
 import { useCarga } from "../dados/useCarga";
+import { Carregando } from "../paginas/Carregando";
 import { formatarCodigosDoRepresentante, formatarMomento } from "../formato";
 import botoes from "./Botao.module.css";
 import { NAVEGACAO, ProvedorDaOrigem, useMemoriaDaNavegacao } from "./navegacao";
@@ -12,7 +13,7 @@ import estilos from "./Layout.module.css";
 
 export function Layout() {
   const { pathname } = useLocation();
-  const { dados: situacao, recarregar } = useCarga("situacao", carregarSituacaoDosDados);
+  const { dados: situacao, erro, recarregar } = useCarga("situacao", carregarSituacaoDosDados);
 
   const origem = useMemoriaDaNavegacao();
 
@@ -20,6 +21,10 @@ export function Layout() {
   useEffect(() => {
     recarregar();
   }, [pathname, recarregar]);
+
+  // Só com a sessão conferida o CRM aparece: quem não entrou vai direto para a entrada, sem ver o
+  // menu e as telas vazias antes (o Lucas viu esse piscar em 2026-11-18).
+  if (!situacao) return erro ? <FalhaAoAbrir aoTentarDeNovo={recarregar} /> : <Carregando />;
 
   return (
     <div className={estilos.casca}>
@@ -85,6 +90,18 @@ export function Layout() {
           <span>Incluir pedido</span>
         </Link>
       </nav>
+    </div>
+  );
+}
+
+/** O servidor não respondeu: a tela diz isso, em vez de ficar carregando para sempre. */
+function FalhaAoAbrir({ aoTentarDeNovo }: { aoTentarDeNovo: () => void }) {
+  return (
+    <div className={estilos.falhaAoAbrir} role="alert">
+      <p>Não foi possível abrir o CRM agora.</p>
+      <button type="button" className={botoes.secundario} onClick={aoTentarDeNovo}>
+        Tentar de novo
+      </button>
     </div>
   );
 }
