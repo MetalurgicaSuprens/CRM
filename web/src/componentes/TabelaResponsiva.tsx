@@ -14,6 +14,11 @@ export type ColunaDaTabela<T> = ColunaOrdenavel<T> & {
    * número de nota, que não cresce mais que as outras.
    */
   largura?: number;
+  /**
+   * Fica na largura mínima e não cresce com a sobra: a coluna de tamanho conhecido, como uma data,
+   * um número ou um valor. A sobra vai para as outras, como a do nome do cliente.
+   */
+  fixa?: boolean;
   celula: (item: T) => ReactNode;
 };
 
@@ -69,8 +74,8 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, orde
   const [chaveAberta, setChaveAberta] = useState<string | null>(null);
   const [identificacao, ...demais] = colunas;
   const grade: ColunaDaGrade[] = [
-    colunaDaIdentificacao(identificacao.largura),
-    ...demais.map((coluna) => ({ minima: coluna.largura ?? LARGURA_PADRAO_REM, cresce: 1 })),
+    colunaDaIdentificacao(identificacao),
+    ...demais.map((coluna) => ({ minima: coluna.largura ?? LARGURA_PADRAO_REM, cresce: coluna.fixa ? 0 : 1 })),
     ...(detalheDe ? [COLUNA_DA_SETA] : []),
   ];
   const emCartoes = largura > 0 && largura < larguraMinima(grade);
@@ -174,9 +179,10 @@ function classeDoTitulo<T>(coluna: ColunaDaTabela<T>): string | undefined {
 /** Cada coluna: a largura mínima, em rem, e quanto cresce com a sobra (0: não cresce). */
 type ColunaDaGrade = { minima: number; cresce: number };
 
-/** A identificação de nome, mais larga, cresce mais que as outras; a curta, como as outras. */
-function colunaDaIdentificacao(largura: number | undefined): ColunaDaGrade {
-  return largura === undefined ? { minima: LARGURA_DA_IDENTIFICACAO_REM, cresce: CRESCIMENTO_DA_IDENTIFICACAO } : { minima: largura, cresce: 1 };
+/** A identificação de nome, mais larga, cresce mais que as outras; a curta, como as outras, ou nada, se for fixa. */
+function colunaDaIdentificacao({ largura, fixa }: Pick<ColunaDaTabela<unknown>, "largura" | "fixa">): ColunaDaGrade {
+  if (largura === undefined) return { minima: LARGURA_DA_IDENTIFICACAO_REM, cresce: CRESCIMENTO_DA_IDENTIFICACAO };
+  return { minima: largura, cresce: fixa ? 0 : 1 };
 }
 
 function gradeDasColunas(grade: ColunaDaGrade[]): string {
@@ -198,7 +204,10 @@ function pixelsPorRem(): number {
 export function Identificacao({ titulo, detalhe }: { titulo: ReactNode; detalhe: ReactNode }) {
   return (
     <>
-      <span className={estilos.titulo}>{titulo}</span>
+      {/* O nome cortado com "…" aparece inteiro ao parar o mouse em cima. */}
+      <span className={estilos.titulo} title={typeof titulo === "string" ? titulo : undefined}>
+        {titulo}
+      </span>
       <span className={estilos.detalhe}>{detalhe}</span>
     </>
   );

@@ -40,7 +40,10 @@ const SEM_RESULTADO = "Nada nesta aba para esse cliente.";
 
 type ComCliente = { cliente: ClienteResumo };
 
-/** O cliente e o documento em colunas próprias, iguais em todas as abas, como no app antigo dos representantes. */
+/**
+ * O cliente e o documento em colunas próprias, iguais em todas as abas, como no app antigo dos
+ * representantes. As outras colunas são fixas: a sobra da largura vai toda para o nome do cliente.
+ */
 function colunasDoCliente<T extends ComCliente>(): [ColunaDaTabela<T>, ColunaDaTabela<T>] {
   return [
     {
@@ -49,7 +52,7 @@ function colunasDoCliente<T extends ComCliente>(): [ColunaDaTabela<T>, ColunaDaT
       ordenarPor: (item) => item.cliente.nome,
       celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={`${item.cliente.cidade}/${item.cliente.uf}`} />,
     },
-    { titulo: "CNPJ/CPF", largura: 10, ordenarPor: (item) => formatarDocumentoDoCliente(item.cliente), celula: (item) => formatarDocumentoDoCliente(item.cliente) },
+    { titulo: "CNPJ/CPF", largura: 9.5, fixa: true, ordenarPor: (item) => formatarDocumentoDoCliente(item.cliente), celula: (item) => formatarDocumentoDoCliente(item.cliente) },
   ];
 }
 
@@ -146,13 +149,15 @@ function Enviados({ pedidos, relogio, vazio }: { pedidos: PedidoEnviado[]; relog
         vazio={vazio ?? "Nenhum pedido enviado pelo CRM ainda."}
         ordemInicial={{ coluna: "Enviado", sentido: "decrescente" }}
         colunas={[
-          { titulo: "Pedido", largura: 6, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
+          { titulo: "Pedido", largura: 5.5, fixa: true, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
           ...colunasDoCliente<PedidoEnviado>(),
-          { titulo: "Enviado", ordenarPor: (pedido) => pedido.enviadoEm, celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} relogio={relogio} /> },
-          { titulo: "Situação", largura: 10, ordenarPor: (pedido) => ETAPAS[pedido.etapa].rotulo, celula: (pedido) => <EtapaDoPedido etapa={pedido.etapa} /> },
+          { titulo: "Enviado", largura: 7, fixa: true, ordenarPor: (pedido) => pedido.enviadoEm, celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} relogio={relogio} /> },
+          { titulo: "Situação", largura: 10, fixa: true, ordenarPor: (pedido) => ETAPAS[pedido.etapa].rotulo, celula: (pedido) => <EtapaDoPedido etapa={pedido.etapa} /> },
           {
             titulo: "Total",
             numerica: true,
+            largura: 7.5,
+            fixa: true,
             ordenarPor: (pedido) => pedido.totalSgi ?? pedido.totalEstimado,
             celula: (pedido) => (
               <>
@@ -183,10 +188,10 @@ function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascu
         ordemInicial={{ coluna: "Atualizado", sentido: "decrescente" }}
         colunas={[
           ...colunasDoCliente<Rascunho>(),
-          { titulo: "Produtos", ordenarPor: (rascunho) => rascunho.itens.length, celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
-          { titulo: "Atualizado", ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} relogio={relogio} /> },
-          { titulo: "Total estimado", numerica: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} comCentavos /> },
-          { titulo: "Ações", largura: 8.5, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
+          { titulo: "Produtos", largura: 6.5, fixa: true, ordenarPor: (rascunho) => rascunho.itens.length, celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
+          { titulo: "Atualizado", largura: 7, fixa: true, ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} relogio={relogio} /> },
+          { titulo: "Total estimado", numerica: true, largura: 8, fixa: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} comCentavos /> },
+          { titulo: "Ações", largura: 8.5, fixa: true, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
         ]}
       />
     </CartaoDaAba>
@@ -225,13 +230,13 @@ function EmAberto({ pedidos, hoje, vazio }: { pedidos: PedidoNoErp[]; hoje: stri
         vazio={vazio ?? "Nenhum pedido em aberto."}
         ordemInicial={{ coluna: "Entrega", sentido: "crescente" }}
         colunas={[
-          { titulo: "Pedido", largura: 6, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
+          { titulo: "Pedido", largura: 5.5, fixa: true, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
           ...colunasDoCliente<PedidoNoErp>(),
-          { titulo: "Emissão", largura: 5.5, ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
-          { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => <DataRelativa data={pedido.entrega} hoje={hoje} /> },
-          { titulo: "Itens", numerica: true, largura: 4, ordenarPor: (pedido) => pedido.itens, celula: (pedido) => pedido.itens },
-          { titulo: "Sem IPI", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
-          { titulo: "Com IPI", numerica: true, ordenarPor: (pedido) => pedido.valorComIpi, celula: (pedido) => <Valor valor={pedido.valorComIpi} comCentavos /> },
+          { titulo: "Emissão", largura: 5.5, fixa: true, ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
+          { titulo: "Entrega", largura: 6, fixa: true, ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => <DataRelativa data={pedido.entrega} hoje={hoje} /> },
+          { titulo: "Itens", numerica: true, largura: 3.5, fixa: true, ordenarPor: (pedido) => pedido.itens, celula: (pedido) => pedido.itens },
+          { titulo: "Sem IPI", numerica: true, largura: 7, fixa: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
+          { titulo: "Com IPI", numerica: true, largura: 7, fixa: true, ordenarPor: (pedido) => pedido.valorComIpi, celula: (pedido) => <Valor valor={pedido.valorComIpi} comCentavos /> },
         ]}
       />
     </CartaoDaAba>
@@ -250,12 +255,12 @@ function Faturados({ notas, hoje, vazio }: { notas: NotaFaturada[]; hoje: string
         vazio={vazio ?? "Nenhuma nota nos últimos 45 dias."}
         ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
         colunas={[
-          { titulo: "Nota", largura: 6, ordenarPor: (nota) => nota.numero, celula: (nota) => `NF ${nota.numero}` },
-          { titulo: "Pedido", largura: 6, ordenarPor: (nota) => nota.pedidos[0] ?? null, celula: (nota) => (nota.pedidos.length > 0 ? nota.pedidos.join(", ") : "—") },
+          { titulo: "Nota", largura: 6, fixa: true, ordenarPor: (nota) => nota.numero, celula: (nota) => `NF ${nota.numero}` },
+          { titulo: "Pedido", largura: 5.5, fixa: true, ordenarPor: (nota) => nota.pedidos[0] ?? null, celula: (nota) => (nota.pedidos.length > 0 ? nota.pedidos.join(", ") : "—") },
           ...colunasDoCliente<NotaFaturada>(),
-          { titulo: "Emissão", ordenarPor: (nota) => nota.emissao, celula: (nota) => <span title={formatarData(nota.emissao)}>{formatarTempoDesde(nota.emissao, hoje)}</span> },
-          { titulo: "Sem IPI", numerica: true, ordenarPor: (nota) => nota.valor, celula: (nota) => <Valor valor={nota.valor} comCentavos /> },
-          { titulo: "Total da nota", numerica: true, ordenarPor: (nota) => nota.valorTotal, celula: (nota) => <Valor valor={nota.valorTotal} comCentavos /> },
+          { titulo: "Emissão", largura: 5.5, fixa: true, ordenarPor: (nota) => nota.emissao, celula: (nota) => <span title={formatarData(nota.emissao)}>{formatarTempoDesde(nota.emissao, hoje)}</span> },
+          { titulo: "Sem IPI", numerica: true, largura: 7, fixa: true, ordenarPor: (nota) => nota.valor, celula: (nota) => <Valor valor={nota.valor} comCentavos /> },
+          { titulo: "Total da nota", numerica: true, largura: 8, fixa: true, ordenarPor: (nota) => nota.valorTotal, celula: (nota) => <Valor valor={nota.valorTotal} comCentavos /> },
         ]}
       />
     </CartaoDaAba>
