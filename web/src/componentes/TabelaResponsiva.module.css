@@ -87,6 +87,11 @@ li:last-child > .linha {
   min-width: 0;
 }
 
+/* Sem isto, o nome comprido de cliente fora da primeira coluna passa por cima da coluna ao lado, em vez de terminar em "…" */
+.celula > * {
+  max-width: 100%;
+}
+
 .numerica {
   align-items: flex-end;
   text-align: right;
