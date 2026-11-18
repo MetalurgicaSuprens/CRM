@@ -75,7 +75,10 @@ Falta, em ordem:
    - O IP fixo da Suprens está no `servidor.conf` local, fora do git.
    - Conferido de fora: só a 443 aberta para todos, a 22 só da Suprens, a 80 fechada, certificado do Let's Encrypt e cabeçalhos de segurança; a entrada por senha não existe no servidor.
    - Na primeira instalação, o root não entrava com senha pelo SSH (padrão do Ubuntu): a chave foi posta pelo console da Locaweb.
-4. **Falta no servidor:** a chave do extrator (rodar o `preparar-servidor.sh` de novo com a `CHAVE_DO_EXTRATOR`), a primeira foto, a rota `/api/saude` e os alertas.
+4. **Extrator na máquina 192.168.0.12, desde 2026-11-18:** conta Windows `sgi`, dados em `C:\Users\sgi\crm-dados`, conta Oracle `CRM_EXTRATOR` (`ORACLE_ESQUEMA_DAS_VIEWS=CRM_DADOS`). A primeira foto chegou ao servidor no mesmo dia.
+   - A agenda é a tarefa "CRM - extrator", criada pelo `extrator/agenda/agendar.ps1`; cada passada fica registrada em `crm-dados\registro\`.
+   - A rede da Locaweb corta envios grandes pela porta 22 (chamado aberto em 2026-11-18). O envio vai comprimido, e a foto de 62 MB passou.
+   - **Falta no servidor:** a rota `/api/saude` e os alertas.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
    - O Windows recusa a chave privada em `data/` ("bad permissions"), porque todo usuário do computador lê a pasta.
    - O mesmo vale para a chave do id do cliente e para a lista de autorizados: elas também saem de `data/` quando a máquina do extrator for escolhida.
