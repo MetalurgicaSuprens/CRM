@@ -73,6 +73,9 @@ function argumentos(destino: DestinoDoEnvio): string[] {
     "GlobalKnownHostsFile=none",
     `HostKeyAlias=${APELIDO_DO_SERVIDOR}`,
     "UpdateHostKeys=no",
+    // A foto (SQLite) encolhe muito comprimida. A rede da Locaweb corta envios grandes na porta 22
+    // (connection reset perto de 16 MB, em 2026-11-18), então menos bytes no caminho é menos risco.
+    "Compression=yes",
     "ConnectTimeout=20",
     "ServerAliveInterval=15",
     "ServerAliveCountMax=4",
