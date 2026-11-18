@@ -9,8 +9,8 @@ import estilos from "./RodapeDoPedido.module.css";
 
 /*
  * O rodapé do documento, sempre à vista enquanto a página rola, como a faixa de totais do app antigo:
- * itens, peças, valor sem IPI, IPI e valor com IPI, e o envio. No celular, ele leva de uma etapa à
- * outra e só oferece o envio na revisão.
+ * itens, peças, valor sem IPI, IPI e valor com IPI, e depois o salvar como rascunho, em cinza, e o
+ * envio, em verde. No celular, ele leva de uma etapa à outra e só oferece os dois na revisão.
  */
 
 type Props = {
@@ -22,16 +22,24 @@ type Props = {
   etapa: Etapa;
   aoIrPara: (etapa: Etapa) => void;
   aoEnviar: () => void;
+  /** Guarda o pedido nos rascunhos e sai dele, para enviar depois (pedido do Lucas em 2026-11-18). */
+  aoSalvarRascunho: () => void;
 };
 
-export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, aoEnviar }: Props) {
+export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, aoEnviar, aoSalvarRascunho }: Props) {
   const anterior = etapaAnterior(etapa);
   const seguinte = etapaSeguinte(etapa);
   const [primeiroProblema] = problemas;
-  const botaoDeEnviar = (
-    <button type="button" className={`${botoes.primario} ${botoes.positivo} ${estilos.enviar}`} disabled={problemas.length > 0} onClick={aoEnviar}>
-      Enviar pedido
-    </button>
+  // Os dois juntos, sempre nesta ordem: o rascunho guarda até o pedido incompleto, mas não o vazio.
+  const botoesDoFim = (
+    <>
+      <button type="button" className={`${botoes.secundario} ${estilos.salvarRascunho}`} disabled={totais.itens === 0} onClick={aoSalvarRascunho}>
+        Salvar rascunho
+      </button>
+      <button type="button" className={`${botoes.primario} ${botoes.positivo} ${estilos.enviar}`} disabled={problemas.length > 0} onClick={aoEnviar}>
+        Enviar pedido
+      </button>
+    </>
   );
   return (
     <footer className={estilos.rodape} aria-label="Totais do pedido">
@@ -69,7 +77,7 @@ export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, ao
       </p>
       <div className={estilos.envio}>
         {primeiroProblema ? <p className={estilos.problema}>{primeiroProblema}</p> : null}
-        {botaoDeEnviar}
+        {botoesDoFim}
       </div>
       <div className={estilos.passos}>
         {anterior ? (
@@ -83,7 +91,7 @@ export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, ao
             <ArrowRight size={18} aria-hidden="true" />
           </button>
         ) : (
-          botaoDeEnviar
+          botoesDoFim
         )}
       </div>
     </footer>

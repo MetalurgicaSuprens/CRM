@@ -107,12 +107,31 @@
 }
 
 .enviar,
-.avancar {
+.avancar,
+.salvarRascunho {
   flex-shrink: 0;
   height: 2.75rem;
   padding: 0 var(--esp-5);
   border-radius: var(--raio);
   font-size: var(--tam-titulo-cartao);
+}
+
+/* Em cinza, ao lado do verde: guardar para depois é a saída secundária do pedido */
+.salvarRascunho {
+  border-color: var(--cor-linha-forte);
+  background: var(--cor-superficie-3);
+  color: var(--cor-texto-2);
+  box-shadow: none;
+}
+
+.salvarRascunho:hover:not(:disabled) {
+  background: var(--cor-linha);
+  color: var(--cor-texto);
+}
+
+.salvarRascunho:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .totaisNoCelular,
@@ -185,7 +204,24 @@
   }
 
   .enviar,
-  .avancar {
+  .avancar,
+  .salvarRascunho {
     padding: 0 var(--esp-4);
+  }
+
+  /* Na revisão, os dois botões e o voltar dividem a largura: o resumo dos totais sai, porque a revisão já o mostra */
+  .rodape:has(.passos .salvarRascunho) .totaisNoCelular {
+    display: none;
+  }
+
+  .rodape:has(.passos .salvarRascunho) .passos {
+    flex: 1 1 auto;
+  }
+
+  .passos .salvarRascunho,
+  .passos .enviar {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 var(--esp-2);
   }
 }

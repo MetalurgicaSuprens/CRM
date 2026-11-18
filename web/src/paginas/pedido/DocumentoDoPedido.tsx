@@ -90,6 +90,14 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
     }
   }, [salvarAgora, pararDeSalvar, navegar]);
 
+  /** Guarda o pedido como está e volta para os rascunhos, para o representante decidir depois se envia. */
+  const salvarComoRascunho = () => {
+    salvarAgora().then(
+      () => navegar("/pedidos?aba=rascunhos"),
+      (erro: unknown) => setErroAoEnviar(mensagemDo(erro)),
+    );
+  };
+
   const descartar = () => {
     if (!existe || !window.confirm("Descartar este rascunho?")) return;
     pararDeSalvar();
@@ -155,7 +163,15 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
           </button>
         ) : null}
       </div>
-      <RodapeDoPedido cliente={catalogo.cliente.nome} totais={totais} problemas={problemas} etapa={etapa} aoIrPara={irPara} aoEnviar={() => setConfirmando(true)} />
+      <RodapeDoPedido
+        cliente={catalogo.cliente.nome}
+        totais={totais}
+        problemas={problemas}
+        etapa={etapa}
+        aoIrPara={irPara}
+        aoEnviar={() => setConfirmando(true)}
+        aoSalvarRascunho={salvarComoRascunho}
+      />
       <ConfirmarEnvio
         aberto={confirmando}
         aoFechar={() => setConfirmando(false)}
