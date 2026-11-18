@@ -29,7 +29,7 @@ export function FaturamentoDoInicio({ painel }: { painel: PainelInicio }) {
     <Cartao
       titulo={isTendencia ? "Tendência" : "Faturamento mensal"}
       icone={isTendencia ? TrendingUp : ChartNoAxesColumn}
-      subtitulo={isTendencia ? "Média por mês nos 12 meses até cada mês, nos últimos 4 anos" : `${ano}, comparado a ${ano - 1}`}
+      subtitulo={isTendencia ? "Média por mês nos 12 meses até cada mês, sobre o faturado de cada mês, nos últimos 4 anos" : `${ano}, comparado a ${ano - 1}`}
     >
       <Segmentos rotulo="Como ver o faturamento" opcoes={VISTAS} selecionado={vista} aoEscolher={setVista} className={moldura.vistas} />
       {isTendencia ? (
@@ -51,14 +51,15 @@ function Tendencia({ painel }: { painel: PainelInicio }) {
   return (
     <>
       <LinhaDeTendencia
-        descricao="Sua média por mês nos 12 meses até cada mês, nos últimos 4 anos"
+        descricao="Seu faturado em cada mês e a média por mês nos 12 meses até cada um, nos últimos 4 anos"
         rotulo="Média por mês"
         pontos={pontos}
         resumo={andamento ? <ResumoDaTendencia desde={andamento.desde} variacao={andamento.variacao} /> : undefined}
         altura={240}
       />
       <p className={moldura.notaDoGrafico}>
-        A média de 12 meses tira o vaivém dos pedidos e a época do ano. São as vendas atribuídas aos seus códigos, como os números do alto.
+        Cada ponto da linha é a média das barras dos 12 meses até ele, sem o vaivém dos pedidos e a época do ano: aponte um mês para ver quais. São as vendas
+        atribuídas aos seus códigos, como os números do alto.
       </p>
     </>
   );

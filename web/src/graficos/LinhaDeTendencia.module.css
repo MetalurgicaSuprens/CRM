@@ -1,20 +1,78 @@
-/* A linha, a área, os dois pontos marcados e o cursor; a moldura comum está em moldura.module.css */
+/* As barras do mês, a linha da média, a janela dos 12 meses e os pontos marcados; a moldura comum está em moldura.module.css */
 
-/* A área embaixo da linha: o azul do dado esmaecendo até a base, uma aguada que não vira bloco */
-.areaNoTopo {
-  stop-color: var(--cor-dado);
-  stop-opacity: 0.24;
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2) var(--esp-4);
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-2);
 }
 
-.areaNaBase {
-  stop-color: var(--cor-dado);
-  stop-opacity: 0.02;
+.legenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.amostraDaBarra {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--cor-dado-claro);
+  opacity: 0.6;
+}
+
+.amostraDaLinha {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--cor-dado);
+}
+
+/* As barras são o contexto, claras atrás da linha; as 12 da média, ao apontar um mês, ficam no azul do dado */
+.barra {
+  fill: var(--cor-dado-claro);
+  opacity: 0.45;
+}
+
+.barraNaJanela {
+  fill: var(--cor-dado);
+  opacity: 0.55;
+}
+
+.barraForaDaJanela {
+  fill: var(--cor-dado-claro);
+  opacity: 0.22;
+}
+
+/* O corte da barra que passa do teto: uma fresta da cor do fundo atravessando a barra */
+.corte {
+  fill: var(--cor-superficie);
+}
+
+.faixaDaJanela {
+  fill: var(--cor-dado);
+  opacity: 0.06;
+}
+
+/* A média sobre as 12 barras: o ponto é o nível médio delas */
+.media {
+  stroke: var(--cor-texto);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.rotuloDaJanela {
+  fill: var(--cor-texto-2);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .linha {
   fill: none;
   stroke: var(--cor-dado);
-  stroke-width: 2;
+  stroke-width: 2.25;
   stroke-linejoin: round;
   stroke-linecap: round;
 }

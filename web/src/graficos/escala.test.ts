@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eixoRedondo, escalarAltura } from "./escala";
+import { eixoRedondo, escalarAltura, tetoComCorte } from "./escala";
 
 describe("eixoRedondo", () => {
   it("escolhe passos redondos e um teto que cobre o maior valor", () => {
@@ -16,5 +16,20 @@ describe("escalarAltura", () => {
   it("é proporcional e nunca negativa", () => {
     expect(escalarAltura(50, 200, 240)).toBe(60);
     expect(escalarAltura(-10, 200, 240)).toBe(0);
+  });
+});
+
+describe("tetoComCorte", () => {
+  it("vai até a barra mais alta quando ela não passa de 2,5 vezes a maior média", () => {
+    expect(tetoComCorte([80, 150, 120], [100, 110])).toBe(150);
+  });
+
+  it("corta em 2,5 vezes a maior média o mês de pedido grande, para a linha não achatar", () => {
+    expect(tetoComCorte([80, 900, 120], [100, 110])).toBe(275);
+  });
+
+  it("nunca fica abaixo da maior média, e sem média vai até a barra mais alta", () => {
+    expect(tetoComCorte([10, 20], [100])).toBe(100);
+    expect(tetoComCorte([10, 20], [0])).toBe(20);
   });
 });

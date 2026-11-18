@@ -3,10 +3,10 @@ import type { BarraMensal } from "../graficos/BarrasMensais";
 import type { FaturamentoMensal, PedidoDaFicha } from "./tipos";
 
 /*
- * Os gráficos de faturamento da ficha. A tendência cobre os últimos 4 anos em duas vistas: a média
- * por mês nos 12 meses até cada mês, que tira a sazonalidade e o vaivém dos pedidos (o último ponto é
- * o "Faturado em 12 meses" do alto da ficha dividido por 12; pedido do Lucas em 2026-10-19), e o
- * faturado de cada mês. O mês a mês é o ano corrente
+ * Os gráficos de faturamento da ficha. A tendência cobre os últimos 4 anos: a média por mês nos 12
+ * meses até cada mês, que tira a sazonalidade e o vaivém dos pedidos (o último ponto é o "Faturado em
+ * 12 meses" do alto da ficha dividido por 12; pedido do Lucas em 2026-10-19), sobre o faturado de cada
+ * mês, as barras de que ela é a média (2026-11-18). O mês a mês é o ano corrente
  * contra o anterior, como no Início. A tendência do Início usa as mesmas contas, com o faturado do
  * representante (paginas/FaturamentoDoInicio.tsx).
  */
@@ -24,6 +24,8 @@ export type PontoDaTendencia = {
   valor: number;
   /** O mesmo, 12 meses antes; null quando a história não alcança. */
   anoAntes: number | null;
+  /** O faturado do próprio mês. */
+  faturado: number;
 };
 
 /** Um ponto por mês fechado, dos últimos 48; o ponto sem 12 meses de história fica de fora. */
@@ -31,7 +33,8 @@ export function montarTendencia(mensal: readonly FaturamentoMensal[], mesAtual: 
   const historia = porMes(mensal);
   return mesesDaTendencia(mesAtual).flatMap((mes) => {
     const valor = mediaDosDozeMeses(historia, mes);
-    return valor === null ? [] : [{ mes, valor, anoAntes: mediaDosDozeMeses(historia, somarMeses(mes, -MESES_DO_ANO)) }];
+    if (valor === null) return [];
+    return [{ mes, valor, anoAntes: mediaDosDozeMeses(historia, somarMeses(mes, -MESES_DO_ANO)), faturado: historia.get(mes)?.valor ?? 0 }];
   });
 }
 
@@ -41,15 +44,6 @@ export function resumirATendencia(pontos: readonly PontoDaTendencia[]): { desde:
   const ultimo = pontos.at(-1);
   if (!primeiro || !ultimo || primeiro === ultimo) return null;
   return { desde: primeiro.mes, variacao: primeiro.valor > 0 ? ultimo.valor / primeiro.valor - 1 : null };
-}
-
-/** O faturado de cada um dos mesmos 48 meses da tendência; o mês que a história não alcança fica de fora. */
-export function montarFaturadoPorMes(mensal: readonly FaturamentoMensal[], mesAtual: string): BarraMensal[] {
-  const historia = porMes(mensal);
-  return mesesDaTendencia(mesAtual).flatMap((mes) => {
-    const doMes = historia.get(mes);
-    return doMes ? [{ mes, valor: doMes.valor }] : [];
-  });
 }
 
 /** Os 12 meses do ano corrente, com o mesmo mês do ano anterior e, no mês corrente, o que falta faturar. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { somarMeses } from "dominio/datas";
-import { aFaturarNoMes, montarFaturadoPorMes, montarMesAMes, montarTendencia, resumirATendencia, resumirOAno } from "./faturamentoDoCliente";
+import { aFaturarNoMes, montarMesAMes, montarTendencia, resumirATendencia, resumirOAno } from "./faturamentoDoCliente";
 import type { FaturamentoMensal, PedidoDaFicha } from "./tipos";
 
 /** Os 60 meses fechados antes de `mesAtual` e ele, com o valor de cada um dado por `valorDe`. */
@@ -29,46 +29,36 @@ describe("montarTendencia", () => {
     const valorDe = (mes: string) => (mes >= "2025-10" ? 200 : 100);
     const pontos = montarTendencia(historia("2026-10", valorDe), "2026-10");
     expect(pontos).toHaveLength(48);
-    expect(pontos[0]).toEqual({ mes: "2022-10", valor: 100, anoAntes: null });
+    expect(pontos[0]).toEqual({ mes: "2022-10", valor: 100, anoAntes: null, faturado: 100 });
     // De out/25 a set/26, tudo a 200; 1 ano antes, tudo a 100: o "Faturado em 12 meses" do alto da ficha ÷ 12, e a mesma variação.
-    expect(pontos.at(-1)).toEqual({ mes: "2026-09", valor: 200, anoAntes: 100 });
+    expect(pontos.at(-1)).toEqual({ mes: "2026-09", valor: 200, anoAntes: 100, faturado: 200 });
   });
 
   it("deixa de fora o ponto sem 12 meses de história, como na carteira fictícia, de 36 meses", () => {
     const pontos = montarTendencia(historia("2026-10").slice(-37), "2026-10");
     expect(pontos).toHaveLength(25);
-    expect(pontos[0]).toEqual({ mes: "2024-09", valor: 100, anoAntes: null });
+    expect(pontos[0]).toEqual({ mes: "2024-09", valor: 100, anoAntes: null, faturado: 100 });
+  });
+
+  it("leva em cada ponto o faturado do próprio mês, a barra de que a linha é a média", () => {
+    const pontos = montarTendencia(historia("2026-10", (mes) => (mes === "2024-03" ? 1_300 : 100)), "2026-10");
+    expect(pontos.find(({ mes }) => mes === "2024-03")).toEqual({ mes: "2024-03", valor: 200, anoAntes: 100, faturado: 1_300 });
   });
 });
 
 describe("resumirATendencia", () => {
   it("diz de quando a tendência parte e quanto ela andou até o último ponto", () => {
     const pontos = [
-      { mes: "2022-10", valor: 1_000, anoAntes: null },
-      { mes: "2026-09", valor: 1_500, anoAntes: 1_200 },
+      { mes: "2022-10", valor: 1_000, anoAntes: null, faturado: 1_000 },
+      { mes: "2026-09", valor: 1_500, anoAntes: 1_200, faturado: 1_500 },
     ];
     expect(resumirATendencia(pontos)).toEqual({ desde: "2022-10", variacao: 0.5 });
   });
 
   it("não calcula a variação de quem partiu do zero, nem resume um ponto só", () => {
-    expect(resumirATendencia([{ mes: "2022-10", valor: 0, anoAntes: null }, { mes: "2026-09", valor: 900, anoAntes: null }])).toEqual({ desde: "2022-10", variacao: null });
-    expect(resumirATendencia([{ mes: "2026-09", valor: 900, anoAntes: null }])).toBeNull();
-  });
-});
-
-describe("montarFaturadoPorMes", () => {
-  it("dá o faturado de cada um dos 48 meses fechados, o período da tendência", () => {
-    const barras = montarFaturadoPorMes(historia("2026-10", (mes) => (mes === "2024-03" ? 0 : 100)), "2026-10");
-    expect(barras).toHaveLength(48);
-    expect(barras[0]).toEqual({ mes: "2022-10", valor: 100 });
-    expect(barras.find(({ mes }) => mes === "2024-03")?.valor).toBe(0);
-    expect(barras.at(-1)).toEqual({ mes: "2026-09", valor: 100 });
-  });
-
-  it("deixa de fora o mês que a história não alcança, como na carteira fictícia, de 36 meses", () => {
-    const barras = montarFaturadoPorMes(historia("2026-10").slice(-37), "2026-10");
-    expect(barras).toHaveLength(36);
-    expect(barras[0]?.mes).toBe("2023-10");
+    const ponto = (mes: string, valor: number) => ({ mes, valor, anoAntes: null, faturado: valor });
+    expect(resumirATendencia([ponto("2022-10", 0), ponto("2026-09", 900)])).toEqual({ desde: "2022-10", variacao: null });
+    expect(resumirATendencia([ponto("2026-09", 900)])).toBeNull();
   });
 });
 
