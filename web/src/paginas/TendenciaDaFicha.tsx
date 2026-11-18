@@ -2,12 +2,10 @@ import { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { Cartao } from "../componentes/Cartao";
 import { Segmentos, type Segmento } from "../componentes/Segmentos";
-import { Variacao } from "../componentes/Variacao";
 import { montarFaturadoPorMes, montarTendencia, resumirATendencia } from "../dados/faturamentoDoCliente";
 import type { FichaCliente } from "../dados/tipos";
-import { formatarMesAno } from "../formato";
 import { BarrasMensais } from "../graficos/BarrasMensais";
-import { LinhaDeTendencia } from "../graficos/LinhaDeTendencia";
+import { LinhaDeTendencia, ResumoDaTendencia } from "../graficos/LinhaDeTendencia";
 import moldura from "../graficos/moldura.module.css";
 
 /*
@@ -28,6 +26,7 @@ export function TendenciaDaFicha({ ficha, mesAtual }: { ficha: FichaCliente; mes
   const tendencia = montarTendencia(ficha.mensal, mesAtual);
   const andamento = resumirATendencia(tendencia);
   const isPorMes = vista === "por-mes";
+  const resumo = andamento ? <ResumoDaTendencia desde={andamento.desde} variacao={andamento.variacao} /> : undefined;
   return (
     <Cartao
       titulo="Tendência"
@@ -35,17 +34,12 @@ export function TendenciaDaFicha({ ficha, mesAtual }: { ficha: FichaCliente; mes
       subtitulo={isPorMes ? "Faturado de cada mês, nos últimos 4 anos" : "Média por mês nos 12 meses até cada mês, nos últimos 4 anos"}
     >
       <Segmentos rotulo="Como ver o faturado" opcoes={VISTAS} selecionado={vista} aoEscolher={setVista} className={moldura.vistas} />
-      {andamento ? (
-        <p className={moldura.resumoDoGrafico}>
-          <span>Desde {formatarMesAno(andamento.desde)}:</span>
-          <Variacao razao={andamento.variacao} referencia="na média por mês" />
-        </p>
-      ) : null}
       {isPorMes ? (
         <BarrasMensais
           descricao={`Faturado de ${ficha.nome} em cada mês, nos últimos 4 anos`}
           rotulos={{ valor: "Faturado no mês" }}
           barras={montarFaturadoPorMes(ficha.mensal, mesAtual)}
+          resumo={resumo}
           altura={220}
         />
       ) : (
@@ -53,6 +47,7 @@ export function TendenciaDaFicha({ ficha, mesAtual }: { ficha: FichaCliente; mes
           descricao={`Média por mês de ${ficha.nome} nos 12 meses até cada mês, nos últimos 4 anos`}
           rotulo="Média por mês"
           pontos={tendencia}
+          resumo={resumo}
           altura={220}
         />
       )}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  comInicialMaiuscula,
   formatarCep,
   formatarComCentavos,
   formatarCodigoDoCliente,
@@ -219,3 +220,9 @@ describe("formatarDocumentoDoCliente", () => {
   });
 });
 
+
+describe("comInicialMaiuscula", () => {
+  it("põe só a primeira letra em maiúscula, para o mês que abre a leitura do gráfico", () => {
+    expect(comInicialMaiuscula("julho de 2026")).toBe("Julho de 2026");
+  });
+});

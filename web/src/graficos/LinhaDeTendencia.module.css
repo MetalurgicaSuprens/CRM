@@ -1,4 +1,4 @@
-/* A linha, a área, os dois pontos marcados e a dica; a moldura comum está em moldura.module.css */
+/* A linha, a área, os dois pontos marcados e o cursor; a moldura comum está em moldura.module.css */
 
 /* A área embaixo da linha: o azul do dado esmaecendo até a base, uma aguada que não vira bloco */
 .areaNoTopo {
@@ -19,7 +19,7 @@
   stroke-linecap: round;
 }
 
-/* O cursor da dica: uma linha fina, como a grade */
+/* O cursor do mês apontado: uma linha fina, como a grade */
 .cursor {
   stroke: var(--cor-eixo);
   stroke-width: 1;
@@ -49,12 +49,6 @@
   stroke: var(--cor-superficie);
   stroke-width: 4px;
   stroke-linejoin: round;
-}
-
-.dicaValor {
-  font-size: var(--tam-texto);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 .vazio {

@@ -1,6 +1,6 @@
 /*
- * A moldura que os gráficos dividem: o topo com o botão da tabela, o desenho, a grade do eixo, os
- * alvos de toque, a dica e a tabela gêmea. O que é só de um gráfico fica no módulo dele.
+ * A moldura que os gráficos dividem: a leitura do mês apontado, o topo com o botão da tabela, o
+ * desenho, a grade do eixo, os alvos de toque e a tabela gêmea. O que é só de um gráfico fica no módulo dele.
  */
 
 .figura {
@@ -75,28 +75,6 @@
 .alvo:focus-visible {
   stroke: var(--cor-dado);
   stroke-width: 2;
-}
-
-/* left e transform vêm do componente, que mantém a dica dentro do desenho */
-.dica {
-  position: absolute;
-  top: 0;
-  width: max-content;
-  padding: var(--esp-2) var(--esp-3);
-  background: var(--cor-superficie);
-  border: 1px solid var(--cor-borda);
-  border-radius: var(--raio-pequeno);
-  box-shadow: var(--sombra-3);
-  pointer-events: none;
-  font-size: var(--tam-pequeno);
-  white-space: nowrap;
-  z-index: 2;
-}
-
-.dicaTitulo {
-  margin-bottom: 6px;
-  color: var(--cor-texto-2);
-  font-weight: 500;
 }
 
 /*
@@ -195,14 +173,34 @@
   align-self: flex-start;
 }
 
-.resumoDoGrafico {
+/*
+ * A leitura acima do desenho: o resumo ou o mês apontado, sempre no mesmo lugar. A altura de duas
+ * linhas, com o texto embaixo, rente ao desenho, evita que ele pule quando o mês apontado, mais
+ * comprido que o resumo, quebra a linha.
+ */
+.leitura {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-end;
   align-items: baseline;
-  gap: 4px var(--esp-2);
-  margin-bottom: var(--esp-3);
+  gap: 2px var(--esp-2);
+  min-height: 3em;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+
+.tituloDaLeitura {
+  font-weight: 600;
+}
+
+.parteSecundaria,
+.convite {
+  font-weight: 400;
+  color: var(--cor-texto-2);
+}
+
+.convite {
+  color: var(--cor-texto-suave);
 }
 
 .notaDoGrafico {

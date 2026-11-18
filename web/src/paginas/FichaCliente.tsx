@@ -58,7 +58,6 @@ import {
 } from "../formato";
 import { BarrasHorizontais } from "../graficos/BarrasHorizontais";
 import { BarrasMensais } from "../graficos/BarrasMensais";
-import moldura from "../graficos/moldura.module.css";
 import { CadastroDaFicha } from "./CadastroDaFicha";
 import { Carregando } from "./Carregando";
 import { useRoteiro } from "./mapa/Roteiro";
@@ -148,11 +147,11 @@ function Faturamento({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
     <div className={estilos.gradeDosGraficos}>
       <TendenciaDaFicha ficha={ficha} mesAtual={mesAtual} />
       <Cartao titulo="Mês a mês" icone={ChartNoAxesColumn} subtitulo={`${ano}, comparado a ${ano - 1}`}>
-        {resumo ? <AnoAteAgora resumo={resumo} /> : null}
         <BarrasMensais
           descricao={`Faturamento mensal de ${ficha.nome} em ${ano}, comparado a ${ano - 1}`}
           rotulos={{ valor: String(ano), comparacao: String(ano - 1), aFaturar: "A faturar no mês" }}
           barras={montarMesAMes(ficha.mensal, mesAtual, aFaturarNoMes(ficha.pedidos, mesAtual))}
+          resumo={resumo ? <AnoAteAgora resumo={resumo} /> : undefined}
           altura={220}
         />
       </Cartao>
@@ -165,12 +164,12 @@ function AnoAteAgora({ resumo }: { resumo: ResumoDoAno }) {
   const ano = Number(resumo.inicio.slice(0, 4));
   const variacao = resumo.anoAnterior > 0 ? resumo.valor / resumo.anoAnterior - 1 : null;
   return (
-    <p className={moldura.resumoDoGrafico}>
+    <>
       <span>
         {ano} até {formatarNomeDoMes(resumo.fim)}: <Valor valor={resumo.valor} compacto />
       </span>
       <Variacao razao={variacao} referencia={`vs o mesmo período de ${ano - 1}`} />
-    </p>
+    </>
   );
 }
 

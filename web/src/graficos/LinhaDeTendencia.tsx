@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { ChartLine, Table2 } from "lucide-react";
 import { useFormatoDeReais } from "../contexto/valores";
 import { Valor } from "../componentes/Valor";
@@ -6,6 +6,7 @@ import { Variacao } from "../componentes/Variacao";
 import { formatarMesAno } from "../formato";
 import { eixoRedondo, escalarAltura } from "./escala";
 import { GradeDoEixo } from "./GradeDoEixo";
+import { LeituraDoGrafico, ParteSecundaria, TituloDaLeitura } from "./LeituraDoGrafico";
 import { useLargura } from "./useLargura";
 import estilos from "./LinhaDeTendencia.module.css";
 import moldura from "./moldura.module.css";
@@ -13,15 +14,17 @@ import moldura from "./moldura.module.css";
 export type PontoDaLinha = {
   mes: string;
   valor: number;
-  /** O valor 12 meses antes, para a variação na dica e na tabela; null quando não há. */
+  /** O valor 12 meses antes, para a variação na leitura e na tabela; null quando não há. */
   anoAntes: number | null;
 };
 
 type Props = {
   pontos: PontoDaLinha[];
   descricao: string;
-  /** O nome do valor na dica e na tabela, como "Média por mês". */
+  /** O nome do valor na leitura e na tabela, como "Média por mês". */
   rotulo: string;
+  /** A frase da linha acima do desenho quando nenhum mês está apontado, como "Desde nov/22: +3%". */
+  resumo?: ReactNode;
   altura?: number;
 };
 
@@ -30,13 +33,16 @@ const MESES_DO_ANO = 12;
 
 /**
  * Uma série só, no tempo: a linha com a área clara embaixo, a partir do zero. Só dois pontos têm o
- * valor escrito, o último e o de 1 ano antes; os outros ficam na dica e na tabela.
+ * valor escrito, o último e o de 1 ano antes; os outros ficam na leitura, acima do desenho, e na tabela.
  */
-export function LinhaDeTendencia({ pontos, descricao, rotulo, altura = 240 }: Props) {
+export function LinhaDeTendencia({ pontos, descricao, rotulo, resumo, altura = 240 }: Props) {
   const [comoTabela, setComoTabela] = useState(false);
+  const [ativo, setAtivo] = useState<number | null>(null);
   if (pontos.length < 2) return <p className={estilos.vazio}>Ainda não há 12 meses de história para mostrar a tendência.</p>;
+  const pontoAtivo = ativo === null || comoTabela ? undefined : pontos[ativo];
   return (
     <figure className={moldura.figura}>
+      <LeituraDoGrafico leitura={pontoAtivo ? <LeituraDoPonto ponto={pontoAtivo} rotulo={rotulo} /> : null} resumo={resumo} />
       <div className={moldura.topo}>
         <span />
         <button type="button" className={moldura.alternar} onClick={() => setComoTabela((anterior) => !anterior)} aria-pressed={comoTabela}>
@@ -44,14 +50,24 @@ export function LinhaDeTendencia({ pontos, descricao, rotulo, altura = 240 }: Pr
           {comoTabela ? "Ver gráfico" : "Ver tabela"}
         </button>
       </div>
-      {comoTabela ? <Tabela pontos={pontos} rotulo={rotulo} /> : <Desenho pontos={pontos} rotulo={rotulo} descricao={descricao} altura={altura} />}
+      {comoTabela ? (
+        <Tabela pontos={pontos} rotulo={rotulo} />
+      ) : (
+        <Desenho pontos={pontos} rotulo={rotulo} descricao={descricao} altura={altura} ativo={ativo} aoApontar={setAtivo} />
+      )}
     </figure>
   );
 }
 
-function Desenho({ pontos, rotulo, descricao, altura }: Required<Pick<Props, "altura">> & Omit<Props, "altura">) {
+type PropsDoDesenho = Required<Pick<Props, "altura">> &
+  Omit<Props, "altura" | "resumo"> & {
+    /** O ponto apontado, que a leitura mostra; null sem nenhum. */
+    ativo: number | null;
+    aoApontar: (indice: number | null) => void;
+  };
+
+function Desenho({ pontos, rotulo, descricao, altura, ativo, aoApontar: setAtivo }: PropsDoDesenho) {
   const { referencia, largura } = useLargura<HTMLDivElement>();
-  const [ativo, setAtivo] = useState<number | null>(null);
   const formato = useFormatoDeReais();
   const larguraPlot = Math.max(0, largura - MARGEM.esquerda - MARGEM.direita);
   const alturaPlot = altura - MARGEM.topo - MARGEM.base;
@@ -109,7 +125,6 @@ function Desenho({ pontos, rotulo, descricao, altura }: Required<Pick<Props, "al
           ))}
         </svg>
       ) : null}
-      {pontoAtivo && ativo !== null ? <Dica ponto={pontoAtivo} rotulo={rotulo} centro={x(ativo)} larguraDesenho={largura} /> : null}
     </div>
   );
 }
@@ -126,19 +141,16 @@ function Marco({ x, y, texto, vazado = false, ancora = "middle" }: { x: number; 
   );
 }
 
-/** Para não sair do desenho, a dica recua a própria largura na mesma proporção em que o ponto está no gráfico. */
-function Dica({ ponto, rotulo, centro, larguraDesenho }: { ponto: PontoDaLinha; rotulo: string; centro: number; larguraDesenho: number }) {
-  const recuo = larguraDesenho > 0 ? (centro / larguraDesenho) * 100 : 50;
+/** "Média por mês até set/24: R$ 107.448 ↗ +11% vs 1 ano antes". */
+function LeituraDoPonto({ ponto, rotulo }: { ponto: PontoDaLinha; rotulo: string }) {
   return (
-    <div className={moldura.dica} style={{ left: centro, transform: `translate(-${recuo}%, -8px)` }} role="status">
-      <p className={moldura.dicaTitulo}>
+    <>
+      <TituloDaLeitura>
         {rotulo} até {formatarMesAno(ponto.mes)}
-      </p>
-      <p className={estilos.dicaValor}>
-        <Valor valor={ponto.valor} />
-      </p>
-      {ponto.anoAntes ? <Variacao razao={ponto.valor / ponto.anoAntes - 1} referencia="vs 1 ano antes" /> : null}
-    </div>
+      </TituloDaLeitura>
+      <Valor valor={ponto.valor} />
+      {ponto.anoAntes ? <Variacao razao={ponto.valor / ponto.anoAntes - 1} referencia="vs 1 ano antes" /> : <ParteSecundaria>sem o ano anterior</ParteSecundaria>}
+    </>
   );
 }
 
@@ -166,5 +178,15 @@ function Tabela({ pontos, rotulo }: { pontos: PontoDaLinha[]; rotulo: string }) 
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** "Desde nov/22: ↗ +3% na média por mês": o resumo da linha acima do desenho, na ficha e no Início. */
+export function ResumoDaTendencia({ desde, variacao }: { desde: string; variacao: number | null }) {
+  return (
+    <>
+      <span>Desde {formatarMesAno(desde)}:</span>
+      <Variacao razao={variacao} referencia="na média por mês" />
+    </>
   );
 }

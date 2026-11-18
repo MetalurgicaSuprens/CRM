@@ -2,12 +2,10 @@ import { useState } from "react";
 import { ChartNoAxesColumn, TrendingUp } from "lucide-react";
 import { Cartao } from "../componentes/Cartao";
 import { Segmentos, type Segmento } from "../componentes/Segmentos";
-import { Variacao } from "../componentes/Variacao";
 import { montarTendencia, resumirATendencia } from "../dados/faturamentoDoCliente";
 import type { PainelInicio } from "../dados/tipos";
-import { formatarMesAno } from "../formato";
 import { BarrasMensais } from "../graficos/BarrasMensais";
-import { LinhaDeTendencia } from "../graficos/LinhaDeTendencia";
+import { LinhaDeTendencia, ResumoDaTendencia } from "../graficos/LinhaDeTendencia";
 import moldura from "../graficos/moldura.module.css";
 
 /*
@@ -52,13 +50,13 @@ function Tendencia({ painel }: { painel: PainelInicio }) {
   const andamento = resumirATendencia(pontos);
   return (
     <>
-      {andamento ? (
-        <p className={moldura.resumoDoGrafico}>
-          <span>Desde {formatarMesAno(andamento.desde)}:</span>
-          <Variacao razao={andamento.variacao} referencia="na média por mês" />
-        </p>
-      ) : null}
-      <LinhaDeTendencia descricao="Sua média por mês nos 12 meses até cada mês, nos últimos 4 anos" rotulo="Média por mês" pontos={pontos} altura={240} />
+      <LinhaDeTendencia
+        descricao="Sua média por mês nos 12 meses até cada mês, nos últimos 4 anos"
+        rotulo="Média por mês"
+        pontos={pontos}
+        resumo={andamento ? <ResumoDaTendencia desde={andamento.desde} variacao={andamento.variacao} /> : undefined}
+        altura={240}
+      />
       <p className={moldura.notaDoGrafico}>
         A média de 12 meses tira o vaivém dos pedidos e a época do ano. São as vendas atribuídas aos seus códigos, como os números do alto.
       </p>

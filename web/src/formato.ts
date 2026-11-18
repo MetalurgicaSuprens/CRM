@@ -124,7 +124,11 @@ export function formatarMesPorExtenso(mesIso: string): string {
 
 /** "2026-10-09" → "Sexta-feira, 9 de outubro" */
 export function formatarDiaPorExtenso(dataIso: string): string {
-  const texto = DIA_POR_EXTENSO.format(paraDiaUtc(dataIso));
+  return comInicialMaiuscula(DIA_POR_EXTENSO.format(paraDiaUtc(dataIso)));
+}
+
+/** "julho de 2026" → "Julho de 2026", para o texto que abre uma frase. */
+export function comInicialMaiuscula(texto: string): string {
   return `${texto.charAt(0).toUpperCase()}${texto.slice(1)}`;
 }
 

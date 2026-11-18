@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Table2, ChartColumn } from "lucide-react";
 import { useFormatoDeReais } from "../contexto/valores";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
-import { formatarMesAno, formatarMesPorExtenso } from "../formato";
+import { comInicialMaiuscula, formatarMesAno, formatarMesPorExtenso } from "../formato";
 import { eixoRedondo, escalarAltura } from "./escala";
 import { GradeDoEixo } from "./GradeDoEixo";
+import { LeituraDoGrafico, ParteSecundaria, TituloDaLeitura } from "./LeituraDoGrafico";
 import { rotularMeses } from "./rotulosMes";
 import { useLargura } from "./useLargura";
 import estilos from "./BarrasMensais.module.css";
@@ -36,6 +37,8 @@ type Props = {
   barras: BarraMensal[];
   descricao: string;
   rotulos: Rotulos;
+  /** A frase da linha acima do desenho quando nenhum mês está apontado, como "2026 até outubro: R$ 974 mil". */
+  resumo?: ReactNode;
   altura?: number;
 };
 
@@ -45,10 +48,13 @@ const RAIO = 4;
 const VAO = 2;
 const ESPACO_MINIMO_ROTULO = 34;
 
-export function BarrasMensais({ barras, descricao, rotulos, altura = 240 }: Props) {
+export function BarrasMensais({ barras, descricao, rotulos, resumo, altura = 240 }: Props) {
   const [comoTabela, setComoTabela] = useState(false);
+  const [ativo, setAtivo] = useState<number | null>(null);
+  const barraAtiva = ativo === null || comoTabela ? undefined : barras[ativo];
   return (
     <figure className={moldura.figura}>
+      <LeituraDoGrafico leitura={barraAtiva ? <LeituraDaBarra barra={barraAtiva} rotulos={rotulos} /> : null} resumo={resumo} />
       <div className={moldura.topo}>
         <Legenda barras={barras} rotulos={rotulos} />
         <button
@@ -64,15 +70,21 @@ export function BarrasMensais({ barras, descricao, rotulos, altura = 240 }: Prop
       {comoTabela ? (
         <TabelaMensal barras={barras} rotulos={rotulos} />
       ) : (
-        <Desenho barras={barras} rotulos={rotulos} descricao={descricao} altura={altura} />
+        <Desenho barras={barras} descricao={descricao} altura={altura} ativo={ativo} aoApontar={setAtivo} />
       )}
     </figure>
   );
 }
 
-function Desenho({ barras, rotulos, descricao, altura }: Required<Pick<Props, "altura">> & Omit<Props, "altura">) {
+type PropsDoDesenho = Required<Pick<Props, "altura">> &
+  Pick<Props, "barras" | "descricao"> & {
+    /** A coluna apontada, que a leitura mostra; null sem nenhuma. */
+    ativo: number | null;
+    aoApontar: (indice: number | null) => void;
+  };
+
+function Desenho({ barras, descricao, altura, ativo, aoApontar: setAtivo }: PropsDoDesenho) {
   const { referencia, largura } = useLargura<HTMLDivElement>();
-  const [ativo, setAtivo] = useState<number | null>(null);
   const formato = useFormatoDeReais();
   const larguraPlot = Math.max(0, largura - MARGEM.esquerda - MARGEM.direita);
   const alturaPlot = altura - MARGEM.topo - MARGEM.base;
@@ -83,7 +95,6 @@ function Desenho({ barras, rotulos, descricao, altura }: Required<Pick<Props, "a
   const centro = (indice: number) => MARGEM.esquerda + faixa * indice + faixa / 2;
   const intervaloRotulos = Math.max(1, Math.ceil(ESPACO_MINIMO_ROTULO / Math.max(faixa, 1)));
   const rotulosMes = rotularMeses(barras.map((barra) => barra.mes), intervaloRotulos);
-  const barraAtiva = ativo === null ? undefined : barras[ativo];
 
   return (
     <div ref={referencia} className={moldura.desenho}>
@@ -121,7 +132,6 @@ function Desenho({ barras, rotulos, descricao, altura }: Required<Pick<Props, "a
           ))}
         </svg>
       ) : null}
-      {barraAtiva && ativo !== null ? <Dica barra={barraAtiva} rotulos={rotulos} centro={centro(ativo)} larguraDesenho={largura} /> : null}
     </div>
   );
 }
@@ -182,55 +192,40 @@ function maiorValor(barras: BarraMensal[]): number {
   return Math.max(0, ...barras.map((b) => Math.max((b.valor ?? 0) + (b.aFaturar ?? 0), b.comparacao ?? 0)));
 }
 
-type PropsDica = {
-  barra: BarraMensal;
-  rotulos: Rotulos;
-  /** Centro da coluna, em px a partir da borda esquerda do desenho. */
-  centro: number;
-  larguraDesenho: number;
-};
-
 /**
- * Para não sair do desenho, a dica recua a própria largura na mesma proporção em que a
- * coluna está no gráfico: centrada no meio, rente à borda nas pontas.
+ * O mês apontado: "Junho de 2026: R$ 112.000 · 2025: R$ 96.000 ↗ +17%". No mês corrente, o faturado
+ * até agora, o que falta faturar e o mês inteiro do ano anterior, como as barras mostram.
  */
-function Dica({ barra, rotulos, centro, larguraDesenho }: PropsDica) {
-  const fechado = barra.valor !== null && !isMesCorrente(barra);
-  const recuo = larguraDesenho > 0 ? (centro / larguraDesenho) * 100 : 50;
+function LeituraDaBarra({ barra, rotulos }: { barra: BarraMensal; rotulos: Rotulos }) {
+  const comparacao =
+    barra.comparacao != null && rotulos.comparacao ? (
+      <ParteSecundaria>
+        · {isMesCorrente(barra) ? `${rotulos.comparacao}, mês inteiro` : rotulos.comparacao}: <Valor valor={barra.comparacao} />
+      </ParteSecundaria>
+    ) : null;
   return (
-    <div className={moldura.dica} style={{ left: centro, transform: `translate(-${recuo}%, -8px)` }} role="status">
-      <p className={moldura.dicaTitulo}>{formatarMesPorExtenso(barra.mes)}</p>
-      <div className={estilos.dicaLinhas}>
-        {barra.valor !== null ? (
-          <LinhaDica chave={estilos.chaveValor} valor={barra.valor} rotulo={isMesCorrente(barra) ? "Faturado até agora" : rotulos.valor} />
-        ) : null}
-        {isMesCorrente(barra) ? <LinhaDica chave={estilos.chaveAFaturar} valor={barra.aFaturar} rotulo={rotulos.aFaturar ?? "A faturar"} /> : null}
-        {barra.comparacao != null && rotulos.comparacao ? (
-          <LinhaDica
-            chave={estilos.chaveComparacao}
-            valor={barra.comparacao}
-            rotulo={isMesCorrente(barra) ? `${rotulos.comparacao}, mês inteiro` : rotulos.comparacao}
-          />
-        ) : null}
-      </div>
-      {fechado && barra.comparacao ? (
-        <p className={estilos.dicaVariacao}>
-          <Variacao razao={(barra.valor ?? 0) / barra.comparacao - 1} referencia={`vs ${rotulos.comparacao ?? "anterior"}`} />
-        </p>
+    <>
+      <TituloDaLeitura>{comInicialMaiuscula(formatarMesPorExtenso(barra.mes))}</TituloDaLeitura>
+      {barra.valor === null ? <ParteSecundaria>ainda não chegou</ParteSecundaria> : <ValorDaBarra barra={barra} valor={barra.valor} />}
+      {comparacao}
+      {barra.valor !== null && !isMesCorrente(barra) && barra.comparacao ? (
+        <Variacao razao={barra.valor / barra.comparacao - 1} referencia={`vs ${rotulos.comparacao ?? "anterior"}`} />
       ) : null}
-    </div>
+    </>
   );
 }
 
-/** Três células da grade da dica: traço da série, valor e rótulo, sempre na mesma linha. */
-function LinhaDica({ chave, valor, rotulo }: { chave: string | undefined; valor: number; rotulo: string }) {
+/** O valor do mês fechado ou, no mês corrente, o faturado até agora e o que falta faturar. */
+function ValorDaBarra({ barra, valor }: { barra: BarraMensal; valor: number }) {
+  if (!isMesCorrente(barra)) return <Valor valor={valor} />;
   return (
     <>
-      <span className={chave} aria-hidden="true" />
-      <strong className={estilos.dicaValor}>
-        <Valor valor={valor} />
-      </strong>
-      <span className={estilos.dicaRotulo}>{rotulo}</span>
+      <span>
+        <Valor valor={valor} /> faturado
+      </span>
+      <ParteSecundaria>
+        + <Valor valor={barra.aFaturar} /> a faturar
+      </ParteSecundaria>
     </>
   );
 }

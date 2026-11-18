@@ -1,4 +1,4 @@
-/* As barras, a legenda e as linhas da dica; a moldura comum está em moldura.module.css */
+/* As barras e a legenda; a moldura comum está em moldura.module.css */
 
 .legenda {
   display: flex;
@@ -59,44 +59,3 @@
   fill: var(--cor-superficie-2);
 }
 
-.dicaLinhas {
-  display: grid;
-  grid-template-columns: auto auto auto;
-  align-items: center;
-  gap: 2px var(--esp-2);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Valores alinhados à direita: os dígitos ficam um embaixo do outro */
-.dicaValor {
-  justify-self: end;
-}
-
-.dicaRotulo {
-  color: var(--cor-texto-suave);
-}
-
-.dicaVariacao {
-  margin-top: 4px;
-}
-
-.chaveValor,
-.chaveAFaturar,
-.chaveComparacao {
-  flex-shrink: 0;
-  width: 12px;
-  height: 3px;
-  border-radius: 2px;
-}
-
-.chaveValor {
-  background: var(--cor-dado);
-}
-
-.chaveAFaturar {
-  background: var(--cor-dado-claro);
-}
-
-.chaveComparacao {
-  background: var(--cor-comparacao);
-}
