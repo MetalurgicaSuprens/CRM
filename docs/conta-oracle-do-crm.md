@@ -164,4 +164,4 @@ Conectado como `CRM_EXTRATOR`:
 
 ## O que muda do nosso lado
 
-O extrator passa a ler `CRCL`, `CFOR`, `NFME` e `VEPM` pelo esquema `CRM_DADOS`, e o resto pelo `ABC71`. Uma configuração escolhe o esquema de cada objeto. Objeto novo no CRM vira um pedido de GRANT ao DBA, com o motivo.
+O extrator passa a ler `CRCL`, `CFOR`, `NFME` e `VEPM` pelo esquema `CRM_DADOS`, e o resto pelo `ABC71`. Feito em 2026-11-18: com `ORACLE_ESQUEMA_DAS_VIEWS=CRM_DADOS` no `.env` do extrator, as consultas trocam `ABC71.` por `CRM_DADOS.` só nessas quatro tabelas (`extrator/src/oracle.ts`). Vazio, fica o `ABC71`, para a conta de desenvolvimento. Objeto novo no CRM vira um pedido de GRANT ao DBA, com o motivo.

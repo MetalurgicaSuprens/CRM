@@ -38,6 +38,8 @@ const ARQUIVO_DE_AUTORIZADOS = "representantes-autorizados.txt";
 const ARQUIVO_DA_CHAVE = "chave-do-id-do-cliente";
 const BYTES_DA_CHAVE = 32;
 const CHAVES_DO_ORACLE = ["ORACLE_USER", "ORACLE_PASSWORD", "ORACLE_HOST", "ORACLE_SERVICE_NAME"] as const;
+const ESQUEMA_DO_ERP = "ABC71";
+const NOME_DE_ESQUEMA = /^[A-Z][A-Z0-9_]{0,29}$/;
 const PASTA_DAS_FOTOS = "fotos";
 const PASTA_DO_ENVIO = "envio";
 const ARQUIVO_DA_CHAVE_DO_EXTRATOR = "chave-do-extrator";
@@ -119,7 +121,15 @@ function lerAcessoAoOracle(arquivo: string): AcessoAoOracle {
     usuario: env.ORACLE_USER ?? "",
     senha: env.ORACLE_PASSWORD ?? "",
     endereco: `${env.ORACLE_HOST}:${env.ORACLE_PORT || "1521"}/${env.ORACLE_SERVICE_NAME}`,
+    esquemaDasTabelasRestritas: lerEsquemaDasTabelasRestritas(env.ORACLE_ESQUEMA_DAS_VIEWS),
   };
+}
+
+/** O nome entra no texto do SQL: só um nome de esquema do Oracle, sem aspas nem espaço. */
+export function lerEsquemaDasTabelasRestritas(valor: string | undefined): string {
+  const esquema = (valor || ESQUEMA_DO_ERP).toUpperCase();
+  if (!NOME_DE_ESQUEMA.test(esquema)) throw new Error(`ORACLE_ESQUEMA_DAS_VIEWS não é um nome de esquema do Oracle: "${valor}".`);
+  return esquema;
 }
 
 /** Um código por linha; o que vem depois de # é comentário. */
