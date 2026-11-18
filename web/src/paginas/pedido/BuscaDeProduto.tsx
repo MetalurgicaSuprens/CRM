@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { Search } from "lucide-react";
+import { FotoDaFamilia } from "../../componentes/FotoDaFamilia";
 import { Valor } from "../../componentes/Valor";
 import { correspondeAoProduto } from "../../dados/busca";
 import { precoInicialDoItem } from "../../dados/pedido";
@@ -120,6 +121,7 @@ export function BuscaDeProduto({ produtos, noPedido, aoEscolher, campo }: Props)
                 onMouseMove={() => setDestaque(indice)}
                 onClick={() => escolher(produto)}
               >
+                <FotoDaFamilia codigo={produto.codigo} familia={produto.familia} className={estilos.foto} />
                 <span className={estilos.produto}>
                   <span className={estilos.codigo}>{produto.codigo}</span>
                   <DescricaoDoProduto produto={produto} busca={busca} className={estilos.descricao} />

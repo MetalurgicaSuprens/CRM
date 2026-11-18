@@ -11,6 +11,7 @@ import { precoDigitado, type LinhaEscolhida } from "../../dados/pedido";
 import type { DadosDoPedido, ProdutoDoCatalogo } from "../../dados/tipos";
 import { formatarComCentavos, formatarContagem, formatarDataCurta, formatarNumero } from "../../formato";
 import { BuscaDeProduto } from "./BuscaDeProduto";
+import { FotoDaFamilia } from "../../componentes/FotoDaFamilia";
 import { DescricaoDoProduto } from "./DescricaoDoProduto";
 import estilos from "./ItensDoPedido.module.css";
 
@@ -111,6 +112,7 @@ function Item({ linha, ipi, alterar, alterarPreco }: PropsDoItem) {
   const semIpi = valorDaLinha(linha);
   return (
     <li className={estilos.item} data-produto={linha.codigo}>
+      <FotoDaFamilia codigo={linha.codigo} familia={linha.familia} className={estilos.foto} />
       <span className={estilos.produto}>
         <span className={estilos.codigo}>{linha.codigo}</span>
         <DescricaoDoProduto produto={linha} className={estilos.descricao} />

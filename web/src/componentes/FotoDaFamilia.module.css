@@ -1,0 +1,26 @@
+/* O tamanho vem de quem usa (--tamanho-da-foto): 52 px na tabela dos itens, 44 px no celular e na busca */
+.quadro {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--tamanho-da-foto, 2.75rem);
+  height: var(--tamanho-da-foto, 2.75rem);
+  overflow: hidden;
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-pequeno);
+  background: #ffffff;
+}
+
+.foto {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+}
+
+.semFoto {
+  font-size: 0.625rem;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--cor-texto-suave);
+}

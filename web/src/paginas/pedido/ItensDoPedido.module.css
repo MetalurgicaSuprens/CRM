@@ -43,24 +43,25 @@
 }
 
 /*
- * No celular, cada item é um bloco de quatro linhas: o produto, o valor e o X; a quantidade e o preço
- * do cento; de onde o preço vem; o IPI e o valor com IPI. Com lugar (50 rem), vira uma linha de tabela
- * embaixo dos títulos das colunas, como a grade do app antigo.
+ * No celular, cada item é um bloco de quatro linhas: a foto da família, o produto, o valor e o X; a
+ * quantidade e o preço do cento; de onde o preço vem; o IPI e o valor com IPI. Com lugar (50 rem), vira
+ * uma linha de tabela embaixo dos títulos das colunas, como a grade do app antigo, com a foto na frente.
  */
 .item,
 .titulos {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 28px;
+  grid-template-columns: 2.75rem minmax(0, 1fr) auto 28px;
   align-items: center;
   column-gap: var(--esp-2);
 }
 
 .item {
+  --tamanho-da-foto: 2.75rem;
   grid-template-areas:
-    "produto valor tirar"
-    "quantidade preco preco"
-    "referencias referencias referencias"
-    "ipi comipi comipi";
+    "foto produto valor tirar"
+    "quantidade quantidade preco preco"
+    "referencias referencias referencias referencias"
+    "ipi ipi comipi comipi";
   row-gap: var(--esp-2);
   padding: var(--esp-3) 0;
   border-bottom: 1px solid var(--cor-linha);
@@ -70,9 +71,13 @@
 
 .semIpi .item {
   grid-template-areas:
-    "produto valor tirar"
-    "quantidade preco preco"
-    "referencias referencias referencias";
+    "foto produto valor tirar"
+    "quantidade quantidade preco preco"
+    "referencias referencias referencias referencias";
+}
+
+.foto {
+  grid-area: foto;
 }
 
 /* A quantidade é o componente Quantidade, sem classe daqui: cai na célula dela pelo papel */
@@ -223,27 +228,29 @@
 @container (min-width: 50rem) {
   .item,
   .titulos {
-    grid-template-columns: minmax(0, 1fr) 8.5rem 7.5rem 7rem 6rem 7rem 28px;
+    grid-template-columns: 3.25rem minmax(0, 1fr) 8.5rem 7.5rem 7rem 6rem 7rem 28px;
     column-gap: var(--esp-3);
   }
 
   .semIpi .item,
   .semIpi .titulos {
-    grid-template-columns: minmax(0, 1fr) 8.5rem 7.5rem 7rem 28px;
+    grid-template-columns: 3.25rem minmax(0, 1fr) 8.5rem 7.5rem 7rem 28px;
   }
 
+  /* A foto ocupa as duas linhas do item, ao lado do produto e de onde o preço vem */
   .item {
+    --tamanho-da-foto: 3.25rem;
     grid-template-areas:
-      "produto quantidade preco valor ipi comipi tirar"
-      "referencias referencias referencias referencias referencias referencias referencias";
+      "foto produto quantidade preco valor ipi comipi tirar"
+      "foto referencias referencias referencias referencias referencias referencias referencias";
     row-gap: 4px;
     padding: var(--esp-2) var(--esp-3);
   }
 
   .semIpi .item {
     grid-template-areas:
-      "produto quantidade preco valor tirar"
-      "referencias referencias referencias referencias referencias";
+      "foto produto quantidade preco valor tirar"
+      "foto referencias referencias referencias referencias referencias";
   }
 
   .item:hover {
@@ -276,7 +283,7 @@
   /* A faixa grafite do título das colunas, como nas outras tabelas (tokens --fundo-do-cabecalho) */
   .titulos {
     display: grid;
-    grid-template-areas: "produto quantidade preco valor ipi comipi tirar";
+    grid-template-areas: "foto produto quantidade preco valor ipi comipi tirar";
     padding: var(--esp-2) var(--esp-3);
     border-radius: var(--raio-pequeno);
     background: var(--fundo-do-cabecalho);
@@ -288,7 +295,7 @@
   }
 
   .semIpi .titulos {
-    grid-template-areas: "produto quantidade preco valor tirar";
+    grid-template-areas: "foto produto quantidade preco valor tirar";
   }
 
   .tituloDoProduto {

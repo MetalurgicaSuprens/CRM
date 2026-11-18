@@ -74,8 +74,9 @@
 
 /* O produto à esquerda; à direita, a situação, a embalagem e o preço do cento */
 .opcao {
+  --tamanho-da-foto: 2.5rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 4.5rem 5.5rem;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto 4.5rem 5.5rem;
   align-items: center;
   gap: var(--esp-3);
   padding: var(--esp-2) var(--esp-3);
@@ -124,11 +125,15 @@
 /* No celular, a situação desce para baixo do produto e sobra largura para o código */
 @media (max-width: 560px) {
   .opcao {
-    grid-template-columns: minmax(0, 1fr) 4rem 5.5rem;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 4rem 5.5rem;
     grid-template-areas:
-      "produto embalagem preco"
-      "situacao situacao situacao";
+      "foto produto embalagem preco"
+      "foto situacao situacao situacao";
     row-gap: 0;
+  }
+
+  .foto {
+    grid-area: foto;
   }
 
   .produto {
