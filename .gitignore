@@ -31,3 +31,8 @@ data/
 
 .DS_Store
 Thumbs.db
+
+# Arquivos compactados (cópias de outros sistemas, como o código do SGI6R) não entram no git
+*.7z
+*.rar
+*.zip

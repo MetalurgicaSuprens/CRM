@@ -100,7 +100,7 @@ Falta, em ordem:
      - os destinos ficam em `crm-dados\pedidos\`: `conferidos` (com o `.erp.json` do cliente do ERP e do dono dele), `revisao`, `aguardando` (transportadora nova, conferido de novo a cada passada) e `quarentena` (com o `.motivo.txt`). O arquivo `PAUSAR` nessa pasta suspende a conferência;
      - **a confirmar com o Lucas:** o valor-teto da revisão (R$ 50.000, em `pedidos/conferencia.ts`) e o teto de 30 pedidos por login por dia (`pedidos/triagem.ts`);
      - as consultas novas ainda não rodaram no Oracle de verdade: rodam pela primeira vez com o primeiro pedido. Se uma falhar, a passada para com erro, e o pedido fica para a passada seguinte, sem ir para a quarentena;
-   - **Etapa 4:** a gravação dos conferidos no SGI pelas procedures, com os parâmetros lidos no `ALL_ARGUMENTS`;
+   - **Etapa 4:** a gravação dos conferidos no SGI pelas procedures, campo a campo como o SGI6R, em [`pedido-no-sgi.md`](pedido-no-sgi.md) (a conferir com o Lucas antes de gravar);
    - uma rotina na LAN que busca os pedidos, revalida no Oracle e grava no SGI pelas procedures de pedido, como o app antigo dos representantes: cotação (operação 1) e efetivação logo em seguida (operação 13). Veja "Pedidos: caminho até o ERP" no plano;
    - só depende da conta Oracle com EXECUTE nas duas procedures (`docs/conta-oracle-do-crm.md`), que o Lucas pediu ao DBA em 2026-11-17.
    - Na revalidação:

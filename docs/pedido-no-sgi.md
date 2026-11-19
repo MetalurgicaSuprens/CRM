@@ -1,0 +1,126 @@
+# O pedido do CRM no SGI: campo a campo
+
+Situação em 2026-11-19. Base para a etapa 4 da F5: a máquina do extrator grava o pedido conferido pelas mesmas procedures do app antigo dos representantes (SGI6R), com os mesmos valores que ele manda. **Conferir com o Lucas antes de gravar no SGI.**
+
+Fontes:
+- os parâmetros das procedures, do `ALL_ARGUMENTS` (lista do DBA, 2026-11-19);
+- o código do SGI6R (cópia de 2026-07-16):
+  - `Client\untPedidos_Incluir.pas` (`btnGravarClick`) e `Client\untPedidos_IncluirItens.pas` (`edPacExit`);
+  - `Client\untPedidos.pas` (`CalculaValorMinimoVenda`);
+  - `Server\ServerMethodsUnit1.pas` (`IUDMestre`, `IUDItens`) e as consultas do `.dfm` (`qryPosCliTab`, `qryPosPac`, `qryPosTransp`, `qryPosVlrMinVen`, `qryNumPed`).
+
+## Como o SGI6R grava
+
+1. Calcula o número: `MAX(PV1_NPE) + 1` da `SGI5_TAB_VEN_PV1_V2`. Passou de 2.999.999, volta a 1.
+2. Numa transação, chama:
+   - `SGI5_IUD_VEN_PV1_V2` com `V_OPE = 1`;
+   - `SGI5_IUD_VEN_PV2_V2` com `V_OPE = 1`, uma vez por item;
+   - e confirma.
+3. O pedido fica `COTACAO`. A efetivação é outra chamada, com `V_OPE = 13` e só `V_NPE`, que o deixa `PEDIDO BLOQUEADO`.
+
+O servidor do SGI6R troca por nulo:
+- as liberações com usuário 0, com a data junto;
+- o vencimento (`V_DVE`) quando há condição de pagamento;
+- o câmbio 0 e a data de câmbio de 1900;
+- o endereço da transportadora vazio, com todos os campos `V_TRA_*`;
+- no item, a aprovação de desconto 0 e o pedido de produção vazio.
+
+O CRM faz igual.
+
+**Parâmetros que o SGI6R nunca manda e que ficam nulos:**
+- `V_TEB`, `V_SEN`;
+- os dados de crédito: `V_LIM_CRE`, `V_TIT_ABE`, `V_PED_ABE`, `V_VLR_PED`, `V_REC_VEN` e `V_JLB_CRE`;
+- no item: `V_CCL`, `V_FAB`, `V_LEN`, `V_DOC` e `V_CLI`.
+
+O CRM também não manda nenhum dado de crédito (CLAUDE.md, regra 3).
+
+## Cabeçalho: `SGI5_IUD_VEN_PV1_V2`, operação 1
+
+De onde vêm os valores:
+- **Cadastro:** a consulta do cadastro do SGI6R (`qryPosCliTab`) para o cliente do pedido, com a tabela `PRINCIPAL`.
+  - Tabelas: `CRCL A`, `SGI5_TAB_VEN_CLI B`, `TPUF D` (empresa 2021), `CRVN G`, `NFTF I`, `SGI5_TAB_VEN_TP1 M` e `CRCLX O`.
+- **Transportadora:** `qryPosTransp` (`CFOR`, `SGI5_TAB_LOG_TRA`).
+
+| Parâmetro | O que é | Valor no SGI6R | No CRM |
+|---|---|---|---|
+| `V_OPE` | operação | 1 | 1 |
+| `V_NPE` | número do pedido | `MAX(PV1_NPE)+1` | o mesmo; colisão com a tela do SGI: tenta o seguinte |
+| `V_DCA` | data do cadastro | hoje | hoje |
+| `V_CLI` | cliente | código do cliente | o cliente achado pela conferência |
+| `V_CVE` | classificação da venda | `COMERCIALIZACAO`, `INDUSTRIALIZACAO` ou `USO/CONSUMO` | a escolha do pedido, nesses textos |
+| `V_CFO` | CFOP | `A.CFO` | o mesmo |
+| `V_CTR` | código de tributação | `B.CLI_CTR` | o mesmo |
+| `V_TMO` | tipo de movimento | `B.CLI_TMO` | o mesmo |
+| `V_ORI` | origem | `REPRESENTANTE` | `REPRESENTANTE` |
+| `V_CPG` | condição de pagamento | a escolhida | a escolhida |
+| `V_TPM` | tabela de preço | `B.CLI_TAB` | a tabela da conferência |
+| `V_STA` | status | `COTACAO` | `COTACAO` |
+| `V_TXT` | texto genérico | `A.CENTRAL_PGTO` | o mesmo |
+| `V_OCO` | nº do pedido do cliente | o digitado | `pedidoDoCliente` |
+| `V_DEN` | entrega | a data digitada | a entrega pedida; sem ela, 5 dias úteis depois do envio |
+| `V_DVE` | vencimento | nulo (há condição) | nulo |
+| `V_DVA` | validade | hoje + 10 dias | hoje + 10 dias |
+| `V_TRA` | transportadora | o código | o código da conferência |
+| `V_PFR` | pagamento do frete | `P` na 616108610001 (Suprens), `S` na 85819999 e na 78499999 (cliente retira), `T` nas outras | o mesmo |
+| `V_BAS_IPI` | base de IPI | `SIM`/`NAO`, de `NFTF.BASE_IPI` | o mesmo |
+| `V_BAS_ICM` | base de ICMS | `SIM`/`NAO`, de `NFTF.BASE_ICM` | o mesmo |
+| `V_PIC` | alíquota de ICMS | `TPUF.ICM_PORC` do estado do cliente | o mesmo |
+| `V_BCO` | banco de cobrança | 3 primeiros dígitos de `A.BANCO_CART_PORT` | o mesmo |
+| `V_CAR` | carteira | último dígito de `A.BANCO_CART_PORT` | o mesmo |
+| `V_VEN` | vendedor | `A.VEND_1` | o mesmo |
+| `V_TER` | território | `A.TERR_1` | o mesmo |
+| `V_PCV` | comissão | `CRVN.PORC_COMISSAO` do vendedor | o mesmo |
+| `V_ORC` | origem do orçamento | `SGI6R` | **`CRM`** |
+| `V_LR1` | livre 1 | vazio | **o número CRM (`CRM-00106`)**: é por ele que o pedido volta à tela |
+| `V_LR2`, `V_NFA`, `V_TFO` | livres | vazios | vazios |
+| `V_DLB_*`, `V_ULB_*`, `V_JUS_BPV`, `V_DCO`, `V_UCO` | liberações | nulos | nulos |
+| `V_OBS` | observação | a digitada | a observação do pedido |
+| `V_USU` | usuário | o código do representante logado | o dono do cliente (`VEND_1`), um dos códigos do login |
+| `V_JCA` | justificativa de cancelamento | vazio | vazio |
+| `V_MOE` | moeda | `TP1_MOE` da tabela | `REAL` (o CRM só usa tabela em real) |
+| `V_CBO`, `V_DCB` | câmbio e data | nulos em real | nulos |
+| `V_TRA_END` … `V_TRA_CEP` | endereço de entrega da transportadora | `SGI5_TAB_LOG_TRA` | o mesmo; vazio, tudo nulo |
+| `V_FPG` | forma de pagamento | `CRCLX.RESERVADO_10` | o mesmo |
+| `V_TEN` | tipo de entrega | `IMEDIATA` ou `PROGRAMADA` | "Assim que possível" → `IMEDIATA`; "Programada" → `PROGRAMADA` |
+| `V_TRF` | frete parcial | `NAO ACEITA FRETE PARCIAL` ou `ACEITA FRETE PARCIAL` | a escolha do pedido, nesses textos |
+
+## Item: `SGI5_IUD_VEN_PV2_V2`, operação 1, um por produto
+
+O preço vem da view de preço do cliente (`SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`): `VIEW_STA LIKE 'ATIVO%'`, **`VIEW_IPR = 'SIM'`**, do cliente e da tabela.
+
+| Parâmetro | O que é | Valor no SGI6R | No CRM |
+|---|---|---|---|
+| `V_OPE`, `V_NPE` | operação e pedido | 1 e o número | os mesmos |
+| `V_ITE` | item | 1, 2, 3… na ordem | a ordem do pedido |
+| `V_DEN` | entrega | a do cabeçalho | a do cabeçalho |
+| `V_CTR` | tributação | a do cabeçalho | a mesma |
+| `V_PIC` | ICMS | 4 se a procedência (`VIEW_PCD`) é 1, 3 ou 8 e o CFOP começa com 6; senão, a do cabeçalho | o mesmo |
+| `V_PIP` | IPI | `VIEW_ALI_IPI` se a base de IPI é `SIM`; senão, 0 | o mesmo |
+| `V_PAC` | produto | o código | o código |
+| `V_PNU`, `V_PNU_FOR` | part number e o do fornecedor | `VIEW_PNU` e `VIEW_PNU_FOR`; `0` vira vazio | o mesmo |
+| `V_UNI` | unidade | `CT` | `CT` |
+| `V_QTD` | quantidade | em centos | as peças ÷ 100 |
+| `V_VLR_TAB` | preço de tabela | `VIEW_VLR_TAB` | o mesmo |
+| `V_DES` | desconto | `VIEW_DSC` | o mesmo |
+| `V_DES_IND` | índice do desconto | `VIEW_DSC_IND` | o mesmo |
+| `V_VLR_LIQ` | preço líquido | `VIEW_VLR_LIQ` | o mesmo |
+| `V_VLR_VEN` | preço de venda (do cento) | o digitado; começa no líquido | o preço do cento do pedido (a conferência garante que não fica abaixo do líquido) |
+| `V_APV_DES`, `V_DTA_DES`, `V_JUS_DES` | aprovação de desconto | nulos | nulos |
+| `V_PMV_MB`, `V_PMV_ML` | preço mínimo por margem bruta e líquida | da `SGI5_TAB_CUS_REP_VLR_MIN_VEN` do dia (`CUS_DMO = TRUNC(SYSDATE)`) × 100: exportação, `EXP`; senão, pelo ICMS do item (`PRAIS` com 0, `PRA4`, `PRA7`, `PRA12`, `PRA18`); a coluna `_COM` quando há comissão | o mesmo |
+| `V_LR1`, `V_LR2` | livres | vazios | vazios |
+| `V_OCO` | pedido do cliente no item | o do cabeçalho | o do cabeçalho |
+| `V_IOC` | item da ordem de compra | o digitado; 0 vira nulo | nulo (o CRM ainda não tem o item da OC) |
+| `V_NPP`, `V_SPP`, `V_JPP` | pedido de produção | nulos | nulos |
+| `V_USU` | usuário | o representante | o mesmo do cabeçalho |
+
+## O que o código do SGI6R mudou no que o CRM já faz
+
+1. **Produto liberado para representante (`VIEW_IPR = 'SIM'`).** O SGI6R só oferece os produtos com esse filtro, e a foto do CRM e a conferência da LAN não o usam. Assim o catálogo do CRM pode mostrar produto que o SGI6R não deixa vender. A consulta de preços (`extrator/src/erp/catalogo.ts`) precisa do filtro, e ele vale para a foto e para a conferência.
+2. **Só a tabela `PRINCIPAL`.** O SGI6R procura o cliente com `NVL(B.CLI_STA, 'PRINCIPAL') = 'PRINCIPAL'`. Sem ela, o cliente não recebe pedido. A foto do CRM, na falta da principal, usa outra tabela (`escolherTabela`). Para o pedido, vale a regra do SGI6R.
+3. **Representante ativo.** O SGI6R só deixa entrar o representante com `SGI5_TAB_FIN_VEN.FIN_STA = 'ATIVO'`. A conta `CRM_EXTRATOR` não lê essa tabela. Se o Lucas quiser a mesma trava na LAN, é um GRANT novo ao DBA.
+4. **Entrega programada.** O SGI6R pede pelo menos 7 dias corridos. Os 5 dias úteis do CRM sempre dão 7 dias corridos ou mais, porque passam por um fim de semana.
+
+## Ainda a decidir com o Lucas
+
+- O valor-teto da revisão manual (provisório: R$ 50.000) e o teto de pedidos por login por dia (provisório: 30).
+- Onde fazer a primeira gravação de verdade: num banco de teste, se existir, ou num pedido real para um cliente de teste, cancelado depois no SGI (operação 12).
