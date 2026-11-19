@@ -51,7 +51,9 @@ async function lerTabelas(oracle: Oracle, doCliente: string, binds: Record<strin
 /**
  * Um preço por cliente, tabela e produto ativo. A view repete o produto por part number e por
  * depósito do ESTQ, sempre com o mesmo preço (conferido em 14/10): fica uma linha por produto.
- * Saem o produto inativo no Omega e o produto sem árvore, que o SGI não deixa vender.
+ * Saem o produto inativo no Omega e o produto sem árvore, que o SGI não deixa vender, e o produto não
+ * liberado para representante (VIEW_IPR), que o app antigo dos representantes nunca oferece
+ * (SGI6R, qryPosPac; docs/pedido-no-sgi.md).
  */
 export async function lerPrecos(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<PrecoDoCliente[]> {
   const lista = emLista("r", autorizados);
@@ -70,7 +72,7 @@ async function lerPrecosDa(oracle: Oracle, doCliente: string, binds: Record<stri
   const linhas = await oracle.consultar(
     `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ), MAX(V.VIEW_ALI_IPI)
        FROM ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI V
-      WHERE ${doCliente} AND V.VIEW_STA LIKE 'ATIVO%' AND V.VIEW_VLR_LIQ > 0
+      WHERE ${doCliente} AND V.VIEW_STA LIKE 'ATIVO%' AND TRIM(V.VIEW_IPR) = 'SIM' AND V.VIEW_VLR_LIQ > 0
         AND NOT EXISTS (SELECT 1 FROM ABC71.ESTQ E WHERE TRIM(E.C_PROD) = TRIM(V.VIEW_PAC) AND NVL(TRIM(E.QT_ALT_OBR), 'A') = 'I')
         AND NOT EXISTS (SELECT 1 FROM ABC71.SGI5_VIEW_ENG_PAC_SEM_ARVORE S WHERE TRIM(S.VIEW_PAC) = TRIM(V.VIEW_PAC))
       GROUP BY V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC)`,

@@ -115,7 +115,7 @@ O preço vem da view de preço do cliente (`SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`): `VI
 
 ## O que o código do SGI6R mudou no que o CRM já faz
 
-1. **Produto liberado para representante (`VIEW_IPR = 'SIM'`).** O SGI6R só oferece os produtos com esse filtro, e a foto do CRM e a conferência da LAN não o usam. Assim o catálogo do CRM pode mostrar produto que o SGI6R não deixa vender. A consulta de preços (`extrator/src/erp/catalogo.ts`) precisa do filtro, e ele vale para a foto e para a conferência.
+1. **Produto liberado para representante (`VIEW_IPR = 'SIM'`).** O SGI6R só oferece os produtos com esse filtro, e até 2026-11-19 a foto do CRM e a conferência da LAN não o usavam: o catálogo do CRM podia mostrar produto que o SGI6R não deixa vender. Corrigido em 2026-11-19 na consulta de preços (`extrator/src/erp/catalogo.ts`), que vale para a foto e para a conferência.
 2. **Só a tabela `PRINCIPAL`.** O SGI6R procura o cliente com `NVL(B.CLI_STA, 'PRINCIPAL') = 'PRINCIPAL'`. Sem ela, o cliente não recebe pedido. A foto do CRM, na falta da principal, usa outra tabela (`escolherTabela`). Para o pedido, vale a regra do SGI6R.
 3. **Representante ativo.** O SGI6R só deixa entrar o representante com `SGI5_TAB_FIN_VEN.FIN_STA = 'ATIVO'`. A conta `CRM_EXTRATOR` não lê essa tabela. Se o Lucas quiser a mesma trava na LAN, é um GRANT novo ao DBA.
 4. **Entrega programada.** O SGI6R pede pelo menos 7 dias corridos. Os 5 dias úteis do CRM sempre dão 7 dias corridos ou mais, porque passam por um fim de semana.
