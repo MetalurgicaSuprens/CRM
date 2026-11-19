@@ -120,7 +120,24 @@ O preço vem da view de preço do cliente (`SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`): `VI
 3. **Representante ativo.** O SGI6R só deixa entrar o representante com `SGI5_TAB_FIN_VEN.FIN_STA = 'ATIVO'`. A conta `CRM_EXTRATOR` não lê essa tabela. Se o Lucas quiser a mesma trava na LAN, é um GRANT novo ao DBA.
 4. **Entrega programada.** O SGI6R pede pelo menos 7 dias corridos. Os 5 dias úteis do CRM sempre dão 7 dias corridos ou mais, porque passam por um fim de semana.
 
+## Os campos livres já são usados pela Suprens
+
+Consulta de 2026-11-19 nos pedidos do SGI6R de 24 meses (19.913):
+- `PV1_LR1` está preenchido em 38% deles (7.587), e `PV1_LR2` em 9%. O SGI6R manda os dois vazios: quem preenche é a Suprens, na tela do SGI.
+- Os valores são recados para o faturamento: `RETIRA` (2.200), `ANTECIPADO`, `USO CONSUMO`, `EMBALAGEM 20 PÇS`, `1º COMPRA`, `ENV CERTIFICADO`, `ST-MG / ANTECIPADO`, `GERAR GNRE` e `ZONA FRANCA`.
+- Nos itens, `PV2_LR1` e `PV2_LR2` nunca são usados. `PV2_IOC` (item da ordem de compra) está preenchido em 99% dos itens.
+
+Por isso o número CRM **não pode ir no `V_LR1`**: a Suprens escreve por cima e o pedido perde a ligação com o CRM. Proposta a decidir com o Lucas: `V_ORC = CRM-00106` (a coluna tem 15 caracteres), que diz a origem e o número de uma vez. Antes, conferir se algum relatório filtra `PV1_ORC = SGI6R`. O `V_IOC` também merece revisão, já que o SGI quase sempre o tem.
+
+## Decisões do Lucas em 2026-11-19
+
+- **Teto de pedidos por login por dia:** 30.
+- **Primeira gravação:** um pedido real, cancelado depois no SGI (operação 12). O cliente e os itens se escolhem junto com o Lucas.
+- **Cliente sem tabela `PRINCIPAL`:** bloquear o pedido já na tela do CRM, como o SGI6R, dizendo o motivo ao representante ("Tabela de preço não cadastrada").
+- **Qual login enviou:** o código do pedido continua o dono do cliente, como hoje. O Lucas quer saber também o login do CRM que colocou o pedido, para separar os vendedores de um mesmo representante. O `app.db` já guarda isso (`pedidos_enviados.usuario` e a chave usada). Falta mostrar, no CRM e talvez no SGI.
+- **Condição de pagamento:** começar na condição que o cliente mais usa, e não na do cadastro. A Suprens estuda trocar a condição do cadastro, que hoje é uma só, por uma lista de condições permitidas por cliente.
+
 ## Ainda a decidir com o Lucas
 
-- O valor-teto da revisão manual (provisório: R$ 50.000) e o teto de pedidos por login por dia (provisório: 30).
-- Onde fazer a primeira gravação de verdade: num banco de teste, se existir, ou num pedido real para um cliente de teste, cancelado depois no SGI (operação 12).
+- O valor-teto da revisão manual (provisório: R$ 50.000). Ele não existe no SGI6R: veio do plano do CRM, como trava contra sessão roubada ou erro de digitação, já que as procedures não conferem preço. O pedido já nasce `PEDIDO BLOQUEADO`, e isso pesa na decisão.
+- O campo que leva o número CRM (acima).
