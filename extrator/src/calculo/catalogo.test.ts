@@ -37,9 +37,13 @@ describe("escolherTabela", () => {
     expect(escolherTabela([tabela({ tabela: "A", papel: "SECUNDARIA" }), principal], "PRACA")).toBe(principal);
   });
 
-  it("sem principal, fica com a que não é secundária", () => {
+  it("conta a tabela sem papel como principal, como o SGI6R", () => {
     const semPapel = tabela({ tabela: "B", papel: null });
     expect(escolherTabela([tabela({ tabela: "A", papel: "SECUNDARIA" }), semPapel], "PRACA")).toBe(semPapel);
+  });
+
+  it("sem principal, não escolhe nenhuma: o cliente não recebe pedido, como no SGI6R", () => {
+    expect(escolherTabela([tabela({ tabela: "A", papel: "SECUNDARIA" })], "PRACA")).toBeNull();
   });
 
   it("só aceita tabela em real, porque a tela mostra R$", () => {

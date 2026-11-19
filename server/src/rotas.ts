@@ -1,7 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { FastifyInstance } from "fastify";
 import { LIMITE_DA_OBSERVACAO, LIMITE_DA_ORDEM_DE_COMPRA, MAIOR_ITEM_DA_ORDEM_DE_COMPRA } from "dominio/pedido";
-import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
 import { auditar } from "./auditoria.ts";
 import { enviadosNaFicha, pedidosEnviadosDoLogin } from "./envio/pedidosEnviados.ts";
 import type { FotoAtual } from "./foto/fotoAtual.ts";
@@ -157,8 +156,8 @@ export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () =
     (requisicao, resposta) => {
       const resultado = lerCatalogo(foto.abrir(), sessaoDa(requisicao), requisicao.params.codigo);
       if (!resultado) return resposta.code(404).send(CLIENTE_FORA_DA_CARTEIRA);
-      // 409: o cliente existe e é do login, mas está fora de ativo no cadastro e não recebe pedido.
-      if ("foraDeAtivo" in resultado) return resposta.code(409).send({ erro: AVISO_DE_PEDIDO_BLOQUEADO[resultado.foraDeAtivo] });
+      // 409: o cliente existe e é do login, mas não recebe pedido (fora de ativo no cadastro ou sem tabela principal).
+      if ("bloqueado" in resultado) return resposta.code(409).send({ erro: resultado.bloqueado });
       return resultado.catalogo;
     },
   );

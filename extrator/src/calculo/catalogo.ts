@@ -27,14 +27,18 @@ type DadosDoCatalogo = Pick<DadosDoErp, "tabelas" | "precos" | "partNumbers" | "
 const MEDIDA = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 
 /**
- * A tabela de preço do cliente. Só em real, porque a tela mostra R$; na montadora, só a ativa, como
- * o SGI exige. Entre essas, a principal; sem ela, a que não é secundária; sem essa, a que sobrar.
+ * A tabela de preço do cliente: só a principal, como o app antigo dos representantes, que procura o
+ * cliente com NVL(CLI_STA, 'PRINCIPAL') = 'PRINCIPAL' (o papel vazio conta como principal). Sem ela, o
+ * cliente não recebe pedido, e a tela diz por quê (decisão do Lucas em 2026-11-19). Só em real, porque
+ * a tela mostra R$; na montadora, só a ativa, como o SGI exige.
  */
 export function escolherTabela(tabelas: readonly TabelaDoCliente[], mercado: Mercado): TabelaDoCliente | null {
-  const usaveis = tabelas
-    .filter((tabela) => tabela.moeda === "REAL" && (mercado !== "MONTADORA" || tabela.situacao === "ATIVO"))
-    .sort((a, b) => a.tabela.localeCompare(b.tabela));
-  return usaveis.find((t) => t.papel === "PRINCIPAL") ?? usaveis.find((t) => t.papel !== "SECUNDARIA") ?? usaveis[0] ?? null;
+  return (
+    tabelas
+      .filter((tabela) => (tabela.papel ?? "PRINCIPAL") === "PRINCIPAL")
+      .filter((tabela) => tabela.moeda === "REAL" && (mercado !== "MONTADORA" || tabela.situacao === "ATIVO"))
+      .sort((a, b) => a.tabela.localeCompare(b.tabela))[0] ?? null
+  );
 }
 
 export function montarCatalogo(clientes: readonly ClienteDoCatalogo[], dados: DadosDoCatalogo): CatalogoDosClientes {

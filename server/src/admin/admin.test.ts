@@ -236,7 +236,7 @@ describe("representantes, situação e registro", () => {
     expect((await lerNoAdmin("/api/admin/situacao")).json()).toMatchObject({
       admin: { id: idDoAdmin, nome: "Admin de teste" },
       // Os 6 CNPJs da foto de teste; as linhas dos 2 grupos não contam.
-      foto: { dataRef: "2026-10-13", representantes: 2, clientes: 6 },
+      foto: { dataRef: "2026-10-13", representantes: 2, clientes: 7 },
       cargaRecusada: null,
     });
   });

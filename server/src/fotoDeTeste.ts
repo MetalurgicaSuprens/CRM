@@ -17,6 +17,8 @@ import type { PastasDaFoto } from "./foto/conferirFoto.ts";
 export const CLIENTE_DE_A = "aaaaaaaaaaaaaaa1";
 /** Cliente de A inativo no cadastro do SGI: aparece, mas não recebe pedido. */
 export const CLIENTE_INATIVO_DE_A = "aaaaaaaaaaaaaaa2";
+/** Cliente de A ativo, mas sem a tabela de preço principal: aparece, mas não recebe pedido. */
+export const CLIENTE_SEM_TABELA_DE_A = "aaaaaaaaaaaaaaa6";
 /** O grupo de A e os dois CNPJs dele: o de Curitiba fatura mais. */
 export const GRUPO_DE_A = "aaaaaaaaaaaaaaa3";
 export const FILIAL_CURITIBA_DE_A = "aaaaaaaaaaaaaaa4";
@@ -165,6 +167,7 @@ export function montarFotoDeTeste(): Foto {
     cliente: [
       cliente(CLIENTE_DE_A, "1401", "CLIENTE DE A"),
       cliente(CLIENTE_INATIVO_DE_A, "1401", "CLIENTE INATIVO DE A", "inativo"),
+      { ...cliente(CLIENTE_SEM_TABELA_DE_A, "1401", "CLIENTE SEM TABELA DE A"), tabela_preco: null, lista_de_precos: null },
       grupo(GRUPO_DE_A, "1401", "GRUPO DE A", 2),
       doGrupo(FILIAL_CURITIBA_DE_A, "1401", "FILIAL CURITIBA DE A", GRUPO_DE_A, 20_000),
       doGrupo(FILIAL_BAHIA_DE_A, "1401", "FILIAL BAHIA DE A", GRUPO_DE_A, 10_000),

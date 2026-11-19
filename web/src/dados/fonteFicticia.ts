@@ -1,4 +1,4 @@
-import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
+import { AVISO_DE_PEDIDO_BLOQUEADO, AVISO_DE_SEM_TABELA, podeReceberPedido } from "dominio/statusDoCadastro";
 import { analisesFicticias, clientesFicticios, fichaFicticia, painelFicticio, situacaoDosDadosFicticia } from "./ficticio";
 import { PedidoBloqueado, type FonteDeDados } from "./fonteDeDados";
 import {
@@ -39,6 +39,7 @@ export const fonteFicticia: FonteDeDados = {
     if (catalogo && !podeReceberPedido(catalogo.cliente.status)) {
       return Promise.reject(new PedidoBloqueado(AVISO_DE_PEDIDO_BLOQUEADO[catalogo.cliente.status]));
     }
+    if (catalogo && catalogo.tabela === "") return Promise.reject(new PedidoBloqueado(AVISO_DE_SEM_TABELA));
     return Promise.resolve(catalogo);
   },
   carregarPedidos: () => Promise.resolve(painelDePedidosFicticio()),

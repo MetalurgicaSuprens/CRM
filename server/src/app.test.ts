@@ -3,6 +3,7 @@ import type { DatabaseSync } from "node:sqlite";
 import type { FastifyInstance } from "fastify";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { dataDoMomento, momentoEmBrasilia, somarDias } from "dominio/datas";
+import { AVISO_DE_SEM_TABELA } from "dominio/statusDoCadastro";
 import { criarAppDoAdmin } from "./admin/appDoAdmin.ts";
 import { criarApp } from "./app.ts";
 import { abrirBancoDoApp } from "./bancoDoApp.ts";
@@ -12,6 +13,7 @@ import {
   CLIENTE_DE_A,
   CLIENTE_DE_B,
   CLIENTE_INATIVO_DE_A,
+  CLIENTE_SEM_TABELA_DE_A,
   FILIAL_BAHIA_DE_A,
   FILIAL_CURITIBA_DE_A,
   FILIAL_DE_B,
@@ -154,7 +156,7 @@ describe("escopo: o login A nunca vê os dados de B", () => {
   it("mostra a A a própria carteira e a ficha do cliente dele", async () => {
     const app = criarAppDeTeste();
     const clientes = await comoA(app, "/api/clientes");
-    expect(clientes.json()).toHaveLength(3);
+    expect(clientes.json()).toHaveLength(4);
     const ficha = await comoA(app, `/api/clientes/${CLIENTE_DE_A}`);
     expect(ficha.statusCode).toBe(200);
     expect(ficha.json()).toMatchObject({
@@ -280,6 +282,7 @@ describe("escopo: o login A nunca vê os dados de B", () => {
       [CLIENTE_DE_A, "ativo"],
       [CLIENTE_INATIVO_DE_A, "inativo"],
       [GRUPO_DE_A, "ativo"],
+      [CLIENTE_SEM_TABELA_DE_A, "ativo"],
     ]);
   });
 
@@ -624,6 +627,16 @@ describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
     const inativo = await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: CLIENTE_INATIVO_DE_A }));
     expect(inativo.statusCode).toBe(409);
     expect(inativo.json().erro).toMatch(/inativo no cadastro/);
+  });
+
+  it("não deixa fazer pedido para o cliente sem tabela de preço principal, e diz por quê (409)", async () => {
+    const app = criarAppDeTeste();
+    const catalogo = await comoA(app, `/api/clientes/${CLIENTE_SEM_TABELA_DE_A}/catalogo`);
+    expect(catalogo.statusCode).toBe(409);
+    expect(catalogo.json().erro).toBe(AVISO_DE_SEM_TABELA);
+    const rascunho = await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: CLIENTE_SEM_TABELA_DE_A }));
+    expect(rascunho.statusCode).toBe(409);
+    expect(rascunho.json().erro).toBe(AVISO_DE_SEM_TABELA);
   });
 
   it("não deixa A ler, salvar por cima nem descartar o rascunho de B", async () => {

@@ -1,7 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import { dataDoMomento, isDataDeVerdade, momentoEmBrasilia } from "dominio/datas";
 import { arredondarAoCentavo, totalDoPedido, valorDaLinha } from "dominio/pedido";
-import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
 import type { ClienteResumo, EscolhasDoPedido, ItemDoPedido, PedidoDaFicha, Rascunho, RascunhoParaSalvar } from "../../web/src/dados/tipos.ts";
 import { emTransacao } from "./bancoDoApp.ts";
 import { clienteDoPedido } from "./leituras/catalogo.ts";
@@ -70,7 +69,7 @@ export function recusaDoConteudo(
 ): RecusaDoRascunho | null {
   const cliente = clienteDoPedido(foto, sessao, conteudo.codigoCliente);
   if (!cliente) return { status: 404, erro: "Cliente não encontrado na sua carteira." };
-  if ("foraDeAtivo" in cliente) return { status: 409, erro: AVISO_DE_PEDIDO_BLOQUEADO[cliente.foraDeAtivo] };
+  if ("bloqueado" in cliente) return { status: 409, erro: cliente.bloqueado };
   const problema = problemaNosItens(foto, cliente.lista, conteudo.itens) ?? problemaNaEntrega(conteudo.entrega);
   return problema ? { status: 400, erro: problema } : null;
 }
