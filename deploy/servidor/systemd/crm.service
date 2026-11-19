@@ -1,5 +1,6 @@
 # A API do CRM e a da administração (server/src/principal.ts), só em 127.0.0.1, atrás do Apache.
-# Confinada: lê a versão em uso e a pasta da foto, grava só em /var/lib/crm e não sai desta máquina.
+# Confinada: lê a versão em uso e a pasta da foto, grava só em /var/lib/crm e na caixa de saída dos
+# pedidos, e não sai desta máquina.
 # Para conferir o confinamento: systemd-analyze security crm
 [Unit]
 Description=CRM dos representantes (API)
@@ -19,6 +20,7 @@ UMask=0077
 StateDirectory=crm
 StateDirectoryMode=0700
 ProtectSystem=strict
+ReadWritePaths=/srv/crm-troca/saida
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes

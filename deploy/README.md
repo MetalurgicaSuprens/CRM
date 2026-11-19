@@ -35,6 +35,7 @@ desenvolvimento: ele nunca roda npm nem git.
 | `/etc/crm/server.env` | A configuração da API, gerada pelo `preparar-servidor.sh` |
 | `/var/lib/crm` | O `app.db` e as fotos conferidas, só da conta `crm` |
 | `/srv/crm-troca/entrada` | Onde o extrator entrega a foto e o manifesto |
+| `/srv/crm-troca/saida` | A caixa de saída dos pedidos enviados, que o extrator busca (só a API grava) |
 
 ## Antes de começar
 

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { nomeDoManifesto } from "dominio/manifestoDaFoto";
-import { ErroNoEnvio, executarSftp, type DestinoDoEnvio } from "./sftp.ts";
+import { ErroNoEnvio, executarSftp, lerListagem, type DestinoDoEnvio } from "./sftp.ts";
 
 /*
  * Leva ao servidor a foto mais nova da pasta, com o manifesto, e deixa lá só as 3 mais novas
@@ -28,7 +28,7 @@ export type PlanoDoEnvio = { comandos: string[]; isEnviada: boolean; fotosApagad
 export async function enviarFotoMaisNova(pastaDasFotos: string, destino: DestinoDoEnvio): Promise<ResultadoDoEnvio> {
   const foto = fotoMaisNovaComManifesto(pastaDasFotos);
   const listagem = await executarSftp(destino, [`ls -1 ${PASTA_NO_SERVIDOR}`], pastaDasFotos);
-  const plano = planejarEnvio(foto, lerListagem(listagem));
+  const plano = planejarEnvio(foto, lerListagem(listagem, NOME_NA_ENTRADA));
   if (plano.comandos.length > 0) await executarSftp(destino, plano.comandos, pastaDasFotos);
   return { foto, isEnviada: plano.isEnviada, fotosApagadas: plano.fotosApagadas };
 }
@@ -77,14 +77,6 @@ function baseDe(nome: string): string {
 
 function noServidor(nome: string): string {
   return `${PASTA_NO_SERVIDOR}/${nome}`;
-}
-
-/** O programa escreve um caminho por linha, depois do eco do comando. */
-function lerListagem(saida: string): string[] {
-  return saida
-    .split(/\r?\n/)
-    .map((linha) => linha.trim().split("/").at(-1) ?? "")
-    .filter((nome) => NOME_NA_ENTRADA.test(nome));
 }
 
 function fotoMaisNovaComManifesto(pasta: string): string {

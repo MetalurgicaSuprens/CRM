@@ -29,6 +29,8 @@ export type Configuracao = {
 /** O que o envio da foto ao servidor do CRM precisa (envio/enviarFoto.ts). Não lê o Oracle. */
 export type ConfiguracaoDoEnvio = {
   pastaDasFotos: string;
+  /** Onde ficam os pedidos que vieram da caixa de saída do servidor, um arquivo por pedido. */
+  pastaDosPedidos: string;
   destino: DestinoDoEnvio;
 };
 
@@ -41,6 +43,7 @@ const CHAVES_DO_ORACLE = ["ORACLE_USER", "ORACLE_PASSWORD", "ORACLE_HOST", "ORAC
 const ESQUEMA_DO_ERP = "ABC71";
 const NOME_DE_ESQUEMA = /^[A-Z][A-Z0-9_]{0,29}$/;
 const PASTA_DAS_FOTOS = "fotos";
+const PASTA_DOS_PEDIDOS = path.join("pedidos", "recebidos");
 const PASTA_DO_ENVIO = "envio";
 const ARQUIVO_DA_CHAVE_DO_EXTRATOR = "chave-do-extrator";
 const ARQUIVO_DO_SERVIDOR_CONHECIDO = "servidor-conhecido";
@@ -79,6 +82,7 @@ export function lerConfiguracaoDoEnvio(argumentos: string[]): ConfiguracaoDoEnvi
   const pastaDoEnvio = path.join(pastaDeDados, PASTA_DO_ENVIO);
   return {
     pastaDasFotos: path.join(pastaDeDados, PASTA_DAS_FOTOS),
+    pastaDosPedidos: path.join(pastaDeDados, PASTA_DOS_PEDIDOS),
     destino: {
       endereco: exigirNoFormato(env.CRM_SERVIDOR, ENDERECO_DO_SERVIDOR, `CRM_SERVIDOR, no ${arquivoEnv}`),
       porta: lerPorta(env.CRM_SERVIDOR_PORTA),

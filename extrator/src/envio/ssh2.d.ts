@@ -11,10 +11,12 @@ declare module "ssh2" {
     status(pedido: number, codigo: number, mensagem?: string): boolean;
     name(pedido: number, nomes: Nome[]): boolean;
     attrs(pedido: number, atributos: Atributos): boolean;
+    data(pedido: number, dados: Buffer): boolean;
     end(): void;
     on(evento: "end", ouvinte: () => void): this;
     on(evento: "OPEN", ouvinte: (pedido: number, caminho: string, flags: number) => void): this;
     on(evento: "WRITE", ouvinte: (pedido: number, handle: Buffer, posicao: number, dados: Buffer) => void): this;
+    on(evento: "READ", ouvinte: (pedido: number, handle: Buffer, posicao: number, tamanho: number) => void): this;
     on(evento: "CLOSE" | "FSTAT" | "READDIR" | "FSETSTAT", ouvinte: (pedido: number, handle: Buffer) => void): this;
     on(evento: "STAT" | "LSTAT" | "REALPATH" | "OPENDIR" | "REMOVE" | "SETSTAT", ouvinte: (pedido: number, caminho: string) => void): this;
     on(evento: "RENAME", ouvinte: (pedido: number, de: string, para: string) => void): this;

@@ -95,6 +95,8 @@ criar_pastas() {
   install -d -o crm -g crm -m 0700 /var/lib/crm
   install -d -o root -g root -m 0755 /srv/crm-troca
   install -d -o crm-troca -g crm -m 2750 /srv/crm-troca/entrada
+  # A caixa de saída dos pedidos: só a API grava; o extrator lê pelo grupo e não apaga nada.
+  install -d -o crm -g crm-troca -m 2750 /srv/crm-troca/saida
   gravar_configuracao_da_api
   gravar_chave_do_extrator
   install -o root -g root -m 0755 "$PASTA/publicar.sh" /opt/crm/publicar.sh
@@ -112,6 +114,9 @@ CRM_ARQUIVO_DO_APP=/var/lib/crm/app.db
 CRM_ORIGEM=https://$DOMINIO
 CRM_PORTA_DO_ADMIN=5178
 CRM_ORIGEM_DO_ADMIN=http://localhost:5179
+CRM_PASTA_DE_SAIDA=/srv/crm-troca/saida
+# Fica desligado até a máquina do extrator levar os pedidos ao SGI (docs/passagem.md, F5).
+CRM_ENVIO_DE_PEDIDOS=desligado
 FIM
 }
 

@@ -19,6 +19,7 @@
     "dev:servidor": "npm run dev --workspace server",
     "foto": "npm run foto --workspace extrator --",
     "enviar": "npm run enviar --workspace extrator --",
+    "pedidos": "npm run pedidos --workspace extrator --",
     "admin": "npm run admin --workspace server --",
     "pacote": "npm run pacote --workspace deploy --",
     "build": "npm run build --workspaces --if-present",

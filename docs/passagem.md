@@ -76,7 +76,7 @@ Falta, em ordem:
    - Conferido de fora: só a 443 aberta para todos, a 22 só da Suprens, a 80 fechada, certificado do Let's Encrypt e cabeçalhos de segurança; a entrada por senha não existe no servidor.
    - Na primeira instalação, o root não entrava com senha pelo SSH (padrão do Ubuntu): a chave foi posta pelo console da Locaweb.
 4. **Extrator na máquina 192.168.0.12, desde 2026-11-18:** conta Windows `sgi`, dados em `C:\Users\sgi\crm-dados`, conta Oracle `CRM_EXTRATOR` (`ORACLE_ESQUEMA_DAS_VIEWS=CRM_DADOS`). A primeira foto chegou ao servidor no mesmo dia.
-   - A agenda é a tarefa "CRM - extrator", criada pelo `extrator/agenda/agendar.ps1`; cada passada fica registrada em `crm-dados\registro\`.
+   - A agenda são as tarefas "CRM - extrator" (foto) e "CRM - pedidos" (a cada 5 min), criadas pelo `extrator/agenda/agendar.ps1`; cada passada fica registrada em `crm-dados\registro\`, num arquivo por rotina e por mês.
    - A rede da Locaweb corta envios grandes pela porta 22 (chamado aberto em 2026-11-18). O envio vai comprimido, e a foto de 62 MB passou.
    - **Falta no servidor:** a rota `/api/saude` e os alertas.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
@@ -89,7 +89,11 @@ Falta, em ordem:
      - o pedido enviado ganha o número CRM, fica no app.db sem poder mudar (migração 6) e vira um arquivo `CRM-00001.json` na caixa de saída, com os códigos da sessão e o id opaco do cliente, sem nome;
      - na produção o envio fica desligado até a LAN levar os pedidos ao SGI: só liga com `CRM_ENVIO_DE_PEDIDOS=ligado` no `server.env`, e a pasta de saída e o SFTP dela entram com a etapa 2;
      - conferido no navegador só no protótipo: a chave de acesso de verdade pede o Windows Hello de quem está no computador. O envio real está coberto pelos testes, com um aparelho de teste que assina como um de verdade;
-   - **Etapa 2:** a busca dos pedidos pela máquina do extrator (SFTP da pasta de saída, a cada 5 min);
+   - **Feito em 2026-11-19 (etapa 2):** a busca dos pedidos pela máquina do extrator (`npm run pedidos`, `extrator/src/envio/buscarPedidos.ts`):
+     - a caixa de saída é `/srv/crm-troca/saida` (dono `crm`, grupo `crm-troca`, 2750): só a API grava, e o extrator só lê, pelo mesmo SFTP da foto;
+     - os pedidos novos vêm para `crm-dados\pedidos\recebidos`, até 50 por passada, com nome provisório até chegarem inteiros; o que já veio não vem de novo;
+     - ninguém apaga a caixa de saída ainda: a limpeza entra com a etapa 5, quando a foto mostrar que o pedido chegou ao SGI;
+   - **Etapa 3:** a conferência dos recebidos na LAN (formato, limites e Oracle), com quarentena e o arquivo "pausar";
    - uma rotina na LAN que busca os pedidos, revalida no Oracle e grava no SGI pelas procedures de pedido, como o app antigo dos representantes: cotação (operação 1) e efetivação logo em seguida (operação 13). Veja "Pedidos: caminho até o ERP" no plano;
    - só depende da conta Oracle com EXECUTE nas duas procedures (`docs/conta-oracle-do-crm.md`), que o Lucas pediu ao DBA em 2026-11-17.
    - Na revalidação:

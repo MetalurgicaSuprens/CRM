@@ -96,6 +96,14 @@ function argumentos(destino: DestinoDoEnvio): string[] {
   ];
 }
 
+/** Os nomes de um "ls -1": o programa escreve um caminho por linha, depois do eco do comando. Só os do padrão. */
+export function lerListagem(saida: string, nomeValido: RegExp): string[] {
+  return saida
+    .split(/\r?\n/)
+    .map((linha) => linha.trim().split("/").at(-1) ?? "")
+    .filter((nome) => nomeValido.test(nome));
+}
+
 function explicarFalha(destino: DestinoDoEnvio, avisos: string): string {
   const conhecida = FALHAS_CONHECIDAS.find(([padrao]) => padrao.test(avisos));
   const detalhe = avisos.trim().split(/\r?\n/).at(-1) ?? "";

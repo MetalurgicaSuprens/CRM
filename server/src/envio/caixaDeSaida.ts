@@ -40,8 +40,10 @@ export function gravarNaCaixaDeSaida(pasta: string, pedido: PedidoParaOErp): str
   const provisorio = arquivo + PROVISORIO;
   // Um número do CRM nunca sobrescreve o arquivo de outro pedido.
   if (fs.existsSync(arquivo)) throw new Error(`O pedido ${pedido.numero} já está na caixa de saída.`);
-  const descritor = fs.openSync(provisorio, "wx", 0o640);
+  const descritor = fs.openSync(provisorio, "wx");
   try {
+    // A conta de troca de arquivos lê pelo grupo da pasta. O chmod explícito vale por cima do UMask do serviço.
+    fs.fchmodSync(descritor, 0o640);
     fs.writeFileSync(descritor, JSON.stringify(pedido));
     fs.fsyncSync(descritor);
   } finally {

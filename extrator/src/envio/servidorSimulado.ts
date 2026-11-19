@@ -6,7 +6,7 @@ import ssh2, { type SftpDoServidor } from "ssh2";
 /*
  * Um servidor de troca de arquivos de mentira, para os testes do envio: aceita só um usuário, com
  * uma chave, e prende o que ele vê numa pasta, como a conta de troca do servidor de verdade
- * (docs/plano.md, "SFTP"). Atende só o que o envio usa: gravar, listar, renomear e apagar.
+ * (docs/plano.md, "SFTP"). Atende só o que o extrator usa: gravar, ler, listar, renomear e apagar.
  */
 
 const { Server, utils } = ssh2;
@@ -107,6 +107,14 @@ function atenderSftp(sftp: SftpDoServidor, raiz: string, operacoes: string[]): v
     responder(pedido, () => {
       fs.writeSync(descritorDe(abertos, handle), dados, 0, dados.length, posicao);
       ok(pedido);
+    }),
+  );
+  sftp.on("READ", (pedido, handle, posicao, tamanho) =>
+    responder(pedido, () => {
+      const pedaco = Buffer.alloc(tamanho);
+      const lidos = fs.readSync(descritorDe(abertos, handle), pedaco, 0, tamanho, posicao);
+      if (lidos === 0) return sftp.status(pedido, STATUS_CODE.EOF);
+      sftp.data(pedido, pedaco.subarray(0, lidos));
     }),
   );
   sftp.on("FSTAT", (pedido, handle) => responder(pedido, () => sftp.attrs(pedido, atributos(fs.fstatSync(descritorDe(abertos, handle))))));
