@@ -77,6 +77,7 @@ Falta, em ordem:
    - Na primeira instalação, o root não entrava com senha pelo SSH (padrão do Ubuntu): a chave foi posta pelo console da Locaweb.
 4. **Extrator na máquina 192.168.0.12, desde 2026-11-18:** conta Windows `sgi`, dados em `C:\Users\sgi\crm-dados`, conta Oracle `CRM_EXTRATOR` (`ORACLE_ESQUEMA_DAS_VIEWS=CRM_DADOS`). A primeira foto chegou ao servidor no mesmo dia.
    - A agenda são as tarefas "CRM - extrator" (foto) e "CRM - pedidos" (a cada 5 min), criadas pelo `extrator/agenda/agendar.ps1`; cada passada fica registrada em `crm-dados\registro\`, num arquivo por rotina e por mês.
+   - A lista de autorizados que vale é a de `crm-dados\representantes-autorizados.txt` nessa máquina, não a de `data/` deste computador. Em 2026-11-19, o Lucas decidiu passar de 22 para 29 códigos: todos os ativos no cadastro de vendedores do SGI, também os de tipo VENDEDOR (1106, 1107, 1108, 1116, 1118, 1119 e 1125).
    - A rede da Locaweb corta envios grandes pela porta 22 (chamado aberto em 2026-11-18). O envio vai comprimido, e a foto de 62 MB passou.
    - **Falta no servidor:** a rota `/api/saude` e os alertas.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
