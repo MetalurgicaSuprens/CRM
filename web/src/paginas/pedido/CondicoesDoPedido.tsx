@@ -122,12 +122,8 @@ function origemDaTransportadora(dados: DadosDoPedido, escolha: Escolha | null): 
 function CampoDoPagamento({ dados, codigo, aoEscolher }: { dados: DadosDoPedido; codigo: string; aoEscolher: (codigo: string) => void }) {
   const [aberta, setAberta] = useState(false);
   const descricao = dados.condicoes.find((condicao) => condicao.codigo === codigo)?.descricao ?? codigo;
-  const isDoCadastro = codigo === dados.condicaoDoCadastro;
   return (
-    <Campo
-      rotulo="Condição de pagamento"
-      dica={isDoCadastro ? "A do cadastro do cliente." : <span className={estilos.alerta}>Diferente da do cadastro: vai para a aprovação de vendas.</span>}
-    >
+    <Campo rotulo="Condição de pagamento" dica={<DicaDoPagamento dados={dados} codigo={codigo} />}>
       <BotaoDeEscolha rotulo={`Condição de pagamento: ${descricao}`} texto={descricao} aoAbrir={() => setAberta(true)} />
       <Janela titulo="Condição de pagamento" icone={<Wallet size={20} aria-hidden="true" />} aberta={aberta} aoFechar={() => setAberta(false)}>
         <EscolhaDoPagamento
@@ -233,4 +229,17 @@ function origemDoParcial(dados: DadosDoPedido, aceita: boolean): string {
 
 function comoNosPedidos(vezes: string | null): string | null {
   return vezes ? `Como ${vezes}.` : null;
+}
+
+/** Quantas vezes o cliente usou a condição e, quando não é a do cadastro, o aviso de que vai para aprovação. */
+function DicaDoPagamento({ dados, codigo }: { dados: DadosDoPedido; codigo: string }) {
+  const vezes = vezesQueOClienteEscolheu(dados.condicoesUsadas, codigo);
+  const uso = vezes ? `Usada ${vezes}.` : null;
+  if (codigo === dados.condicaoDoCadastro) return <>{[uso, "É a do cadastro do cliente."].filter(Boolean).join(" ")}</>;
+  return (
+    <>
+      {uso ? `${uso} ` : null}
+      <span className={estilos.alerta}>Diferente da do cadastro: vai para a aprovação de vendas.</span>
+    </>
+  );
 }

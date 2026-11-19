@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  condicaoInicial,
   escolhasIniciais,
   escolhasNoCatalogo,
   formatarCnpj,
@@ -78,10 +79,25 @@ describe("transportadoraSugerida", () => {
   });
 });
 
+describe("condicaoInicial", () => {
+  it("começa na condição que o cliente mais usou, mesmo diferente da do cadastro", () => {
+    expect(condicaoInicial(dados({ condicoesUsadas: [{ valor: "1030", pedidos: 3 }, { valor: "1060", pedidos: 7 }] }))).toBe("1060");
+  });
+
+  it("pula a condição usada que não se pode mais escolher", () => {
+    expect(condicaoInicial(dados({ condicoesUsadas: [{ valor: "9999", pedidos: 9 }, { valor: "1060", pedidos: 2 }] }))).toBe("1060");
+  });
+
+  it("sem histórico, começa na do cadastro", () => {
+    expect(condicaoInicial(dados())).toBe("1030");
+  });
+});
+
 describe("escolhasIniciais", () => {
-  it("começa com a condição do cadastro e o que o cliente mais usou", () => {
+  it("começa com o que o cliente mais usou", () => {
     const escolhas = escolhasIniciais(
       dados({
+        condicoesUsadas: [{ valor: "1030", pedidos: 8 }],
         classificacoesUsadas: [{ valor: "industrializacao", pedidos: 9 }, { valor: "comercializacao", pedidos: 1 }],
         parcialUsado: { aceita: 6, naoAceita: 2 },
         transportadorasDoCliente: [{ valor: "102", pedidos: 10 }],

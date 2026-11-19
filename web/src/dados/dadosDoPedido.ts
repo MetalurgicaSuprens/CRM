@@ -37,8 +37,18 @@ export function transportadoraSugerida(dados: Pick<DadosDoPedido, "transportador
 }
 
 /**
+ * A condição com que o pedido começa: a que o cliente mais usou, entre as que se podem escolher. A do
+ * cadastro bate com a usada em só 37% dos pedidos, e por isso o Lucas preferiu a mais usada em
+ * 2026-11-19; a tela continua avisando quando ela não é a do cadastro. Sem histórico, a do cadastro.
+ */
+export function condicaoInicial(dados: Pick<DadosDoPedido, "condicaoDoCadastro" | "condicoes" | "condicoesUsadas">): string {
+  const isEscolhivel = (codigo: string) => dados.condicoes.some((condicao) => condicao.codigo === codigo);
+  return frequencias(dados.condicoesUsadas).find((uso) => isEscolhivel(uso.valor))?.valor ?? dados.condicaoDoCadastro;
+}
+
+/**
  * As escolhas com que o pedido começa:
- * - a condição de pagamento do cadastro;
+ * - a condição de pagamento inicial;
  * - a classificação e o frete parcial que o cliente mais usou;
  * - a transportadora sugerida.
  * Sem histórico, a classificação é Comercialização e o frete parcial não é aceito, como no SGI6R.
@@ -46,7 +56,7 @@ export function transportadoraSugerida(dados: Pick<DadosDoPedido, "transportador
 export function escolhasIniciais(dados: DadosDoPedido): EscolhasDoPedido {
   const sugerida = transportadoraSugerida(dados);
   return {
-    condicaoDePagamento: dados.condicaoDoCadastro,
+    condicaoDePagamento: condicaoInicial(dados),
     classificacao: frequencias(dados.classificacoesUsadas)[0]?.valor ?? CLASSIFICACAO_PADRAO,
     pedidoDoCliente: "",
     aceitaParcial: dados.parcialUsado.aceita > dados.parcialUsado.naoAceita,
