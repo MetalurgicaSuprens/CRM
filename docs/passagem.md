@@ -93,7 +93,13 @@ Falta, em ordem:
      - a caixa de saída é `/srv/crm-troca/saida` (dono `crm`, grupo `crm-troca`, 2750): só a API grava, e o extrator só lê, pelo mesmo SFTP da foto;
      - os pedidos novos vêm para `crm-dados\pedidos\recebidos`, até 50 por passada, com nome provisório até chegarem inteiros; o que já veio não vem de novo;
      - ninguém apaga a caixa de saída ainda: a limpeza entra com a etapa 5, quando a foto mostrar que o pedido chegou ao SGI;
-   - **Etapa 3:** a conferência dos recebidos na LAN (formato, limites e Oracle), com quarentena e o arquivo "pausar";
+   - **Feito em 2026-11-19 (etapa 3):** a conferência dos recebidos na LAN, no mesmo `npm run pedidos`, depois da busca (`extrator/src/pedidos/`):
+     - o formato inteiro antes do Oracle: campo a mais ou a menos, limites do schema do servidor e o hash do conteúdo, que tem de ser o que a chave de acesso confirmou (a forma canônica fica em `dominio/conteudoDoPedido.ts`, a mesma do servidor);
+     - no Oracle, na hora: os códigos do login estão na lista de autorizados da máquina, o cliente é de um deles (VEND_1, achado pelo id opaco) e está ATIVO, cada produto está na tabela do cliente (a mesma escolha e a mesma view de preço da foto) sem preço abaixo dela, a entrega fica a 5 dias úteis do envio, a condição é da faixa do SGI6R ou a do cadastro e a transportadora existe e está ativa;
+     - os destinos ficam em `crm-dados\pedidos\`: `conferidos` (com o `.erp.json` do cliente do ERP e do dono dele), `revisao`, `aguardando` (transportadora nova, conferido de novo a cada passada) e `quarentena` (com o `.motivo.txt`). O arquivo `PAUSAR` nessa pasta suspende a conferência;
+     - **a confirmar com o Lucas:** o valor-teto da revisão (R$ 50.000, em `pedidos/conferencia.ts`) e o teto de 30 pedidos por login por dia (`pedidos/triagem.ts`);
+     - as consultas novas ainda não rodaram no Oracle de verdade: rodam pela primeira vez com o primeiro pedido. Se uma falhar, a passada para com erro, e o pedido fica para a passada seguinte, sem ir para a quarentena;
+   - **Etapa 4:** a gravação dos conferidos no SGI pelas procedures, com os parâmetros lidos no `ALL_ARGUMENTS`;
    - uma rotina na LAN que busca os pedidos, revalida no Oracle e grava no SGI pelas procedures de pedido, como o app antigo dos representantes: cotação (operação 1) e efetivação logo em seguida (operação 13). Veja "Pedidos: caminho até o ERP" no plano;
    - só depende da conta Oracle com EXECUTE nas duas procedures (`docs/conta-oracle-do-crm.md`), que o Lucas pediu ao DBA em 2026-11-17.
    - Na revalidação:

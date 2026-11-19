@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs";
 import type { DatabaseSync } from "node:sqlite";
 import { dataDoMomento, momentoEmBrasilia } from "dominio/datas";
+import { conteudoCanonico } from "dominio/conteudoDoPedido";
 import { DIAS_UTEIS_ATE_A_ENTREGA, numeroDoPedidoCrm, primeiraEntregaPossivel, totalDoPedido, valorDaLinha } from "dominio/pedido";
 import type { ClienteResumo, EscolhasDoPedido, ItemDoPedido, ItemEnviado, PedidoDaFicha, PedidoEnviado, Rascunho } from "../../../web/src/dados/tipos.ts";
 import { emTransacao } from "../bancoDoApp.ts";
@@ -39,7 +40,7 @@ export function prepararEnvio(banco: DatabaseSync, foto: DatabaseSync, sessao: S
   const problema = problemaParaEnviar(rascunho, dataDoMomento(momentoEmBrasilia(agora)));
   if (problema || !rascunho.escolhas) return { status: 400, erro: problema ?? "Faltam as condições do pedido." };
   const conteudo = { cliente: rascunho.cliente.codigo, itens, entrega, observacao, escolhas: rascunho.escolhas };
-  return { conteudo, hash: hashDoConteudo(conteudo) };
+  return { conteudo, hash: createHash("sha256").update(conteudoCanonico(conteudo)).digest("hex") };
 }
 
 /** O desafio que o aparelho assina: bytes aleatórios, para não se repetir, seguidos do hash do conteúdo. */
@@ -145,12 +146,6 @@ function problemaParaEnviar(rascunho: Rascunho, hoje: string): string | null {
     return `A entrega desejada precisa ser a partir de ${primeiraEntrega.split("-").reverse().join("/")}: ${DIAS_UTEIS_ATE_A_ENTREGA} dias úteis depois de hoje.`;
   }
   return null;
-}
-
-/** O sha256 do conteúdo, sempre na mesma ordem de campos. */
-function hashDoConteudo({ cliente, itens, entrega, observacao, escolhas }: ConteudoDoPedido): string {
-  const itensEmOrdem = itens.map(({ codigo, quantidade, precoCento }) => ({ codigo, quantidade, precoCento }));
-  return createHash("sha256").update(JSON.stringify({ cliente, itens: itensEmOrdem, entrega, observacao, escolhas })).digest("hex");
 }
 
 function montarPedidoEnviado(foto: DatabaseSync, sessao: Sessao, linha: Record<string, unknown>): PedidoEnviado | null {

@@ -21,12 +21,22 @@ function clientesDaCarteira(lista: string): string {
 
 export async function lerTabelasDosClientes(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<TabelaDoCliente[]> {
   const lista = emLista("r", autorizados);
+  return lerTabelas(oracle, `IN (${clientesDaCarteira(lista.sql)})`, { ...lista.binds, inicio: referencia.inicioDaJanela });
+}
+
+/** As tabelas de preço de um cliente só: a conferência do pedido que chegou do CRM (pedidos/conferencia.ts). */
+export function lerTabelasDoCliente(oracle: Oracle, cliente: number): Promise<TabelaDoCliente[]> {
+  return lerTabelas(oracle, "= :cliente", { cliente });
+}
+
+/** `doCliente` completa o "A.CLI_COD ..." do WHERE. */
+async function lerTabelas(oracle: Oracle, doCliente: string, binds: Record<string, unknown>): Promise<TabelaDoCliente[]> {
   const linhas = await oracle.consultar(
     `SELECT A.CLI_COD, TRIM(A.CLI_TAB), TRIM(A.CLI_STA), TRIM(P.TP1_NOM), TRIM(P.TP1_MOE), TRIM(P.TP1_STA)
        FROM ABC71.SGI5_TAB_VEN_CLI A
        LEFT JOIN ABC71.SGI5_TAB_VEN_TP1 P ON TRIM(P.TP1_COD) = TRIM(A.CLI_TAB)
-      WHERE A.CLI_COD IN (${clientesDaCarteira(lista.sql)})`,
-    { ...lista.binds, inicio: referencia.inicioDaJanela },
+      WHERE A.CLI_COD ${doCliente}`,
+    binds,
   );
   return linhas.map((linha) => ({
     cliente: numero(linha, 0),
@@ -45,14 +55,26 @@ export async function lerTabelasDosClientes(oracle: Oracle, referencia: Referenc
  */
 export async function lerPrecos(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<PrecoDoCliente[]> {
   const lista = emLista("r", autorizados);
+  return lerPrecosDa(oracle, `V.VIEW_CLI IN (${clientesDaCarteira(lista.sql)})`, { ...lista.binds, inicio: referencia.inicioDaJanela });
+}
+
+/** Os preços de alguns produtos para um cliente só, com as mesmas regras da foto: a conferência do pedido. */
+export function lerPrecosDoCliente(oracle: Oracle, cliente: number, produtos: readonly string[]): Promise<PrecoDoCliente[]> {
+  if (produtos.length === 0) return Promise.resolve([]);
+  const lista = emListaDeTexto("p", produtos);
+  return lerPrecosDa(oracle, `V.VIEW_CLI = :cliente AND TRIM(V.VIEW_PAC) IN ${lista.sql}`, { ...lista.binds, cliente });
+}
+
+/** `doCliente` é a condição do WHERE sobre a view V. */
+async function lerPrecosDa(oracle: Oracle, doCliente: string, binds: Record<string, unknown>): Promise<PrecoDoCliente[]> {
   const linhas = await oracle.consultar(
     `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ), MAX(V.VIEW_ALI_IPI)
        FROM ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI V
-      WHERE V.VIEW_CLI IN (${clientesDaCarteira(lista.sql)}) AND V.VIEW_STA LIKE 'ATIVO%' AND V.VIEW_VLR_LIQ > 0
+      WHERE ${doCliente} AND V.VIEW_STA LIKE 'ATIVO%' AND V.VIEW_VLR_LIQ > 0
         AND NOT EXISTS (SELECT 1 FROM ABC71.ESTQ E WHERE TRIM(E.C_PROD) = TRIM(V.VIEW_PAC) AND NVL(TRIM(E.QT_ALT_OBR), 'A') = 'I')
         AND NOT EXISTS (SELECT 1 FROM ABC71.SGI5_VIEW_ENG_PAC_SEM_ARVORE S WHERE TRIM(S.VIEW_PAC) = TRIM(V.VIEW_PAC))
       GROUP BY V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC)`,
-    { ...lista.binds, inicio: referencia.inicioDaJanela },
+    binds,
   );
   return linhas.map((linha) => ({
     cliente: numero(linha, 0),
