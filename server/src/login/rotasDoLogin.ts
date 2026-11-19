@@ -76,7 +76,8 @@ const CREDENCIAL_CRIADA = credencialJson(
   ["clientDataJSON", "attestationObject"],
 );
 
-const CREDENCIAL_USADA = credencialJson(
+/** A credencial que assina a entrada ou a confirmação de uma ação (envio/rotasDoEnvio.ts). */
+export const CREDENCIAL_USADA = credencialJson(
   { clientDataJSON: BASE64URL, authenticatorData: BASE64URL, signature: BASE64URL, userHandle: BASE64URL },
   ["clientDataJSON", "authenticatorData", "signature"],
 );

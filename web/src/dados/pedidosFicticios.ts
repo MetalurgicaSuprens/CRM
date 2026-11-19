@@ -1,5 +1,5 @@
 import { dataDoMomento, momentoEmBrasilia, somarDias } from "dominio/datas";
-import { arredondarAoCentavo, totalDoPedido, valorDaLinha } from "dominio/pedido";
+import { arredondarAoCentavo, numeroDoPedidoCrm, totalDoPedido, valorDaLinha } from "dominio/pedido";
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { dadosDoPedidoFicticio } from "./dadosDoPedidoFicticio";
@@ -150,7 +150,7 @@ export function enviarRascunhoFicticio(id: string): PedidoEnviado | null {
   if (!rascunho || !catalogo) return null;
   const agora = momentoEmBrasilia();
   const pedido: PedidoEnviado = {
-    numero: numeroCrm(proximoNumero++),
+    numero: numeroDoPedidoCrm(proximoNumero++),
     cliente: rascunho.cliente,
     enviadoEm: agora,
     entrega: rascunho.entrega,
@@ -232,7 +232,7 @@ function gerarExemplos(): PedidoEnviado[] {
     const totalEstimado = totalDoPedido(itens);
     return [
       {
-        numero: numeroCrm(numero),
+        numero: numeroDoPedidoCrm(numero),
         cliente: catalogo.cliente,
         enviadoEm: momentoEmBrasilia(new Date(enviadoEm)),
         entrega: null,
@@ -291,10 +291,6 @@ function resumoDe(ficha: FichaCliente): ClienteResumo {
   const { codigo, codigoErp, cpf, cnpj, nome, cidade, uf, municipio, endereco, mercado, situacao, status, ultimaCompra, cicloDias, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs } =
     ficha;
   return { codigo, codigoErp, cpf, cnpj, nome, cidade, uf, municipio, endereco, mercado, situacao, status, ultimaCompra, cicloDias, faturamento12m, variacao12m, evolucao12m, quedaNoSemestre, cnpjs };
-}
-
-function numeroCrm(numero: number): string {
-  return `CRM-${String(numero).padStart(5, "0")}`;
 }
 
 /** "Retífica Três Lagoas" → "RTL" */

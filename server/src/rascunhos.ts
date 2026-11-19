@@ -42,11 +42,10 @@ export function salvarRascunho(
   conteudo: ConteudoDoRascunho,
   agora: Date,
 ): { rascunho: Rascunho; criado: boolean } | RecusaDoRascunho {
-  const cliente = clienteDoPedido(foto, sessao, conteudo.codigoCliente);
-  if (!cliente) return { status: 404, erro: "Cliente não encontrado na sua carteira." };
-  if ("foraDeAtivo" in cliente) return { status: 409, erro: AVISO_DE_PEDIDO_BLOQUEADO[cliente.foraDeAtivo] };
-  const problema = problemaNosItens(foto, cliente.lista, conteudo.itens) ?? problemaNaEntrega(conteudo.entrega);
-  if (problema) return { status: 400, erro: problema };
+  const recusa = recusaDoConteudo(foto, sessao, conteudo);
+  if (recusa) return recusa;
+  // O salvamento automático que chega depois do envio não ressuscita o rascunho.
+  if (banco.prepare("SELECT 1 FROM pedidos_enviados WHERE rascunho = ?").get(id)) return { status: 409, erro: "Este pedido já foi enviado." };
   const existente = banco.prepare("SELECT usuario, cliente FROM rascunhos WHERE id = ?").get(id);
   if (existente && String(existente.usuario) !== sessao.idDoUsuario) return NAO_ENCONTRADO;
   if (existente && String(existente.cliente) !== conteudo.codigoCliente) return { status: 409, erro: "Este rascunho é de outro cliente." };
@@ -58,6 +57,22 @@ export function salvarRascunho(
   const rascunho = lerRascunho(banco, foto, sessao, id);
   if (!rascunho) throw new Error("O rascunho gravado não voltou na leitura.");
   return { rascunho, criado: !existente };
+}
+
+/**
+ * O que a foto de agora diz do pedido, ao salvar e de novo ao enviar: o cliente é da carteira e está
+ * ativo, os produtos são do catálogo dele, sem preço abaixo da tabela, e a data de entrega existe.
+ */
+export function recusaDoConteudo(
+  foto: DatabaseSync,
+  sessao: Sessao,
+  conteudo: Pick<ConteudoDoRascunho, "codigoCliente" | "itens" | "entrega">,
+): RecusaDoRascunho | null {
+  const cliente = clienteDoPedido(foto, sessao, conteudo.codigoCliente);
+  if (!cliente) return { status: 404, erro: "Cliente não encontrado na sua carteira." };
+  if ("foraDeAtivo" in cliente) return { status: 409, erro: AVISO_DE_PEDIDO_BLOQUEADO[cliente.foraDeAtivo] };
+  const problema = problemaNosItens(foto, cliente.lista, conteudo.itens) ?? problemaNaEntrega(conteudo.entrega);
+  return problema ? { status: 400, erro: problema } : null;
 }
 
 /** O rascunho do login, com o cliente da foto; null se não existe, é de outro login ou o cliente saiu da carteira. */

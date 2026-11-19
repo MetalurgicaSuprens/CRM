@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { KeyRound, TriangleAlert } from "lucide-react";
 import botoes from "../../componentes/Botao.module.css";
+import { isDadosReais } from "../../dados/api";
 import estilos from "./ConfirmarEnvio.module.css";
-
-/** Tempo que o protótipo finge esperar o aparelho liberar a chave. */
-const ESPERA_SIMULADA_MS = 1_200;
 
 type Props = {
   aberto: boolean;
@@ -15,7 +13,10 @@ type Props = {
   aviso: string | null;
 };
 
-/** Confirmação do envio: na F5, pede a digital ou o PIN de novo, ligado ao conteúdo do pedido. */
+/**
+ * Confirmação do envio: o aparelho pede a digital, o rosto ou o PIN de novo, e a confirmação vale só
+ * para este conteúdo. Quem chama fecha o diálogo se o envio falha.
+ */
 export function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo, aviso }: Props) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const [aguardando, setAguardando] = useState(false);
@@ -28,11 +29,10 @@ export function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo, aviso }:
     if (!aberto) setAguardando(false);
   }, [aberto]);
 
-  useEffect(() => {
-    if (!aguardando) return;
-    const espera = window.setTimeout(() => void aoConfirmar(), ESPERA_SIMULADA_MS);
-    return () => window.clearTimeout(espera);
-  }, [aguardando, aoConfirmar]);
+  const confirmar = () => {
+    setAguardando(true);
+    void aoConfirmar();
+  };
 
   return (
     <dialog ref={dialogo} className={estilos.dialogo} onClose={aoFechar} aria-labelledby="titulo-do-envio">
@@ -51,12 +51,12 @@ export function ConfirmarEnvio({ aberto, aoFechar, aoConfirmar, resumo, aviso }:
         <button type="button" className={botoes.secundario} onClick={aoFechar} disabled={aguardando}>
           Voltar
         </button>
-        <button type="button" className={`${botoes.primario} ${botoes.positivo} ${botoes.aguardando}`} onClick={() => setAguardando(true)} disabled={aguardando}>
+        <button type="button" className={`${botoes.primario} ${botoes.positivo} ${botoes.aguardando}`} onClick={confirmar} disabled={aguardando}>
           <KeyRound size={18} aria-hidden="true" />
           {aguardando ? "Confirme no seu aparelho…" : "Confirmar com chave de acesso"}
         </button>
       </div>
-      <p className={estilos.suave}>Protótipo: a confirmação é simulada.</p>
+      {isDadosReais ? null : <p className={estilos.suave}>Protótipo: a confirmação é simulada.</p>}
     </dialog>
   );
 }

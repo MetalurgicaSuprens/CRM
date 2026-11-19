@@ -90,6 +90,20 @@ export function opcoesParaEntrar(site: Site): Promise<OpcoesDeEntrada> {
   return generateAuthenticationOptions({ rpID: site.rpId, userVerification: "required", timeout: TEMPO_PARA_O_APARELHO_MS });
 }
 
+/**
+ * A confirmação de uma ação de quem já entrou, como o envio do pedido: o desafio vem de quem pede (e
+ * leva o hash do que é confirmado), e só as chaves ativas do login valem.
+ */
+export function opcoesParaConfirmar(site: Site, desafio: Uint8Array, chavesAtivas: readonly { id: string; transportes: string[] }[]): Promise<OpcoesDeEntrada> {
+  return generateAuthenticationOptions({
+    rpID: site.rpId,
+    challenge: new Uint8Array(desafio),
+    allowCredentials: chavesAtivas.map(({ id, transportes }) => ({ id, transports: transportes })),
+    userVerification: "required",
+    timeout: TEMPO_PARA_O_APARELHO_MS,
+  });
+}
+
 export async function conferirEntrada(
   site: Site,
   resposta: RespostaDeEntrada,

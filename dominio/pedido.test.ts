@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arredondarAoCentavo, pecasEmCentos, primeiraEntregaPossivel, totalDoPedido, valorDaLinha } from "./pedido.ts";
+import { arredondarAoCentavo, numeroDoPedidoCrm, pecasEmCentos, primeiraEntregaPossivel, totalDoPedido, valorDaLinha } from "./pedido.ts";
 
 describe("pecasEmCentos", () => {
   it("converte peças em CT, o cento do ERP", () => {
@@ -41,5 +41,12 @@ describe("primeiraEntregaPossivel", () => {
   it("não conta o feriado no caminho", () => {
     // Da quinta 08/10/2026: sexta 9, o 12 é feriado, e terça 13 a sexta 16.
     expect(primeiraEntregaPossivel("2026-10-08")).toBe("2026-10-16");
+  });
+});
+
+describe("numeroDoPedidoCrm", () => {
+  it("completa com zeros até cinco dígitos e não corta o número maior", () => {
+    expect(numeroDoPedidoCrm(106)).toBe("CRM-00106");
+    expect(numeroDoPedidoCrm(123456)).toBe("CRM-123456");
   });
 });

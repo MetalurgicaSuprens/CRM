@@ -20,6 +20,8 @@ export type ConfiguracaoDoServidor = {
   portaDoAdmin: number;
   /** O endereço da administração, que nunca fica na internet. */
   origemDoAdmin: string;
+  /** A caixa de saída dos pedidos enviados, que a LAN busca; null deixa o envio de pedidos desligado. */
+  pastaDeSaida: string | null;
   /** Só na rede interna (lerConfiguracaoDaRedeInterna). */
   loginProvisorio?: LoginProvisorio;
 };
@@ -58,7 +60,8 @@ export function lerConfiguracaoDaRedeInterna(env: NodeJS.ProcessEnv = process.en
   const { CRM_SENHA_PROVISORIA: senha = "", CRM_LOGIN_PROVISORIO_CODIGOS: codigos = "" } = lerEnv(arquivo);
   if (!senha) throw new Error(`Falta CRM_SENHA_PROVISORIA em ${arquivo}.`);
   if (!FORMATO_DOS_CODIGOS.test(codigos)) throw new Error(`CRM_LOGIN_PROVISORIO_CODIGOS, em ${arquivo}, são os códigos de representante separados por vírgula (ex.: 1401,1402).`);
-  return { ...lerConfiguracao(), ...REDE_INTERNA, origem, loginProvisorio: { senha, codigos: codigos.split(",") } };
+  // Sem chave de acesso não há confirmação: o pedido não sai do CRM da rede interna.
+  return { ...lerConfiguracao(), ...REDE_INTERNA, origem, pastaDeSaida: null, loginProvisorio: { senha, codigos: codigos.split(",") } };
 }
 
 function lerEnv(arquivo: string): Record<string, string | undefined> {
@@ -84,7 +87,17 @@ function lerConfiguracaoDe(env: Record<string, string | undefined>): Configuraca
     origem: lerOrigem("CRM_ORIGEM", env.CRM_ORIGEM, ORIGEM_DO_CRM_NESTE_COMPUTADOR),
     portaDoAdmin: Number(env.CRM_PORTA_DO_ADMIN || PORTA_PADRAO_DO_ADMIN),
     origemDoAdmin: lerOrigem("CRM_ORIGEM_DO_ADMIN", env.CRM_ORIGEM_DO_ADMIN, ORIGEM_DO_ADMIN_NESTE_COMPUTADOR),
+    pastaDeSaida: isEnvioLigado(env.CRM_ENVIO_DE_PEDIDOS) ? path.resolve(PASTA_DO_SERVIDOR, env.CRM_PASTA_DE_SAIDA || "../data/saida/pedidos") : null,
   };
+}
+
+/**
+ * O envio de pedidos só liga na produção com CRM_ENVIO_DE_PEDIDOS=ligado: até a LAN levar os pedidos
+ * ao SGI, o pedido enviado ficaria parado na caixa de saída. Neste computador, liga sozinho.
+ */
+function isEnvioLigado(valor: string | undefined): boolean {
+  if (valor !== undefined && valor !== "" && valor !== "ligado" && valor !== "desligado") throw new Error(`CRM_ENVIO_DE_PEDIDOS é "ligado" ou "desligado": ${valor}`);
+  return valor ? valor === "ligado" : process.env.NODE_ENV !== "production";
 }
 
 /**

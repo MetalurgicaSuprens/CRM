@@ -23,6 +23,8 @@ export type Evento =
   | "visita_desfeita"
   | "rascunho_criado"
   | "rascunho_descartado"
+  | "pedido_enviado"
+  | "envio_recusado"
   | "foto_recusada"
   | "registros_apagados";
 

@@ -12,6 +12,9 @@ import {
   salvarRascunhoFicticio,
 } from "./pedidosFicticios";
 
+/** Tempo que o protótipo finge esperar o aparelho liberar a chave de acesso no envio. */
+const ESPERA_DA_CHAVE_MS = 1_200;
+
 /** As visitas do protótipo, de cada cliente, da mais recente à mais antiga: só na memória, como os rascunhos. */
 const visitasFicticias = new Map<string, string[]>();
 
@@ -49,9 +52,11 @@ export const fonteFicticia: FonteDeDados = {
     excluirRascunhoFicticio(id);
     return Promise.resolve();
   },
-  enviarPedido(idDoRascunho) {
+  async enviarPedido(idDoRascunho) {
+    await new Promise((resolver) => window.setTimeout(resolver, ESPERA_DA_CHAVE_MS));
     const pedido = enviarRascunhoFicticio(idDoRascunho);
-    return pedido ? Promise.resolve(pedido) : Promise.reject(new Error("Rascunho não encontrado"));
+    if (!pedido) throw new Error("Rascunho não encontrado");
+    return pedido;
   },
   carregarVisitas: () => Promise.resolve(Object.fromEntries([...visitasFicticias].flatMap(([codigo, [ultima]]) => (ultima ? [[codigo, ultima]] : [])))),
   registrarVisita: (codigo) => mudarVisitaFicticia(codigo, (datas) => [...new Set([situacaoDosDadosFicticia().hoje, ...datas])]),

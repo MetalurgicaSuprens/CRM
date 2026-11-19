@@ -34,7 +34,7 @@ export type FonteDeDados = {
   carregarRascunho(id: string): Promise<Rascunho | null>;
   salvarRascunho(dados: RascunhoParaSalvar, opcoes?: OpcoesDoSalvamento): Promise<Rascunho>;
   excluirRascunho(id: string): Promise<void>;
-  /** Na F5, o envio leva junto a confirmação da chave de acesso, ligada ao conteúdo do pedido. */
+  /** O envio leva junto a confirmação da chave de acesso, ligada ao conteúdo do pedido. */
   enviarPedido(idDoRascunho: string): Promise<PedidoEnviado>;
   carregarVisitas(): Promise<UltimasVisitas>;
   /** Marca a visita de hoje e devolve as visitas do cliente, da mais recente à mais antiga. */

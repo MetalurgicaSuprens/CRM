@@ -21,13 +21,14 @@ const banco = abrirBancoDoApp(configuracao.arquivoDoApp);
 const foto = criarFotoAtual(configuracao.fotos, {
   aoRecusar: ({ foto: arquivo, motivo }) => auditar(banco, { usuario: null, evento: "foto_recusada", alvo: arquivo, resultado: motivo }),
 });
-const crm = criarApp({ foto, banco, origem: configuracao.origem, loginProvisorio: configuracao.loginProvisorio });
+const crm = criarApp({ foto, banco, origem: configuracao.origem, loginProvisorio: configuracao.loginProvisorio, pastaDeSaida: configuracao.pastaDeSaida });
 const admin = criarAppDoAdmin({ foto, banco, origem: configuracao.origemDoAdmin, origemDoCrm: configuracao.origem });
 await crm.listen({ host: ENDERECO, port: configuracao.porta });
 await admin.listen({ host: ENDERECO, port: configuracao.portaDoAdmin });
 console.log(`API do CRM em http://${ENDERECO}:${configuracao.porta}, para o site ${configuracao.origem}.`);
 console.log(`API da administração em http://${ENDERECO}:${configuracao.portaDoAdmin}, para o site ${configuracao.origemDoAdmin}.`);
 console.log(`Fotos chegam em ${configuracao.fotos.entrada} e são conferidas em ${configuracao.fotos.conferidas}; app.db em ${configuracao.arquivoDoApp}.`);
+console.log(configuracao.pastaDeSaida ? `Pedidos enviados vão para ${configuracao.pastaDeSaida}.` : "Envio de pedidos desligado (CRM_ENVIO_DE_PEDIDOS).");
 limparRegistrosAntigos();
 setInterval(limparRegistrosAntigos, UM_DIA_MS).unref();
 

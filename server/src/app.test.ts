@@ -67,6 +67,32 @@ function salvarComoA(app: FastifyInstance, id: string, corpo: object, origem = O
   return app.inject({ method: "PUT", url: `/api/rascunhos/${id}`, headers: { cookie: loginDeA, origin: origem }, payload: corpo });
 }
 
+/** Uma credencial no formato certo, que nenhum aparelho assinou: só passa do schema. */
+const CREDENCIAL_DE_MENTIRA = {
+  id: "abc",
+  rawId: "abc",
+  type: "public-key",
+  clientExtensionResults: {},
+  response: { clientDataJSON: "e30", authenticatorData: "AA", signature: "AA" },
+};
+
+/** Um pedido enviado de B, gravado direto no app.db (o envio de verdade está em envio/envio.test.ts): devolve o número. */
+function gravarPedidoEnviadoDeB(): string {
+  const usuario = String(banco.prepare("SELECT usuario FROM usuario_codigos WHERE codigo = '9999'").get()?.usuario);
+  const conteudo = { cliente: CLIENTE_DE_B, itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 50, precoCento: 82 }], entrega: null, observacao: "", escolhas: null };
+  banco
+    .prepare("INSERT INTO pedidos_enviados (usuario, cliente, rascunho, conteudo, hash, chave, assinatura, enviado_em) VALUES (?, ?, ?, ?, '', ?, '{}', ?)")
+    .run(usuario, CLIENTE_DE_B, "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d4e", JSON.stringify(conteudo), `chave-de-${usuario}`, "2026-10-14T09:00:00");
+  return "CRM-00001";
+}
+
+/** O corpo de cada rota que grava: no rascunho de B, um rascunho válido de A ou uma confirmação no formato certo. */
+function corpoDaRota(metodo: string, url: string): object | undefined {
+  if (metodo === "GET" || url.endsWith("/envio/opcoes")) return undefined;
+  if (url.endsWith("/envio")) return { resposta: CREDENCIAL_DE_MENTIRA };
+  return url.includes(":id") ? rascunhoDeA() : {};
+}
+
 /** O login B e um rascunho dele, no cliente dele: devolve o id. */
 async function criarRascunhoDeB(app: FastifyInstance): Promise<string> {
   const id = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
@@ -112,13 +138,14 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     const app = criarAppDeTeste();
     await app.ready();
     const rascunhoDeB = await criarRascunhoDeB(app);
+    const pedidoDeB = gravarPedidoEnviadoDeB();
     expect(app.rotasRegistradas.length).toBeGreaterThan(0);
     for (const { metodo, url } of app.rotasRegistradas) {
       // No rascunho de B, o corpo é um rascunho válido de A: nem assim ele aparece ou muda.
-      const corpo = metodo === "GET" ? undefined : url.includes(":id") ? rascunhoDeA() : {};
-      const comB = url.replace(":codigo", CLIENTE_DE_B).replace(":id", rascunhoDeB);
+      const corpo = corpoDaRota(metodo, url);
+      const comB = url.replace(":codigo", CLIENTE_DE_B).replace(":id", rascunhoDeB).replace(":numero", pedidoDeB);
       const resposta = await app.inject({ method: metodo, url: comB, headers: { cookie: loginDeA, origin: ORIGEM }, payload: corpo });
-      if (url.includes(":codigo") || url.includes(":id")) expect(resposta.statusCode, url).toBe(404);
+      if (/:(codigo|id|numero)/.test(url)) expect(resposta.statusCode, url).toBe(404);
       else if (metodo === "GET") expect(resposta.statusCode, url).toBe(200);
       for (const marca of MARCAS_DE_B) expect(resposta.body, `${metodo} ${url} mostrou ${marca}`).not.toContain(marca);
     }

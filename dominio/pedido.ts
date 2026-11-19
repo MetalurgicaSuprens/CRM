@@ -15,6 +15,11 @@ export const LIMITE_DA_OBSERVACAO = 300;
 /** A entrega desejada fica a pelo menos 5 dias úteis de hoje (pedido do Lucas em 2026-11-05). */
 export const DIAS_UTEIS_ATE_A_ENTREGA = 5;
 
+/** "CRM-00106": o número que o CRM dá ao pedido enviado, que o SGI guarda para ligar o pedido dele ao do CRM. */
+export function numeroDoPedidoCrm(numero: number): string {
+  return `CRM-${String(numero).padStart(5, "0")}`;
+}
+
 /** Um item com a quantidade em peças e o preço do cento. */
 export type ItemComPreco = { quantidade: number; precoCento: number };
 

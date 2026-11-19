@@ -43,6 +43,8 @@ const EVENTOS: Readonly<Record<string, string>> = {
   visita_desfeita: "Visita desfeita",
   rascunho_criado: "Rascunho de pedido criado",
   rascunho_descartado: "Rascunho de pedido descartado",
+  pedido_enviado: "Pedido enviado",
+  envio_recusado: "Envio de pedido recusado",
   foto_recusada: "Carga do ERP recusada",
   registros_apagados: "Registros antigos apagados",
 };

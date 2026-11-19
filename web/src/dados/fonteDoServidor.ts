@@ -1,13 +1,13 @@
+import { usarChave, type OpcoesDeEntradaJSON } from "../acesso/chaveDeAcesso";
 import { PedidoBloqueado, type FonteDeDados } from "./fonteDeDados";
 import { irParaAEntrada, mensagemDeErro } from "./http";
+import type { PedidoEnviado } from "./tipos";
 
 /*
  * Os dados reais: a API do servidor, que lê a foto do ERP (server/src/rotas.ts). Mesma origem,
- * sem CORS; o representante vem da sessão, nunca daqui. Os rascunhos ficam no app.db do servidor;
- * o envio do pedido ao ERP chega na F5.
+ * sem CORS; o representante vem da sessão, nunca daqui. Os rascunhos e os pedidos enviados ficam no
+ * app.db do servidor.
  */
-
-const ENVIO_AINDA_NAO = "Com os dados reais, o envio do pedido ao ERP chega na F5. O rascunho está salvo em Pedidos, na aba Rascunhos.";
 
 export const fonteDoServidor: FonteDeDados = {
   carregarSituacaoDosDados: () => buscar("/api/situacao"),
@@ -17,15 +17,25 @@ export const fonteDoServidor: FonteDeDados = {
   carregarAnalises: () => buscar("/api/analises"),
   carregarCatalogo: (codigoCliente) => buscarOuNulo(`/api/clientes/${encodeURIComponent(codigoCliente)}/catalogo`),
   carregarPedidos: () => buscar("/api/pedidos"),
-  carregarPedidoEnviado: () => Promise.resolve(null),
+  carregarPedidoEnviado: (numero) => buscarOuNulo(`/api/pedidos/enviados/${encodeURIComponent(numero)}`),
   carregarRascunho: (id) => buscarOuNulo(`/api/rascunhos/${encodeURIComponent(id)}`),
   salvarRascunho: ({ id, ...conteudo }, opcoes) => gravar("PUT", `/api/rascunhos/${encodeURIComponent(id)}`, conteudo, opcoes?.aoSairDaPagina),
   excluirRascunho: (id) => gravar("DELETE", `/api/rascunhos/${encodeURIComponent(id)}`),
-  enviarPedido: () => Promise.reject(new Error(ENVIO_AINDA_NAO)),
+  enviarPedido,
   carregarVisitas: () => buscar("/api/visitas"),
   registrarVisita: (codigo) => mudarVisita("POST", codigo, {}),
   desfazerVisita: (codigo, data) => mudarVisita("DELETE", codigo, { data }),
 };
+
+/**
+ * O envio pede ao aparelho a chave de acesso de novo: o servidor dá um desafio com o hash do rascunho
+ * e só aceita a assinatura se o rascunho ainda estiver igual (server/src/envio/rotasDoEnvio.ts).
+ */
+async function enviarPedido(idDoRascunho: string): Promise<PedidoEnviado> {
+  const caminho = `/api/rascunhos/${encodeURIComponent(idDoRascunho)}/envio`;
+  const opcoes = await gravar<OpcoesDeEntradaJSON>("POST", `${caminho}/opcoes`);
+  return gravar<PedidoEnviado>("POST", caminho, { resposta: await usarChave(opcoes) });
+}
 
 /** O servidor confere que o cliente é da carteira e a data, e devolve as visitas dele. */
 async function mudarVisita(metodo: "POST" | "DELETE", codigo: string, corpo: { data?: string }): Promise<string[]> {

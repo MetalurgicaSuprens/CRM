@@ -1,8 +1,9 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import { LIMITE_DA_OBSERVACAO } from "dominio/pedido";
 import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
 import { auditar } from "./auditoria.ts";
+import { enviadosNaFicha, pedidosEnviadosDoLogin } from "./envio/pedidosEnviados.ts";
 import type { FotoAtual } from "./foto/fotoAtual.ts";
 import { lerAnalises } from "./leituras/analises.ts";
 import { lerCatalogo } from "./leituras/catalogo.ts";
@@ -11,7 +12,7 @@ import { lerPainel } from "./leituras/painel.ts";
 import { lerPedidos } from "./leituras/pedidos.ts";
 import { lerSituacao } from "./leituras/situacao.ts";
 import { LIMITE_DE_ITENS, excluirRascunho, lerRascunho, rascunhosDoLogin, rascunhosNaFicha, salvarRascunho, type ConteudoDoRascunho } from "./rascunhos.ts";
-import type { Sessao } from "./sessao.ts";
+import { sessaoDa } from "./sessao.ts";
 import { dataDaVisita, desfazerVisita, registrarVisita, ultimasVisitas, visitasDosClientes, type ProblemaNaData } from "./visitas.ts";
 
 /*
@@ -142,8 +143,9 @@ export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () =
       auditar(banco, { usuario: sessao.idDoUsuario, evento: "ficha_consultada", alvo: requisicao.params.codigo });
       // No grupo, as visitas a qualquer CNPJ dele: a visita é sempre num CNPJ.
       const visitados = ficha.cnpjs ? ficha.cnpjs.map(({ codigo }) => codigo) : [ficha.codigo];
-      // Os rascunhos do login entram no histórico, do mais recente ao mais antigo, como os pedidos.
-      const pedidos = [...rascunhosNaFicha(banco, foto.abrir(), sessao, ficha), ...ficha.pedidos].sort((a, b) => b.emissao.localeCompare(a.emissao));
+      // Os rascunhos e os enviados do login entram no histórico, do mais recente ao mais antigo, como os pedidos.
+      const doCrm = [...rascunhosNaFicha(banco, foto.abrir(), sessao, ficha), ...enviadosNaFicha(banco, foto.abrir(), sessao, ficha)];
+      const pedidos = [...doCrm, ...ficha.pedidos].sort((a, b) => b.emissao.localeCompare(a.emissao));
       return { ...ficha, pedidos, visitas: visitasDosClientes(banco, sessao.idDoUsuario, visitados) };
     },
   );
@@ -186,7 +188,7 @@ export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () =
   }
   app.get("/api/pedidos", DO_REPRESENTANTE, (requisicao) => {
     const sessao = sessaoDa(requisicao);
-    return { ...lerPedidos(foto.abrir(), sessao), rascunhos: rascunhosDoLogin(banco, foto.abrir(), sessao) };
+    return { ...lerPedidos(foto.abrir(), sessao), enviados: pedidosEnviadosDoLogin(banco, foto.abrir(), sessao), rascunhos: rascunhosDoLogin(banco, foto.abrir(), sessao) };
   });
   /**
    * O rascunho do login: ler, salvar (criar ou atualizar pelo id que a tela gerou) e descartar. O de
@@ -220,10 +222,4 @@ export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () =
       return resposta.code(204).send();
     },
   );
-}
-
-/** A rota de representante só chega aqui com sessão (app.ts barra antes com 401). */
-function sessaoDa(requisicao: FastifyRequest): Sessao {
-  if (!requisicao.sessao) throw new Error("Rota de representante sem sessão.");
-  return requisicao.sessao;
 }

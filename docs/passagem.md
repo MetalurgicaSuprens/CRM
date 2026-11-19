@@ -84,8 +84,12 @@ Falta, em ordem:
    - O mesmo vale para a chave do id do cliente e para a lista de autorizados: elas também saem de `data/` quando a máquina do extrator for escolhida.
    - A chave nasce com ssh-keygen, e o icacls tira o acesso dos outros usuários.
 6. **F5, pedidos sem depender do TI:**
-   - a rota de envio, com confirmação pela chave de acesso;
-   - a saída do pedido no servidor;
+   - **Feito em 2026-11-19 (etapa 1):** a rota de envio, com confirmação pela chave de acesso, e a saída do pedido no servidor (`server/src/envio/`):
+     - o desafio que o aparelho assina leva o hash do rascunho, e o servidor só aceita a assinatura se o rascunho continua igual;
+     - o pedido enviado ganha o número CRM, fica no app.db sem poder mudar (migração 6) e vira um arquivo `CRM-00001.json` na caixa de saída, com os códigos da sessão e o id opaco do cliente, sem nome;
+     - na produção o envio fica desligado até a LAN levar os pedidos ao SGI: só liga com `CRM_ENVIO_DE_PEDIDOS=ligado` no `server.env`, e a pasta de saída e o SFTP dela entram com a etapa 2;
+     - conferido no navegador só no protótipo: a chave de acesso de verdade pede o Windows Hello de quem está no computador. O envio real está coberto pelos testes, com um aparelho de teste que assina como um de verdade;
+   - **Etapa 2:** a busca dos pedidos pela máquina do extrator (SFTP da pasta de saída, a cada 5 min);
    - uma rotina na LAN que busca os pedidos, revalida no Oracle e grava no SGI pelas procedures de pedido, como o app antigo dos representantes: cotação (operação 1) e efetivação logo em seguida (operação 13). Veja "Pedidos: caminho até o ERP" no plano;
    - só depende da conta Oracle com EXECUTE nas duas procedures (`docs/conta-oracle-do-crm.md`), que o Lucas pediu ao DBA em 2026-11-17.
    - Na revalidação:

@@ -113,6 +113,26 @@ const MIGRACOES: readonly string[] = [
   `
   ALTER TABLE rascunhos ADD COLUMN escolhas TEXT;
   `,
+  // 6. Pedidos enviados (2026-11-19, F5): o rascunho confirmado com a chave de acesso. O número é o do CRM, e o
+  // pedido não muda mais: a assinatura da chave vale para o hash deste conteúdo. A situação no SGI volta pela foto.
+  `
+  CREATE TABLE pedidos_enviados (
+    numero INTEGER PRIMARY KEY,
+    usuario TEXT NOT NULL REFERENCES usuarios (id),
+    cliente TEXT NOT NULL,
+    rascunho TEXT NOT NULL UNIQUE,
+    conteudo TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    chave TEXT NOT NULL REFERENCES chaves (id),
+    assinatura TEXT NOT NULL,
+    enviado_em TEXT NOT NULL
+  ) STRICT;
+  CREATE INDEX pedidos_enviados_usuario ON pedidos_enviados (usuario, enviado_em);
+  CREATE TRIGGER pedidos_enviados_nao_mudam BEFORE UPDATE ON pedidos_enviados
+  BEGIN
+    SELECT RAISE(ABORT, 'O pedido enviado não muda.');
+  END;
+  `,
 ];
 
 /** Abre o app.db (cria a pasta e o arquivo na primeira vez) e aplica as migrações que faltam. ":memory:" nos testes. */

@@ -1,6 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest, type RouteOptions } from "fastify";
 import { FotoIndisponivel, type FotoAtual } from "./foto/fotoAtual.ts";
+import { registrarRotasDoEnvio } from "./envio/rotasDoEnvio.ts";
 import { criarLimitador, type Limite } from "./limite.ts";
 import { siteDaOrigem } from "./login/chaveDeAcesso.ts";
 import { cookieApagado, lerTokenDoCookie } from "./login/cookie.ts";
@@ -46,6 +47,8 @@ export type Dependencias = {
   origem: string;
   /** Só no CRM aberto na rede interna (iniciar-crm-servidor.bat): a entrada por senha, além da chave de acesso. */
   loginProvisorio?: LoginProvisorio;
+  /** A caixa de saída dos pedidos enviados; sem ela, o envio fica desligado. */
+  pastaDeSaida?: string | null;
   agora?: () => Date;
 };
 
@@ -53,10 +56,11 @@ export type DependenciasDaApi = { banco: DatabaseSync; origem: string; portal: P
 
 /** A API do CRM, a dos representantes. */
 export function criarApp(dependencias: Dependencias): FastifyInstance {
-  const { banco, foto, loginProvisorio, agora = () => new Date() } = dependencias;
+  const { banco, foto, origem, loginProvisorio, pastaDeSaida = null, agora = () => new Date() } = dependencias;
   const portal = loginProvisorio ? PORTAL_DA_REDE_INTERNA : PORTAL_DO_CRM;
   return criarApi({ ...dependencias, portal }, (app) => {
     registrarRotas(app, dependencias);
+    registrarRotasDoEnvio(app, { banco, foto, site: siteDaOrigem(origem, portal.nome), desafios: criarDesafios(), pastaDeSaida, agora });
     if (loginProvisorio) registrarLoginProvisorio(app, { banco, foto, portal, login: loginProvisorio, agora });
   });
 }

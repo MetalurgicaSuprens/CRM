@@ -5,3 +5,9 @@ export type Sessao = {
   nome: string;
   codigos: string[];
 };
+
+/** A sessão de uma rota de representante, que só chega à rota com ela (app.ts barra antes com 401). */
+export function sessaoDa(requisicao: { sessao: Sessao | null }): Sessao {
+  if (!requisicao.sessao) throw new Error("Rota de representante sem sessão.");
+  return requisicao.sessao;
+}
