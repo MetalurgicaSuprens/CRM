@@ -1,5 +1,5 @@
 import { dataDoMomento } from "dominio/datas";
-import { primeiraEntregaPossivel, totalDoPedido } from "dominio/pedido";
+import { primeiraEntregaPossivel } from "dominio/pedido";
 import { escolherTabela } from "../calculo/catalogo.ts";
 import { lerPrecosDoCliente, lerTabelasDoCliente } from "../erp/catalogo.ts";
 import { statusDoCadastro } from "../erp/carteira.ts";
@@ -18,11 +18,9 @@ import type { PedidoRecebido } from "./formato.ts";
  * - a entrega fica a pelo menos 5 dias úteis do envio;
  * - a condição de pagamento é das do SGI6R ou a do cadastro, e a transportadora existe e está ativa.
  * O pedido que não passa vai para a quarentena, com o motivo. O de transportadora nova espera vendas
- * cadastrá-la. O acima do valor-teto espera a revisão de alguém da Suprens.
+ * cadastrá-la. Não há teto de valor: o pedido nasce PEDIDO BLOQUEADO, e a liberação no SGI é a revisão
+ * da Suprens (decisão do Lucas em 2026-11-19).
  */
-
-/** Acima disto, o pedido não segue sozinho (docs/plano.md). Valor provisório, a confirmar com o Lucas. */
-export const VALOR_PARA_REVISAO = 50_000;
 
 /** O que o SGI precisa e que só a LAN sabe: o cliente do ERP e o dono dele, e os códigos conferidos. */
 export type PedidoNoErp = {
@@ -36,7 +34,6 @@ export type PedidoNoErp = {
 
 export type Decisao =
   | { destino: "conferidos"; erp: PedidoNoErp }
-  | { destino: "revisao"; motivo: string; erp: PedidoNoErp }
   | { destino: "aguardando"; motivo: string }
   | { destino: "quarentena"; motivo: string };
 
@@ -85,10 +82,7 @@ export function decidir(pedido: PedidoRecebido, { cliente, tabelas, precos, isCo
       ? { destino: "aguardando", motivo: `espera vendas cadastrar a transportadora de CNPJ ${escolhida.nova.cnpj}` }
       : quarentena("a transportadora não existe ou está inativa no ERP");
   }
-  const erp = { empresa: cliente.empresa, cliente: cliente.cliente, vendedor: cliente.vendedor, tabela: tabela.tabela, condicaoDePagamento: pedido.escolhas.condicaoDePagamento, transportadora };
-  const total = totalDoPedido(pedido.itens);
-  if (total > VALOR_PARA_REVISAO) return { destino: "revisao", motivo: `total estimado de R$ ${total.toFixed(2)}, acima de R$ ${VALOR_PARA_REVISAO}`, erp };
-  return { destino: "conferidos", erp };
+  return { destino: "conferidos", erp: { empresa: cliente.empresa, cliente: cliente.cliente, vendedor: cliente.vendedor, tabela: tabela.tabela, condicaoDePagamento: pedido.escolhas.condicaoDePagamento, transportadora } };
 }
 
 function quarentena(motivo: string): Decisao {

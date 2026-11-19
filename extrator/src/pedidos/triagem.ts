@@ -9,7 +9,6 @@ import { lerPedidoRecebido, type PedidoRecebido } from "./formato.ts";
  * - recebidos/: tudo o que veio da caixa de saída do servidor, como veio. Não muda; é por ela que a
  *   busca sabe o que já trouxe;
  * - conferidos/: passou em tudo e pode ir ao SGI, com o que só a LAN sabe ao lado (<número>.erp.json);
- * - revisao/: passou, mas está acima do valor-teto e espera alguém da Suprens;
  * - aguardando/: espera vendas cadastrar a transportadora nova; é conferido de novo a cada passada;
  * - quarentena/: recusado, com o motivo em <número>.motivo.txt.
  * O arquivo PAUSAR na pasta de pedidos suspende a triagem (e, depois, a gravação no SGI) até ser apagado.
@@ -19,14 +18,14 @@ export type Destino = Decisao["destino"];
 export type ResumoDaTriagem = { isPausada: boolean; porDestino: Record<Destino, string[]> };
 export type Conferir = (pedido: PedidoRecebido) => Promise<Decisao>;
 
-/** Pedidos aceitos por login num dia: um teto contra abuso de uma sessão roubada. Provisório, a confirmar com o Lucas. */
+/** Pedidos aceitos por login num dia: um teto contra abuso de uma sessão roubada. O Lucas confirmou 30 em 2026-11-19. */
 export const PEDIDOS_POR_LOGIN_POR_DIA = 30;
 export const ARQUIVO_PARA_PAUSAR = "PAUSAR";
 
 /** A pasta dos recebidos, dentro da pasta de pedidos: onde a busca (envio/buscarPedidos.ts) deixa o que trouxe. */
 export const RECEBIDOS = "recebidos";
 /** Os que já tiveram destino final: não são conferidos de novo. */
-const DECIDIDOS: readonly Destino[] = ["conferidos", "revisao", "quarentena"];
+const DECIDIDOS: readonly Destino[] = ["conferidos", "quarentena"];
 const NOME_DO_PEDIDO = /^CRM-\d{5,9}\.json$/;
 
 export function isPausada(pastaDosPedidos: string): boolean {
@@ -42,7 +41,7 @@ export function pedidosParaTriar(pastaDosPedidos: string): string[] {
 }
 
 export async function triarRecebidos(pastaDosPedidos: string, conferir: Conferir): Promise<ResumoDaTriagem> {
-  const porDestino: Record<Destino, string[]> = { conferidos: [], revisao: [], aguardando: [], quarentena: [] };
+  const porDestino: Record<Destino, string[]> = { conferidos: [], aguardando: [], quarentena: [] };
   if (isPausada(pastaDosPedidos)) return { isPausada: true, porDestino };
   const aceitosPorLoginNoDia = contarAceitos(pastaDosPedidos);
   for (const nome of pedidosParaTriar(pastaDosPedidos)) {
@@ -62,7 +61,7 @@ async function decidirPedido(conteudo: string, nome: string, aceitos: Map<string
     return { destino: "quarentena", motivo: `o login já tem ${PEDIDOS_POR_LOGIN_POR_DIA} pedidos aceitos no dia do envio` };
   }
   const decisao = await conferir(leitura.pedido);
-  if (decisao.destino === "conferidos" || decisao.destino === "revisao") aceitos.set(chave, (aceitos.get(chave) ?? 0) + 1);
+  if (decisao.destino === "conferidos") aceitos.set(chave, (aceitos.get(chave) ?? 0) + 1);
   return decisao;
 }
 
@@ -85,16 +84,14 @@ function gravarInteiro(arquivo: string, conteudo: string): void {
   fs.renameSync(`${arquivo}.part`, arquivo);
 }
 
-/** Os pedidos já aceitos (conferidos e em revisão) de cada login, por dia do envio. */
+/** Os pedidos já aceitos (conferidos) de cada login, por dia do envio. */
 function contarAceitos(pastaDosPedidos: string): Map<string, number> {
   const contagem = new Map<string, number>();
-  for (const destino of ["conferidos", "revisao"] as const) {
-    for (const nome of pedidosEm(pastaDosPedidos, destino)) {
-      const leitura = lerPedidoRecebido(fs.readFileSync(path.join(pastaDosPedidos, destino, nome), "utf8"), nome);
-      if (!leitura.ok) continue;
-      const chave = chaveDoLoginNoDia(leitura.pedido);
-      contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
-    }
+  for (const nome of pedidosEm(pastaDosPedidos, "conferidos")) {
+    const leitura = lerPedidoRecebido(fs.readFileSync(path.join(pastaDosPedidos, "conferidos", nome), "utf8"), nome);
+    if (!leitura.ok) continue;
+    const chave = chaveDoLoginNoDia(leitura.pedido);
+    contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
   }
   return contagem;
 }

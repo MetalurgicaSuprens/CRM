@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { somarDias } from "dominio/datas";
 import { primeiraEntregaPossivel } from "dominio/pedido";
 import type { Oracle } from "../oracle.ts";
-import { VALOR_PARA_REVISAO, conferirNoErp, decidir, type LidoDoErp } from "./conferencia.ts";
+import { conferirNoErp, decidir, type LidoDoErp } from "./conferencia.ts";
 import { pedidoDeTeste } from "./pedidoDeTeste.ts";
 
 /** O ERP de um pedido que passa: cliente ativo de 1401, tabela principal em real e o F-100 a 95,50 o cento. */
@@ -63,10 +63,9 @@ describe("decidir", () => {
     expect(decidir(pedido, lidoDoErp({ transportadora: "202" }))).toMatchObject({ destino: "conferidos", erp: { transportadora: "202" } });
   });
 
-  it("manda para revisão o pedido acima do valor-teto", () => {
-    const pecas = Math.ceil((VALOR_PARA_REVISAO / 98.4) * 100) + 100;
-    const decisao = decidir(pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: pecas, precoCento: 98.4 }] }), lidoDoErp());
-    expect(decisao).toMatchObject({ destino: "revisao", erp: { cliente: 123456 } });
+  it("deixa seguir o pedido de valor alto, que o SGI recebe bloqueado e a Suprens libera", () => {
+    const decisao = decidir(pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1_000_000, precoCento: 98.4 }] }), lidoDoErp());
+    expect(decisao).toMatchObject({ destino: "conferidos", erp: { cliente: 123456 } });
   });
 });
 

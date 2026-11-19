@@ -198,7 +198,6 @@ Publicação:
 - só aceita arquivos com nome no padrão, até 64 KB, com limite de quantidade por execução e por representante por dia;
 - valida o schema estrito: limites de tamanho, conjunto de caracteres permitido e datas válidas pelas regras do SGI;
 - **revalida no Oracle** que o representante está ativo, que o cliente é de um dos códigos do login e está ATIVO no status do SGI (`NVL(CLI3_STA,'ATIVO')`; o CRM mostra o status do cliente fora de ativo e não aceita pedido para ele, decisões de 2026-10-14 e 2026-10-15; sem ler `CRCL.SUSPENSO` nem a restrição financeira; decisão do Lucas em 2026-10-09), que cada produto é vendável e tem preço, e que as quantidades estão dentro dos limites. O pedido vai para o SGI com o código dono do cliente (`VEND_1`), escolhido na LAN e nunca pelo navegador;
-- manda pedidos acima de um valor-teto para revisão manual;
 - chama as procedures do SGI **só com os campos validados**, numa transação por pedido;
 - mantém um registro de idempotência e uma quarentena;
 - tem um arquivo "pausar" que suspende a entrada de pedidos.

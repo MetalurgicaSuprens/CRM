@@ -132,6 +132,7 @@ Por isso o número CRM **não pode ir no `V_LR1`**: a Suprens escreve por cima e
 ## Decisões do Lucas em 2026-11-19
 
 - **Teto de pedidos por login por dia:** 30.
+- **Sem valor-teto:** o pedido conferido segue ao SGI qualquer que seja o valor. Ele nasce `PEDIDO BLOQUEADO`, e a liberação no SGI é a conferência da Suprens.
 - **Primeira gravação:** um pedido real, cancelado depois no SGI (operação 12). O cliente e os itens se escolhem junto com o Lucas.
 - **Cliente sem tabela `PRINCIPAL`:** bloquear o pedido já na tela do CRM, como o SGI6R, dizendo o motivo ao representante ("Tabela de preço não cadastrada").
 - **Qual login enviou:** o código do pedido continua o dono do cliente, como hoje. O Lucas quer saber também o login do CRM que colocou o pedido, para separar os vendedores de um mesmo representante. O `app.db` já guarda isso (`pedidos_enviados.usuario` e a chave usada). Falta mostrar, no CRM e talvez no SGI.
@@ -139,5 +140,4 @@ Por isso o número CRM **não pode ir no `V_LR1`**: a Suprens escreve por cima e
 
 ## Ainda a decidir com o Lucas
 
-- O valor-teto da revisão manual (provisório: R$ 50.000). Ele não existe no SGI6R: veio do plano do CRM, como trava contra sessão roubada ou erro de digitação, já que as procedures não conferem preço. O pedido já nasce `PEDIDO BLOQUEADO`, e isso pesa na decisão.
 - O campo que leva o número CRM (acima).

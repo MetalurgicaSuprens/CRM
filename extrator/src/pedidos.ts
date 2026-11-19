@@ -50,7 +50,6 @@ async function triar(): Promise<void> {
 function resumir({ porDestino }: ResumoDaTriagem): string {
   const linhas = [
     ["Conferidos, prontos para o SGI", porDestino.conferidos],
-    ["Em revisão (acima do valor-teto)", porDestino.revisao],
     ["Aguardando o cadastro da transportadora", porDestino.aguardando],
     ["Em quarentena (veja o motivo na pasta quarentena)", porDestino.quarentena],
   ] as const;
