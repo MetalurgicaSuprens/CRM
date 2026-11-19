@@ -70,7 +70,7 @@ De onde vêm os valores:
 | `V_VEN` | vendedor | `A.VEND_1` | o mesmo |
 | `V_TER` | território | `A.TERR_1` | o mesmo |
 | `V_PCV` | comissão | `CRVN.PORC_COMISSAO` do vendedor | o mesmo |
-| `V_ORC` | origem do orçamento | `SGI6R` | **`CRM`** |
+| `V_ORC` | orçamentista (matrícula do funcionário) | `SGI6R` | **`SGI6R`**: texto diferente quebra o Relatório de Cotações (abaixo) |
 | `V_LR1` | livre 1 | vazio | **o número CRM (`CRM-00106`)**: é por ele que o pedido volta à tela |
 | `V_LR2`, `V_NFA`, `V_TFO` | livres | vazios | vazios |
 | `V_DLB_*`, `V_ULB_*`, `V_JUS_BPV`, `V_DCO`, `V_UCO` | liberações | nulos | nulos |
@@ -125,9 +125,13 @@ O preço vem da view de preço do cliente (`SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`): `VI
 Consulta de 2026-11-19 nos pedidos do SGI6R de 24 meses (19.913):
 - `PV1_LR1` está preenchido em 38% deles (7.587), e `PV1_LR2` em 9%. O SGI6R manda os dois vazios: quem preenche é a Suprens, na tela do SGI.
 - Os valores são recados para o faturamento: `RETIRA` (2.200), `ANTECIPADO`, `USO CONSUMO`, `EMBALAGEM 20 PÇS`, `1º COMPRA`, `ENV CERTIFICADO`, `ST-MG / ANTECIPADO`, `GERAR GNRE` e `ZONA FRANCA`.
-- Nos itens, `PV2_LR1` e `PV2_LR2` nunca são usados. `PV2_IOC` (item da ordem de compra) está preenchido em 99% dos itens.
+- Nos itens, `PV2_LR1` e `PV2_LR2` nunca são usados. `PV2_IOC` (item da ordem de compra) tem valor em 4% dos itens (9.092 de 224.655): nos outros, o SGI6R grava 0.
 
-Por isso o número CRM **não pode ir no `V_LR1`**: a Suprens escreve por cima e o pedido perde a ligação com o CRM. Proposta a decidir com o Lucas: `V_ORC = CRM-00106` (a coluna tem 15 caracteres), que diz a origem e o número de uma vez. Antes, conferir se algum relatório filtra `PV1_ORC = SGI6R`. O `V_IOC` também merece revisão, já que o SGI quase sempre o tem.
+Por isso o número CRM **não pode ir no `V_LR1`**: a Suprens escreve por cima e o pedido perde a ligação com o CRM.
+
+**Nem no `V_ORC`.** No SGI, `PV1_ORC` é o "Orçamentista": a matrícula do funcionário (`SGI5_TAB_DP_FUN.FUN_REG`) ou `SGI6R`. O Relatório de Cotações (`Vendas {VEN}/Pedido Venda V2 {PVD}/untVenPvd_RelCotacoes.dfm`) liga o pedido ao funcionário com `CASE WHEN TRIM(PV1_ORC) = 'SGI6R' THEN 0 ELSE TO_NUMBER(PV1_ORC) END`: qualquer outro texto, como `CRM` ou `CRM-00106`, dá ORA-01722 e derruba o relatório. A tela antiga de pedidos (`untVenPve_PveMov.pas`) também lê o campo como número. O CRM manda `SGI6R`, como o app antigo.
+
+Proposta: a ligação do pedido com o CRM fica na máquina do extrator, que escolhe o número do SGI (`MAX(PV1_NPE)+1`) e sabe qual número gravou para cada número CRM. A decidir com o Lucas como o SGI mostra que o pedido veio do CRM, se precisar.
 
 ## Decisões do Lucas em 2026-11-19
 
@@ -140,4 +144,4 @@ Por isso o número CRM **não pode ir no `V_LR1`**: a Suprens escreve por cima e
 
 ## Ainda a decidir com o Lucas
 
-- O campo que leva o número CRM (acima).
+- Se o SGI precisa mostrar que o pedido veio do CRM, e em que campo (acima).
