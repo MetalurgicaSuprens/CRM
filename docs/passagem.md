@@ -78,6 +78,10 @@ Falta, em ordem:
 4. **Extrator na máquina 192.168.0.12, desde 2026-11-18:** conta Windows `sgi`, dados em `C:\Users\sgi\crm-dados`, conta Oracle `CRM_EXTRATOR` (`ORACLE_ESQUEMA_DAS_VIEWS=CRM_DADOS`). A primeira foto chegou ao servidor no mesmo dia.
    - A agenda são as tarefas "CRM - extrator" (foto) e "CRM - pedidos" (a cada 5 min), criadas pelo `extrator/agenda/agendar.ps1`; cada passada fica registrada em `crm-dados\registro\`, num arquivo por rotina e por mês.
    - A lista de autorizados que vale é a de `crm-dados\representantes-autorizados.txt` nessa máquina, não a de `data/` deste computador. Em 2026-11-19, o Lucas decidiu passar de 22 para 29 códigos: todos os ativos no cadastro de vendedores do SGI, também os de tipo VENDEDOR (1106, 1107, 1108, 1116, 1118, 1119 e 1125).
+   - **Falta, com o Henry (só ele entra na 192.168.0.12):** trocar a lista dessa máquina pela de 29 códigos. Sem isso, o site continua com os 22 de antes. São estes códigos, um por linha: 1106, 1107, 1108, 1109, 1116, 1118, 1119, 1120, 1125, 1202, 1211, 1213, 1220, 1302, 1310, 1321, 1401, 1402, 1410, 1411, 1501, 1502, 1503, 1506, 1600, 1602, 1603, 1610 e 1701.
+     - A foto seguinte sai sem comparar com a anterior, porque a lista mudou ("a lista de representantes autorizados mudou" no registro): não precisa de `--aceitar-mudanca`.
+     - Ela fica maior: no teste deste computador, em 2026-11-19, foram 79 MB (antes, 62 MB), 4.232 clientes e R$ 114,0 mi nos 12 meses, o mesmo total do ERP. Confira no registro se o envio comprimido passou pela rede da Locaweb.
+     - O Mapa precisa dos arquivos do CNEFE de mais 115 municípios, quase todos de SP (os clientes novos), na pasta `crm-dados\cnefe`. Sem eles, a foto sai, e cerca de 620 clientes ficam sem ponto no mapa; o registro da passada lista os códigos dos municípios.
    - A rede da Locaweb corta envios grandes pela porta 22 (chamado aberto em 2026-11-18). O envio vai comprimido, e a foto de 62 MB passou.
    - **Falta no servidor:** a rota `/api/saude` e os alertas.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
