@@ -6,12 +6,14 @@
  * ordem que vier. O hash fica com quem usa: o domínio também roda no navegador, sem node:crypto.
  */
 
+import type { OrdemDeCompraDoItem } from "./pedido.ts";
+
 export type TransportadoraDoPedido = { codigo: string } | { nova: { cnpj: string; nome: string; cidade: string; uf: string } } | null;
 
 export type ConteudoDoPedido = {
   /** O id opaco do cliente na foto. */
   cliente: string;
-  itens: readonly { codigo: string; quantidade: number; precoCento: number }[];
+  itens: readonly ({ codigo: string; quantidade: number; precoCento: number } & OrdemDeCompraDoItem)[];
   entrega: string | null;
   observacao: string;
   escolhas: {
@@ -27,7 +29,7 @@ export function conteudoCanonico({ cliente, itens, entrega, observacao, escolhas
   const { condicaoDePagamento, classificacao, pedidoDoCliente, aceitaParcial, transportadora } = escolhas;
   return JSON.stringify({
     cliente,
-    itens: itens.map(({ codigo, quantidade, precoCento }) => ({ codigo, quantidade, precoCento })),
+    itens: itens.map(({ codigo, quantidade, precoCento, ordemDeCompra, itemDaOrdemDeCompra }) => ({ codigo, quantidade, precoCento, ordemDeCompra, itemDaOrdemDeCompra })),
     entrega,
     observacao,
     escolhas: { condicaoDePagamento, classificacao, pedidoDoCliente, aceitaParcial, transportadora: transportadoraEmOrdem(transportadora) },

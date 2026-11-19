@@ -25,7 +25,12 @@ describe("lerPedidoRecebido", () => {
 
   it("recusa o conteúdo que não é o que a chave de acesso confirmou", () => {
     const pedido = pedidoDeTeste();
-    expect(motivo({ ...pedido, itens: [{ codigo: "F-100", quantidade: 30_000, precoCento: 98.4 }] })).toMatch(/hash diferente/);
+    expect(motivo({ ...pedido, itens: [{ codigo: "F-100", quantidade: 30_000, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }] })).toMatch(/hash diferente/);
+  });
+
+  it("aceita a ordem de compra e o item dela em cada item, para o xPed da nota", () => {
+    const pedido = pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 1 }] });
+    expect(ler(pedido)).toMatchObject({ ok: true, pedido: { itens: [{ ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 1 }] } });
   });
 
   it("recusa o arquivo de nome diferente do número do pedido", () => {
@@ -35,12 +40,14 @@ describe("lerPedidoRecebido", () => {
   it.each([
     ["campo a mais", { ...pedidoDeTeste(), vendedor: "1401" }, /campo a mais: vendedor/],
     ["campo a menos", (({ hash: _hash, ...resto }) => resto)(pedidoDeTeste()), /sem o campo hash/],
-    ["campo a mais no item", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1, precoCento: 1, desconto: 5 } as never] }), /item com campo a mais/],
+    ["campo a mais no item", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1, precoCento: 1, ordemDeCompra: null, itemDaOrdemDeCompra: null, desconto: 5 } as never] }), /item com campo a mais/],
     ["versão desconhecida", { ...pedidoDeTeste(), versao: 2 }, /versão/],
-    ["quantidade quebrada", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1.5, precoCento: 98.4 }] }), /quantidade/],
-    ["preço zero", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1, precoCento: 0 }] }), /preço/],
-    ["produto repetido", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1, precoCento: 98.4 }, { codigo: "F-100", quantidade: 2, precoCento: 98.4 }] }), /duas vezes/],
+    ["quantidade quebrada", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1.5, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }), /quantidade/],
+    ["preço zero", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1, precoCento: 0, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }), /preço/],
+    ["produto repetido", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }, { codigo: "F-100", quantidade: 2, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }), /duas vezes/],
     ["sem itens", pedidoDeTeste({ itens: [] }), /itens/],
+    ["item da ordem de compra zero", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: 0 }] }), /item da ordem de compra/],
+    ["ordem de compra do item vazia", pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1, precoCento: 98.4, ordemDeCompra: "", itemDaOrdemDeCompra: 1 }] }), /ordem de compra do item/],
     ["data que não existe", pedidoDeTeste({ entrega: "2026-02-30" }), /não existe/],
     ["caractere de controle na observação", pedidoDeTeste({ observacao: "linha\u0007" }), /observacao/],
     ["código de representante fora do formato", pedidoDeTeste({ codigos: ["14 01"] }), /código de representante/],

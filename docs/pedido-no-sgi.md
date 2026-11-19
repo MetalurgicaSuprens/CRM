@@ -108,8 +108,8 @@ O preço vem da view de preço do cliente (`SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`): `VI
 | `V_APV_DES`, `V_DTA_DES`, `V_JUS_DES` | aprovação de desconto | nulos | nulos |
 | `V_PMV_MB`, `V_PMV_ML` | preço mínimo por margem bruta e líquida | da `SGI5_TAB_CUS_REP_VLR_MIN_VEN` do dia (`CUS_DMO = TRUNC(SYSDATE)`) × 100: exportação, `EXP`; senão, pelo ICMS do item (`PRAIS` com 0, `PRA4`, `PRA7`, `PRA12`, `PRA18`); a coluna `_COM` quando há comissão | o mesmo |
 | `V_LR1`, `V_LR2` | livres | vazios | vazios |
-| `V_OCO` | pedido do cliente no item | o do cabeçalho | o do cabeçalho |
-| `V_IOC` | item da ordem de compra | o digitado; 0 vira nulo | nulo (o CRM ainda não tem o item da OC) |
+| `V_OCO` | ordem de compra do cliente no item | a do cabeçalho, que o representante pode trocar no item ("Ordem Compra:") | `ordemDeCompra` do item; null é a do cabeçalho (`pedidoDoCliente`) |
+| `V_IOC` | item da ordem de compra ("Item O.C.:") | o digitado; em branco, **0** (é o que está gravado: 96% dos itens do SGI6R têm 0) | `itemDaOrdemDeCompra` do item; null vira **0**, como o SGI6R |
 | `V_NPP`, `V_SPP`, `V_JPP` | pedido de produção | nulos | nulos |
 | `V_USU` | usuário | o representante | o mesmo do cabeçalho |
 
@@ -134,6 +134,8 @@ Por isso o número CRM **não pode ir no `V_LR1`**: a Suprens escreve por cima e
 Proposta: a ligação do pedido com o CRM fica na máquina do extrator, que escolhe o número do SGI (`MAX(PV1_NPE)+1`) e sabe qual número gravou para cada número CRM. A decidir com o Lucas como o SGI mostra que o pedido veio do CRM, se precisar.
 
 ## Decisões do Lucas em 2026-11-19
+
+- **Ordem de compra no item, igual ao SGI6R:** cada item tem a ordem de compra (a do pedido, se o representante não trocar) e o item dela. Os clientes que pedem o xPed na nota querem nela o pedido deles e o item correspondente (nItemPed). Feito no CRM em 2026-11-19: o rascunho, o pedido enviado e o arquivo da caixa de saída levam `ordemDeCompra` e `itemDaOrdemDeCompra` em cada item, e a máquina do extrator os confere. Falta a gravação (etapa 4) mandá-los como na tabela do item.
 
 - **Teto de pedidos por login por dia:** 30.
 - **Sem valor-teto:** o pedido conferido segue ao SGI qualquer que seja o valor. Ele nasce `PEDIDO BLOQUEADO`, e a liberação no SGI é a conferência da Suprens.

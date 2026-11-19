@@ -1,4 +1,5 @@
 import { arredondarAoCentavo, valorDaLinha, type ItemComPreco } from "dominio/pedido";
+import { SEM_ORDEM_DE_COMPRA_NO_ITEM, type ItemEscolhido } from "./pedido";
 import type { Classificacao, DadosDoPedido, EscolhaDaTransportadora, EscolhasDoPedido, PedidoEnviado, Transportadora, Uso } from "./tipos";
 
 /*
@@ -149,9 +150,11 @@ export function totaisDoPedido(itens: readonly ItemComCodigo[], ipi: Readonly<Re
 }
 
 /** Os itens do último pedido do cliente, na ordem dele, só dos produtos que ainda estão no catálogo. */
-export function itensDoUltimoPedido(ultimo: NonNullable<DadosDoPedido["ultimoPedido"]>, produtos: readonly { codigo: string }[]): { codigo: string; quantidade: number }[] {
+export function itensDoUltimoPedido(ultimo: NonNullable<DadosDoPedido["ultimoPedido"]>, produtos: readonly { codigo: string }[]): ItemEscolhido[] {
   const noCatalogo = new Set(produtos.map(({ codigo }) => codigo));
-  return ultimo.itens.filter((item) => noCatalogo.has(item.codigo) && item.quantidade > 0);
+  return ultimo.itens
+    .filter((item) => noCatalogo.has(item.codigo) && item.quantidade > 0)
+    .map(({ codigo, quantidade }) => ({ codigo, quantidade, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }));
 }
 
 /**

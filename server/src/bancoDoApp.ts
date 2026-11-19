@@ -133,6 +133,11 @@ const MIGRACOES: readonly string[] = [
     SELECT RAISE(ABORT, 'O pedido enviado não muda.');
   END;
   `,
+  // 7. A ordem de compra do cliente em cada item (2026-11-19), como no app antigo dos representantes: null é a do pedido e sem item.
+  `
+  ALTER TABLE rascunho_itens ADD COLUMN ordem_de_compra TEXT;
+  ALTER TABLE rascunho_itens ADD COLUMN item_da_ordem_de_compra INTEGER;
+  `,
 ];
 
 /** Abre o app.db (cria a pasta e o arquivo na primeira vez) e aplica as migrações que faltam. ":memory:" nos testes. */

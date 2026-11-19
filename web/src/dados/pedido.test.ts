@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
+import { SEM_ORDEM_DE_COMPRA_NO_ITEM, comOrdemDeCompra, itemDaOrdemDigitado, ordemDeCompraDigitada,
   STATUS_NA_FICHA,
   comQuantidade,
   embalagemAnterior,
@@ -52,18 +52,42 @@ describe("quantidadeDigitada", () => {
 });
 
 describe("comQuantidade", () => {
-  const itens = [{ codigo: "A", quantidade: 100 }, { codigo: "B", quantidade: 200 }];
+  const itens = [{ codigo: "A", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }, { codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
 
   it("põe o produto novo no fim do pedido, na ordem em que foi incluído", () => {
-    expect(comQuantidade(itens, "C", 50)).toEqual([...itens, { codigo: "C", quantidade: 50 }]);
+    expect(comQuantidade(itens, "C", 50)).toEqual([...itens, { codigo: "C", quantidade: 50, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }]);
   });
 
   it("muda a quantidade do produto que já está no pedido sem tirá-lo do lugar", () => {
-    expect(comQuantidade(itens, "A", 300)).toEqual([{ codigo: "A", quantidade: 300 }, { codigo: "B", quantidade: 200 }]);
+    expect(comQuantidade(itens, "A", 300)).toEqual([{ codigo: "A", quantidade: 300, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }, { codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }]);
   });
 
   it("tira do pedido o produto que zerou", () => {
-    expect(comQuantidade(itens, "A", 0)).toEqual([{ codigo: "B", quantidade: 200 }]);
+    expect(comQuantidade(itens, "A", 0)).toEqual([{ codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }]);
+  });
+});
+
+describe("ordem de compra no item", () => {
+  const itens = [{ codigo: "A", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
+  const ordem = { ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 1 };
+
+  it("guarda a ordem de compra no item e a mantém quando a quantidade muda", () => {
+    const comOrdem = comOrdemDeCompra(itens, "A", ordem);
+    expect(comQuantidade(comOrdem, "A", 300)).toEqual([{ codigo: "A", quantidade: 300, ...ordem }]);
+  });
+
+  it("trata a ordem vazia, ou igual à do pedido, como a do pedido", () => {
+    expect(ordemDeCompraDigitada("  ", "151220/ES")).toBeNull();
+    expect(ordemDeCompraDigitada(" 151220/ES ", "151220/ES")).toBeNull();
+    expect(ordemDeCompraDigitada("OC-77", "151220/ES")).toBe("OC-77");
+  });
+
+  it("aceita o item da ordem de 1 a 999999, vazio como sem item, e recusa o resto", () => {
+    expect(itemDaOrdemDigitado("12")).toBe(12);
+    expect(itemDaOrdemDigitado("")).toBeNull();
+    expect(itemDaOrdemDigitado("0")).toBeUndefined();
+    expect(itemDaOrdemDigitado("1000000")).toBeUndefined();
+    expect(itemDaOrdemDigitado("1a")).toBeUndefined();
   });
 });
 
@@ -72,17 +96,17 @@ describe("linhasEscolhidas", () => {
   const produtos = [produto("A", 90), produto("B", 120)];
 
   it("segue a ordem em que os itens entraram, e não a do catálogo", () => {
-    const linhas = linhasEscolhidas([{ codigo: "B", quantidade: 200 }, { codigo: "A", quantidade: 100 }], {}, produtos);
+    const linhas = linhasEscolhidas([{ codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }, { codigo: "A", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }], {}, produtos);
     expect(linhas.map(({ codigo, quantidade }) => [codigo, quantidade])).toEqual([["B", 200], ["A", 100]]);
   });
 
   it("usa o preço que o representante mudou e, sem mudança, o preço inicial do item", () => {
-    const linhas = linhasEscolhidas([{ codigo: "A", quantidade: 100 }, { codigo: "B", quantidade: 100 }], { A: 95.5 }, produtos);
+    const linhas = linhasEscolhidas([{ codigo: "A", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }, { codigo: "B", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }], { A: 95.5 }, produtos);
     expect(linhas.map(({ precoCento }) => precoCento)).toEqual([95.5, 120]);
   });
 
   it("deixa de fora o produto que saiu do catálogo", () => {
-    expect(linhasEscolhidas([{ codigo: "SAIU", quantidade: 100 }], {}, produtos)).toEqual([]);
+    expect(linhasEscolhidas([{ codigo: "SAIU", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }], {}, produtos)).toEqual([]);
   });
 });
 
@@ -122,20 +146,20 @@ describe("rascunhoNoCatalogo", () => {
   ];
 
   it("deixa como está o rascunho que cabe no catálogo de hoje", () => {
-    const itens = [{ codigo: "FAB1422P", quantidade: 300, precoCento: 98.4 }];
+    const itens = [{ codigo: "FAB1422P", quantidade: 300, precoCento: 98.4, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
     expect(rascunhoNoCatalogo(itens, produtos)).toEqual({ itens, foraDoCatalogo: 0, subiramAoMinimo: 0 });
   });
 
   it("tira o produto que saiu do catálogo e sobe para a tabela o preço que ficou abaixo dela", () => {
     const itens = [
-      { codigo: "FAB1422P", quantidade: 300, precoCento: 90 },
-      { codigo: "SAIU", quantidade: 100, precoCento: 50 },
-      { codigo: "MAB1216P", quantidade: 500, precoCento: 130 },
+      { codigo: "FAB1422P", quantidade: 300, precoCento: 90, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
+      { codigo: "SAIU", quantidade: 100, precoCento: 50, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
+      { codigo: "MAB1216P", quantidade: 500, precoCento: 130, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
     ];
     expect(rascunhoNoCatalogo(itens, produtos)).toEqual({
       itens: [
-        { codigo: "FAB1422P", quantidade: 300, precoCento: 95.5 },
-        { codigo: "MAB1216P", quantidade: 500, precoCento: 130 },
+        { codigo: "FAB1422P", quantidade: 300, precoCento: 95.5, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
+        { codigo: "MAB1216P", quantidade: 500, precoCento: 130, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
       ],
       foraDoCatalogo: 1,
       subiramAoMinimo: 1,

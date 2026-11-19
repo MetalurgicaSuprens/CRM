@@ -2,13 +2,13 @@ import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { SlidersHorizontal, Trash } from "lucide-react";
 import { dataDoMomento } from "dominio/datas";
-import { primeiraEntregaPossivel } from "dominio/pedido";
+import { primeiraEntregaPossivel, type OrdemDeCompraDoItem } from "dominio/pedido";
 import { CabecalhoPagina } from "../../componentes/CabecalhoPagina";
 import cartao from "../../componentes/Cartao.module.css";
 import { Voltar } from "../../componentes/Voltar";
 import { carregarPedidos, enviarPedido, excluirRascunho } from "../../dados/api";
 import { escolhasNoCatalogo, itensDoUltimoPedido, pedidoJaEnviadoHoje, problemasDasEscolhas, totaisDoPedido } from "../../dados/dadosDoPedido";
-import { comQuantidade, linhasEscolhidas, problemasDoPedido, rascunhoNoCatalogo, type ItemEscolhido } from "../../dados/pedido";
+import { comOrdemDeCompra, comQuantidade, linhasEscolhidas, problemasDoPedido, rascunhoNoCatalogo, type ItemEscolhido } from "../../dados/pedido";
 import type { CatalogoDoCliente, EscolhasDoPedido, Rascunho } from "../../dados/tipos";
 import { useCarga } from "../../dados/useCarga";
 import { formatarContagem, formatarMomento, formatarNumero } from "../../formato";
@@ -46,7 +46,9 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
   const dados = catalogo.dadosDoPedido;
   // O rascunho diante do catálogo de hoje: o produto que saiu dele fica de fora, e o preço abaixo da tabela sobe para ela.
   const [doRascunho] = useState(() => rascunhoNoCatalogo(inicial?.itens ?? [], catalogo.produtos));
-  const [itens, setItens] = useState<ItemEscolhido[]>(() => doRascunho.itens.map(({ codigo, quantidade }) => ({ codigo, quantidade })));
+  const [itens, setItens] = useState<ItemEscolhido[]>(() =>
+    doRascunho.itens.map(({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra }) => ({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra })),
+  );
   const [precos, setPrecos] = useState<Precos>(() => Object.fromEntries(doRascunho.itens.map((item) => [item.codigo, item.precoCento])));
   const [entrega, setEntrega] = useState<string | null>(inicial?.entrega ?? null);
   const [observacao, setObservacao] = useState(inicial?.observacao ?? "");
@@ -66,6 +68,7 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
 
   const alterar = useCallback((codigo: string, pecas: number) => setItens((atuais) => comQuantidade(atuais, codigo, pecas)), []);
   const alterarPreco = useCallback((codigo: string, preco: number) => setPrecos((atuais) => ({ ...atuais, [codigo]: preco })), []);
+  const alterarOrdemDeCompra = useCallback((codigo: string, ordem: OrdemDeCompraDoItem) => setItens((atuais) => comOrdemDeCompra(atuais, codigo, ordem)), []);
   const repetirUltimoPedido = () => {
     if (ultimoPedido) setItens(itensDoUltimoPedido(ultimoPedido, catalogo.produtos));
   };
@@ -143,6 +146,8 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
             aoRepetirUltimoPedido={repetirUltimoPedido}
             alterar={alterar}
             alterarPreco={alterarPreco}
+            alterarOrdemDeCompra={alterarOrdemDeCompra}
+            ordemDeCompraDoPedido={escolhas?.pedidoDoCliente ?? ""}
           >
             <AvisoDoRascunho foraDoCatalogo={doRascunho.foraDoCatalogo} subiramAoMinimo={doRascunho.subiramAoMinimo} />
           </ItensDoPedido>

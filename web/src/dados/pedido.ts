@@ -1,4 +1,12 @@
-import { DIAS_UTEIS_ATE_A_ENTREGA, LIMITE_DA_OBSERVACAO, arredondarAoCentavo, pecasEmCentos, primeiraEntregaPossivel } from "dominio/pedido";
+import {
+  DIAS_UTEIS_ATE_A_ENTREGA,
+  LIMITE_DA_OBSERVACAO,
+  MAIOR_ITEM_DA_ORDEM_DE_COMPRA,
+  arredondarAoCentavo,
+  pecasEmCentos,
+  primeiraEntregaPossivel,
+  type OrdemDeCompraDoItem,
+} from "dominio/pedido";
 import { formatarData } from "../formato";
 import type { EtapaDoPedido, ItemDoPedido, PedidoEnviado, ProdutoDoCatalogo, StatusDoPedido } from "./tipos";
 
@@ -68,8 +76,11 @@ export function quantidadeDigitada(texto: string): number {
   return Number.isFinite(pecas) && pecas > 0 ? pecas : 0;
 }
 
-/** Um produto do pedido e as peças dele, na ordem em que o representante incluiu. */
-export type ItemEscolhido = { codigo: string; quantidade: number };
+/** Um produto do pedido, as peças e a ordem de compra do cliente nele, na ordem em que o representante incluiu. */
+export type ItemEscolhido = OrdemDeCompraDoItem & { codigo: string; quantidade: number };
+
+/** O item novo: a ordem de compra é a do pedido, sem item, como o SGI6R preenche. */
+export const SEM_ORDEM_DE_COMPRA_NO_ITEM: OrdemDeCompraDoItem = { ordemDeCompra: null, itemDaOrdemDeCompra: null };
 
 /**
  * O pedido com a quantidade nova do produto: o que já está nele fica no lugar, o novo entra no fim,
@@ -77,12 +88,35 @@ export type ItemEscolhido = { codigo: string; quantidade: number };
  */
 export function comQuantidade(itens: readonly ItemEscolhido[], codigo: string, quantidade: number): ItemEscolhido[] {
   if (quantidade <= 0) return itens.filter((item) => item.codigo !== codigo);
-  if (!itens.some((item) => item.codigo === codigo)) return [...itens, { codigo, quantidade }];
-  return itens.map((item) => (item.codigo === codigo ? { codigo, quantidade } : item));
+  if (!itens.some((item) => item.codigo === codigo)) return [...itens, { codigo, quantidade, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
+  return itens.map((item) => (item.codigo === codigo ? { ...item, quantidade } : item));
+}
+
+/** O pedido com a ordem de compra nova no item do produto. */
+export function comOrdemDeCompra(itens: readonly ItemEscolhido[], codigo: string, ordem: OrdemDeCompraDoItem): ItemEscolhido[] {
+  return itens.map((item) => (item.codigo === codigo ? { ...item, ...ordem } : item));
+}
+
+/**
+ * A ordem de compra que o representante digitou no item: vazia, ou igual à do pedido, é a do pedido
+ * (null), que acompanha a do pedido se ela mudar.
+ */
+export function ordemDeCompraDigitada(texto: string, doPedido: string): string | null {
+  const limpa = texto.trim();
+  return limpa === "" || limpa === doPedido.trim() ? null : limpa;
+}
+
+/** O item da ordem de compra digitado: de 1 a 999999, como na nota fiscal. Vazio é sem item; o que não é número volta undefined, e o campo fica como estava. */
+export function itemDaOrdemDigitado(texto: string): number | null | undefined {
+  const limpo = texto.trim();
+  if (limpo === "") return null;
+  if (!/^\d{1,6}$/.test(limpo)) return undefined;
+  const item = Number(limpo);
+  return item >= 1 && item <= MAIOR_ITEM_DA_ORDEM_DE_COMPRA ? item : undefined;
 }
 
 /** Um item do pedido com tudo o que a tela mostra dele: o produto do catálogo, as peças e o preço do cento. */
-export type LinhaEscolhida = ProdutoDoCatalogo & { quantidade: number; precoCento: number };
+export type LinhaEscolhida = ProdutoDoCatalogo & OrdemDeCompraDoItem & { quantidade: number; precoCento: number };
 
 /**
  * Os itens do pedido, na ordem em que entraram, com o produto do catálogo e o preço: o que o
@@ -90,9 +124,9 @@ export type LinhaEscolhida = ProdutoDoCatalogo & { quantidade: number; precoCent
  */
 export function linhasEscolhidas(itens: readonly ItemEscolhido[], precos: Readonly<Record<string, number>>, produtos: readonly ProdutoDoCatalogo[]): LinhaEscolhida[] {
   const noCatalogo = new Map(produtos.map((produto) => [produto.codigo, produto]));
-  return itens.flatMap(({ codigo, quantidade }) => {
+  return itens.flatMap(({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra }) => {
     const produto = noCatalogo.get(codigo);
-    return produto && quantidade > 0 ? [{ ...produto, quantidade, precoCento: precos[codigo] ?? precoInicialDoItem(produto) }] : [];
+    return produto && quantidade > 0 ? [{ ...produto, quantidade, precoCento: precos[codigo] ?? precoInicialDoItem(produto), ordemDeCompra, itemDaOrdemDeCompra }] : [];
   });
 }
 

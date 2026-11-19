@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { History, PackageSearch, X } from "lucide-react";
-import { valorDaLinha } from "dominio/pedido";
+import { LIMITE_DA_ORDEM_DE_COMPRA, valorDaLinha, type OrdemDeCompraDoItem } from "dominio/pedido";
 import botoes from "../../componentes/Botao.module.css";
 import cartao from "../../componentes/Cartao.module.css";
 import { Quantidade } from "../../componentes/Quantidade";
 import { Valor } from "../../componentes/Valor";
 import { useValores } from "../../contexto/valores";
 import { valorDoIpi } from "../../dados/dadosDoPedido";
-import { precoDigitado, type LinhaEscolhida } from "../../dados/pedido";
+import { itemDaOrdemDigitado, ordemDeCompraDigitada, precoDigitado, type LinhaEscolhida } from "../../dados/pedido";
 import type { DadosDoPedido, ProdutoDoCatalogo } from "../../dados/tipos";
 import { formatarComCentavos, formatarContagem, formatarDataCurta, formatarNumero } from "../../formato";
 import { BuscaDeProduto } from "./BuscaDeProduto";
@@ -30,11 +30,14 @@ type Props = {
   aoRepetirUltimoPedido: () => void;
   alterar: (codigo: string, pecas: number) => void;
   alterarPreco: (codigo: string, preco: number) => void;
+  alterarOrdemDeCompra: (codigo: string, ordem: OrdemDeCompraDoItem) => void;
+  /** A ordem de compra do pedido (pedidoDoCliente): é a de cada item que não tem outra. */
+  ordemDeCompraDoPedido: string;
   /** Entre a busca e os itens: o aviso do rascunho que voltou diferente. */
   children?: ReactNode;
 };
 
-export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUltimoPedido, alterar, alterarPreco, children }: Props) {
+export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUltimoPedido, alterar, alterarPreco, alterarOrdemDeCompra, ordemDeCompraDoPedido, children }: Props) {
   const busca = useRef<HTMLInputElement>(null);
   const lista = useRef<HTMLUListElement>(null);
   const [recemIncluido, setRecemIncluido] = useState<string | null>(null);
@@ -98,7 +101,15 @@ export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUl
             ) : null}
           </li>
           {linhas.map((linha) => (
-            <Item key={linha.codigo} linha={linha} ipi={ipi} alterar={alterar} alterarPreco={alterarPreco} />
+            <Item
+              key={linha.codigo}
+              linha={linha}
+              ipi={ipi}
+              alterar={alterar}
+              alterarPreco={alterarPreco}
+              alterarOrdemDeCompra={alterarOrdemDeCompra}
+              ordemDeCompraDoPedido={ordemDeCompraDoPedido}
+            />
           ))}
         </ul>
       )}
@@ -106,9 +117,9 @@ export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUl
   );
 }
 
-type PropsDoItem = Pick<Props, "ipi" | "alterar" | "alterarPreco"> & { linha: LinhaEscolhida };
+type PropsDoItem = Pick<Props, "ipi" | "alterar" | "alterarPreco" | "alterarOrdemDeCompra" | "ordemDeCompraDoPedido"> & { linha: LinhaEscolhida };
 
-function Item({ linha, ipi, alterar, alterarPreco }: PropsDoItem) {
+function Item({ linha, ipi, alterar, alterarPreco, alterarOrdemDeCompra, ordemDeCompraDoPedido }: PropsDoItem) {
   const semIpi = valorDaLinha(linha);
   return (
     <li className={estilos.item} data-produto={linha.codigo}>
@@ -123,10 +134,76 @@ function Item({ linha, ipi, alterar, alterarPreco }: PropsDoItem) {
         <Valor valor={semIpi} comCentavos />
       </span>
       {ipi ? <IpiDoItem semIpi={semIpi} valor={valorDoIpi(linha, ipi)} aliquota={ipi[linha.codigo] ?? 0} /> : null}
+      <OrdemDeCompraDoItem linha={linha} doPedido={ordemDeCompraDoPedido} aoMudar={(ordem) => alterarOrdemDeCompra(linha.codigo, ordem)} />
       <button type="button" className={estilos.tirar} aria-label={`Tirar ${linha.codigo} do pedido`} title="Tirar do pedido" onClick={() => alterar(linha.codigo, 0)}>
         <X size={16} aria-hidden="true" />
       </button>
     </li>
+  );
+}
+
+/**
+ * A ordem de compra do cliente no item e o número do item nela, como o "Ordem Compra:" e o "Item O.C.:"
+ * do app antigo dos representantes: os clientes que pedem o xPed na nota fiscal querem nela o pedido
+ * deles e o item correspondente. Quase nenhum pedido usa, então fica fechado atrás de um botão pequeno;
+ * abre sozinho quando o item já tem a dele. A ordem vazia é a do pedido.
+ */
+function OrdemDeCompraDoItem({ linha, doPedido, aoMudar }: { linha: LinhaEscolhida; doPedido: string; aoMudar: (ordem: OrdemDeCompraDoItem) => void }) {
+  const [isAberta, setAberta] = useState(linha.ordemDeCompra !== null || linha.itemDaOrdemDeCompra !== null);
+  const [ordem, setOrdem] = useState(linha.ordemDeCompra ?? "");
+  const [item, setItem] = useState(linha.itemDaOrdemDeCompra?.toString() ?? "");
+  if (!isAberta) {
+    return (
+      <button type="button" className={estilos.abrirOrdem} onClick={() => setAberta(true)}>
+        O.C. do item
+      </button>
+    );
+  }
+  const confirmarOrdem = () => {
+    const nova = ordemDeCompraDigitada(ordem, doPedido);
+    setOrdem(nova ?? "");
+    aoMudar({ ordemDeCompra: nova, itemDaOrdemDeCompra: linha.itemDaOrdemDeCompra });
+  };
+  const confirmarItem = () => {
+    const novo = itemDaOrdemDigitado(item);
+    const valendo = novo === undefined ? linha.itemDaOrdemDeCompra : novo;
+    setItem(valendo?.toString() ?? "");
+    aoMudar({ ordemDeCompra: linha.ordemDeCompra, itemDaOrdemDeCompra: valendo });
+  };
+  const aoTeclar = (confirmar: () => void) => (evento: KeyboardEvent<HTMLInputElement>) => {
+    if (evento.key === "Enter") confirmar();
+  };
+  return (
+    <span className={estilos.ordem} role="group" aria-label={`Ordem de compra do cliente em ${linha.codigo}`}>
+      <span className={estilos.rotuloDaOrdem} aria-hidden="true">
+        O.C.
+      </span>
+      <input
+        className={estilos.campoDaOrdem}
+        type="text"
+        value={ordem}
+        maxLength={LIMITE_DA_ORDEM_DE_COMPRA}
+        placeholder={doPedido.trim() || "a do pedido"}
+        aria-label={`Ordem de compra de ${linha.codigo}; vazia, é a do pedido`}
+        title="Ordem de compra do cliente neste item; vazia, é a do pedido"
+        onChange={(evento) => setOrdem(evento.target.value)}
+        onBlur={confirmarOrdem}
+        onKeyDown={aoTeclar(confirmarOrdem)}
+      />
+      <input
+        className={estilos.campoDoItemDaOrdem}
+        type="text"
+        inputMode="numeric"
+        value={item}
+        maxLength={6}
+        placeholder="item"
+        aria-label={`Item da ordem de compra de ${linha.codigo}`}
+        title="Item da ordem de compra do cliente, como está no pedido dele"
+        onChange={(evento) => setItem(evento.target.value)}
+        onBlur={confirmarItem}
+        onKeyDown={aoTeclar(confirmarItem)}
+      />
+    </span>
   );
 }
 

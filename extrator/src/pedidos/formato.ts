@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isDataDeVerdade } from "dominio/datas";
 import { conteudoCanonico, type ConteudoDoPedido } from "dominio/conteudoDoPedido";
-import { LIMITE_DA_OBSERVACAO } from "dominio/pedido";
+import { LIMITE_DA_OBSERVACAO, LIMITE_DA_ORDEM_DE_COMPRA, MAIOR_ITEM_DA_ORDEM_DE_COMPRA } from "dominio/pedido";
 
 /*
  * O pedido que chegou da caixa de saída do servidor do CRM é entrada hostil (CLAUDE.md, regra 5): a
@@ -52,7 +52,7 @@ const LINHA = /^[^\u0000-\u001F\u007F]*$/;
 const OBSERVACAO = /^[^\u0000-\u0009\u000B-\u001F\u007F]*$/;
 
 const CAMPOS_DO_PEDIDO = ["versao", "numero", "enviadoEm", "usuario", "codigos", "cliente", "itens", "entrega", "observacao", "escolhas", "hash"];
-const CAMPOS_DO_ITEM = ["codigo", "quantidade", "precoCento"];
+const CAMPOS_DO_ITEM = ["codigo", "quantidade", "precoCento", "ordemDeCompra", "itemDaOrdemDeCompra"];
 const CAMPOS_DAS_ESCOLHAS = ["condicaoDePagamento", "classificacao", "pedidoDoCliente", "aceitaParcial", "transportadora"];
 const CAMPOS_DA_TRANSPORTADORA_NOVA = ["cnpj", "nome", "cidade", "uf"];
 
@@ -106,6 +106,8 @@ function conferirItens(valor: unknown): PedidoRecebido["itens"] {
       codigo: texto(campos.codigo, CODIGO_DO_PRODUTO, "código do produto"),
       quantidade: inteiro(campos.quantidade, 1, MAXIMO_DE_PECAS, "quantidade"),
       precoCento: preco(campos.precoCento),
+      ordemDeCompra: campos.ordemDeCompra === null ? null : textoLivre(campos.ordemDeCompra, LINHA, LIMITE_DA_ORDEM_DE_COMPRA, "ordem de compra do item", 1),
+      itemDaOrdemDeCompra: campos.itemDaOrdemDeCompra === null ? null : inteiro(campos.itemDaOrdemDeCompra, 1, MAIOR_ITEM_DA_ORDEM_DE_COMPRA, "item da ordem de compra"),
     };
   });
   if (new Set(itens.map(({ codigo }) => codigo)).size !== itens.length) throw new ForaDoFormato("o mesmo produto veio duas vezes");
@@ -120,7 +122,7 @@ function conferirEscolhas(valor: unknown): PedidoRecebido["escolhas"] {
   return {
     condicaoDePagamento: texto(escolhas.condicaoDePagamento, CONDICAO, "condicaoDePagamento"),
     classificacao,
-    pedidoDoCliente: textoLivre(escolhas.pedidoDoCliente, LINHA, 30, "pedidoDoCliente"),
+    pedidoDoCliente: textoLivre(escolhas.pedidoDoCliente, LINHA, LIMITE_DA_ORDEM_DE_COMPRA, "pedidoDoCliente"),
     aceitaParcial: escolhas.aceitaParcial,
     transportadora: conferirTransportadora(escolhas.transportadora),
   };

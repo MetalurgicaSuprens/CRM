@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { FastifyInstance } from "fastify";
-import { LIMITE_DA_OBSERVACAO } from "dominio/pedido";
+import { LIMITE_DA_OBSERVACAO, LIMITE_DA_ORDEM_DE_COMPRA, MAIOR_ITEM_DA_ORDEM_DE_COMPRA } from "dominio/pedido";
 import { AVISO_DE_PEDIDO_BLOQUEADO } from "dominio/statusDoCadastro";
 import { auditar } from "./auditoria.ts";
 import { enviadosNaFicha, pedidosEnviadosDoLogin } from "./envio/pedidosEnviados.ts";
@@ -66,7 +66,7 @@ const ESCOLHAS_DO_PEDIDO = {
   properties: {
     condicaoDePagamento: { type: "string", pattern: "^\\d{1,6}$" },
     classificacao: { type: "string", enum: ["comercializacao", "industrializacao", "uso_consumo"] },
-    pedidoDoCliente: LINHA_DE_TEXTO(30),
+    pedidoDoCliente: LINHA_DE_TEXTO(LIMITE_DA_ORDEM_DE_COMPRA),
     aceitaParcial: { type: "boolean" },
     transportadora: {
       anyOf: [
@@ -116,8 +116,10 @@ const CORPO_DO_RASCUNHO = {
           codigo: { type: "string", pattern: "^[A-Za-z0-9][A-Za-z0-9./-]{0,19}$" },
           quantidade: { type: "integer", minimum: 1, maximum: 10_000_000 },
           precoCento: { type: "number", exclusiveMinimum: 0, maximum: 10_000_000 },
+          ordemDeCompra: { anyOf: [{ type: "null" }, { ...LINHA_DE_TEXTO(LIMITE_DA_ORDEM_DE_COMPRA), minLength: 1 }] },
+          itemDaOrdemDeCompra: { type: ["integer", "null"], minimum: 1, maximum: MAIOR_ITEM_DA_ORDEM_DE_COMPRA },
         },
-        required: ["codigo", "quantidade", "precoCento"],
+        required: ["codigo", "quantidade", "precoCento", "ordemDeCompra", "itemDaOrdemDeCompra"],
         additionalProperties: false,
       },
     },

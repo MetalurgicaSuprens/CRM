@@ -4,7 +4,7 @@ import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { dadosDoPedidoFicticio } from "./dadosDoPedidoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
-import { STATUS_NA_FICHA, novoIdDeRascunho, precoInicialDoItem } from "./pedido";
+import { SEM_ORDEM_DE_COMPRA_NO_ITEM, STATUS_NA_FICHA, novoIdDeRascunho, precoInicialDoItem } from "./pedido";
 import { ROTULOS_DE_MERCADO } from "./rotulos";
 import type {
   CatalogoDoCliente,
@@ -225,6 +225,7 @@ function gerarExemplos(): PedidoEnviado[] {
       codigo: produto.codigo,
       quantidade: produto.embalagem * aleatorio.inteiro(2, 20),
       precoCento: precoInicialDoItem(produto),
+      ...SEM_ORDEM_DE_COMPRA_NO_ITEM,
     }));
     const enviadoEm = agora - minutosAtras * 60_000;
     const caminho = CAMINHOS[etapa];
@@ -259,7 +260,7 @@ function garantirRascunhoDeExemplo(): void {
   const itens = catalogo.produtos
     .filter((produto) => produto.jaComprou)
     .slice(0, 2)
-    .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4, precoCento: precoInicialDoItem(produto) }));
+    .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4, precoCento: precoInicialDoItem(produto), ...SEM_ORDEM_DE_COMPRA_NO_ITEM }));
   salvarRascunhoFicticio({ id: novoIdDeRascunho(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "", escolhas: null });
 }
 

@@ -61,7 +61,8 @@
     "foto produto valor tirar"
     "quantidade quantidade preco preco"
     "referencias referencias referencias referencias"
-    "ipi ipi comipi comipi";
+    "ipi ipi comipi comipi"
+    "ordem ordem ordem ordem";
   row-gap: var(--esp-2);
   padding: var(--esp-3) 0;
   border-bottom: 1px solid var(--cor-linha);
@@ -73,7 +74,8 @@
   grid-template-areas:
     "foto produto valor tirar"
     "quantidade quantidade preco preco"
-    "referencias referencias referencias referencias";
+    "referencias referencias referencias referencias"
+    "ordem ordem ordem ordem";
 }
 
 .foto {
@@ -154,6 +156,63 @@
 .tirar:hover {
   background: var(--cor-superficie-2);
   color: var(--cor-queda);
+}
+
+/*
+ * A ordem de compra do item: fechada, um link pequeno e apagado; aberta, dois campos baixos. O ".item >"
+ * ganha da regra da quantidade, que pega todo grupo filho do item.
+ */
+.abrirOrdem,
+.item > .ordem {
+  grid-area: ordem;
+  justify-self: end;
+}
+
+.abrirOrdem {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.abrirOrdem:hover {
+  color: var(--cor-texto);
+}
+
+.ordem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rotuloDaOrdem {
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+.campoDaOrdem,
+.campoDoItemDaOrdem {
+  min-width: 0;
+  height: 1.75rem;
+  padding: 0 var(--esp-2);
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  font-size: var(--tam-pequeno);
+}
+
+.campoDaOrdem {
+  width: 9rem;
+}
+
+.campoDoItemDaOrdem {
+  width: 3.75rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 /* O preço do cento, da altura e do contorno da quantidade, com o "R$" dentro */
@@ -242,7 +301,7 @@
     --tamanho-da-foto: 3.25rem;
     grid-template-areas:
       "foto produto quantidade preco valor ipi comipi tirar"
-      "foto referencias referencias referencias referencias referencias referencias referencias";
+      "foto referencias referencias referencias ordem ordem ordem ordem";
     row-gap: 4px;
     padding: var(--esp-2) var(--esp-3);
   }
@@ -250,7 +309,7 @@
   .semIpi .item {
     grid-template-areas:
       "foto produto quantidade preco valor tirar"
-      "foto referencias referencias referencias referencias referencias";
+      "foto referencias referencias ordem ordem ordem";
   }
 
   .item:hover {

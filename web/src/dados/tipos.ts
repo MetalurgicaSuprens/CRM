@@ -4,6 +4,7 @@
  * Datas são texto ISO ("2026-10-07") e meses "2026-10".
  */
 
+import type { OrdemDeCompraDoItem } from "dominio/pedido";
 import type { Projecao } from "dominio/projecao";
 import type { Mercado, OportunidadeMix, Porte, PrecisaoDoPonto, Situacao, StatusDoCadastro } from "dominio/tipos";
 
@@ -400,7 +401,7 @@ export type EscolhasDoPedido = {
   transportadora: EscolhaDaTransportadora | null;
 };
 
-export type ItemDoPedido = {
+export type ItemDoPedido = OrdemDeCompraDoItem & {
   codigo: string;
   /** Em peças. */
   quantidade: number;

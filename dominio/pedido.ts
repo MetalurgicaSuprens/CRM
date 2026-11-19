@@ -15,6 +15,21 @@ export const LIMITE_DA_OBSERVACAO = 300;
 /** A entrega desejada fica a pelo menos 5 dias úteis de hoje (pedido do Lucas em 2026-11-05). */
 export const DIAS_UTEIS_ATE_A_ENTREGA = 5;
 
+/** Caracteres da ordem de compra do cliente, no pedido (PV1_OCO) e no item (PV2_OCO). */
+export const LIMITE_DA_ORDEM_DE_COMPRA = 30;
+
+/** O maior número de item da ordem de compra: a nota fiscal eletrônica leva até 6 algarismos (nItemPed). */
+export const MAIOR_ITEM_DA_ORDEM_DE_COMPRA = 999_999;
+
+/**
+ * A ordem de compra do cliente em cada item, como no app antigo dos representantes (SGI6R, "Ordem
+ * Compra:" e "Item O.C.:" na inclusão do item). Os clientes que pedem o xPed na nota fiscal querem nela
+ * o número do pedido deles e o item correspondente.
+ * - ordemDeCompra: null é a do pedido (pedidoDoCliente), como o SGI6R preenche;
+ * - itemDaOrdemDeCompra: null é sem item, que o SGI6R grava como 0.
+ */
+export type OrdemDeCompraDoItem = { ordemDeCompra: string | null; itemDaOrdemDeCompra: number | null };
+
 /** "CRM-00106": o número que o CRM dá ao pedido enviado, que o SGI guarda para ligar o pedido dele ao do CRM. */
 export function numeroDoPedidoCrm(numero: number): string {
   return `CRM-${String(numero).padStart(5, "0")}`;

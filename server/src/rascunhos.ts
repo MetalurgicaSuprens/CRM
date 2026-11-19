@@ -164,8 +164,12 @@ function gravar(banco: DatabaseSync, sessao: Sessao, id: string, conteudo: Conte
       )
       .run(id, sessao.idDoUsuario, conteudo.codigoCliente, conteudo.entrega, conteudo.observacao, conteudo.escolhas ? JSON.stringify(conteudo.escolhas) : null, momento, momento);
     banco.prepare("DELETE FROM rascunho_itens WHERE rascunho = ?").run(id);
-    const inserir = banco.prepare("INSERT INTO rascunho_itens (rascunho, ordem, produto, quantidade, preco_cento) VALUES (?, ?, ?, ?, ?)");
-    conteudo.itens.forEach((item, i) => inserir.run(id, i + 1, item.codigo, item.quantidade, arredondarAoCentavo(item.precoCento)));
+    const inserir = banco.prepare(
+      "INSERT INTO rascunho_itens (rascunho, ordem, produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    );
+    conteudo.itens.forEach((item, i) =>
+      inserir.run(id, i + 1, item.codigo, item.quantidade, arredondarAoCentavo(item.precoCento), item.ordemDeCompra, item.itemDaOrdemDeCompra),
+    );
   });
 }
 
@@ -174,9 +178,15 @@ function montarRascunho(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao,
   if (!cliente) return null;
   const id = String(linha.id);
   const itens = banco
-    .prepare("SELECT produto, quantidade, preco_cento FROM rascunho_itens WHERE rascunho = ? ORDER BY ordem")
+    .prepare("SELECT produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra FROM rascunho_itens WHERE rascunho = ? ORDER BY ordem")
     .all(id)
-    .map((item) => ({ codigo: String(item.produto), quantidade: Number(item.quantidade), precoCento: Number(item.preco_cento) }));
+    .map((item) => ({
+      codigo: String(item.produto),
+      quantidade: Number(item.quantidade),
+      precoCento: Number(item.preco_cento),
+      ordemDeCompra: item.ordem_de_compra === null ? null : String(item.ordem_de_compra),
+      itemDaOrdemDeCompra: item.item_da_ordem_de_compra === null ? null : Number(item.item_da_ordem_de_compra),
+    }));
   return {
     id,
     cliente,
