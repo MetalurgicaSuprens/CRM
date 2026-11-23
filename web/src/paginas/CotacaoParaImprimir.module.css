@@ -129,10 +129,12 @@
     display: none;
   }
 
+  /* A margem da primeira página fica dentro da folha: a página mesmo não tem margem (@page :first, abaixo) */
   .folha {
     max-width: none;
-    padding: 0;
+    padding: 12mm 14mm;
     border: 0;
+    border-radius: 0;
     overflow: visible;
   }
 
@@ -141,7 +143,16 @@
   }
 }
 
+/*
+ * Sem margem na primeira página, o navegador não tem onde pôr o cabeçalho e o rodapé dele (endereço,
+ * data e título) e não os põe em nenhuma página, como explica o Chrome (developer.chrome.com/blog/print-margins).
+ * As páginas seguintes, de cotação longa, têm margem normal.
+ */
 @page {
   size: A4;
-  margin: 14mm;
+  margin: 12mm 14mm;
+}
+
+@page :first {
+  margin: 0;
 }

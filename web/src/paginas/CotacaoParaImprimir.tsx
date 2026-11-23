@@ -74,6 +74,7 @@ type PropsDaFolha = { cotacao: Cotacao; catalogo: CatalogoDoCliente; representan
 function Folha({ cotacao, catalogo, representante, hoje }: PropsDaFolha) {
   const dados = catalogo.dadosDoPedido;
   const emitidaEm = dataDoMomento(cotacao.atualizadoEm);
+  useTituloDoArquivo(`Cotação Suprens - ${catalogo.cliente.nome} - ${formatarData(emitidaEm).replaceAll("/", "-")}`);
   return (
     <article className={estilos.folha} aria-label="Cotação para imprimir">
       <header className={estilos.topo}>
@@ -112,6 +113,20 @@ function Folha({ cotacao, catalogo, representante, hoje }: PropsDaFolha) {
       <footer className={estilos.rodape}>Representante: {representante}</footer>
     </article>
   );
+}
+
+/**
+ * O título da página enquanto a folha está aberta: é o nome que o "Salvar como PDF" sugere para o arquivo.
+ * Ao sair, volta o de antes.
+ */
+function useTituloDoArquivo(titulo: string): void {
+  useEffect(() => {
+    const anterior = document.title;
+    document.title = titulo;
+    return () => {
+      document.title = anterior;
+    };
+  }, [titulo]);
 }
 
 function ItensDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: CatalogoDoCliente }) {
