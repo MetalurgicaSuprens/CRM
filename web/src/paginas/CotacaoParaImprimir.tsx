@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
-import { ListOrdered, Package, Percent, Printer, Weight, type LucideIcon } from "lucide-react";
+import { ListOrdered, Package, Printer, Weight, type LucideIcon } from "lucide-react";
 import { dataDoMomento, horaDoMomento, somarDias } from "dominio/datas";
 import { primeiraEntregaPossivel, valorDaLinha } from "dominio/pedido";
 import botoes from "../componentes/Botao.module.css";
@@ -291,9 +291,7 @@ function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: Retur
         <Total rotulo="Valor s/ IPI">{formatarReaisComCentavos(totais.semIpi)}</Total>
         {totais.ipi !== null && totais.comIpi !== null ? (
           <>
-            <Total rotulo="IPI" Icone={Percent}>
-              {formatarReaisComCentavos(totais.ipi)}
-            </Total>
+            <Total rotulo="IPI">{formatarReaisComCentavos(totais.ipi)}</Total>
             <Total rotulo="Valor total c/ IPI" isDestaque>
               {formatarReaisComCentavos(totais.comIpi)}
             </Total>
@@ -307,8 +305,8 @@ function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: Retur
 type PropsDoTotal = { rotulo: string; Icone?: LucideIcon; isDestaque?: boolean; children: ReactNode };
 
 /**
- * Uma linha dos totais: o nome à esquerda e o número à direita. O ícone pequeno, só nas quantidades e no
- * IPI (escolha do Lucas em 2026-11-23): nos valores em reais, a coluna fica limpa, como numa nota.
+ * Uma linha dos totais: o nome à esquerda e o número à direita. O ícone pequeno, só nas quantidades
+ * (escolha do Lucas em 2026-11-23): nos valores em reais, a coluna fica limpa, como numa nota.
  */
 function Total({ rotulo, Icone, isDestaque = false, children }: PropsDoTotal) {
   return (
