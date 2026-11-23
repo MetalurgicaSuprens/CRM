@@ -523,7 +523,8 @@ export type Foto = {
   }[];
   /**
    * Quantos pedidos do cliente nos 24 meses usaram cada escolha: `tipo` é transportadora (o código),
-   * condicao (o código), classificacao (comercializacao, industrializacao, uso_consumo) ou parcial (sim, nao).
+   * condicao (o código), classificacao (comercializacao, industrializacao, uso_consumo), parcial (sim, nao) ou
+   * xped (sim, nao: se algum item levou o item da ordem de compra do cliente).
    */
   cliente_escolha: { cliente: string; tipo: string; valor: string; pedidos: number }[];
   /** Os itens do último pedido do cliente, na ordem dele, em peças: o "repetir o último pedido". */

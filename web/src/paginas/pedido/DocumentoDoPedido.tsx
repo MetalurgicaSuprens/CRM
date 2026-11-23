@@ -8,7 +8,7 @@ import cartao from "../../componentes/Cartao.module.css";
 import { Voltar } from "../../componentes/Voltar";
 import { carregarPedidos, enviarPedido, excluirRascunho } from "../../dados/api";
 import { escolhasNoCatalogo, itensDoUltimoPedido, pedidoJaEnviadoHoje, problemasDasEscolhas, totaisDoPedido } from "../../dados/dadosDoPedido";
-import { comOrdemDeCompra, comQuantidade, linhasEscolhidas, problemasDoPedido, rascunhoNoCatalogo, type ItemEscolhido } from "../../dados/pedido";
+import { comMarcaXped, comNumeracao, comOrdemDeCompra, comQuantidade, isNumeracaoAutomatica, linhasEscolhidas, moverItem, numerarItens, problemasDoPedido, rascunhoNoCatalogo, type ItemEscolhido } from "../../dados/pedido";
 import type { CatalogoDoCliente, EscolhasDoPedido, Rascunho } from "../../dados/tipos";
 import { useCarga } from "../../dados/useCarga";
 import { formatarContagem, formatarMomento, formatarNumero } from "../../formato";
@@ -66,11 +66,20 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
   const paraRevisar: PedidoParaRevisar = { cliente: catalogo.cliente.nome, totais, entrega: entrega ?? primeiraEntrega, isProgramada: entrega !== null, dados, escolhas };
   const ultimoPedido = dados?.ultimoPedido ?? null;
 
-  const alterar = useCallback((codigo: string, pecas: number) => setItens((atuais) => comQuantidade(atuais, codigo, pecas)), []);
+  const isXped = escolhas?.clienteXped ?? false;
+  /** Incluir, tirar e mover passam por aqui: no pedido xPed, o item da ordem de compra acompanha a ordem. */
+  const mudarItens = useCallback((mudar: (atuais: ItemEscolhido[]) => ItemEscolhido[]) => setItens((atuais) => comNumeracao(atuais, mudar(atuais), isXped)), [isXped]);
+  const alterar = useCallback((codigo: string, pecas: number) => mudarItens((atuais) => comQuantidade(atuais, codigo, pecas)), [mudarItens]);
+  const mover = useCallback((codigo: string, destino: number) => mudarItens((atuais) => moverItem(atuais, codigo, destino)), [mudarItens]);
+  const renumerar = useCallback(() => setItens(numerarItens), []);
+  const mudarEscolhas = (novas: EscolhasDoPedido) => {
+    if (novas.clienteXped !== isXped) setItens((atuais) => comMarcaXped(atuais, novas.clienteXped));
+    setEscolhas(novas);
+  };
   const alterarPreco = useCallback((codigo: string, preco: number) => setPrecos((atuais) => ({ ...atuais, [codigo]: preco })), []);
   const alterarOrdemDeCompra = useCallback((codigo: string, ordem: OrdemDeCompraDoItem) => setItens((atuais) => comOrdemDeCompra(atuais, codigo, ordem)), []);
   const repetirUltimoPedido = () => {
-    if (ultimoPedido) setItens(itensDoUltimoPedido(ultimoPedido, catalogo.produtos));
+    if (ultimoPedido) mudarItens(() => itensDoUltimoPedido(ultimoPedido, catalogo.produtos));
   };
 
   /** A etapa vai para o endereço como uma página nova: o voltar do navegador volta uma etapa. */
@@ -128,7 +137,7 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
           <CondicoesDoPedido
             dados={dados}
             escolhas={escolhas}
-            aoMudarEscolhas={setEscolhas}
+            aoMudarEscolhas={mudarEscolhas}
             entrega={entrega}
             aoMudarEntrega={setEntrega}
             primeiraEntrega={primeiraEntrega}
@@ -147,7 +156,9 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
             alterar={alterar}
             alterarPreco={alterarPreco}
             alterarOrdemDeCompra={alterarOrdemDeCompra}
+            mover={mover}
             ordemDeCompraDoPedido={escolhas?.pedidoDoCliente ?? ""}
+            aoRenumerar={isXped && !isNumeracaoAutomatica(itens) ? renumerar : null}
           >
             <AvisoDoRascunho foraDoCatalogo={doRascunho.foraDoCatalogo} subiramAoMinimo={doRascunho.subiramAoMinimo} />
           </ItensDoPedido>

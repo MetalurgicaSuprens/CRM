@@ -46,18 +46,20 @@ describe("formatarTelefone", () => {
 describe("somarEscolhas", () => {
   it("soma os pedidos de cada escolha, com os nomes do CRM, e deixa de fora o cliente fora da carteira", () => {
     const escolhas = [
-      { chave: "2/10", transportadora: "101", condicao: "1002", classificacao: "COMERCIALIZACAO", freteParcial: "NAO ACEITA FRETE PARCIAL", pedidos: 8 },
-      { chave: "2/10", transportadora: "101", condicao: "1010", classificacao: "USO/CONSUMO", freteParcial: "ACEITA FRETE PARCIAL", pedidos: 2 },
-      { chave: "2/99", transportadora: "555", condicao: "1002", classificacao: "COMERCIALIZACAO", freteParcial: null, pedidos: 5 },
+      { chave: "2/10", transportadora: "101", condicao: "1002", classificacao: "COMERCIALIZACAO", freteParcial: "NAO ACEITA FRETE PARCIAL", isComItemDaOrdemDeCompra: true, pedidos: 8 },
+      { chave: "2/10", transportadora: "101", condicao: "1010", classificacao: "USO/CONSUMO", freteParcial: "ACEITA FRETE PARCIAL", isComItemDaOrdemDeCompra: false, pedidos: 2 },
+      { chave: "2/99", transportadora: "555", condicao: "1002", classificacao: "COMERCIALIZACAO", freteParcial: null, isComItemDaOrdemDeCompra: false, pedidos: 5 },
     ];
     expect(somarEscolhas(escolhas, ID)).toEqual([
       { cliente: "id-do-10", tipo: "transportadora", valor: "101", pedidos: 10 },
       { cliente: "id-do-10", tipo: "condicao", valor: "1002", pedidos: 8 },
       { cliente: "id-do-10", tipo: "classificacao", valor: "comercializacao", pedidos: 8 },
       { cliente: "id-do-10", tipo: "parcial", valor: "nao", pedidos: 8 },
+      { cliente: "id-do-10", tipo: "xped", valor: "sim", pedidos: 8 },
       { cliente: "id-do-10", tipo: "condicao", valor: "1010", pedidos: 2 },
       { cliente: "id-do-10", tipo: "classificacao", valor: "uso_consumo", pedidos: 2 },
       { cliente: "id-do-10", tipo: "parcial", valor: "sim", pedidos: 2 },
+      { cliente: "id-do-10", tipo: "xped", valor: "nao", pedidos: 2 },
     ]);
   });
 });

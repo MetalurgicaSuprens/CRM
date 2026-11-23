@@ -92,6 +92,42 @@ export function comQuantidade(itens: readonly ItemEscolhido[], codigo: string, q
   return itens.map((item) => (item.codigo === codigo ? { ...item, quantidade } : item));
 }
 
+/** O pedido com o item do produto levado para a posição `destino` (0 é o primeiro); os outros andam uma casa. */
+export function moverItem(itens: readonly ItemEscolhido[], codigo: string, destino: number): ItemEscolhido[] {
+  const origem = itens.findIndex((item) => item.codigo === codigo);
+  if (origem < 0) return [...itens];
+  const restantes = itens.filter((_, i) => i !== origem);
+  const posicao = Math.max(0, Math.min(destino, restantes.length));
+  return [...restantes.slice(0, posicao), itens[origem]!, ...restantes.slice(posicao)];
+}
+
+/** O item da ordem de compra de 1 a N, na ordem em que os itens estão: o cliente xPed costuma numerar assim (83% dos pedidos). */
+export function numerarItens(itens: readonly ItemEscolhido[]): ItemEscolhido[] {
+  return itens.map((item, i) => ({ ...item, itemDaOrdemDeCompra: i + 1 }));
+}
+
+/**
+ * A numeração ainda é a automática: cada item é a posição dele, ou está vazio (o que acabou de entrar).
+ * O número que o representante digitou diferente da posição a desliga, até ele pedir "Renumerar".
+ */
+export function isNumeracaoAutomatica(itens: readonly ItemEscolhido[]): boolean {
+  return itens.every((item, i) => item.itemDaOrdemDeCompra === null || item.itemDaOrdemDeCompra === i + 1);
+}
+
+/**
+ * Os itens depois de uma mudança (incluir, tirar, mover): no pedido xPed com a numeração automática, o
+ * item da ordem de compra acompanha a nova ordem.
+ */
+export function comNumeracao(antes: readonly ItemEscolhido[], depois: ItemEscolhido[], isXped: boolean): ItemEscolhido[] {
+  return isXped && isNumeracaoAutomatica(antes) ? numerarItens(depois) : depois;
+}
+
+/** Ao marcar o cliente xPed, numera de 1 a N se ainda não há número digitado; ao desmarcar, apaga a numeração automática. */
+export function comMarcaXped(itens: readonly ItemEscolhido[], isXped: boolean): ItemEscolhido[] {
+  if (!isNumeracaoAutomatica(itens)) return [...itens];
+  return isXped ? numerarItens(itens) : itens.map((item) => ({ ...item, itemDaOrdemDeCompra: null }));
+}
+
 /** O pedido com a ordem de compra nova no item do produto. */
 export function comOrdemDeCompra(itens: readonly ItemEscolhido[], codigo: string, ordem: OrdemDeCompraDoItem): ItemEscolhido[] {
   return itens.map((item) => (item.codigo === codigo ? { ...item, ...ordem } : item));

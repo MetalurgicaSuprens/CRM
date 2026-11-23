@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SEM_ORDEM_DE_COMPRA_NO_ITEM, comOrdemDeCompra, itemDaOrdemDigitado, ordemDeCompraDigitada,
+import { SEM_ORDEM_DE_COMPRA_NO_ITEM, comMarcaXped, comNumeracao, comOrdemDeCompra, isNumeracaoAutomatica, moverItem, numerarItens, itemDaOrdemDigitado, ordemDeCompraDigitada,
   STATUS_NA_FICHA,
   comQuantidade,
   embalagemAnterior,
@@ -64,6 +64,49 @@ describe("comQuantidade", () => {
 
   it("tira do pedido o produto que zerou", () => {
     expect(comQuantidade(itens, "A", 0)).toEqual([{ codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }]);
+  });
+});
+
+describe("ordem dos itens e numeração xPed", () => {
+  const item = (codigo: string, itemDaOrdemDeCompra: number | null = null) => ({ codigo, quantidade: 100, ordemDeCompra: null, itemDaOrdemDeCompra });
+  const codigos = (itens: readonly { codigo: string }[]) => itens.map(({ codigo }) => codigo);
+  const numeros = (itens: readonly { itemDaOrdemDeCompra: number | null }[]) => itens.map(({ itemDaOrdemDeCompra }) => itemDaOrdemDeCompra);
+
+  it("leva o item para a posição pedida, e os outros andam uma casa", () => {
+    const itens = ["A", "B", "C", "D"].map((codigo) => item(codigo));
+    expect(codigos(moverItem(itens, "D", 0))).toEqual(["D", "A", "B", "C"]);
+    expect(codigos(moverItem(itens, "A", 2))).toEqual(["B", "C", "A", "D"]);
+    expect(codigos(moverItem(itens, "B", 99))).toEqual(["A", "C", "D", "B"]);
+  });
+
+  it("no pedido xPed, renumera de 1 a N quando o item muda de lugar", () => {
+    const itens = numerarItens(["A", "B", "C"].map((codigo) => item(codigo)));
+    const movidos = comNumeracao(itens, moverItem(itens, "C", 0), true);
+    expect(codigos(movidos)).toEqual(["C", "A", "B"]);
+    expect(numeros(movidos)).toEqual([1, 2, 3]);
+  });
+
+  it("numera o item que acaba de entrar", () => {
+    const itens = numerarItens([item("A")]);
+    expect(numeros(comNumeracao(itens, [...itens, item("B")], true))).toEqual([1, 2]);
+  });
+
+  it("para de renumerar depois que o representante digita outro número", () => {
+    const itens = [item("A", 10), item("B", 20)];
+    expect(isNumeracaoAutomatica(itens)).toBe(false);
+    expect(numeros(comNumeracao(itens, moverItem(itens, "B", 0), true))).toEqual([20, 10]);
+  });
+
+  it("não numera o pedido que não é xPed", () => {
+    const itens = [item("A"), item("B")];
+    expect(numeros(comNumeracao(itens, moverItem(itens, "B", 0), false))).toEqual([null, null]);
+  });
+
+  it("ao marcar xPed, numera; ao desmarcar, apaga só a numeração automática", () => {
+    const itens = [item("A"), item("B")];
+    expect(numeros(comMarcaXped(itens, true))).toEqual([1, 2]);
+    expect(numeros(comMarcaXped(numerarItens(itens), false))).toEqual([null, null]);
+    expect(numeros(comMarcaXped([item("A", 10)], false))).toEqual([10]);
   });
 });
 

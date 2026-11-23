@@ -49,6 +49,7 @@ export function dadosDoPedidoFicticio(cliente: ClienteDoCadastro, produtos: read
     condicoesUsadas: comHistorico ? usosDe(aleatorio, [condicaoDoCadastro, aleatorio.escolher(CONDICOES).codigo]) : [],
     classificacoesUsadas: comHistorico ? classificacoesFicticias(aleatorio) : [],
     parcialUsado: comHistorico ? parcialFicticio(aleatorio) : { aceita: 0, naoAceita: 0 },
+    xpedUsado: comHistorico && aleatorio.chance(0.15) ? { com: aleatorio.inteiro(8, 30), sem: aleatorio.inteiro(0, 3) } : { com: 0, sem: 0 },
     transportadoras,
     transportadorasDoCliente: comHistorico ? usosDe(aleatorio, sortearCodigos(aleatorio, transportadoras, aleatorio.inteiro(1, 3))) : [],
     transportadorasDoRepresentante: [

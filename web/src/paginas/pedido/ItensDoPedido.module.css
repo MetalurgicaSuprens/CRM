@@ -43,9 +43,10 @@
 }
 
 /*
- * No celular, cada item é um bloco de quatro linhas: a foto da família, o produto, o valor e o X; a
- * quantidade e o preço do cento; de onde o preço vem; o IPI e o valor com IPI. Com lugar (50 rem), vira
- * uma linha de tabela embaixo dos títulos das colunas, como a grade do app antigo, com a foto na frente.
+ * No celular, cada item é um bloco: a foto da família, o produto, o valor e o X; a quantidade e o preço
+ * do cento; o aviso do preço, quando há; o IPI e o valor com IPI; as setas da ordem, a ordem de compra e o item
+ * dela. Com lugar (62 rem), vira uma linha de tabela embaixo dos títulos das colunas, como a grade do app
+ * antigo: a alça de arrastar, a foto, o produto, a ordem de compra e o item dela, e os números.
  */
 .item,
 .titulos {
@@ -62,7 +63,7 @@
     "quantidade quantidade preco preco"
     "referencias referencias referencias referencias"
     "ipi ipi comipi comipi"
-    "ordem ordem ordem ordem";
+    "mover ordem itemoc itemoc";
   row-gap: var(--esp-2);
   padding: var(--esp-3) 0;
   border-bottom: 1px solid var(--cor-linha);
@@ -75,7 +76,7 @@
     "foto produto valor tirar"
     "quantidade quantidade preco preco"
     "referencias referencias referencias referencias"
-    "ordem ordem ordem ordem";
+    "mover ordem itemoc itemoc";
 }
 
 .foto {
@@ -158,46 +159,32 @@
   color: var(--cor-queda);
 }
 
-/*
- * A ordem de compra do item: fechada, um link pequeno e apagado; aberta, dois campos baixos. O ".item >"
- * ganha da regra da quantidade, que pega todo grupo filho do item.
- */
-.abrirOrdem,
-.item > .ordem {
-  grid-area: ordem;
-  justify-self: end;
-}
-
-.abrirOrdem {
-  padding: 2px 0;
-  border: 0;
-  background: none;
-  font-size: var(--tam-legenda);
-  color: var(--cor-texto-suave);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.abrirOrdem:hover {
-  color: var(--cor-texto);
-}
-
+/* A ordem de compra do cliente e o item dela: no celular, com o nome em cima; na tabela, só o campo */
 .ordem {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
+  grid-area: ordem;
 }
 
-.rotuloDaOrdem {
+/* No celular, a coluna do item da O.C. é a do valor: o campo pede a largura dele */
+.itemDaOrdem {
+  grid-area: itemoc;
+  width: 4.5rem;
+  white-space: nowrap;
+}
+
+.ordem,
+.itemDaOrdem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
   font-size: var(--tam-legenda);
-  color: var(--cor-texto-suave);
 }
 
 .campoDaOrdem,
 .campoDoItemDaOrdem {
+  width: 100%;
   min-width: 0;
-  height: 1.75rem;
+  height: 2.25rem;
   padding: 0 var(--esp-2);
   border: 1px solid var(--cor-linha-forte);
   border-radius: var(--raio-pequeno);
@@ -205,14 +192,77 @@
   font-size: var(--tam-pequeno);
 }
 
-.campoDaOrdem {
-  width: 9rem;
+.campoDaOrdem:focus-visible,
+.campoDoItemDaOrdem:focus-visible {
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
+  outline: none;
 }
 
 .campoDoItemDaOrdem {
-  width: 3.75rem;
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+/* A ordem dos itens: no celular, as setas; na tabela, a alça de arrastar (que também anda pelas setas do teclado) */
+.mover {
+  grid-area: mover;
+  display: flex;
+  align-items: flex-end;
+  align-self: end;
+  gap: 2px;
+}
+
+.alca,
+.seta {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: none;
+  color: var(--cor-texto-suave);
+}
+
+.alca {
+  display: none;
+  width: 1.25rem;
+  height: 2.25rem;
+  cursor: grab;
+}
+
+.seta {
+  width: 1.25rem;
+  height: 2.25rem;
+}
+
+.alca:hover,
+.seta:hover:not(:disabled) {
+  background: var(--cor-superficie-2);
+  color: var(--cor-texto);
+}
+
+.seta:disabled {
+  opacity: 0.3;
+}
+
+/* O item arrastado fica apagado; o item sob ele ganha a linha de onde ele vai entrar */
+.arrastado {
+  opacity: 0.4;
+}
+
+.alvo {
+  box-shadow: inset 0 2px 0 var(--cor-acento);
+}
+
+.avisoDaNumeracao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--esp-2) var(--esp-3);
+  margin: var(--esp-3) 0;
+  font-size: var(--tam-pequeno);
+  color: var(--cor-alerta);
 }
 
 /* O preço do cento, da altura e do contorno da quantidade, com o "R$" dentro */
@@ -263,8 +313,7 @@
   color: var(--cor-texto-suave);
 }
 
-/* De onde o preço vem, em cinza: o verde do dinheiro fica no valor do item */
-.referencias,
+/* O aviso do preço que subiu ao mínimo, embaixo do produto */
 .avisoDoPreco {
   grid-area: referencias;
   min-width: 0;
@@ -274,42 +323,53 @@
   white-space: nowrap;
 }
 
-.referencias,
-.referencias span {
-  color: var(--cor-texto-suave);
-}
-
 .avisoDoPreco {
   color: var(--cor-alerta);
   font-weight: 500;
 }
 
-@container (min-width: 50rem) {
+@container (min-width: 62rem) {
   .item,
   .titulos {
-    grid-template-columns: 3.25rem minmax(0, 1fr) 8.5rem 7.5rem 7rem 6rem 7rem 28px;
-    column-gap: var(--esp-3);
+    grid-template-columns: 1.25rem 3.25rem minmax(0, 1fr) 6.5rem 3.5rem 8.5rem 6.5rem 6rem 5rem 6rem 28px;
+    column-gap: var(--esp-2);
   }
 
   .semIpi .item,
   .semIpi .titulos {
-    grid-template-columns: 3.25rem minmax(0, 1fr) 8.5rem 7.5rem 7rem 28px;
+    grid-template-columns: 1.25rem 3.25rem minmax(0, 1fr) 6.5rem 3.5rem 8.5rem 6.5rem 6rem 28px;
   }
 
-  /* A foto ocupa as duas linhas do item, ao lado do produto e de onde o preço vem */
+  /* A alça e a foto ocupam as duas linhas do item, ao lado do produto e do aviso do preço */
   .item {
     --tamanho-da-foto: 3.25rem;
     grid-template-areas:
-      "foto produto quantidade preco valor ipi comipi tirar"
-      "foto referencias referencias referencias ordem ordem ordem ordem";
+      "mover foto produto ordem itemoc quantidade preco valor ipi comipi tirar"
+      "mover foto referencias referencias referencias referencias referencias referencias referencias referencias referencias";
     row-gap: 4px;
-    padding: var(--esp-2) var(--esp-3);
+    padding: var(--esp-2) var(--esp-2) var(--esp-2) 0;
   }
 
   .semIpi .item {
     grid-template-areas:
-      "foto produto quantidade preco valor tirar"
-      "foto referencias referencias ordem ordem ordem";
+      "mover foto produto ordem itemoc quantidade preco valor tirar"
+      "mover foto referencias referencias referencias referencias referencias referencias referencias";
+  }
+
+  .mover {
+    align-self: center;
+  }
+
+  .itemDaOrdem {
+    width: auto;
+  }
+
+  .alca {
+    display: grid;
+  }
+
+  .seta {
+    display: none;
   }
 
   .item:hover {
@@ -342,8 +402,8 @@
   /* A faixa grafite do título das colunas, como nas outras tabelas (tokens --fundo-do-cabecalho) */
   .titulos {
     display: grid;
-    grid-template-areas: "foto produto quantidade preco valor ipi comipi tirar";
-    padding: var(--esp-2) var(--esp-3);
+    grid-template-areas: "mover foto produto ordem itemoc quantidade preco valor ipi comipi tirar";
+    padding: var(--esp-2) var(--esp-2) var(--esp-2) 0;
     border-radius: var(--raio-pequeno);
     background: var(--fundo-do-cabecalho);
     color: var(--texto-do-cabecalho);
@@ -354,11 +414,20 @@
   }
 
   .semIpi .titulos {
-    grid-template-areas: "foto produto quantidade preco valor tirar";
+    grid-template-areas: "mover foto produto ordem itemoc quantidade preco valor tirar";
   }
 
   .tituloDoProduto {
     grid-area: produto;
+  }
+
+  .tituloDaOrdem {
+    grid-area: ordem;
+  }
+
+  .tituloDoItemDaOrdem {
+    grid-area: itemoc;
+    text-align: right;
   }
 
   .tituloDaQuantidade {

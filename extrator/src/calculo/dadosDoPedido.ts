@@ -115,6 +115,7 @@ export function somarEscolhas(escolhas: readonly EscolhasDoErp[], idNaCarteira: 
     somar(id, "condicao", escolha.condicao, escolha.pedidos);
     somar(id, "classificacao", CLASSIFICACOES[escolha.classificacao ?? ""], escolha.pedidos);
     somar(id, "parcial", FRETE_PARCIAL[escolha.freteParcial ?? ""], escolha.pedidos);
+    somar(id, "xped", escolha.isComItemDaOrdemDeCompra ? "sim" : "nao", escolha.pedidos);
   }
   return [...soma.values()];
 }

@@ -53,7 +53,7 @@ const OBSERVACAO = /^[^\u0000-\u0009\u000B-\u001F\u007F]*$/;
 
 const CAMPOS_DO_PEDIDO = ["versao", "numero", "enviadoEm", "usuario", "codigos", "cliente", "itens", "entrega", "observacao", "escolhas", "hash"];
 const CAMPOS_DO_ITEM = ["codigo", "quantidade", "precoCento", "ordemDeCompra", "itemDaOrdemDeCompra"];
-const CAMPOS_DAS_ESCOLHAS = ["condicaoDePagamento", "classificacao", "pedidoDoCliente", "aceitaParcial", "transportadora"];
+const CAMPOS_DAS_ESCOLHAS = ["condicaoDePagamento", "classificacao", "pedidoDoCliente", "aceitaParcial", "clienteXped", "transportadora"];
 const CAMPOS_DA_TRANSPORTADORA_NOVA = ["cnpj", "nome", "cidade", "uf"];
 
 class ForaDoFormato extends Error {}
@@ -117,6 +117,7 @@ function conferirItens(valor: unknown): PedidoRecebido["itens"] {
 function conferirEscolhas(valor: unknown): PedidoRecebido["escolhas"] {
   const escolhas = objeto(valor, CAMPOS_DAS_ESCOLHAS, "escolhas");
   if (typeof escolhas.aceitaParcial !== "boolean") throw new ForaDoFormato("aceitaParcial fora do formato");
+  if (typeof escolhas.clienteXped !== "boolean") throw new ForaDoFormato("clienteXped fora do formato");
   const classificacao = texto(escolhas.classificacao, LINHA, "classificacao");
   if (!CLASSIFICACOES.has(classificacao)) throw new ForaDoFormato(`classificação desconhecida: ${classificacao}`);
   return {
@@ -124,6 +125,7 @@ function conferirEscolhas(valor: unknown): PedidoRecebido["escolhas"] {
     classificacao,
     pedidoDoCliente: textoLivre(escolhas.pedidoDoCliente, LINHA, LIMITE_DA_ORDEM_DE_COMPRA, "pedidoDoCliente"),
     aceitaParcial: escolhas.aceitaParcial,
+    clienteXped: escolhas.clienteXped,
     transportadora: conferirTransportadora(escolhas.transportadora),
   };
 }

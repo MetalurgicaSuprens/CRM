@@ -21,18 +21,19 @@ export type ConteudoDoPedido = {
     classificacao: string;
     pedidoDoCliente: string;
     aceitaParcial: boolean;
+    clienteXped: boolean;
     transportadora: TransportadoraDoPedido;
   };
 };
 
 export function conteudoCanonico({ cliente, itens, entrega, observacao, escolhas }: ConteudoDoPedido): string {
-  const { condicaoDePagamento, classificacao, pedidoDoCliente, aceitaParcial, transportadora } = escolhas;
+  const { condicaoDePagamento, classificacao, pedidoDoCliente, aceitaParcial, clienteXped, transportadora } = escolhas;
   return JSON.stringify({
     cliente,
     itens: itens.map(({ codigo, quantidade, precoCento, ordemDeCompra, itemDaOrdemDeCompra }) => ({ codigo, quantidade, precoCento, ordemDeCompra, itemDaOrdemDeCompra })),
     entrega,
     observacao,
-    escolhas: { condicaoDePagamento, classificacao, pedidoDoCliente, aceitaParcial, transportadora: transportadoraEmOrdem(transportadora) },
+    escolhas: { condicaoDePagamento, classificacao, pedidoDoCliente, aceitaParcial, clienteXped, transportadora: transportadoraEmOrdem(transportadora) },
   });
 }
 

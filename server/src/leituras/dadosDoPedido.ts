@@ -25,6 +25,7 @@ export function lerDadosDoPedido(db: DatabaseSync, sessao: Sessao, cliente: Clie
   const escolhas = escolhasDoCliente(db, cliente.codigo);
   const condicoesUsadas = escolhas("condicao");
   const parcial = escolhas("parcial");
+  const xped = escolhas("xped");
   return {
     cadastro: montarCadastro(db, cliente, cadastro),
     condicaoDoCadastro: textoOuNulo(cadastro, "condicao_pagamento") ?? condicoesUsadas[0]?.valor ?? "",
@@ -35,6 +36,7 @@ export function lerDadosDoPedido(db: DatabaseSync, sessao: Sessao, cliente: Clie
     condicoesUsadas,
     classificacoesUsadas: escolhas("classificacao") as Uso<Classificacao>[],
     parcialUsado: { aceita: parcial.find((uso) => uso.valor === "sim")?.pedidos ?? 0, naoAceita: parcial.find((uso) => uso.valor === "nao")?.pedidos ?? 0 },
+    xpedUsado: { com: xped.find((uso) => uso.valor === "sim")?.pedidos ?? 0, sem: xped.find((uso) => uso.valor === "nao")?.pedidos ?? 0 },
     transportadoras: lerLinhas(db, "SELECT codigo, nome, cnpj, cidade, uf FROM transportadora ORDER BY nome").map((linha) => ({
       codigo: texto(linha, "codigo"),
       nome: texto(linha, "nome"),

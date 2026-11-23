@@ -247,6 +247,8 @@ export type EscolhasDoErp = {
   classificacao: string | null;
   /** ACEITA FRETE PARCIAL ou NAO ACEITA FRETE PARCIAL (PV1_TFR). */
   freteParcial: string | null;
+  /** Algum item levou o item da ordem de compra do cliente (PV2_IOC > 0): o cliente que exige o xPed na nota. */
+  isComItemDaOrdemDeCompra: boolean;
   pedidos: number;
 };
 

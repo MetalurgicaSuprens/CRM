@@ -17,7 +17,7 @@ import type { PedidoParaOErp } from "./caixaDeSaida.ts";
 const ORIGEM = "http://localhost:5175";
 const RASCUNHO = "3f1c2b8e-5d4a-4c6b-9e7f-0a1b2c3d4e5f";
 const OUTRO_RASCUNHO = "7c6d5e4f-3a2b-4c1d-8e9f-0a1b2c3d4e5f";
-const ESCOLHAS = { condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "OC 4512", aceitaParcial: true, transportadora: { codigo: "101" } };
+const ESCOLHAS = { condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "OC 4512", aceitaParcial: true, clienteXped: false, transportadora: { codigo: "101" } };
 
 let pastas: PastasDeTeste;
 let foto: FotoAtual;

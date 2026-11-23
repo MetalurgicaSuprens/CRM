@@ -377,6 +377,8 @@ export type DadosDoPedido = {
   condicoesUsadas: Uso[];
   classificacoesUsadas: Uso<Classificacao>[];
   parcialUsado: { aceita: number; naoAceita: number };
+  /** Pedidos do cliente nos 24 meses com e sem o item da ordem de compra (o xPed). */
+  xpedUsado: { com: number; sem: number };
   transportadoras: Transportadora[];
   transportadorasDoCliente: Uso[];
   /** As que o representante mais usa com os outros clientes: o ponto de partida do cliente novo. */
@@ -398,6 +400,11 @@ export type EscolhasDoPedido = {
   /** O número do pedido de compra do cliente (PV1_OCO); vazio quando não há. */
   pedidoDoCliente: string;
   aceitaParcial: boolean;
+  /**
+   * O cliente exige o xPed na nota fiscal: o número do pedido de compra dele e o item (nItemPed). Os
+   * campos da ordem de compra ficam abertos em cada item, e o item é numerado de 1 a N na ordem do pedido.
+   */
+  clienteXped: boolean;
   transportadora: EscolhaDaTransportadora | null;
 };
 

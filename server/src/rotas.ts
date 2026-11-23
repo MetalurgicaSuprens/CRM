@@ -67,6 +67,7 @@ const ESCOLHAS_DO_PEDIDO = {
     classificacao: { type: "string", enum: ["comercializacao", "industrializacao", "uso_consumo"] },
     pedidoDoCliente: LINHA_DE_TEXTO(LIMITE_DA_ORDEM_DE_COMPRA),
     aceitaParcial: { type: "boolean" },
+    clienteXped: { type: "boolean" },
     transportadora: {
       anyOf: [
         { type: "null" },
@@ -92,7 +93,7 @@ const ESCOLHAS_DO_PEDIDO = {
       ],
     },
   },
-  required: ["condicaoDePagamento", "classificacao", "pedidoDoCliente", "aceitaParcial", "transportadora"],
+  required: ["condicaoDePagamento", "classificacao", "pedidoDoCliente", "aceitaParcial", "clienteXped", "transportadora"],
   additionalProperties: false,
 } as const;
 

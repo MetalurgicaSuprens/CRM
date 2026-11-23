@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { History, PackageSearch, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
+import { ChevronDown, ChevronUp, GripVertical, History, ListOrdered, PackageSearch, X } from "lucide-react";
 import { LIMITE_DA_ORDEM_DE_COMPRA, valorDaLinha, type OrdemDeCompraDoItem } from "dominio/pedido";
 import botoes from "../../componentes/Botao.module.css";
 import cartao from "../../componentes/Cartao.module.css";
@@ -12,13 +12,14 @@ import type { DadosDoPedido, ProdutoDoCatalogo } from "../../dados/tipos";
 import { formatarComCentavos, formatarContagem, formatarDataCurta, formatarNumero } from "../../formato";
 import { BuscaDeProduto } from "./BuscaDeProduto";
 import { FotoDaFamilia } from "../../componentes/FotoDaFamilia";
-import { DescricaoDoProduto } from "./DescricaoDoProduto";
 import estilos from "./ItensDoPedido.module.css";
 
 /*
  * Os itens são o corpo do documento: a busca inclui o produto, o cursor cai na quantidade dele e, com
- * Enter, volta para a busca, pronto para o próximo. Cada item mostra o valor sem IPI, o IPI e o valor
- * com IPI, como a grade do app antigo dos representantes; o aviso de preço aparece no próprio item.
+ * Enter, volta para a busca, pronto para o próximo. Cada item mostra a ordem de compra do cliente e o
+ * item dela, o valor sem IPI, o IPI e o valor com IPI, como a grade do app antigo dos representantes; o
+ * aviso de preço aparece no próprio item. A ordem dos itens muda arrastando pela alça (no celular, pelas
+ * setas): é a ordem do pedido no SGI e, no cliente xPed, a do item da ordem de compra.
  */
 
 type Props = {
@@ -31,16 +32,22 @@ type Props = {
   alterar: (codigo: string, pecas: number) => void;
   alterarPreco: (codigo: string, preco: number) => void;
   alterarOrdemDeCompra: (codigo: string, ordem: OrdemDeCompraDoItem) => void;
+  /** Leva o item para a posição `destino` (0 é o primeiro). */
+  mover: (codigo: string, destino: number) => void;
+  /** Com o item da ordem de compra digitado à mão no pedido xPed: volta à numeração de 1 a N. */
+  aoRenumerar: (() => void) | null;
   /** A ordem de compra do pedido (pedidoDoCliente): é a de cada item que não tem outra. */
   ordemDeCompraDoPedido: string;
   /** Entre a busca e os itens: o aviso do rascunho que voltou diferente. */
   children?: ReactNode;
 };
 
-export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUltimoPedido, alterar, alterarPreco, alterarOrdemDeCompra, ordemDeCompraDoPedido, children }: Props) {
+export function ItensDoPedido(props: Props) {
+  const { produtos, linhas, ipi, ultimoPedido, aoRepetirUltimoPedido, alterar, aoRenumerar, children } = props;
   const busca = useRef<HTMLInputElement>(null);
   const lista = useRef<HTMLUListElement>(null);
   const [recemIncluido, setRecemIncluido] = useState<string | null>(null);
+  const [arrastado, setArrastado] = useState<string | null>(null);
   const noPedido = useMemo(() => new Map(linhas.map((linha) => [linha.codigo, linha.quantidade])), [linhas]);
 
   // O produto que acabou de entrar recebe o cursor na quantidade, já selecionada para digitar por cima.
@@ -81,6 +88,15 @@ export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUl
         ) : null}
       </header>
       {children}
+      {aoRenumerar ? (
+        <p className={estilos.avisoDaNumeracao} role="status">
+          O item da O.C. foi digitado à mão e não acompanha mais a ordem dos itens.
+          <button type="button" className={botoes.secundario} onClick={aoRenumerar}>
+            <ListOrdered size={16} aria-hidden="true" />
+            Renumerar de 1 a {linhas.length}
+          </button>
+        </p>
+      ) : null}
       {linhas.length === 0 ? (
         <p className={estilos.vazio}>
           Nenhum item ainda. Clique na busca para ver o que o cliente já comprou, ou digite o código, a medida ou o part number: Enter inclui o produto e leva à
@@ -90,6 +106,8 @@ export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUl
         <ul ref={lista} className={ipi ? estilos.lista : `${estilos.lista} ${estilos.semIpi}`} onKeyDown={aoTeclarNaLista}>
           <li className={estilos.titulos} aria-hidden="true">
             <span className={estilos.tituloDoProduto}>Produto</span>
+            <span className={estilos.tituloDaOrdem}>Ordem compra</span>
+            <span className={estilos.tituloDoItemDaOrdem}>Item OC</span>
             <span className={estilos.tituloDaQuantidade}>Qtde (peças)</span>
             <span className={estilos.tituloDoPreco}>Cento R$</span>
             <span className={estilos.tituloDoValor}>{ipi ? "Valor s/ IPI" : "Valor"}</span>
@@ -100,15 +118,14 @@ export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUl
               </>
             ) : null}
           </li>
-          {linhas.map((linha) => (
+          {linhas.map((linha, posicao) => (
             <Item
               key={linha.codigo}
+              {...props}
               linha={linha}
-              ipi={ipi}
-              alterar={alterar}
-              alterarPreco={alterarPreco}
-              alterarOrdemDeCompra={alterarOrdemDeCompra}
-              ordemDeCompraDoPedido={ordemDeCompraDoPedido}
+              posicao={posicao}
+              total={linhas.length}
+              arrasto={{ arrastado, aoComecar: setArrastado, aoTerminar: () => setArrastado(null) }}
             />
           ))}
         </ul>
@@ -117,24 +134,86 @@ export function ItensDoPedido({ produtos, linhas, ipi, ultimoPedido, aoRepetirUl
   );
 }
 
-type PropsDoItem = Pick<Props, "ipi" | "alterar" | "alterarPreco" | "alterarOrdemDeCompra" | "ordemDeCompraDoPedido"> & { linha: LinhaEscolhida };
+/** O item que está sendo arrastado, de todos os itens: cada um vira alvo ao passar por cima dele. */
+type Arrasto = { arrastado: string | null; aoComecar: (codigo: string) => void; aoTerminar: () => void };
 
-function Item({ linha, ipi, alterar, alterarPreco, alterarOrdemDeCompra, ordemDeCompraDoPedido }: PropsDoItem) {
+type PropsDoItem = Pick<Props, "ipi" | "alterar" | "alterarPreco" | "alterarOrdemDeCompra" | "ordemDeCompraDoPedido" | "mover"> & {
+  linha: LinhaEscolhida;
+  posicao: number;
+  total: number;
+  arrasto: Arrasto;
+};
+
+function Item({ linha, posicao, total, ipi, alterar, alterarPreco, alterarOrdemDeCompra, ordemDeCompraDoPedido, mover, arrasto }: PropsDoItem) {
   const semIpi = valorDaLinha(linha);
+  // O item só fica arrastável enquanto a alça está apertada: arrastar pelos campos seleciona o texto, como sempre.
+  const [isArrastavel, setArrastavel] = useState(false);
+  const [isAlvo, setAlvo] = useState(false);
+  const recebe = arrasto.arrastado !== null && arrasto.arrastado !== linha.codigo;
+  const aoSoltar = (evento: DragEvent) => {
+    evento.preventDefault();
+    setAlvo(false);
+    if (arrasto.arrastado) mover(arrasto.arrastado, posicao);
+  };
+  const classes = [estilos.item, arrasto.arrastado === linha.codigo ? estilos.arrastado : "", isAlvo && recebe ? estilos.alvo : ""].filter(Boolean).join(" ");
   return (
-    <li className={estilos.item} data-produto={linha.codigo}>
+    <li
+      className={classes}
+      data-produto={linha.codigo}
+      draggable={isArrastavel}
+      onDragStart={(evento) => {
+        evento.dataTransfer.effectAllowed = "move";
+        evento.dataTransfer.setData("text/plain", linha.codigo);
+        arrasto.aoComecar(linha.codigo);
+      }}
+      onDragEnd={() => {
+        setArrastavel(false);
+        arrasto.aoTerminar();
+      }}
+      onDragOver={(evento) => {
+        if (!recebe) return;
+        evento.preventDefault();
+        setAlvo(true);
+      }}
+      onDragLeave={() => setAlvo(false)}
+      onDrop={aoSoltar}
+    >
+      <span className={estilos.mover}>
+        <button
+          type="button"
+          className={estilos.alca}
+          aria-label={`Mover ${linha.codigo}, item ${posicao + 1} de ${total}: arraste, ou use as setas para cima e para baixo`}
+          title="Arraste para mudar a ordem"
+          onPointerDown={() => setArrastavel(true)}
+          onPointerUp={() => setArrastavel(false)}
+          onKeyDown={(evento) => {
+            const destino = evento.key === "ArrowUp" ? posicao - 1 : evento.key === "ArrowDown" ? posicao + 1 : null;
+            if (destino === null || destino < 0 || destino >= total) return;
+            evento.preventDefault();
+            mover(linha.codigo, destino);
+          }}
+        >
+          <GripVertical size={16} aria-hidden="true" />
+        </button>
+        <button type="button" className={estilos.seta} aria-label={`Subir ${linha.codigo}`} disabled={posicao === 0} onClick={() => mover(linha.codigo, posicao - 1)}>
+          <ChevronUp size={18} aria-hidden="true" />
+        </button>
+        <button type="button" className={estilos.seta} aria-label={`Descer ${linha.codigo}`} disabled={posicao === total - 1} onClick={() => mover(linha.codigo, posicao + 1)}>
+          <ChevronDown size={18} aria-hidden="true" />
+        </button>
+      </span>
       <FotoDaFamilia codigo={linha.codigo} familia={linha.familia} className={estilos.foto} />
       <span className={estilos.produto}>
         <span className={estilos.codigo}>{linha.codigo}</span>
-        <DescricaoDoProduto produto={linha} className={estilos.descricao} />
+        <span className={estilos.descricao}>{linha.familia}</span>
       </span>
+      <OrdemDeCompraDoItem linha={linha} doPedido={ordemDeCompraDoPedido} aoMudar={(ordem) => alterarOrdemDeCompra(linha.codigo, ordem)} />
       <Quantidade valor={linha.quantidade} embalagem={linha.embalagem} rotulo={linha.codigo} aoMudar={(pecas) => alterar(linha.codigo, pecas)} />
       <PrecoDoItem linha={linha} aoMudar={(preco) => alterarPreco(linha.codigo, preco)} />
       <span className={estilos.valor}>
         <Valor valor={semIpi} comCentavos />
       </span>
       {ipi ? <IpiDoItem semIpi={semIpi} valor={valorDoIpi(linha, ipi)} aliquota={ipi[linha.codigo] ?? 0} /> : null}
-      <OrdemDeCompraDoItem linha={linha} doPedido={ordemDeCompraDoPedido} aoMudar={(ordem) => alterarOrdemDeCompra(linha.codigo, ordem)} />
       <button type="button" className={estilos.tirar} aria-label={`Tirar ${linha.codigo} do pedido`} title="Tirar do pedido" onClick={() => alterar(linha.codigo, 0)}>
         <X size={16} aria-hidden="true" />
       </button>
@@ -145,20 +224,14 @@ function Item({ linha, ipi, alterar, alterarPreco, alterarOrdemDeCompra, ordemDe
 /**
  * A ordem de compra do cliente no item e o número do item nela, como o "Ordem Compra:" e o "Item O.C.:"
  * do app antigo dos representantes: os clientes que pedem o xPed na nota fiscal querem nela o pedido
- * deles e o item correspondente. Quase nenhum pedido usa, então fica fechado atrás de um botão pequeno;
- * abre sozinho quando o item já tem a dele. A ordem vazia é a do pedido.
+ * deles e o item correspondente. A ordem vazia é a do pedido, que aparece em cinza no campo.
  */
 function OrdemDeCompraDoItem({ linha, doPedido, aoMudar }: { linha: LinhaEscolhida; doPedido: string; aoMudar: (ordem: OrdemDeCompraDoItem) => void }) {
-  const [isAberta, setAberta] = useState(linha.ordemDeCompra !== null || linha.itemDaOrdemDeCompra !== null);
   const [ordem, setOrdem] = useState(linha.ordemDeCompra ?? "");
   const [item, setItem] = useState(linha.itemDaOrdemDeCompra?.toString() ?? "");
-  if (!isAberta) {
-    return (
-      <button type="button" className={estilos.abrirOrdem} onClick={() => setAberta(true)}>
-        O.C. do item
-      </button>
-    );
-  }
+  // A numeração automática do xPed muda o item de fora: o campo acompanha.
+  useEffect(() => setOrdem(linha.ordemDeCompra ?? ""), [linha.ordemDeCompra]);
+  useEffect(() => setItem(linha.itemDaOrdemDeCompra?.toString() ?? ""), [linha.itemDaOrdemDeCompra]);
   const confirmarOrdem = () => {
     const nova = ordemDeCompraDigitada(ordem, doPedido);
     setOrdem(nova ?? "");
@@ -174,36 +247,39 @@ function OrdemDeCompraDoItem({ linha, doPedido, aoMudar }: { linha: LinhaEscolhi
     if (evento.key === "Enter") confirmar();
   };
   return (
-    <span className={estilos.ordem} role="group" aria-label={`Ordem de compra do cliente em ${linha.codigo}`}>
-      <span className={estilos.rotuloDaOrdem} aria-hidden="true">
-        O.C.
-      </span>
-      <input
-        className={estilos.campoDaOrdem}
-        type="text"
-        value={ordem}
-        maxLength={LIMITE_DA_ORDEM_DE_COMPRA}
-        placeholder={doPedido.trim() || "a do pedido"}
-        aria-label={`Ordem de compra de ${linha.codigo}; vazia, é a do pedido`}
-        title="Ordem de compra do cliente neste item; vazia, é a do pedido"
-        onChange={(evento) => setOrdem(evento.target.value)}
-        onBlur={confirmarOrdem}
-        onKeyDown={aoTeclar(confirmarOrdem)}
-      />
-      <input
-        className={estilos.campoDoItemDaOrdem}
-        type="text"
-        inputMode="numeric"
-        value={item}
-        maxLength={6}
-        placeholder="item"
-        aria-label={`Item da ordem de compra de ${linha.codigo}`}
-        title="Item da ordem de compra do cliente, como está no pedido dele"
-        onChange={(evento) => setItem(evento.target.value)}
-        onBlur={confirmarItem}
-        onKeyDown={aoTeclar(confirmarItem)}
-      />
-    </span>
+    <>
+      <label className={estilos.ordem}>
+        <span className={estilos.rotuloNoCelular}>Ordem compra</span>
+        <input
+          className={estilos.campoDaOrdem}
+          type="text"
+          value={ordem}
+          maxLength={LIMITE_DA_ORDEM_DE_COMPRA}
+          placeholder={doPedido.trim() || "a do pedido"}
+          aria-label={`Ordem de compra de ${linha.codigo}; vazia, é a do pedido`}
+          title="Ordem de compra do cliente neste item; vazia, é a do pedido"
+          onChange={(evento) => setOrdem(evento.target.value)}
+          onBlur={confirmarOrdem}
+          onKeyDown={aoTeclar(confirmarOrdem)}
+        />
+      </label>
+      <label className={estilos.itemDaOrdem}>
+        <span className={estilos.rotuloNoCelular}>Item OC</span>
+        <input
+          className={estilos.campoDoItemDaOrdem}
+          type="text"
+          inputMode="numeric"
+          value={item}
+          maxLength={6}
+          placeholder="—"
+          aria-label={`Item da ordem de compra de ${linha.codigo}`}
+          title="Item da ordem de compra do cliente, como está no pedido dele"
+          onChange={(evento) => setItem(evento.target.value)}
+          onBlur={confirmarItem}
+          onKeyDown={aoTeclar(confirmarItem)}
+        />
+      </label>
+    </>
   );
 }
 
@@ -226,7 +302,8 @@ function IpiDoItem({ semIpi, valor, aliquota }: { semIpi: number; valor: number;
 
 /**
  * O preço do cento do item, que o representante pode mudar: vale ao sair do campo ou com Enter. Abaixo
- * da tabela do cliente, que é o mínimo, ele sobe para ela e avisa. Com os valores ocultos, o campo some.
+ * da tabela do cliente, que é o mínimo, ele sobe para ela e avisa embaixo do produto. Com os valores
+ * ocultos, o campo some. O mínimo e a última compra não aparecem no item (pedido do Lucas em 2026-11-23).
  */
 function PrecoDoItem({ linha, aoMudar }: { linha: LinhaEscolhida; aoMudar: (preco: number) => void }) {
   const { visiveis } = useValores();
@@ -239,7 +316,7 @@ function PrecoDoItem({ linha, aoMudar }: { linha: LinhaEscolhida; aoMudar: (prec
     setDigitado(formatarComCentavos(resultado?.preco ?? linha.precoCento));
     if (resultado) aoMudar(resultado.preco);
   };
-  // Duas células do item: o campo, na linha da quantidade, e de onde o preço vem, embaixo do produto.
+  // Duas células do item: o campo, na linha da quantidade, e o aviso, embaixo do produto.
   return (
     <>
       <label className={estilos.preco} title="Preço do cento">
@@ -266,32 +343,7 @@ function PrecoDoItem({ linha, aoMudar }: { linha: LinhaEscolhida; aoMudar: (prec
         <span className={estilos.avisoDoPreco} role="status" title="O menor preço é o da tabela do cliente, com o desconto dele">
           Subiu para o mínimo, a tabela do cliente
         </span>
-      ) : (
-        <ReferenciasDoPreco linha={linha} />
-      )}
-    </>
-  );
-}
-
-/** O mínimo primeiro: se faltar espaço, o que se corta é a última compra. Igual ao mínimo, o preço aparece uma vez só. */
-function ReferenciasDoPreco({ linha }: { linha: LinhaEscolhida }) {
-  const { precoDaTabela, ultimaCompra } = linha;
-  if (ultimaCompra && Math.abs(ultimaCompra.precoCento - precoDaTabela) < 0.005) {
-    return (
-      <span className={estilos.referencias}>
-        Mínimo e última compra <Valor valor={precoDaTabela} comCentavos />, em {formatarDataCurta(ultimaCompra.data)}
-      </span>
-    );
-  }
-  return (
-    <span className={estilos.referencias}>
-      Mínimo <Valor valor={precoDaTabela} comCentavos />
-      {ultimaCompra ? (
-        <>
-          {" "}
-          · última compra <Valor valor={ultimaCompra.precoCento} comCentavos />, em {formatarDataCurta(ultimaCompra.data)}
-        </>
       ) : null}
-    </span>
+    </>
   );
 }

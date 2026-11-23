@@ -554,7 +554,7 @@ describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
 
   it("guarda os dados do pedido escolhidos, com a transportadora do ERP ou uma nova", async () => {
     const app = criarAppDeTeste();
-    const escolhas = { condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "OC 4512", aceitaParcial: true, transportadora: { codigo: "101" } };
+    const escolhas = { condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "OC 4512", aceitaParcial: true, clienteXped: true, transportadora: { codigo: "101" } };
     expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ escolhas }))).json<Rascunho>().escolhas).toEqual(escolhas);
     const nova = { ...escolhas, transportadora: { nova: { cnpj: "11222333000181", nome: "Nova Log", cidade: "Maringá", uf: "PR" } } };
     await salvarComoA(app, RASCUNHO, rascunhoDeA({ escolhas: nova }));
@@ -568,7 +568,7 @@ describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
 
   it("recusa dados do pedido com campo a mais, classificação desconhecida ou CNPJ fora do formato", async () => {
     const app = criarAppDeTeste();
-    const base = { condicaoDePagamento: "1030", classificacao: "comercializacao", pedidoDoCliente: "", aceitaParcial: false, transportadora: null };
+    const base = { condicaoDePagamento: "1030", classificacao: "comercializacao", pedidoDoCliente: "", aceitaParcial: false, clienteXped: false, transportadora: null };
     for (const escolhas of [
       { ...base, representante: "1402" },
       { ...base, classificacao: "revenda" },

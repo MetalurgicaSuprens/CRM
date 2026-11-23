@@ -192,7 +192,8 @@ function montarRascunho(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao,
     itens,
     entrega: linha.entrega === null ? null : String(linha.entrega),
     observacao: String(linha.observacao),
-    escolhas: linha.escolhas === null ? null : (JSON.parse(String(linha.escolhas)) as EscolhasDoPedido),
+    // O rascunho salvo antes da marca xPed (2026-11-23) não a tem: sem ela, o cliente não exige.
+    escolhas: linha.escolhas === null ? null : { clienteXped: false, ...(JSON.parse(String(linha.escolhas)) as Partial<EscolhasDoPedido>) } as EscolhasDoPedido,
     atualizadoEm: String(linha.atualizado_em),
     totalEstimado: totalDoPedido(itens),
   };

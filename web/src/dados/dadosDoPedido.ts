@@ -61,6 +61,7 @@ export function escolhasIniciais(dados: DadosDoPedido): EscolhasDoPedido {
     classificacao: frequencias(dados.classificacoesUsadas)[0]?.valor ?? CLASSIFICACAO_PADRAO,
     pedidoDoCliente: "",
     aceitaParcial: dados.parcialUsado.aceita > dados.parcialUsado.naoAceita,
+    clienteXped: isClienteXped(dados),
     transportadora: sugerida ? { codigo: sugerida } : null,
   };
 }
@@ -170,6 +171,12 @@ export function pedidoJaEnviadoHoje(enviados: readonly Pick<PedidoEnviado, "clie
 }
 
 /** As escolhas do rascunho que ainda valem diante dos dados de hoje; a condição e a transportadora que sumiram voltam ao começo. */
+/** O cliente que mandou o item da ordem de compra em pelo menos metade dos pedidos: quem exige o xPed costuma exigir sempre. */
+export function isClienteXped(dados: Pick<DadosDoPedido, "xpedUsado">): boolean {
+  const { com, sem } = dados.xpedUsado;
+  return com > 0 && com >= sem;
+}
+
 export function escolhasNoCatalogo(salvas: EscolhasDoPedido | null, dados: DadosDoPedido): EscolhasDoPedido {
   const iniciais = escolhasIniciais(dados);
   if (!salvas) return iniciais;
@@ -178,6 +185,8 @@ export function escolhasNoCatalogo(salvas: EscolhasDoPedido | null, dados: Dados
   const transportadoraExiste = transportadora === null || "nova" in transportadora || transportadoraDe(dados, transportadora.codigo) !== null;
   return {
     ...salvas,
+    // O rascunho salvo antes da marca xPed (2026-11-23) não a tem: vale a do histórico do cliente.
+    clienteXped: (salvas.clienteXped as boolean | undefined) ?? iniciais.clienteXped,
     condicaoDePagamento: condicaoExiste ? salvas.condicaoDePagamento : iniciais.condicaoDePagamento,
     transportadora: transportadoraExiste ? transportadora : iniciais.transportadora,
   };

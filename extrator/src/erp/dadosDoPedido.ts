@@ -122,15 +122,22 @@ export async function lerCondicoes(oracle: Oracle, referencia: Referencia, autor
   return linhas.map((linha) => ({ codigo: String(numero(linha, 0)), descricao: texto(linha, 1) }));
 }
 
-/** As escolhas de cada pedido dos clientes da carteira nos 24 meses, agrupadas: a transportadora, a condição, a classificação e o frete parcial. */
+/**
+ * As escolhas de cada pedido dos clientes da carteira nos 24 meses, agrupadas: a transportadora, a
+ * condição, a classificação, o frete parcial e se algum item levou o item da ordem de compra do cliente
+ * (PV2_IOC maior que 0), sinal de cliente que exige o xPed na nota.
+ */
 export async function lerEscolhas(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<EscolhasDoErp[]> {
   const { lista, binds } = bindsDaCarteira(referencia, autorizados);
   const linhas = await oracle.consultar(
-    `SELECT C.EMP_FIL, C.CLIENTE, A.PV1_TRA, A.PV1_CPG, TRIM(A.PV1_CVE), TRIM(A.PV1_TFR), COUNT(*)
-       FROM ABC71.SGI5_TAB_VEN_PV1_V2 A
-       JOIN ABC71.CRCL C ON C.CLIENTE = A.PV1_CLI
-      WHERE A.PV1_DCA >= ${data("inicio24")} AND ${PEDIDO_QUE_VALEU} AND ${condicaoDaCarteira(lista.sql)}
-      GROUP BY C.EMP_FIL, C.CLIENTE, A.PV1_TRA, A.PV1_CPG, TRIM(A.PV1_CVE), TRIM(A.PV1_TFR)`,
+    `SELECT EMP_FIL, CLIENTE, PV1_TRA, PV1_CPG, CVE, TFR, XPED, COUNT(*)
+       FROM (SELECT C.EMP_FIL, C.CLIENTE, A.PV1_TRA, A.PV1_CPG, TRIM(A.PV1_CVE) CVE, TRIM(A.PV1_TFR) TFR,
+                    CASE WHEN EXISTS (SELECT 1 FROM ABC71.SGI5_TAB_VEN_PV2_V2 I WHERE I.PV2_NPE = A.PV1_NPE AND NVL(I.PV2_IOC, 0) > 0)
+                         THEN 'SIM' ELSE 'NAO' END XPED
+               FROM ABC71.SGI5_TAB_VEN_PV1_V2 A
+               JOIN ABC71.CRCL C ON C.CLIENTE = A.PV1_CLI
+              WHERE A.PV1_DCA >= ${data("inicio24")} AND ${PEDIDO_QUE_VALEU} AND ${condicaoDaCarteira(lista.sql)})
+      GROUP BY EMP_FIL, CLIENTE, PV1_TRA, PV1_CPG, CVE, TFR, XPED`,
     { ...binds, inicio24: referencia.inicio24 },
   );
   return linhas.map((linha) => ({
@@ -139,7 +146,8 @@ export async function lerEscolhas(oracle: Oracle, referencia: Referencia, autori
     condicao: numero(linha, 3) > 0 ? String(numero(linha, 3)) : null,
     classificacao: textoOuNulo(linha, 4),
     freteParcial: textoOuNulo(linha, 5),
-    pedidos: numero(linha, 6),
+    isComItemDaOrdemDeCompra: texto(linha, 6) === "SIM",
+    pedidos: numero(linha, 7),
   }));
 }
 

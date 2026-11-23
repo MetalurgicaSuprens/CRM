@@ -46,7 +46,7 @@ export function CondicoesDoPedido({ dados, escolhas, aoMudarEscolhas, entrega, a
         ) : null}
         <CampoDaEntrega entrega={entrega} aoMudar={aoMudarEntrega} primeiraEntrega={primeiraEntrega} />
         {comEscolhas ? <OutrasEscolhas {...comEscolhas} /> : null}
-        <Campo rotulo="Observações" dica={`${observacao.length} de ${LIMITE_DA_OBSERVACAO} letras`} isLargo>
+        <Campo rotulo="Observações" dica={`${observacao.length} de ${LIMITE_DA_OBSERVACAO} letras`}>
           <textarea
             className={`${estilos.entrada} ${estilos.observacoes}`}
             rows={1}
@@ -61,12 +61,12 @@ export function CondicoesDoPedido({ dados, escolhas, aoMudarEscolhas, entrega, a
   );
 }
 
-type PropsDoCampo = { rotulo: string; dica: ReactNode; isLargo?: boolean; children: ReactNode };
+type PropsDoCampo = { rotulo: string; dica: ReactNode; children: ReactNode };
 
 /** Um campo: o nome em cima, a escolha no meio e, embaixo, em cinza, de onde ela veio. */
-function Campo({ rotulo, dica, isLargo = false, children }: PropsDoCampo) {
+function Campo({ rotulo, dica, children }: PropsDoCampo) {
   return (
-    <div className={isLargo ? `${estilos.campo} ${estilos.largo}` : estilos.campo}>
+    <div className={estilos.campo}>
       <span className={estilos.rotulo}>{rotulo}</span>
       {children}
       {dica ? <span className={estilos.dica}>{dica}</span> : null}
@@ -204,6 +204,17 @@ function OutrasEscolhas({ dados, escolhas, mudar }: PropsDasOutras) {
           ))}
         </select>
       </Campo>
+      <Campo rotulo="Cliente exige xPed" dica={origemDoXped(dados, escolhas.clienteXped)}>
+        <Segmentos
+          rotulo="O cliente exige na nota o número do pedido dele e o item (xPed)"
+          opcoes={[
+            { valor: "nao", rotulo: "Não" },
+            { valor: "sim", rotulo: "Sim" },
+          ]}
+          selecionado={escolhas.clienteXped ? "sim" : "nao"}
+          aoEscolher={(valor) => mudar({ clienteXped: valor === "sim" })}
+        />
+      </Campo>
       <Campo rotulo="Frete parcial" dica={origemDoParcial(dados, escolhas.aceitaParcial)}>
         <Segmentos
           rotulo="O cliente aceita receber o pedido em partes"
@@ -225,6 +236,17 @@ function origemDoParcial(dados: DadosDoPedido, aceita: boolean): string {
     { valor: "nao", pedidos: dados.parcialUsado.naoAceita },
   ];
   return comoNosPedidos(vezesQueOClienteEscolheu(usos, aceita ? "sim" : "nao")) ?? "Se o cliente recebe o pedido em partes.";
+}
+
+/** De onde vem a marca: os pedidos do cliente com e sem o item da ordem de compra. Marcada, os itens são numerados de 1 a N. */
+function origemDoXped(dados: DadosDoPedido, isXped: boolean): string {
+  const usos = [
+    { valor: "sim", pedidos: dados.xpedUsado.com },
+    { valor: "nao", pedidos: dados.xpedUsado.sem },
+  ];
+  const vezes = vezesQueOClienteEscolheu(usos, isXped ? "sim" : "nao");
+  const explicacao = isXped ? "Item da O.C. de 1 a N, na ordem dos itens." : "Pedido e item do cliente na nota fiscal.";
+  return vezes ? `Como ${vezes}. ${explicacao}` : explicacao;
 }
 
 function comoNosPedidos(vezes: string | null): string | null {

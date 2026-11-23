@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   condicaoInicial,
+  isClienteXped,
   escolhasIniciais,
   escolhasNoCatalogo,
   formatarCnpj,
@@ -38,6 +39,7 @@ function dados(mudancas: Partial<DadosDoPedido> = {}): DadosDoPedido {
     condicoesUsadas: [],
     classificacoesUsadas: [],
     parcialUsado: { aceita: 0, naoAceita: 0 },
+    xpedUsado: { com: 0, sem: 0 },
     transportadoras: [
       { codigo: "101", nome: "Rápido Sul", cnpj: "11.222.333/0001-81", cidade: "Curitiba", uf: "PR" },
       { codigo: "102", nome: "Expresso Norte", cnpj: "45.997.418/0001-53", cidade: "Joinville", uf: "SC" },
@@ -93,6 +95,14 @@ describe("condicaoInicial", () => {
   });
 });
 
+describe("isClienteXped", () => {
+  it("marca o cliente que mandou o item da ordem de compra em pelo menos metade dos pedidos", () => {
+    expect(isClienteXped({ xpedUsado: { com: 5, sem: 5 } })).toBe(true);
+    expect(isClienteXped({ xpedUsado: { com: 2, sem: 9 } })).toBe(false);
+    expect(isClienteXped({ xpedUsado: { com: 0, sem: 0 } })).toBe(false);
+  });
+});
+
 describe("escolhasIniciais", () => {
   it("começa com o que o cliente mais usou", () => {
     const escolhas = escolhasIniciais(
@@ -103,7 +113,7 @@ describe("escolhasIniciais", () => {
         transportadorasDoCliente: [{ valor: "102", pedidos: 10 }],
       }),
     );
-    expect(escolhas).toEqual({ condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "", aceitaParcial: true, transportadora: { codigo: "102" } });
+    expect(escolhas).toEqual({ condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "", aceitaParcial: true, clienteXped: false, transportadora: { codigo: "102" } });
   });
 
   it("sem histórico, fica como o SGI6R: comercialização, sem frete parcial e sem transportadora", () => {
@@ -219,13 +229,18 @@ describe("pedidoJaEnviadoHoje", () => {
 
 describe("escolhasNoCatalogo", () => {
   it("mantém as escolhas do rascunho que ainda valem", () => {
-    const salvas = { condicaoDePagamento: "1060", classificacao: "uso_consumo" as const, pedidoDoCliente: "OC 77", aceitaParcial: true, transportadora: { codigo: "101" } };
+    const salvas = { condicaoDePagamento: "1060", classificacao: "uso_consumo" as const, pedidoDoCliente: "OC 77", aceitaParcial: true, clienteXped: true, transportadora: { codigo: "101" } };
     expect(escolhasNoCatalogo(salvas, dados())).toEqual(salvas);
   });
 
   it("volta ao começo a condição e a transportadora que saíram do ERP", () => {
-    const salvas = { condicaoDePagamento: "9999", classificacao: "comercializacao" as const, pedidoDoCliente: "", aceitaParcial: false, transportadora: { codigo: "999" } };
+    const salvas = { condicaoDePagamento: "9999", classificacao: "comercializacao" as const, pedidoDoCliente: "", aceitaParcial: false, clienteXped: false, transportadora: { codigo: "999" } };
     expect(escolhasNoCatalogo(salvas, dados())).toMatchObject({ condicaoDePagamento: "1030", transportadora: null });
+  });
+
+  it("dá ao rascunho salvo antes da marca xPed a do histórico do cliente", () => {
+    const salvas = { condicaoDePagamento: "1030", classificacao: "comercializacao" as const, pedidoDoCliente: "", aceitaParcial: false, transportadora: null };
+    expect(escolhasNoCatalogo(salvas as never, dados({ xpedUsado: { com: 9, sem: 1 } })).clienteXped).toBe(true);
   });
 
   it("começa do zero sem escolhas salvas", () => {

@@ -133,6 +133,13 @@ Por isso o número CRM **não pode ir no `V_LR1`**: a Suprens escreve por cima e
 
 Proposta: a ligação do pedido com o CRM fica na máquina do extrator, que escolhe o número do SGI (`MAX(PV1_NPE)+1`) e sabe qual número gravou para cada número CRM. A decidir com o Lucas como o SGI mostra que o pedido veio do CRM, se precisar.
 
+## Decisões do Lucas em 2026-11-23: cliente xPed
+
+- **Ordem dos itens:** o representante muda a ordem arrastando (no celular, pelas setas). É a ordem do `V_ITE` no SGI.
+- **Ordem Compra e Item OC sempre visíveis** em cada item, logo depois do produto.
+- **"Cliente exige xPed"** nas condições do pedido (`clienteXped`), marcado sozinho para o cliente que mandou o item da ordem de compra em pelo menos metade dos pedidos dos 24 meses (`cliente_escolha`, tipo `xped`). Marcado, o Item OC vai de 1 a N na ordem dos itens e acompanha a ordem; o número digitado à mão desliga isso até "Renumerar de 1 a N". O 10 em 10 (5% dos pedidos) fica à mão. A marca não vai ao SGI: só muda a tela.
+- **A decidir:** "Rascunho" vira "Cotação", com um PDF para mandar ao cliente.
+
 ## Decisões do Lucas em 2026-11-19
 
 - **Ordem de compra no item, igual ao SGI6R:** cada item tem a ordem de compra (a do pedido, se o representante não trocar) e o item dela. Os clientes que pedem o xPed na nota querem nela o pedido deles e o item correspondente (nItemPed). Feito no CRM em 2026-11-19: o rascunho, o pedido enviado e o arquivo da caixa de saída levam `ordemDeCompra` e `itemDaOrdemDeCompra` em cada item, e a máquina do extrator os confere. Falta a gravação (etapa 4) mandá-los como na tabela do item.
