@@ -10,7 +10,7 @@ function lidoDoErp(parcial: Partial<LidoDoErp> = {}): LidoDoErp {
   return {
     cliente: { empresa: 1, cliente: 123456, vendedor: "1401", statusNoSgi: "ATIVO", condicaoDoCadastro: "28", mercado: "PRACA" },
     tabelas: [{ cliente: 123456, tabela: "PDR02", papel: "PRINCIPAL", nome: "Tabela 17", moeda: "REAL", situacao: "ATIVO" }],
-    precos: [{ cliente: 123456, tabela: "PDR02", produto: "F-100", precoCento: 95.5, aliquotaIpi: 5 }],
+    precos: [{ cliente: 123456, tabela: "PDR02", produto: "F-100", precoCento: 95.5, aliquotaIpi: 5, partNumbers: null }],
     isCondicaoDaFaixa: true,
     transportadora: "101",
     ...parcial,
@@ -39,7 +39,7 @@ describe("decidir", () => {
   });
 
   it("só olha os preços da tabela escolhida para o cliente", () => {
-    const precos = [{ cliente: 123456, tabela: "OUTRA", produto: "F-100", precoCento: 50, aliquotaIpi: 5 }];
+    const precos = [{ cliente: 123456, tabela: "OUTRA", produto: "F-100", precoCento: 50, aliquotaIpi: 5, partNumbers: null }];
     expect(decidir(pedidoDeTeste(), lidoDoErp({ precos })).destino).toBe("quarentena");
   });
 

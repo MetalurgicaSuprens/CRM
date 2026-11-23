@@ -176,14 +176,14 @@ export function montarFotoDeTeste(): Foto {
       doGrupo(FILIAL_DE_B, "9999", "FILIAL SO DE B", GRUPO_DE_B, 10_000),
     ],
     produto: [
-      { produto: "F-100", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100 },
-      { produto: "P-200", familia: "PRESIL", medida: null, embalagem: null },
-      { produto: "PRODUTO-SO-DE-B", familia: "FLEXIL", medida: null, embalagem: 50 },
+      { produto: "F-100", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100, peso_kg: 0.02175 },
+      { produto: "P-200", familia: "PRESIL", medida: null, embalagem: null, peso_kg: null },
+      { produto: "PRODUTO-SO-DE-B", familia: "FLEXIL", medida: null, embalagem: 50, peso_kg: null },
     ],
     lista_de_precos: [
-      { lista: 1, produto: "F-100", preco_cento: 95.5 },
-      { lista: 1, produto: "P-200", preco_cento: 120 },
-      { lista: 2, produto: "PRODUTO-SO-DE-B", preco_cento: 80 },
+      { lista: 1, produto: "F-100", preco_cento: 95.5, part_numbers: "N906227, 51234567" },
+      { lista: 1, produto: "P-200", preco_cento: 120, part_numbers: null },
+      { lista: 2, produto: "PRODUTO-SO-DE-B", preco_cento: 80, part_numbers: "PN-SO-DE-B" },
     ],
     produto_part_number: [
       { produto: "F-100", part_number: "CF420118" },
@@ -319,8 +319,8 @@ function dadosDoPedidoDeTeste(): Pick<
   return {
     cliente_cadastro: [cadastro(CLIENTE_DE_A, "12.345.678/0001-95"), cadastro(CLIENTE_DE_B, "87.654.321/0001-99")],
     cliente_local: [
-      { cliente: CLIENTE_DE_A, tipo: "entrega", razao_social: "CLIENTE DE A LTDA", documento: "12.345.678/0002-76", endereco: "R DA ENTREGA, 10", bairro: null, cidade: "VALINHOS", uf: "SP", cep: null },
-      { cliente: CLIENTE_DE_B, tipo: "entrega", razao_social: "ENTREGA SO DE B", documento: "87.654.321/0002-70", endereco: "R B, 1", bairro: null, cidade: "OSASCO", uf: "SP", cep: null },
+      { cliente: CLIENTE_DE_A, tipo: "entrega", razao_social: "CLIENTE DE A LTDA", documento: "12.345.678/0002-76", inscricao_estadual: "123456789", endereco: "R DA ENTREGA, 10", bairro: null, cidade: "VALINHOS", uf: "SP", cep: null },
+      { cliente: CLIENTE_DE_B, tipo: "entrega", razao_social: "ENTREGA SO DE B", documento: "87.654.321/0002-70", inscricao_estadual: null, endereco: "R B, 1", bairro: null, cidade: "OSASCO", uf: "SP", cep: null },
     ],
     cliente_escolha: [
       { cliente: CLIENTE_DE_A, tipo: "transportadora", valor: "101", pedidos: 9 },
@@ -336,8 +336,8 @@ function dadosDoPedidoDeTeste(): Pick<
       { cliente: CLIENTE_DE_A, ordem: 2, produto: "F-100", pecas: 500 },
     ],
     transportadora: [
-      { codigo: "101", nome: "TRANSPORTES IPE", cnpj: "11.222.333/0001-81", cidade: "CURITIBA", uf: "PR" },
-      { codigo: "102", nome: "ROTA AZUL", cnpj: "45.997.418/0001-53", cidade: "JOINVILLE", uf: "SC" },
+      { codigo: "101", nome: "TRANSPORTES IPE", razao_social: "TRANSPORTES IPE LTDA", cnpj: "11.222.333/0001-81", endereco: "R. SOLEDADE, 228", bairro: "CUMBICA", cep: "07224210", cidade: "CURITIBA", uf: "PR" },
+      { codigo: "102", nome: "ROTA AZUL", razao_social: "ROTA AZUL TRANSPORTES LTDA", cnpj: "45.997.418/0001-53", endereco: null, bairro: null, cep: null, cidade: "JOINVILLE", uf: "SC" },
     ],
     representante_transportadora: [
       { representante: "1401", transportadora: "101", pedidos: 40 },

@@ -316,6 +316,10 @@ export type ProdutoDoCatalogo = {
    * ativos. Vazio quando nenhuma montadora tem o produto.
    */
   partNumbers: string[];
+  /** Os part numbers do produto na tabela deste cliente (VIEW_PNU), como o relatório do pedido do app antigo; null sem nenhum. */
+  partNumbersDoCliente: string | null;
+  /** O peso de uma peça, em kg; null sem cadastro no ERP. */
+  pesoKg: number | null;
   jaComprou: boolean;
 };
 
@@ -326,6 +330,8 @@ export type CatalogoDoCliente = {
   produtos: ProdutoDoCatalogo[];
   /** O que preenche os dados do pedido; null enquanto a foto não traz (o modo real, antes da F5). */
   dadosDoPedido: DadosDoPedido | null;
+  /** O representante dono do cliente no ERP (VEND_1), com o nome do cadastro: o "Representante" do PDF da cotação. */
+  representante: { codigo: string; nome: string } | null;
 };
 
 /** A classificação da venda do SGI (PV1_CVE): COMERCIALIZACAO, INDUSTRIALIZACAO ou USO/CONSUMO. */
@@ -335,7 +341,18 @@ export type Classificacao = "comercializacao" | "industrializacao" | "uso_consum
 export type Uso<T extends string = string> = { valor: T; pedidos: number };
 
 /** Uma transportadora do ERP (CFOR, TIPO_FORN = 'T'): dado de empresa, público no CNPJ. */
-export type Transportadora = { codigo: string; nome: string; cnpj: string; cidade: string; uf: string };
+export type Transportadora = {
+  codigo: string;
+  nome: string;
+  razaoSocial: string;
+  cnpj: string;
+  /** O endereço do cadastro, para o PDF da cotação; null quando o ERP não tem. */
+  endereco: string | null;
+  bairro: string | null;
+  cep: string | null;
+  cidade: string;
+  uf: string;
+};
 
 export type CondicaoDePagamento = { codigo: string; descricao: string };
 
@@ -343,7 +360,7 @@ export type CondicaoDePagamento = { codigo: string; descricao: string };
 export type EnderecoDoCadastro = { texto: string; bairro: string | null; cidade: string; uf: string; cep: string | null };
 
 /** O local de cobrança ou de entrega que não é o do faturamento: pode ser de outro CNPJ. */
-export type LocalDoCadastro = EnderecoDoCadastro & { razaoSocial: string; documento: string };
+export type LocalDoCadastro = EnderecoDoCadastro & { razaoSocial: string; documento: string; inscricaoEstadual: string | null };
 
 /**
  * O cadastro que o representante confere ao incluir o pedido, como no app antigo dos representantes

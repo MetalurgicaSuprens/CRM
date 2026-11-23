@@ -302,12 +302,16 @@ describe("escopo: o login A nunca vê os dados de B", () => {
           precoDaTabela: 95.5,
           ultimaCompra: { precoCento: 98.4, data: "2026-09-15" },
           partNumbers: ["CF420118", "N906227"],
+          partNumbersDoCliente: "N906227, 51234567",
+          pesoKg: 0.02175,
           jaComprou: true,
         },
         // Produto sem EAN: qualquer quantidade de peças. Sem part number na Bíblia, a lista vem vazia; sem compra, sem última compra.
-        { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoDaTabela: 120, ultimaCompra: null, partNumbers: [], jaComprou: false },
+        { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoDaTabela: 120, ultimaCompra: null, partNumbers: [], partNumbersDoCliente: null, pesoKg: null, jaComprou: false },
       ],
+      representante: { codigo: "1401", nome: "STAR VENDAS" },
     });
+    expect(resposta.json<CatalogoDoCliente>().dadosDoPedido?.transportadoras[1]).toMatchObject({ razaoSocial: "TRANSPORTES IPE LTDA", endereco: "R. SOLEDADE, 228", cep: "07224210" });
   });
 
   it("leva no catálogo os dados da tela de pedido: o cadastro, o histórico de escolhas, o IPI e o último pedido", async () => {

@@ -78,7 +78,7 @@ export function cadastroFicticio(cliente: ClienteDoCadastro): CadastroDoCliente 
     ? { texto: cliente.endereco.texto, bairro: cliente.endereco.bairro, cidade: cliente.cidade, uf: cliente.uf, cep: cliente.endereco.cep }
     : enderecoFicticio(aleatorio, cliente);
   const documento = isEmpresa ? cnpjDeExemplo(cliente.codigo) : (cliente.cpf ?? "");
-  const outroLocal = () => ({ ...enderecoFicticio(aleatorio, cliente), razaoSocial: cliente.razaoSocial, documento });
+  const outroLocal = () => ({ ...enderecoFicticio(aleatorio, cliente), razaoSocial: cliente.razaoSocial, documento, inscricaoEstadual: String(aleatorio.inteiro(100_000_000, 999_999_999)) });
   return {
     razaoSocial: cliente.razaoSocial,
     documento,
@@ -106,7 +106,11 @@ export function transportadorasFicticias(): Transportadora[] {
   transportadorasEmCache ??= NOMES_DAS_TRANSPORTADORAS.map(([nome, cidade, uf], i) => ({
     codigo: String(i + 1),
     nome,
+    razaoSocial: `${nome} Transportes Ltda`,
     cnpj: cnpjFicticio(10_203_040 + i * 1_111_111, 1),
+    endereco: `Rua das Cargas, ${100 + i * 37}`,
+    bairro: "Distrito Industrial",
+    cep: String(80_000_000 + i * 12_345).padStart(8, "0"),
     cidade,
     uf,
   }));

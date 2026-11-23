@@ -69,7 +69,7 @@ export async function lerLocais(oracle: Oracle, referencia: Referencia, autoriza
   const { lista, binds } = bindsDaCarteira(referencia, autorizados);
   const linhas = await oracle.consultar(
     `SELECT C.EMP_FIL, C.CLIENTE, TRIM(K.TIPO_REG), TRIM(K.RAZ_SOCIAL), ${documento("K", "TRIM(C.FIS_JURID)")},
-            TRIM(K.ENDERECO), TRIM(K.BAIRRO), TRIM(K.CIDADE), TRIM(K.ESTADO), K.CEP
+            TRIM(K.ENDERECO), TRIM(K.BAIRRO), TRIM(K.CIDADE), TRIM(K.ESTADO), K.CEP, TRIM(K.INSCR_ESTD)
        FROM ABC71.CRCA K
        JOIN ABC71.CRCL C ON C.CLIENTE = K.CLIENTE
       WHERE TRIM(K.TIPO_REG) IN ('C', 'E') AND TRIM(K.ENDERECO) IS NOT NULL AND ${condicaoDaCarteira(lista.sql)}`,
@@ -85,13 +85,15 @@ export async function lerLocais(oracle: Oracle, referencia: Referencia, autoriza
     cidade: texto(linha, 7),
     uf: texto(linha, 8),
     cep: numero(linha, 9),
+    inscricaoEstadual: textoOuNulo(linha, 10),
   }));
 }
 
 /** As transportadoras ativas do ERP: as do qryPosTransp do SGI6R, que tira as de nome fantasia INATIVO. */
 export async function lerTransportadoras(oracle: Oracle): Promise<TransportadoraDoErp[]> {
   const linhas = await oracle.consultar(
-    `SELECT A.FORNEC, TRIM(A.NOME_FANTAS), TRIM(A.RAZ_SOCIAL), ${documento("A", "TRIM(A.FIS_JURID)")}, TRIM(A.CIDADE), TRIM(A.ESTADO)
+    `SELECT A.FORNEC, TRIM(A.NOME_FANTAS), TRIM(A.RAZ_SOCIAL), ${documento("A", "TRIM(A.FIS_JURID)")}, TRIM(A.CIDADE), TRIM(A.ESTADO),
+            TRIM(A.ENDERECO), TRIM(A.BAIRRO), A.CEP
        FROM ABC71.CFOR A
       WHERE TRIM(A.TIPO_FORN) = 'T' AND NVL(TRIM(A.NOME_FANTAS), ' ') NOT LIKE '%INATIVO%'`,
   );
@@ -102,6 +104,9 @@ export async function lerTransportadoras(oracle: Oracle): Promise<Transportadora
     documento: texto(linha, 3),
     cidade: texto(linha, 4),
     uf: texto(linha, 5),
+    endereco: textoOuNulo(linha, 6),
+    bairro: textoOuNulo(linha, 7),
+    cep: numero(linha, 8),
   }));
 }
 

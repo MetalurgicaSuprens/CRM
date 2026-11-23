@@ -40,6 +40,11 @@ export function formatarComCentavos(valor: number): string {
   return COM_CENTAVOS.format(valor);
 }
 
+/** "102,67 kg": o peso com duas casas, como o relatório do pedido do app antigo. */
+export function formatarPeso(kg: number): string {
+  return `${COM_CENTAVOS.format(kg)} kg`;
+}
+
 /** "R$ 950", "R$ 48,5 mil", "R$ 182 mil", "R$ 1,2 mi". */
 export function formatarReaisCompacto(valor: number): string {
   const sinal = valor < 0 ? MENOS : "";

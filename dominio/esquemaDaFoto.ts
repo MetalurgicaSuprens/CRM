@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 20;
+export const VERSAO_DO_ESQUEMA = 21;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -81,13 +81,15 @@ CREATE TABLE produto (
   produto TEXT PRIMARY KEY,
   familia TEXT NOT NULL,
   medida TEXT,
-  embalagem INTEGER
+  embalagem INTEGER,
+  peso_kg REAL
 ) STRICT;
 
 CREATE TABLE lista_de_precos (
   lista INTEGER NOT NULL,
   produto TEXT NOT NULL,
   preco_cento REAL NOT NULL,
+  part_numbers TEXT,
   PRIMARY KEY (lista, produto)
 ) STRICT;
 
@@ -264,6 +266,7 @@ CREATE TABLE cliente_local (
   tipo TEXT NOT NULL,
   razao_social TEXT NOT NULL,
   documento TEXT NOT NULL,
+  inscricao_estadual TEXT,
   endereco TEXT NOT NULL,
   bairro TEXT,
   cidade TEXT NOT NULL,
@@ -291,7 +294,11 @@ CREATE TABLE ultimo_pedido_item (
 CREATE TABLE transportadora (
   codigo TEXT PRIMARY KEY,
   nome TEXT NOT NULL,
+  razao_social TEXT NOT NULL,
   cnpj TEXT NOT NULL,
+  endereco TEXT,
+  bairro TEXT,
+  cep TEXT,
   cidade TEXT NOT NULL,
   uf TEXT NOT NULL
 ) STRICT;
@@ -381,12 +388,25 @@ export type Foto = {
   /** Os 12 meses fechados: o valor, a parte no faturado e as peças (versão 11). */
   cliente_familia: { cliente: string; familia: string; valor: number; participacao: number; pecas: number }[];
   /** Medida ("14–22 mm") e embalagem (peças) só nos produtos de alguma lista de preços. */
-  produto: { produto: string; familia: string; medida: string | null; embalagem: number | null }[];
+  produto: {
+    produto: string;
+    familia: string;
+    medida: string | null;
+    embalagem: number | null;
+    /** O peso de uma peça, em kg (ESTQ.PESO_POR_UNID), como o relatório do pedido do app antigo; null sem cadastro. */
+    peso_kg: number | null;
+  }[];
   /**
    * Preço do cento de cada produto vendável, por lista: clientes com a mesma tabela e os mesmos
    * descontos dividem uma lista (extrator/src/calculo/catalogo.ts).
    */
-  lista_de_precos: { lista: number; produto: string; preco_cento: number }[];
+  lista_de_precos: {
+    lista: number;
+    produto: string;
+    preco_cento: number;
+    /** Os part numbers do produto na tabela do cliente (VIEW_PNU da view de preço), juntos por vírgula; null sem nenhum. */
+    part_numbers: string | null;
+  }[];
   /**
    * Os part numbers da Bíblia Montadora do SGI (versão 16): os itens ativos das tabelas de preço de
    * montadora, só dos produtos de alguma lista. Sem o nome da montadora, que nenhuma tela usa.
@@ -515,6 +535,7 @@ export type Foto = {
     tipo: string;
     razao_social: string;
     documento: string;
+    inscricao_estadual: string | null;
     endereco: string;
     bairro: string | null;
     cidade: string;
@@ -530,7 +551,19 @@ export type Foto = {
   /** Os itens do último pedido do cliente, na ordem dele, em peças: o "repetir o último pedido". */
   ultimo_pedido_item: { cliente: string; ordem: number; produto: string; pecas: number }[];
   /** As transportadoras do ERP (CFOR, TIPO_FORN = 'T', fora as marcadas INATIVO): dado de empresa. */
-  transportadora: { codigo: string; nome: string; cnpj: string; cidade: string; uf: string }[];
+  transportadora: {
+    codigo: string;
+    nome: string;
+    razao_social: string;
+    cnpj: string;
+    /** O endereço do cadastro (CFOR), como o relatório do pedido do app antigo mostra; null quando vazio. */
+    endereco: string | null;
+    bairro: string | null;
+    /** Só os 8 dígitos; null sem CEP. */
+    cep: string | null;
+    cidade: string;
+    uf: string;
+  }[];
   /** Quantos pedidos de cada representante autorizado foram com cada transportadora, nos 24 meses. */
   representante_transportadora: { representante: string; transportadora: string; pedidos: number }[];
   /** As condições de pagamento que o representante escolhe (1000 a 1349, como no SGI6R) e as dos cadastros da carteira. */

@@ -28,7 +28,7 @@ function cliente(numero: number, mercado: ClienteDaCarteira["mercado"] = "PRACA"
 }
 
 function preco(clienteNumero: number, produto: string, precoCento: number, tabelaCodigo = "PDR02"): PrecoDoCliente {
-  return { cliente: clienteNumero, tabela: tabelaCodigo, produto, precoCento, aliquotaIpi: 5 };
+  return { cliente: clienteNumero, tabela: tabelaCodigo, produto, precoCento, aliquotaIpi: 5, partNumbers: null };
 }
 
 describe("escolherTabela", () => {
@@ -86,9 +86,9 @@ describe("montarCatalogo", () => {
         { produto: "FORA-DAS-LISTAS", partNumber: "999" },
       ],
       produtosDasTabelas: [
-        { produto: "FAB1422P", familia: "FLEXIL", medidaMinimaMm: 14, medidaMaximaMm: 22, embalagem: 100 },
-        { produto: "MAB1216P", familia: null, medidaMinimaMm: null, medidaMaximaMm: null, embalagem: 500 },
-        { produto: "FORA-DAS-LISTAS", familia: "MOLA", medidaMinimaMm: null, medidaMaximaMm: null, embalagem: 10 },
+        { produto: "FAB1422P", familia: "FLEXIL", medidaMinimaMm: 14, medidaMaximaMm: 22, embalagem: 100, pesoKg: 0.02 },
+        { produto: "MAB1216P", familia: null, medidaMinimaMm: null, medidaMaximaMm: null, embalagem: 500, pesoKg: null },
+        { produto: "FORA-DAS-LISTAS", familia: "MOLA", medidaMinimaMm: null, medidaMaximaMm: null, embalagem: 10, pesoKg: null },
       ],
       jaComprados: [
         { chave: "1/1", produto: "FAB1422P", ultimaCompra: { data: "2026-09-15", precoCento: 78.4 } },
@@ -132,11 +132,25 @@ describe("montarCatalogo", () => {
     ]);
   });
 
-  it("leva a família, a medida e a embalagem só dos produtos de alguma lista", () => {
+  it("leva a família, a medida, a embalagem e o peso só dos produtos de alguma lista", () => {
     expect(catalogo.produtos).toEqual([
-      { produto: "FAB1422P", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100 },
-      { produto: "MAB1216P", familia: "SEM FAMÍLIA", medida: null, embalagem: 500 },
+      { produto: "FAB1422P", familia: "FLEXIL", medida: "14–22 mm", embalagem: 100, peso_kg: 0.02 },
+      { produto: "MAB1216P", familia: "SEM FAMÍLIA", medida: null, embalagem: 500, peso_kg: null },
     ]);
+  });
+});
+
+describe("part numbers do cliente na lista", () => {
+  it("leva os part numbers do cliente em cada produto, e separa a lista de quem tem part number diferente", () => {
+    const catalogo = montarCatalogo([{ id: "id-1", cliente: cliente(1) }, { id: "id-2", cliente: cliente(2) }], {
+      tabelas: [tabela({ cliente: 1 }), tabela({ cliente: 2 })],
+      precos: [{ ...preco(1, "FAB1422P", 76), partNumbers: "N906227, 51234567" }, preco(2, "FAB1422P", 76)],
+      partNumbers: [],
+      produtosDasTabelas: [],
+      jaComprados: [],
+    });
+    expect(catalogo.porCliente.get("id-1")?.lista).not.toBe(catalogo.porCliente.get("id-2")?.lista);
+    expect(catalogo.lista_de_precos.map(({ part_numbers }) => part_numbers)).toEqual(["N906227, 51234567", null]);
   });
 });
 

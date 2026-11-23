@@ -70,7 +70,8 @@ export function lerPrecosDoCliente(oracle: Oracle, cliente: number, produtos: re
 /** `doCliente` é a condição do WHERE sobre a view V. */
 async function lerPrecosDa(oracle: Oracle, doCliente: string, binds: Record<string, unknown>): Promise<PrecoDoCliente[]> {
   const linhas = await oracle.consultar(
-    `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ), MAX(V.VIEW_ALI_IPI)
+    `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ), MAX(V.VIEW_ALI_IPI),
+            LISTAGG(DISTINCT NULLIF(TRIM(V.VIEW_PNU), '0'), ', ') WITHIN GROUP (ORDER BY NULLIF(TRIM(V.VIEW_PNU), '0'))
        FROM ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI V
       WHERE ${doCliente} AND V.VIEW_STA LIKE 'ATIVO%' AND TRIM(V.VIEW_IPR) = 'SIM' AND V.VIEW_VLR_LIQ > 0
         AND NOT EXISTS (SELECT 1 FROM ABC71.ESTQ E WHERE TRIM(E.C_PROD) = TRIM(V.VIEW_PAC) AND NVL(TRIM(E.QT_ALT_OBR), 'A') = 'I')
@@ -84,6 +85,7 @@ async function lerPrecosDa(oracle: Oracle, doCliente: string, binds: Record<stri
     produto: texto(linha, 2),
     precoCento: numero(linha, 3),
     aliquotaIpi: numero(linha, 4),
+    partNumbers: textoOuNulo(linha, 5),
   }));
 }
 
@@ -110,7 +112,8 @@ export async function lerProdutosDasTabelas(oracle: Oracle, tabelas: string[]): 
   const lista = emListaDeTexto("t", tabelas);
   const linhas = await oracle.consultar(
     `SELECT TRIM(P.PAC_COD), TRIM(G.GRP_DES), P.PAC_DMI_MM, P.PAC_DMA_MM,
-            (SELECT MAX(E.EAN_QTD) FROM ABC71.SGI5_TAB_ENG_EAN E WHERE TRIM(E.EAN_COD) = TRIM(P.PAC_COD))
+            (SELECT MAX(E.EAN_QTD) FROM ABC71.SGI5_TAB_ENG_EAN E WHERE TRIM(E.EAN_COD) = TRIM(P.PAC_COD)),
+            (SELECT MAX(S.PESO_POR_UNID) FROM ABC71.ESTQ S WHERE TRIM(S.C_PROD) = TRIM(P.PAC_COD))
        FROM ABC71.SGI5_TAB_ENG_PAC P
        LEFT JOIN ABC71.SGI5_TAB_CUS_V3_GRP G ON G.GRP_GRP = P.PAC_GRC
       WHERE TRIM(P.PAC_COD) IN (SELECT TRIM(B.TP2_PRO) FROM ABC71.SGI5_TAB_VEN_TP2 B WHERE TRIM(B.TP2_COD) IN ${lista.sql})`,
@@ -122,6 +125,7 @@ export async function lerProdutosDasTabelas(oracle: Oracle, tabelas: string[]): 
     medidaMinimaMm: numeroPositivoOuNulo(numero(linha, 2)),
     medidaMaximaMm: numeroPositivoOuNulo(numero(linha, 3)),
     embalagem: numeroPositivoOuNulo(numero(linha, 4)),
+    pesoKg: numeroPositivoOuNulo(numero(linha, 5)),
   }));
 }
 

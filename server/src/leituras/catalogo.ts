@@ -29,7 +29,13 @@ export function lerCatalogo(db: DatabaseSync, sessao: Sessao, codigoDoCliente: s
   if (!cliente || "bloqueado" in cliente) return cliente;
   const produtos = lerProdutos(db, codigoDoCliente, cliente.lista);
   const dadosDoPedido = lerDadosDoPedido(db, sessao, cliente.resumo, produtos.map(({ codigo }) => codigo));
-  return { catalogo: { cliente: cliente.resumo, tabela: cliente.tabela, produtos, dadosDoPedido } };
+  return { catalogo: { cliente: cliente.resumo, tabela: cliente.tabela, produtos, dadosDoPedido, representante: representanteDoCliente(db, codigoDoCliente) } };
+}
+
+/** O dono do cliente no ERP, com o nome do cadastro de representantes da foto. */
+function representanteDoCliente(db: DatabaseSync, codigoDoCliente: string): CatalogoDoCliente["representante"] {
+  const [linha] = lerLinhas(db, "SELECT r.codigo, r.nome FROM cliente c JOIN representante r ON r.codigo = c.representante WHERE c.cliente = ?", [codigoDoCliente]);
+  return linha ? { codigo: texto(linha, "codigo"), nome: texto(linha, "nome") } : null;
 }
 
 /**
@@ -51,7 +57,7 @@ function lerProdutos(db: DatabaseSync, codigoDoCliente: string, lista: number | 
   const partNumbers = partNumbersDaLista(db, lista);
   return lerLinhas(
     db,
-    `SELECT l.produto, p.familia, p.medida, p.embalagem, l.preco_cento,
+    `SELECT l.produto, p.familia, p.medida, p.embalagem, p.peso_kg, l.preco_cento, l.part_numbers,
             j.produto IS NOT NULL AS ja_comprou, j.ultima_compra, j.preco_cento_na_ultima
        FROM lista_de_precos l JOIN produto p ON p.produto = l.produto
        LEFT JOIN produto_comprado j ON j.cliente = ? AND j.produto = l.produto
@@ -66,6 +72,8 @@ function lerProdutos(db: DatabaseSync, codigoDoCliente: string, lista: number | 
     precoDaTabela: numero(linha, "preco_cento"),
     ultimaCompra: ultimaCompraDa(linha),
     partNumbers: partNumbers.get(texto(linha, "produto")) ?? [],
+    partNumbersDoCliente: textoOuNulo(linha, "part_numbers"),
+    pesoKg: numeroOuNulo(linha, "peso_kg"),
     jaComprou: numero(linha, "ja_comprou") === 1,
   }));
 }

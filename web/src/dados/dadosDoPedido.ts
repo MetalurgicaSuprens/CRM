@@ -134,6 +134,19 @@ export function valorDoIpi(item: ItemComCodigo, ipi: Readonly<Record<string, num
   return arredondarAoCentavo((valorDaLinha(item) * (ipi[item.codigo] ?? 0)) / 100);
 }
 
+/**
+ * O peso dos itens, em kg: o de uma peça vezes as peças, como o relatório do pedido do app antigo
+ * (ESTQ.PESO_POR_UNID × centos × 100). O item sem peso no cadastro fica de fora do total, e o total diz
+ * quantos ficaram.
+ */
+export function pesoDosItens(itens: readonly { codigo: string; quantidade: number }[], pesoPorPeca: ReadonlyMap<string, number | null>): { porItem: (number | null)[]; total: number; semPeso: number } {
+  const porItem = itens.map(({ codigo, quantidade }) => {
+    const peso = pesoPorPeca.get(codigo) ?? null;
+    return peso === null ? null : peso * quantidade;
+  });
+  return { porItem, total: porItem.reduce<number>((soma, peso) => soma + (peso ?? 0), 0), semPeso: porItem.filter((peso) => peso === null).length };
+}
+
 /** O rodapé do pedido, como a faixa de totais do SGI6R. Sem as alíquotas (foto antes da F5), o IPI fica null. */
 export type TotaisDoPedido = { itens: number; pecas: number; semIpi: number; ipi: number | null; comIpi: number | null };
 

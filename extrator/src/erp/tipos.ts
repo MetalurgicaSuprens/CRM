@@ -183,6 +183,8 @@ export type PrecoDoCliente = {
   precoCento: number;
   /** A alíquota de IPI do produto na view, em %: a mesma em toda tabela (conferido em 2026-11-17). */
   aliquotaIpi: number;
+  /** Os part numbers do produto na tabela do cliente (VIEW_PNU, sem o "0"), juntos por vírgula; null sem nenhum. */
+  partNumbers: string | null;
 };
 
 /** Um part number da Bíblia Montadora: o código que uma montadora dá ao produto. */
@@ -196,6 +198,8 @@ export type ProdutoDaTabela = {
   medidaMaximaMm: number | null;
   /** Peças por embalagem (EAN_QTD); null sem EAN. */
   embalagem: number | null;
+  /** O peso de uma peça, em kg (ESTQ.PESO_POR_UNID); null sem cadastro. */
+  pesoKg: number | null;
 };
 
 /** Produto que o cliente comprou nos últimos 24 meses: a aba "Já comprados" do pedido. */
@@ -232,9 +236,22 @@ export type LocalDoErp = {
   cidade: string;
   uf: string;
   cep: number;
+  /** A inscrição estadual do CNPJ do local (CRCA.INSCR_ESTD), como o relatório do pedido do app antigo. */
+  inscricaoEstadual: string | null;
 };
 
-export type TransportadoraDoErp = { codigo: string; fantasia: string | null; razaoSocial: string; documento: string; cidade: string; uf: string };
+export type TransportadoraDoErp = {
+  codigo: string;
+  fantasia: string | null;
+  razaoSocial: string;
+  documento: string;
+  endereco: string | null;
+  bairro: string | null;
+  /** O CEP como o CFOR guarda: 0 quando não há. */
+  cep: number;
+  cidade: string;
+  uf: string;
+};
 
 export type CondicaoDoErp = { codigo: string; descricao: string };
 

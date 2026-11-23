@@ -67,8 +67,8 @@ describe("somarEscolhas", () => {
 describe("montarTabelasDoPedido", () => {
   it("dá o nome de quem retira ao código da retirada e usa o fantasia nas outras transportadoras", () => {
     const transportadoras = [
-      { codigo: "78499999", fantasia: "R E T I R A -", razaoSocial: "RETIRA", documento: "", cidade: "", uf: "" },
-      { codigo: "101", fantasia: null, razaoSocial: "TRANSPORTES  IPE LTDA", documento: "11222333000181", cidade: "CURITIBA", uf: "PR" },
+      { codigo: "78499999", fantasia: "R E T I R A -", razaoSocial: "RETIRA", documento: "", endereco: null, bairro: null, cep: 0, cidade: "", uf: "" },
+      { codigo: "101", fantasia: null, razaoSocial: "TRANSPORTES  IPE LTDA", documento: "11222333000181", endereco: "R. SOLEDADE, 228", bairro: "CUMBICA", cep: 7224210, cidade: "CURITIBA", uf: "PR" },
     ];
     const tabelas = montarTabelasDoPedido(dados({ transportadoras }), [], new Set(), ID);
     expect(tabelas.transportadora.map(({ nome, cnpj }) => [nome, cnpj])).toEqual([
@@ -115,9 +115,9 @@ describe("montarTabelasDoPedido", () => {
 
   it("leva o IPI só dos produtos de alguma lista, uma alíquota por produto", () => {
     const precos = [
-      { cliente: 10, tabela: "T", produto: "A", precoCento: 10, aliquotaIpi: 5 },
-      { cliente: 11, tabela: "T", produto: "A", precoCento: 11, aliquotaIpi: 5 },
-      { cliente: 10, tabela: "T", produto: "FORA", precoCento: 10, aliquotaIpi: 9.75 },
+      { cliente: 10, tabela: "T", produto: "A", precoCento: 10, aliquotaIpi: 5, partNumbers: null },
+      { cliente: 11, tabela: "T", produto: "A", precoCento: 11, aliquotaIpi: 5, partNumbers: null },
+      { cliente: 10, tabela: "T", produto: "FORA", precoCento: 10, aliquotaIpi: 9.75, partNumbers: null },
     ];
     expect(montarTabelasDoPedido(dados(), precos, new Set(["A"]), ID).produto_ipi).toEqual([{ produto: "A", aliquota: 5 }]);
   });

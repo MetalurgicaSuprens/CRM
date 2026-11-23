@@ -33,14 +33,37 @@
   border-bottom: 2px solid #161616;
 }
 
-.titulo h2 {
+.titulo {
+  flex: 1 1 auto;
+}
+
+.empresa {
   margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.titulo h2 {
+  margin: 2px 0 0;
   font-size: 1.5rem;
 }
 
-.titulo p {
-  margin: 2px 0 0;
+/* A emissão e a validade, à direita do título, como a data do relatório do app antigo */
+.datas {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  text-align: right;
+}
+
+.datas dt {
+  font-size: 0.6875rem;
   color: #52514e;
+}
+
+.datas dd {
+  margin: 0;
+  font-weight: 600;
 }
 
 .bloco h3 {
@@ -52,41 +75,50 @@
   color: #52514e;
 }
 
-.bloco p {
+/* Os dados de cada bloco numa grade: o nome em cima, pequeno, e o valor embaixo */
+.dados {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--esp-3) var(--esp-4);
   margin: 0;
 }
 
-.destaque {
-  font-size: 0.9375rem;
-  font-weight: 600;
+.dados dt {
+  font-size: 0.6875rem;
+  color: #52514e;
 }
 
+.dados dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.largo {
+  grid-column: span 2;
+}
+
+/* Até 11 colunas na largura do A4: letra e recuo menores que os do resto da folha */
 .itens {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
 
 .itens th {
-  padding: 6px 8px;
+  padding: 6px 5px;
   border-bottom: 1px solid #161616;
   font-size: 0.6875rem;
   font-weight: 600;
   text-align: left;
   text-transform: uppercase;
-  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 .itens td {
-  padding: 6px 8px;
+  padding: 5px;
   border-bottom: 1px solid #e1e0d9;
   vertical-align: top;
-}
-
-.itens tfoot td {
-  border-top: 1px solid #161616;
-  border-bottom: 0;
-  font-weight: 600;
 }
 
 .itens .numero {
@@ -95,33 +127,20 @@
 }
 
 .codigo {
+  display: block;
   font-weight: 600;
 }
 
-.condicoes dl {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: var(--esp-3) var(--esp-5);
-  margin: 0;
-}
-
-.condicoes dt {
+/* O part number do cliente embaixo do código: pode ser mais de um, e quebra a linha */
+.partNumber {
+  display: block;
   font-size: 0.6875rem;
   color: #52514e;
-}
-
-.condicoes dd {
-  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .observacao {
   white-space: pre-wrap;
-}
-
-.rodape {
-  padding-top: var(--esp-3);
-  border-top: 1px solid #e1e0d9;
-  color: #52514e;
 }
 
 @media print {

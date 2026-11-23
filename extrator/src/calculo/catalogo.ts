@@ -74,7 +74,7 @@ function montarListas(clientes: readonly ClienteDoCatalogo[], dados: DadosDoCata
     if (lista === undefined) {
       lista = listaPorAssinatura.size + 1;
       listaPorAssinatura.set(assinatura, lista);
-      for (const { produto, precoCento } of ordenados) linhas.push({ lista, produto, preco_cento: precoCento });
+      for (const { produto, precoCento, partNumbers } of ordenados) linhas.push({ lista, produto, preco_cento: precoCento, part_numbers: partNumbers });
     }
     porCliente.set(id, { tabela: tabela.nome ?? tabela.tabela, lista });
   }
@@ -82,7 +82,7 @@ function montarListas(clientes: readonly ClienteDoCatalogo[], dados: DadosDoCata
 }
 
 function assinaturaDosPrecos(precos: readonly PrecoDoCliente[]): string {
-  return precos.map(({ produto, precoCento }) => `${produto}=${precoCento}`).join("|");
+  return precos.map(({ produto, precoCento, partNumbers }) => `${produto}=${precoCento}=${partNumbers ?? ""}`).join("|");
 }
 
 /** Os part numbers da Bíblia só dos produtos de alguma lista: a foto não leva o resto. */
@@ -126,5 +126,6 @@ function linhaDoProduto(produto: ProdutoDaTabela): Foto["produto"][number] {
     familia: produto.familia ?? SEM_FAMILIA,
     medida: formatarMedida(produto.medidaMinimaMm, produto.medidaMaximaMm),
     embalagem: produto.embalagem === null ? null : Math.round(produto.embalagem),
+    peso_kg: produto.pesoKg,
   };
 }

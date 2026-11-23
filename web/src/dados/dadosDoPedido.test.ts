@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   condicaoInicial,
   isClienteXped,
+  pesoDosItens,
   escolhasIniciais,
   escolhasNoCatalogo,
   formatarCnpj,
@@ -41,8 +42,8 @@ function dados(mudancas: Partial<DadosDoPedido> = {}): DadosDoPedido {
     parcialUsado: { aceita: 0, naoAceita: 0 },
     xpedUsado: { com: 0, sem: 0 },
     transportadoras: [
-      { codigo: "101", nome: "Rápido Sul", cnpj: "11.222.333/0001-81", cidade: "Curitiba", uf: "PR" },
-      { codigo: "102", nome: "Expresso Norte", cnpj: "45.997.418/0001-53", cidade: "Joinville", uf: "SC" },
+      { codigo: "101", nome: "Rápido Sul", razaoSocial: "Rápido Sul Transportes Ltda", cnpj: "11.222.333/0001-81", endereco: null, bairro: null, cep: null, cidade: "Curitiba", uf: "PR" },
+      { codigo: "102", nome: "Expresso Norte", razaoSocial: "Expresso Norte Ltda", cnpj: "45.997.418/0001-53", endereco: null, bairro: null, cep: null, cidade: "Joinville", uf: "SC" },
     ],
     transportadorasDoCliente: [],
     transportadorasDoRepresentante: [],
@@ -92,6 +93,17 @@ describe("condicaoInicial", () => {
 
   it("sem histórico, começa na do cadastro", () => {
     expect(condicaoInicial(dados())).toBe("1030");
+  });
+});
+
+describe("pesoDosItens", () => {
+  it("pesa cada item pelo peso de uma peça vezes as peças, e soma o total sem os itens sem peso", () => {
+    const pesos = new Map<string, number | null>([["A", 0.02175], ["B", null]]);
+    const peso = pesoDosItens([{ codigo: "A", quantidade: 500 }, { codigo: "B", quantidade: 100 }], pesos);
+    expect(peso.porItem[0]).toBeCloseTo(10.875);
+    expect(peso.porItem[1]).toBeNull();
+    expect(peso.total).toBeCloseTo(10.875);
+    expect(peso.semPeso).toBe(1);
   });
 });
 

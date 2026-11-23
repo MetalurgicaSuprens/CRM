@@ -1,16 +1,26 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
 import { Printer } from "lucide-react";
-import { dataDoMomento, somarDias } from "dominio/datas";
+import { dataDoMomento, horaDoMomento, somarDias } from "dominio/datas";
 import { primeiraEntregaPossivel, valorDaLinha } from "dominio/pedido";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Voltar } from "../componentes/Voltar";
 import { carregarCatalogo, carregarCotacao, carregarSituacaoDosDados } from "../dados/api";
-import { ROTULOS_DA_CLASSIFICACAO, nomeDaTransportadora, totaisDoPedido, valorDoIpi } from "../dados/dadosDoPedido";
-import type { CatalogoDoCliente, Cotacao } from "../dados/tipos";
+import { ROTULOS_DA_CLASSIFICACAO, formatarCnpj, pesoDosItens, totaisDoPedido, transportadoraDe, valorDoIpi } from "../dados/dadosDoPedido";
+import type { CatalogoDoCliente, Cotacao, LocalDoCadastro } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarComCentavos, formatarData, formatarDocumentoDoCliente, formatarEnderecoDoCadastro, formatarNumero, formatarReaisComCentavos } from "../formato";
+import {
+  formatarCep,
+  formatarComCentavos,
+  formatarContagem,
+  formatarData,
+  formatarDocumentoDoCliente,
+  formatarEnderecoDoCadastro,
+  formatarNumero,
+  formatarPeso,
+  formatarReaisComCentavos,
+} from "../formato";
 import { Carregando } from "./Carregando";
 import estilos from "./CotacaoParaImprimir.module.css";
 
@@ -18,7 +28,8 @@ import estilos from "./CotacaoParaImprimir.module.css";
  * A cotação formalizada para o cliente (pedido do Lucas em 2026-11-23): a página que o navegador
  * imprime ou salva em PDF ("Salvar como PDF"), no computador e no celular, sem programa novo. O menu e a
  * barra somem na impressão (Layout.module.css). Os valores aparecem mesmo com "Ocultar valores": a
- * cotação é para o cliente ver. Sem contato do representante, como o Lucas decidiu.
+ * cotação é para o cliente ver. Sem contato do representante, como o Lucas decidiu. A quantidade vai em
+ * peças, e não em centos como no app antigo (decisão do Lucas em 2026-11-23).
  */
 
 /** A validade da cotação: a mesma que o app antigo dos representantes grava no SGI (V_DVA = hoje + 10). */
@@ -63,83 +74,118 @@ function ComCatalogo({ cotacao }: { cotacao: Cotacao }) {
         />
         <p className={estilos.dica}>Na janela de impressão, escolha "Salvar como PDF" para mandar o arquivo ao cliente.</p>
       </div>
-      <Folha cotacao={cotacao} catalogo={catalogo} representante={situacao.representante.nome} hoje={dataDoMomento(situacao.relogio)} />
+      <Folha cotacao={cotacao} catalogo={catalogo} nomeDoLogin={situacao.representante.nome} hoje={dataDoMomento(situacao.relogio)} />
     </>
   );
 }
 
-type PropsDaFolha = { cotacao: Cotacao; catalogo: CatalogoDoCliente; representante: string; hoje: string };
+type PropsDaFolha = { cotacao: Cotacao; catalogo: CatalogoDoCliente; nomeDoLogin: string; hoje: string };
 
-/** A folha A4: a Suprens e a cotação, o cliente, os itens, as condições e os totais. */
-function Folha({ cotacao, catalogo, representante, hoje }: PropsDaFolha) {
-  const dados = catalogo.dadosDoPedido;
+/**
+ * A folha A4, com tudo o que o relatório do pedido do app antigo dos representantes mostra
+ * (frmPedidos_RelPedidoEnvio) e o que a cotação tem a mais: o resumo, o cliente, os itens, as condições,
+ * os endereços de entrega e cobrança e a transportadora.
+ */
+function Folha({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDaFolha) {
   const emitidaEm = dataDoMomento(cotacao.atualizadoEm);
   useTituloDoArquivo(`Cotação Suprens - ${catalogo.cliente.nome} - ${formatarData(emitidaEm).replaceAll("/", "-")}`);
+  const ipi = catalogo.dadosDoPedido?.ipi ?? null;
+  const totais = totaisDoPedido(cotacao.itens, ipi);
+  const peso = pesoDosItens(cotacao.itens, new Map(catalogo.produtos.map((produto) => [produto.codigo, produto.pesoKg])));
+  const representante = catalogo.representante ? `${catalogo.representante.codigo} - ${catalogo.representante.nome}` : nomeDoLogin;
   return (
     <article className={estilos.folha} aria-label="Cotação para imprimir">
       <header className={estilos.topo}>
         <img src="/marca/suprens-96.png" alt="Suprens" width={64} height={61} />
         <div className={estilos.titulo}>
+          <p className={estilos.empresa}>Metalúrgica Suprens Ltda</p>
           <h2>Cotação</h2>
-          <p>
-            Emitida em {formatarData(emitidaEm)} · válida até {formatarData(somarDias(emitidaEm, DIAS_DE_VALIDADE_DA_COTACAO))}
-          </p>
         </div>
+        <dl className={estilos.datas}>
+          <Dado rotulo="Emitida em">{formatarData(emitidaEm)} às {horaDoMomento(cotacao.atualizadoEm)}</Dado>
+          <Dado rotulo="Válida até">{formatarData(somarDias(emitidaEm, DIAS_DE_VALIDADE_DA_COTACAO))}</Dado>
+        </dl>
       </header>
 
-      <section className={estilos.bloco}>
-        <h3>Cliente</h3>
-        <p className={estilos.destaque}>{dados?.cadastro.razaoSocial ?? catalogo.cliente.nome}</p>
-        <p>{formatarDocumentoDoCliente(catalogo.cliente)}</p>
-        {dados ? <p>{formatarEnderecoDoCadastro(dados.cadastro.faturamento)}</p> : null}
-      </section>
+      <Bloco titulo="Resumo">
+        <Dado rotulo="Itens">{formatarNumero(totais.itens)}</Dado>
+        <Dado rotulo="Quantidade">{formatarNumero(totais.pecas)} pç</Dado>
+        <Dado rotulo="Valor s/ IPI">{formatarReaisComCentavos(totais.semIpi)}</Dado>
+        {totais.ipi !== null && totais.comIpi !== null ? (
+          <>
+            <Dado rotulo="Valor IPI">{formatarReaisComCentavos(totais.ipi)}</Dado>
+            <Dado rotulo="Valor c/ IPI">{formatarReaisComCentavos(totais.comIpi)}</Dado>
+          </>
+        ) : null}
+        <Dado rotulo="Peso total">
+          {formatarPeso(peso.total)}
+          {peso.semPeso > 0 ? ` (${formatarContagem(peso.semPeso, "item sem peso", "itens sem peso")})` : ""}
+        </Dado>
+        <Dado rotulo="Representante" isLargo>
+          {representante}
+        </Dado>
+      </Bloco>
 
-      <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} />
-
-      <section className={`${estilos.bloco} ${estilos.condicoes}`}>
-        <h3>Condições</h3>
-        <dl>
-          <CondicoesDaCotacao cotacao={cotacao} catalogo={catalogo} hoje={hoje} />
-        </dl>
-      </section>
-
-      {cotacao.observacao.trim() ? (
-        <section className={estilos.bloco}>
-          <h3>Observações</h3>
-          <p className={estilos.observacao}>{cotacao.observacao}</p>
-        </section>
-      ) : null}
-
-      <footer className={estilos.rodape}>Representante: {representante}</footer>
+      <ClienteDaCotacao catalogo={catalogo} />
+      <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} pesoPorItem={peso.porItem} />
+      <CondicoesDaCotacao cotacao={cotacao} catalogo={catalogo} hoje={hoje} />
+      <EnderecosDaCotacao cotacao={cotacao} catalogo={catalogo} />
     </article>
   );
 }
 
-/**
- * O título da página enquanto a folha está aberta: é o nome que o "Salvar como PDF" sugere para o arquivo.
- * Ao sair, volta o de antes.
- */
-function useTituloDoArquivo(titulo: string): void {
-  useEffect(() => {
-    const anterior = document.title;
-    document.title = titulo;
-    return () => {
-      document.title = anterior;
-    };
-  }, [titulo]);
+/** O cliente como o cadastro do ERP: o que o relatório do app antigo mostra no bloco "Cliente". */
+function ClienteDaCotacao({ catalogo }: { catalogo: CatalogoDoCliente }) {
+  const cadastro = catalogo.dadosDoPedido?.cadastro ?? null;
+  if (!cadastro) {
+    return (
+      <Bloco titulo="Cliente">
+        <Dado rotulo="Razão social" isLargo>
+          {catalogo.cliente.nome}
+        </Dado>
+        <Dado rotulo="CNPJ/CPF">{formatarDocumentoDoCliente(catalogo.cliente)}</Dado>
+      </Bloco>
+    );
+  }
+  const { faturamento } = cadastro;
+  return (
+    <Bloco titulo="Cliente">
+      <Dado rotulo="Razão social" isLargo>
+        {cadastro.razaoSocial}
+      </Dado>
+      <Dado rotulo="CNPJ/CPF">{cadastro.documento}</Dado>
+      <Dado rotulo="Inscrição estadual">{cadastro.inscricaoEstadual ?? "—"}</Dado>
+      <Dado rotulo="Suframa">{cadastro.suframa ?? "—"}</Dado>
+      <Dado rotulo="Fone">{cadastro.telefone ?? "—"}</Dado>
+      <Dado rotulo="E-mail do XML" isLargo>
+        {cadastro.emailDoXml ?? "—"}
+      </Dado>
+      <Dado rotulo="Endereço" isLargo>
+        {faturamento.texto}
+      </Dado>
+      <Dado rotulo="Bairro">{faturamento.bairro ?? "—"}</Dado>
+      <Dado rotulo="Cidade/UF">
+        {faturamento.cidade}/{faturamento.uf}
+      </Dado>
+      <Dado rotulo="CEP">{faturamento.cep ? formatarCep(faturamento.cep) : "—"}</Dado>
+    </Bloco>
+  );
 }
 
-function ItensDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: CatalogoDoCliente }) {
+type PropsDosItens = { cotacao: Cotacao; catalogo: CatalogoDoCliente; pesoPorItem: readonly (number | null)[] };
+
+/** Os itens: o part number é o do produto na tabela do cliente, embaixo do código, como no app antigo. */
+function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
-  const totais = totaisDoPedido(cotacao.itens, ipi);
-  const temOrdem = cotacao.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || cotacao.escolhas?.pedidoDoCliente;
+  const partNumbers = new Map(catalogo.produtos.map((produto) => [produto.codigo, produto.partNumbersDoCliente]));
+  const temOrdem = cotacao.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || Boolean(cotacao.escolhas?.pedidoDoCliente.trim());
   const ordemDoPedido = cotacao.escolhas?.pedidoDoCliente.trim() ?? "";
   return (
     <table className={estilos.itens}>
       <thead>
         <tr>
           <th>Item</th>
-          <th>Produto</th>
+          <th>Produto · part number</th>
           {temOrdem ? (
             <>
               <th>Ordem compra</th>
@@ -155,17 +201,21 @@ function ItensDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: Cat
               <th className={estilos.numero}>Valor c/ IPI</th>
             </>
           ) : null}
+          <th className={estilos.numero}>Peso (kg)</th>
         </tr>
       </thead>
       <tbody>
         {cotacao.itens.map((item, posicao) => {
           const semIpi = valorDaLinha(item);
           const valorIpi = ipi ? valorDoIpi(item, ipi) : 0;
+          const partNumber = partNumbers.get(item.codigo) ?? null;
+          const pesoDoItem = pesoPorItem[posicao] ?? null;
           return (
             <tr key={item.codigo}>
               <td>{posicao + 1}</td>
               <td>
                 <span className={estilos.codigo}>{item.codigo}</span>
+                {partNumber ? <span className={estilos.partNumber}>{partNumber}</span> : null}
               </td>
               {temOrdem ? (
                 <>
@@ -182,26 +232,11 @@ function ItensDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: Cat
                   <td className={estilos.numero}>{formatarComCentavos(semIpi + valorIpi)}</td>
                 </>
               ) : null}
+              <td className={estilos.numero}>{pesoDoItem === null ? "—" : formatarComCentavos(pesoDoItem)}</td>
             </tr>
           );
         })}
       </tbody>
-      <tfoot>
-        <tr>
-          <td colSpan={temOrdem ? 4 : 2}>
-            Total · {formatarNumero(totais.itens)} {totais.itens === 1 ? "item" : "itens"}
-          </td>
-          <td className={estilos.numero}>{formatarNumero(totais.pecas)}</td>
-          <td />
-          <td className={estilos.numero}>{formatarReaisComCentavos(totais.semIpi)}</td>
-          {ipi && totais.ipi !== null && totais.comIpi !== null ? (
-            <>
-              <td className={estilos.numero}>{formatarReaisComCentavos(totais.ipi)}</td>
-              <td className={estilos.numero}>{formatarReaisComCentavos(totais.comIpi)}</td>
-            </>
-          ) : null}
-        </tr>
-      </tfoot>
     </table>
   );
 }
@@ -211,27 +246,101 @@ function CondicoesDaCotacao({ cotacao, catalogo, hoje }: { cotacao: Cotacao; cat
   const escolhas = cotacao.escolhas;
   const entrega = cotacao.entrega ? `Programada para ${formatarData(cotacao.entrega)}` : `Assim que possível, a partir de ${formatarData(primeiraEntregaPossivel(hoje))}`;
   return (
-    <>
-      <Condicao rotulo="Entrega">{entrega}</Condicao>
+    <Bloco titulo="Condições">
       {dados && escolhas ? (
         <>
-          <Condicao rotulo="Pagamento">{dados.condicoes.find((condicao) => condicao.codigo === escolhas.condicaoDePagamento)?.descricao ?? escolhas.condicaoDePagamento}</Condicao>
-          <Condicao rotulo="Transportadora">{escolhas.transportadora ? nomeDaTransportadora(dados, escolhas.transportadora) : "A combinar"}</Condicao>
-          <Condicao rotulo="Frete parcial">{escolhas.aceitaParcial ? "Aceita" : "Não aceita"}</Condicao>
-          <Condicao rotulo="Venda">{ROTULOS_DA_CLASSIFICACAO[escolhas.classificacao]}</Condicao>
-          {escolhas.pedidoDoCliente.trim() ? <Condicao rotulo="Ordem de compra">{escolhas.pedidoDoCliente}</Condicao> : null}
+          <Dado rotulo="Condição de pagamento">{dados.condicoes.find((condicao) => condicao.codigo === escolhas.condicaoDePagamento)?.descricao ?? escolhas.condicaoDePagamento}</Dado>
+          <Dado rotulo="Classificação da venda">{ROTULOS_DA_CLASSIFICACAO[escolhas.classificacao]}</Dado>
+          <Dado rotulo="Nº pedido do cliente">{escolhas.pedidoDoCliente.trim() || "—"}</Dado>
+          <Dado rotulo="Frete parcial">{escolhas.aceitaParcial ? "Aceita" : "Não aceita"}</Dado>
         </>
       ) : null}
-      <Condicao rotulo="Preços">Em reais, por cento de peças</Condicao>
-    </>
+      <Dado rotulo="Entrega">{entrega}</Dado>
+      <Dado rotulo="Preços">Em reais, por cento de peças</Dado>
+      {cotacao.observacao.trim() ? (
+        <Dado rotulo="Observações" isLargo>
+          <span className={estilos.observacao}>{cotacao.observacao}</span>
+        </Dado>
+      ) : null}
+    </Bloco>
   );
 }
 
-function Condicao({ rotulo, children }: { rotulo: string; children: ReactNode }) {
+/** Entrega, cobrança e transporte, como os "Endereços Complementares" do relatório do app antigo. */
+function EnderecosDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: CatalogoDoCliente }) {
+  const dados = catalogo.dadosDoPedido;
+  if (!dados) return null;
+  const escolhida = cotacao.escolhas?.transportadora ?? null;
+  const transportadora = escolhida && "codigo" in escolhida ? transportadoraDe(dados, escolhida.codigo) : null;
+  const nova = escolhida && "nova" in escolhida ? escolhida.nova : null;
   return (
-    <div>
+    <Bloco titulo="Endereços">
+      <Local rotulo="Entrega" local={dados.cadastro.entrega} />
+      <Local rotulo="Cobrança" local={dados.cadastro.cobranca} />
+      <Dado rotulo="Transportadora" isLargo>
+        {transportadora ? (
+          <>
+            {transportadora.razaoSocial} · CNPJ {transportadora.cnpj}
+            <br />
+            {[transportadora.endereco, transportadora.bairro, `${transportadora.cidade}/${transportadora.uf}`, transportadora.cep ? formatarCep(transportadora.cep) : null]
+              .filter(Boolean)
+              .join(" · ")}
+          </>
+        ) : nova ? (
+          `${nova.nome} · CNPJ ${formatarCnpj(nova.cnpj)} · ${nova.cidade}/${nova.uf}`
+        ) : (
+          "A combinar"
+        )}
+      </Dado>
+    </Bloco>
+  );
+}
+
+function Local({ rotulo, local }: { rotulo: string; local: LocalDoCadastro | null }) {
+  return (
+    <Dado rotulo={rotulo} isLargo>
+      {local ? (
+        <>
+          {local.razaoSocial} · CNPJ {local.documento}
+          {local.inscricaoEstadual ? ` · IE ${local.inscricaoEstadual}` : ""}
+          <br />
+          {formatarEnderecoDoCadastro(local)}
+        </>
+      ) : (
+        "No endereço do faturamento"
+      )}
+    </Dado>
+  );
+}
+
+function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    <section className={estilos.bloco}>
+      <h3>{titulo}</h3>
+      <dl className={estilos.dados}>{children}</dl>
+    </section>
+  );
+}
+
+function Dado({ rotulo, isLargo = false, children }: { rotulo: string; isLargo?: boolean; children: ReactNode }) {
+  return (
+    <div className={isLargo ? estilos.largo : undefined}>
       <dt>{rotulo}</dt>
       <dd>{children}</dd>
     </div>
   );
+}
+
+/**
+ * O título da página enquanto a folha está aberta: é o nome que o "Salvar como PDF" sugere para o arquivo.
+ * Ao sair, volta o de antes.
+ */
+function useTituloDoArquivo(titulo: string): void {
+  useEffect(() => {
+    const anterior = document.title;
+    document.title = titulo;
+    return () => {
+      document.title = anterior;
+    };
+  }, [titulo]);
 }

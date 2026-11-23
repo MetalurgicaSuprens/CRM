@@ -10,7 +10,7 @@ export const SEM_FAMILIA = "SEM FAMÍLIA";
 export function juntarProdutos(produtos: Foto["produto"], outros: readonly { produto: string; familia: string | null }[]): Foto["produto"] {
   const porCodigo = new Map(produtos.map((produto) => [produto.produto, produto]));
   for (const { produto, familia } of outros) {
-    if (!porCodigo.has(produto)) porCodigo.set(produto, { produto, familia: familia ?? SEM_FAMILIA, medida: null, embalagem: null });
+    if (!porCodigo.has(produto)) porCodigo.set(produto, { produto, familia: familia ?? SEM_FAMILIA, medida: null, embalagem: null, peso_kg: null });
   }
   return [...porCodigo.values()];
 }

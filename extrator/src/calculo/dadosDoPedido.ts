@@ -49,8 +49,9 @@ export function montarTabelasDoPedido(
     cliente_local: dados.locais.flatMap((local) => {
       const id = idNaCarteira(local.chave);
       if (!id) return [];
-      const { razaoSocial, documento, endereco, bairro, cidade, uf, cep, tipo } = local;
-      return [{ cliente: id, tipo, razao_social: razaoSocial, documento: formatarDocumento(documento), endereco, bairro, cidade, uf, cep: cepDoErp(cep) }];
+      const { razaoSocial, documento, endereco, bairro, cidade, uf, cep, tipo, inscricaoEstadual } = local;
+
+      return [{ cliente: id, tipo, razao_social: razaoSocial, documento: formatarDocumento(documento), inscricao_estadual: inscricaoEstadual, endereco, bairro, cidade, uf, cep: cepDoErp(cep) }];
     }),
     cliente_escolha: somarEscolhas(dados.escolhas, idNaCarteira),
     ultimo_pedido_item: dados.ultimosPedidos.flatMap((item, i, todos) => {
@@ -88,7 +89,11 @@ function linhaDaTransportadora(transportadora: TransportadoraDoErp): Foto["trans
   return {
     codigo: transportadora.codigo,
     nome: nomeDaTransportadora(transportadora),
+    razao_social: transportadora.razaoSocial,
     cnpj: formatarDocumento(transportadora.documento),
+    endereco: transportadora.endereco,
+    bairro: transportadora.bairro,
+    cep: cepDoErp(transportadora.cep),
     cidade: transportadora.cidade,
     uf: transportadora.uf,
   };

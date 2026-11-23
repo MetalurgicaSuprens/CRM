@@ -37,10 +37,14 @@ export function lerDadosDoPedido(db: DatabaseSync, sessao: Sessao, cliente: Clie
     classificacoesUsadas: escolhas("classificacao") as Uso<Classificacao>[],
     parcialUsado: { aceita: parcial.find((uso) => uso.valor === "sim")?.pedidos ?? 0, naoAceita: parcial.find((uso) => uso.valor === "nao")?.pedidos ?? 0 },
     xpedUsado: { com: xped.find((uso) => uso.valor === "sim")?.pedidos ?? 0, sem: xped.find((uso) => uso.valor === "nao")?.pedidos ?? 0 },
-    transportadoras: lerLinhas(db, "SELECT codigo, nome, cnpj, cidade, uf FROM transportadora ORDER BY nome").map((linha) => ({
+    transportadoras: lerLinhas(db, "SELECT codigo, nome, razao_social, cnpj, endereco, bairro, cep, cidade, uf FROM transportadora ORDER BY nome").map((linha) => ({
       codigo: texto(linha, "codigo"),
       nome: texto(linha, "nome"),
+      razaoSocial: texto(linha, "razao_social"),
       cnpj: texto(linha, "cnpj"),
+      endereco: textoOuNulo(linha, "endereco"),
+      bairro: textoOuNulo(linha, "bairro"),
+      cep: textoOuNulo(linha, "cep"),
       cidade: texto(linha, "cidade"),
       uf: texto(linha, "uf"),
     })),
@@ -60,6 +64,7 @@ function montarCadastro(db: DatabaseSync, cliente: ClienteResumo, cadastro: Linh
       ? {
           razaoSocial: texto(linha, "razao_social"),
           documento: texto(linha, "documento"),
+          inscricaoEstadual: textoOuNulo(linha, "inscricao_estadual"),
           texto: texto(linha, "endereco"),
           bairro: textoOuNulo(linha, "bairro"),
           cidade: texto(linha, "cidade"),
