@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { somarDias } from "dominio/datas";
 import { primeiraEntregaPossivel } from "dominio/pedido";
-import type { Oracle } from "../oracle.ts";
+import { oracleDeTeste } from "../oracleDeTeste.ts";
 import { conferirNoErp, decidir, type LidoDoErp } from "./conferencia.ts";
 import { pedidoDeTeste } from "./pedidoDeTeste.ts";
 
@@ -71,10 +71,11 @@ describe("decidir", () => {
 
 describe("conferirNoErp", () => {
   it("recusa o código de representante não autorizado nesta máquina antes de consultar o Oracle", async () => {
-    const oracle: Oracle = {
-      consultar: () => Promise.reject(new Error("não devia consultar")),
-      fechar: () => Promise.resolve(),
-    };
+    const oracle = oracleDeTeste({
+      consultar: () => {
+        throw new Error("não devia consultar");
+      },
+    });
     const decisao = await conferirNoErp(oracle, pedidoDeTeste({ codigos: ["1401", "9999"] }), { chaveDoIdDoCliente: Buffer.alloc(32), autorizados: ["1401"] });
     expect(decisao).toEqual({ destino: "quarentena", motivo: "código de representante não autorizado nesta máquina: 9999" });
   });

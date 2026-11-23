@@ -3,6 +3,7 @@ import path from "node:path";
 import { dataDoMomento } from "dominio/datas";
 import type { Decisao } from "./conferencia.ts";
 import { lerPedidoRecebido, type PedidoRecebido } from "./formato.ts";
+import { CONFERIDOS, GRAVADOS } from "./gravacao.ts";
 
 /*
  * A triagem dos pedidos que vieram do CRM (F5), na pasta de pedidos da máquina do extrator:
@@ -10,7 +11,8 @@ import { lerPedidoRecebido, type PedidoRecebido } from "./formato.ts";
  *   busca sabe o que já trouxe;
  * - conferidos/: passou em tudo e pode ir ao SGI, com o que só a LAN sabe ao lado (<número>.erp.json);
  * - aguardando/: espera vendas cadastrar a transportadora nova; é conferido de novo a cada passada;
- * - quarentena/: recusado, com o motivo em <número>.motivo.txt.
+ * - quarentena/: recusado, com o motivo em <número>.motivo.txt;
+ * - gravados/: já está no SGI (pedidos/gravacao.ts).
  * O arquivo PAUSAR na pasta de pedidos suspende a triagem (e, depois, a gravação no SGI) até ser apagado.
  */
 
@@ -25,7 +27,7 @@ export const ARQUIVO_PARA_PAUSAR = "PAUSAR";
 /** A pasta dos recebidos, dentro da pasta de pedidos: onde a busca (envio/buscarPedidos.ts) deixa o que trouxe. */
 export const RECEBIDOS = "recebidos";
 /** Os que já tiveram destino final: não são conferidos de novo. */
-const DECIDIDOS: readonly Destino[] = ["conferidos", "quarentena"];
+const DECIDIDOS: readonly string[] = [CONFERIDOS, GRAVADOS, "quarentena"];
 const NOME_DO_PEDIDO = /^CRM-\d{5,9}\.json$/;
 
 export function isPausada(pastaDosPedidos: string): boolean {
@@ -84,14 +86,16 @@ function gravarInteiro(arquivo: string, conteudo: string): void {
   fs.renameSync(`${arquivo}.part`, arquivo);
 }
 
-/** Os pedidos já aceitos (conferidos) de cada login, por dia do envio. */
+/** Os pedidos já aceitos (conferidos e já gravados no SGI) de cada login, por dia do envio. */
 function contarAceitos(pastaDosPedidos: string): Map<string, number> {
   const contagem = new Map<string, number>();
-  for (const nome of pedidosEm(pastaDosPedidos, "conferidos")) {
-    const leitura = lerPedidoRecebido(fs.readFileSync(path.join(pastaDosPedidos, "conferidos", nome), "utf8"), nome);
-    if (!leitura.ok) continue;
-    const chave = chaveDoLoginNoDia(leitura.pedido);
-    contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
+  for (const pasta of [CONFERIDOS, GRAVADOS]) {
+    for (const nome of pedidosEm(pastaDosPedidos, pasta)) {
+      const leitura = lerPedidoRecebido(fs.readFileSync(path.join(pastaDosPedidos, pasta, nome), "utf8"), nome);
+      if (!leitura.ok) continue;
+      const chave = chaveDoLoginNoDia(leitura.pedido);
+      contagem.set(chave, (contagem.get(chave) ?? 0) + 1);
+    }
   }
   return contagem;
 }

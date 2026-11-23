@@ -7,8 +7,10 @@ declare module "oracledb" {
     execute<T>(
       sql: string,
       binds: Record<string, unknown>,
-      opcoes: { outFormat: number; fetchArraySize: number },
+      opcoes: { outFormat?: number; fetchArraySize?: number; autoCommit?: boolean },
     ): Promise<Execucao<T>>;
+    commit(): Promise<void>;
+    rollback(): Promise<void>;
     close(): Promise<void>;
   };
 

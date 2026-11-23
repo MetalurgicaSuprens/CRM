@@ -109,7 +109,7 @@ O preço vem da view de preço do cliente (`SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`): `VI
 | `V_PMV_MB`, `V_PMV_ML` | preço mínimo por margem bruta e líquida | da `SGI5_TAB_CUS_REP_VLR_MIN_VEN` do dia (`CUS_DMO = TRUNC(SYSDATE)`) × 100: exportação, `EXP`; senão, pelo ICMS do item (`PRAIS` com 0, `PRA4`, `PRA7`, `PRA12`, `PRA18`); a coluna `_COM` quando há comissão | o mesmo |
 | `V_LR1`, `V_LR2` | livres | vazios | vazios |
 | `V_OCO` | ordem de compra do cliente no item | a do cabeçalho, que o representante pode trocar no item ("Ordem Compra:") | `ordemDeCompra` do item; null é a do cabeçalho (`pedidoDoCliente`) |
-| `V_IOC` | item da ordem de compra ("Item O.C.:") | o digitado; em branco, **0** (é o que está gravado: 96% dos itens do SGI6R têm 0) | `itemDaOrdemDeCompra` do item; null vira **0**, como o SGI6R |
+| `V_IOC` | item da ordem de compra ("Item O.C.:") | o digitado; em branco, **0** (é o que está gravado: 96% dos itens do SGI6R têm 0) | `itemDaOrdemDeCompra` do item; sem ele, **nulo**: é o que chega à procedure pelo SGI6R, porque o servidor dele troca o 0 por nulo (`IUDItens`), e a tabela fica com 0 |
 | `V_NPP`, `V_SPP`, `V_JPP` | pedido de produção | nulos | nulos |
 | `V_USU` | usuário | o representante | o mesmo do cabeçalho |
 
@@ -151,6 +151,26 @@ Proposta: a ligação do pedido com o CRM fica na máquina do extrator, que esco
 - **Cliente sem tabela `PRINCIPAL`:** bloquear o pedido já na tela do CRM, como o SGI6R, dizendo o motivo ao representante ("Tabela de preço não cadastrada").
 - **Qual login enviou:** o código do pedido continua o dono do cliente, como hoje. O Lucas quer saber também o login do CRM que colocou o pedido, para separar os vendedores de um mesmo representante. O `app.db` já guarda isso (`pedidos_enviados.usuario` e a chave usada). Falta mostrar, no CRM e talvez no SGI.
 - **Condição de pagamento:** começar na condição que o cliente mais usa, e não na do cadastro. A Suprens estuda trocar a condição do cadastro, que hoje é uma só, por uma lista de condições permitidas por cliente.
+
+## Gravação no SGI (etapa 4), feita em 2026-11-23
+
+Na máquina do extrator, no mesmo `npm run pedidos`, depois da conferência (`extrator/src/pedidos/gravacao.ts` e `chamadasDoSgi.ts`):
+- **Desligada até o primeiro pedido de teste:** só grava com `CRM_GRAVAR_NO_SGI=ligado` no `extrator.env`. Desligada, os conferidos esperam em `conferidos/`, e o resumo da passada diz quais. O arquivo `PAUSAR` também a suspende.
+- **Uma transação por pedido:**
+  - o cabeçalho com `V_OPE = 1` (COTACAO), um item por vez e a efetivação com `V_OPE = 13`, que o deixa PEDIDO BLOQUEADO;
+  - só confirma no fim; o erro no meio desfaz tudo.
+- **O que é lido de novo antes de gravar:** o cadastro do cliente com a tabela PRINCIPAL, os produtos na view de preço, o preço mínimo do dia, o endereço da transportadora e a data do Oracle. Se a tabela mudou desde a conferência, o pedido vai direto para a quarentena.
+- **Número do pedido:** o maior + 1, como o SGI6R. Se a tela do SGI pegar o mesmo número no meio (ORA-00001), tenta o seguinte.
+- **Sem gravar duas vezes:**
+  - o número fica anotado em `andamento/` antes da transação;
+  - se a passada cair depois de confirmar, a seguinte acha o pedido no SGI por esse número e cliente e não grava de novo.
+- **A recusa do SGI** (por exemplo, o pedido para o mesmo cliente em menos de 4 minutos):
+  - fica para a passada seguinte, 5 minutos depois;
+  - na sexta tentativa, vai para a quarentena, com o motivo.
+- **A queda da conexão** para a passada, e o pedido fica para a próxima.
+- **Gravado,** o pedido vai para `gravados/`, com o número do SGI em `<número CRM>.sgi.json`. É a ligação do pedido do CRM com o do SGI, de que a etapa 5 precisa.
+- **Na linha do item da view de preço,** a primeira pelo part number, se houver mais de uma. No SGI6R, quem escolhe é o representante.
+- **Ainda não rodou no Oracle de verdade:** os testes conferem os valores campo a campo, com um Oracle de mentira. O primeiro pedido real é o teste, com o Lucas.
 
 ## Ainda a decidir com o Lucas
 

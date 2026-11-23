@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { montarReferencia } from "../calculo/referencia.ts";
 import type { Linha, Oracle } from "../oracle.ts";
+import { oracleDeTeste } from "../oracleDeTeste.ts";
 import { lerNotasRecentes, lerPedidosFaturados } from "./faturamento.ts";
 
 const REFERENCIA = montarReferencia("2026-10-13T09:50");
 
 /** Um Oracle que devolve as linhas dadas a qualquer consulta. */
 function oracleCom(linhas: Linha[]): Oracle {
-  return { consultar: async () => linhas, fechar: async () => {} };
+  return oracleDeTeste({ consultar: () => linhas });
 }
 
 /** Uma linha de item de nota, na ordem do SELECT de `lerNotasRecentes`. */

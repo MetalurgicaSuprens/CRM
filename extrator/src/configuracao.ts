@@ -24,6 +24,8 @@ export type Configuracao = {
   localizacao: FontesDaLocalizacao;
   /** Grava a foto mesmo que ela mude demais desde a anterior (foto/comparacao.ts). */
   aceitarMudanca: boolean;
+  /** Grava no SGI os pedidos conferidos (pedidos/gravacao.ts); desligado, eles esperam em conferidos/. */
+  isGravacaoNoSgiLigada: boolean;
 };
 
 /** O que o envio da foto ao servidor do CRM precisa (envio/enviarFoto.ts). Não lê o Oracle. */
@@ -63,14 +65,26 @@ export function lerConfiguracao(argumentos: string[]): Configuracao {
     options: { env: { type: "string" }, dados: { type: "string" }, "aceitar-mudanca": { type: "boolean", default: false } },
   });
   const pastaDeDados = path.resolve(values.dados ?? PASTA_DE_DADOS_PADRAO);
+  const arquivoEnv = path.resolve(values.env ?? path.join(PASTA_DO_EXTRATOR, ".env"));
   return {
-    oracle: lerAcessoAoOracle(path.resolve(values.env ?? path.join(PASTA_DO_EXTRATOR, ".env"))),
+    oracle: lerAcessoAoOracle(arquivoEnv),
     autorizados: lerAutorizados(path.join(pastaDeDados, ARQUIVO_DE_AUTORIZADOS)),
     chaveDoIdDoCliente: lerOuCriarChave(path.join(pastaDeDados, ARQUIVO_DA_CHAVE)),
     pastaDasFotos: path.join(pastaDeDados, PASTA_DAS_FOTOS),
     localizacao: { pastaDoCnefe: path.join(pastaDeDados, "cnefe"), arquivoDosPontos: path.join(pastaDeDados, "pontos-dos-enderecos.db") },
     aceitarMudanca: values["aceitar-mudanca"],
+    isGravacaoNoSgiLigada: lerGravacaoNoSgi(lerEnv(arquivoEnv).CRM_GRAVAR_NO_SGI),
   };
+}
+
+/**
+ * CRM_GRAVAR_NO_SGI: "ligado" grava no SGI os pedidos conferidos; vazio ou "desligado", não. Fica
+ * desligado até o primeiro pedido de teste, feito junto com o Lucas (docs/pedido-no-sgi.md).
+ */
+export function lerGravacaoNoSgi(valor: string | undefined): boolean {
+  if (valor === undefined || valor === "" || valor === "desligado") return false;
+  if (valor === "ligado") return true;
+  throw new Error(`CRM_GRAVAR_NO_SGI é "ligado" ou "desligado": "${valor}".`);
 }
 
 /** `--env <arquivo>` e `--dados <pasta>`, como na foto. */

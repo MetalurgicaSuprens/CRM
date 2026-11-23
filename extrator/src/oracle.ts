@@ -1,7 +1,9 @@
 import oracledb from "oracledb";
 
 /*
- * Única porta do extrator para o Oracle: só leitura, uma conexão por foto.
+ * Única porta do extrator para o Oracle, uma conexão por passada. A foto e a conferência só leem. A
+ * gravação do pedido no SGI chama as procedures de pedido numa transação que só vale com confirmar():
+ * nada se grava sozinho (autoCommit desligado), e fechar a conexão sem confirmar desfaz tudo.
  */
 
 export type AcessoAoOracle = {
@@ -17,6 +19,10 @@ export type Linha = readonly unknown[];
 
 export type Oracle = {
   consultar(sql: string, binds?: Record<string, unknown>): Promise<Linha[]>;
+  /** Um bloco PL/SQL (a chamada de uma procedure), dentro da transação aberta. */
+  executar(plsql: string, binds: Record<string, unknown>): Promise<void>;
+  confirmar(): Promise<void>;
+  desfazer(): Promise<void>;
   fechar(): Promise<void>;
 };
 
@@ -44,6 +50,11 @@ export async function abrirOracle(acesso: AcessoAoOracle): Promise<Oracle> {
       });
       return resultado.rows ?? [];
     },
+    async executar(plsql, binds) {
+      await conexao.execute(apontarTabelasRestritas(plsql, acesso.esquemaDasTabelasRestritas), binds, { autoCommit: false });
+    },
+    confirmar: () => conexao.commit(),
+    desfazer: () => conexao.rollback(),
     fechar: () => conexao.close(),
   };
 }
