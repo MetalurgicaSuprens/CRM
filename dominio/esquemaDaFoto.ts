@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 21;
+export const VERSAO_DO_ESQUEMA = 22;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -89,7 +89,6 @@ CREATE TABLE lista_de_precos (
   lista INTEGER NOT NULL,
   produto TEXT NOT NULL,
   preco_cento REAL NOT NULL,
-  part_numbers TEXT,
   PRIMARY KEY (lista, produto)
 ) STRICT;
 
@@ -404,8 +403,6 @@ export type Foto = {
     lista: number;
     produto: string;
     preco_cento: number;
-    /** Os part numbers do produto na tabela do cliente (VIEW_PNU da view de preço), juntos por vírgula; null sem nenhum. */
-    part_numbers: string | null;
   }[];
   /**
    * Os part numbers da Bíblia Montadora do SGI (versão 16): os itens ativos das tabelas de preço de

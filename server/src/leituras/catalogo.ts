@@ -57,7 +57,7 @@ function lerProdutos(db: DatabaseSync, codigoDoCliente: string, lista: number | 
   const partNumbers = partNumbersDaLista(db, lista);
   return lerLinhas(
     db,
-    `SELECT l.produto, p.familia, p.medida, p.embalagem, p.peso_kg, l.preco_cento, l.part_numbers,
+    `SELECT l.produto, p.familia, p.medida, p.embalagem, p.peso_kg, l.preco_cento,
             j.produto IS NOT NULL AS ja_comprou, j.ultima_compra, j.preco_cento_na_ultima
        FROM lista_de_precos l JOIN produto p ON p.produto = l.produto
        LEFT JOIN produto_comprado j ON j.cliente = ? AND j.produto = l.produto
@@ -72,7 +72,6 @@ function lerProdutos(db: DatabaseSync, codigoDoCliente: string, lista: number | 
     precoDaTabela: numero(linha, "preco_cento"),
     ultimaCompra: ultimaCompraDa(linha),
     partNumbers: partNumbers.get(texto(linha, "produto")) ?? [],
-    partNumbersDoCliente: textoOuNulo(linha, "part_numbers"),
     pesoKg: numeroOuNulo(linha, "peso_kg"),
     jaComprou: numero(linha, "ja_comprou") === 1,
   }));

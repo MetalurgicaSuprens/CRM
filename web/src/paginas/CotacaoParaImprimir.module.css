@@ -73,6 +73,10 @@
 .bloco {
   border: 1px solid #c3c2b7;
   border-radius: 4px;
+}
+
+/* As caixas curtas não se partem entre páginas; a dos itens, que pode ter dezenas, continua na seguinte */
+.inteiro {
   break-inside: avoid;
 }
 
@@ -213,16 +217,7 @@
 }
 
 .codigo {
-  display: block;
   font-weight: 600;
-}
-
-/* O part number do cliente embaixo do código: pode ser mais de um, e quebra a linha */
-.partNumber {
-  display: block;
-  font-size: 0.6875rem;
-  color: #52514e;
-  overflow-wrap: anywhere;
 }
 
 .observacao {
@@ -235,10 +230,15 @@
     display: none;
   }
 
-  /* A margem da primeira página fica dentro da folha: a página mesmo não tem margem (@page :first, abaixo) */
+  /*
+   * A margem fica dentro da folha, e não na página (@page, abaixo): com o clone, o recuo se repete em
+   * cada página, e a largura é a mesma da primeira à última.
+   */
   .folha {
     max-width: none;
     padding: 12mm 14mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
     border: 0;
     border-radius: 0;
     overflow: visible;
@@ -250,15 +250,10 @@
 }
 
 /*
- * Sem margem na primeira página, o navegador não tem onde pôr o cabeçalho e o rodapé dele (endereço,
- * data e título) e não os põe em nenhuma página, como explica o Chrome (developer.chrome.com/blog/print-margins).
- * As páginas seguintes, de cotação longa, têm margem normal.
+ * Sem margem na página, o navegador não tem onde pôr o cabeçalho e o rodapé dele (endereço, data e
+ * título), como explica o Chrome (developer.chrome.com/blog/print-margins). A margem é o recuo da folha.
  */
 @page {
   size: A4;
-  margin: 12mm 14mm;
-}
-
-@page :first {
   margin: 0;
 }

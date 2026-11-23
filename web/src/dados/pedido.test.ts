@@ -135,7 +135,7 @@ describe("ordem de compra no item", () => {
 });
 
 describe("linhasEscolhidas", () => {
-  const produto = (codigo: string, precoDaTabela: number) => ({ codigo, familia: "FLEXIL", medida: null, embalagem: 100, precoDaTabela, ultimaCompra: null, partNumbers: [], partNumbersDoCliente: null, pesoKg: null, jaComprou: false });
+  const produto = (codigo: string, precoDaTabela: number) => ({ codigo, familia: "FLEXIL", medida: null, embalagem: 100, precoDaTabela, ultimaCompra: null, partNumbers: [], pesoKg: null, jaComprou: false });
   const produtos = [produto("A", 90), produto("B", 120)];
 
   it("segue a ordem em que os itens entraram, e não a do catálogo", () => {

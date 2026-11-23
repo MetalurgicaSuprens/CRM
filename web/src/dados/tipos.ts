@@ -316,8 +316,6 @@ export type ProdutoDoCatalogo = {
    * ativos. Vazio quando nenhuma montadora tem o produto.
    */
   partNumbers: string[];
-  /** Os part numbers do produto na tabela deste cliente (VIEW_PNU), como o relatório do pedido do app antigo; null sem nenhum. */
-  partNumbersDoCliente: string | null;
   /** O peso de uma peça, em kg; null sem cadastro no ERP. */
   pesoKg: number | null;
   jaComprou: boolean;

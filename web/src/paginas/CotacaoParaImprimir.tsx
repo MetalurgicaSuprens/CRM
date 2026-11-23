@@ -111,7 +111,7 @@ function Folha({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDaFolha) {
       <ClienteDaCotacao catalogo={catalogo} />
       <CondicoesDaCotacao cotacao={cotacao} catalogo={catalogo} representante={representante} hoje={hoje} />
 
-      <Bloco titulo="Itens" semGrade>
+      <Bloco titulo="Itens" semGrade podeQuebrar>
         <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} pesoPorItem={peso.porItem} />
         <TotaisDaCotacao totais={totaisDoPedido(cotacao.itens, ipi)} peso={peso} />
       </Bloco>
@@ -197,10 +197,9 @@ function CondicoesDaCotacao({ cotacao, catalogo, representante, hoje }: PropsDas
 
 type PropsDosItens = { cotacao: Cotacao; catalogo: CatalogoDoCliente; pesoPorItem: readonly (number | null)[] };
 
-/** Os itens: o part number é o do produto na tabela do cliente, embaixo do código, como no app antigo. */
+/** Os itens: só o código do produto, sem o part number (decisão do Lucas em 2026-11-23). */
 function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
-  const partNumbers = new Map(catalogo.produtos.map((produto) => [produto.codigo, produto.partNumbersDoCliente]));
   const temOrdem = cotacao.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || Boolean(cotacao.escolhas?.pedidoDoCliente.trim());
   const ordemDoPedido = cotacao.escolhas?.pedidoDoCliente.trim() ?? "";
   return (
@@ -208,7 +207,7 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
       <thead>
         <tr>
           <th>Item</th>
-          <th>Produto · part number</th>
+          <th>Produto</th>
           {temOrdem ? (
             <>
               <th>Ordem compra</th>
@@ -231,15 +230,11 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
         {cotacao.itens.map((item, posicao) => {
           const semIpi = valorDaLinha(item);
           const valorIpi = ipi ? valorDoIpi(item, ipi) : 0;
-          const partNumber = partNumbers.get(item.codigo) ?? null;
           const pesoDoItem = pesoPorItem[posicao] ?? null;
           return (
             <tr key={item.codigo}>
               <td>{posicao + 1}</td>
-              <td>
-                <span className={estilos.codigo}>{item.codigo}</span>
-                {partNumber ? <span className={estilos.partNumber}>{partNumber}</span> : null}
-              </td>
+              <td className={estilos.codigo}>{item.codigo}</td>
               {temOrdem ? (
                 <>
                   <td>{item.ordemDeCompra ?? ordemDoPedido}</td>
@@ -359,12 +354,12 @@ function Local({ rotulo, local }: { rotulo: string; local: LocalDoCadastro | nul
   );
 }
 
-type PropsDoBloco = { titulo: string; colunas?: 3 | 4; semGrade?: boolean; children: ReactNode };
+type PropsDoBloco = { titulo: string; colunas?: 3 | 4; semGrade?: boolean; podeQuebrar?: boolean; children: ReactNode };
 
 /** Uma parte da folha: a faixa com o título e, embaixo, os dados numa grade (ou o conteúdo como vem). */
-function Bloco({ titulo, colunas = 4, semGrade = false, children }: PropsDoBloco) {
+function Bloco({ titulo, colunas = 4, semGrade = false, podeQuebrar = false, children }: PropsDoBloco) {
   return (
-    <section className={estilos.bloco}>
+    <section className={podeQuebrar ? estilos.bloco : `${estilos.bloco} ${estilos.inteiro}`}>
       <h3 className={estilos.faixa}>{titulo}</h3>
       <div className={estilos.corpo}>{semGrade ? children : <dl className={colunas === 3 ? `${estilos.dados} ${estilos.tresColunas}` : estilos.dados}>{children}</dl>}</div>
     </section>

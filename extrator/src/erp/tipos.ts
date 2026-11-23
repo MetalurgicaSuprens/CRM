@@ -183,8 +183,6 @@ export type PrecoDoCliente = {
   precoCento: number;
   /** A alíquota de IPI do produto na view, em %: a mesma em toda tabela (conferido em 2026-11-17). */
   aliquotaIpi: number;
-  /** Os part numbers do produto na tabela do cliente (VIEW_PNU, sem o "0"), juntos por vírgula; null sem nenhum. */
-  partNumbers: string | null;
 };
 
 /** Um part number da Bíblia Montadora: o código que uma montadora dá ao produto. */

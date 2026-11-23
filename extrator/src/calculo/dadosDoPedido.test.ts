@@ -115,9 +115,9 @@ describe("montarTabelasDoPedido", () => {
 
   it("leva o IPI só dos produtos de alguma lista, uma alíquota por produto", () => {
     const precos = [
-      { cliente: 10, tabela: "T", produto: "A", precoCento: 10, aliquotaIpi: 5, partNumbers: null },
-      { cliente: 11, tabela: "T", produto: "A", precoCento: 11, aliquotaIpi: 5, partNumbers: null },
-      { cliente: 10, tabela: "T", produto: "FORA", precoCento: 10, aliquotaIpi: 9.75, partNumbers: null },
+      { cliente: 10, tabela: "T", produto: "A", precoCento: 10, aliquotaIpi: 5 },
+      { cliente: 11, tabela: "T", produto: "A", precoCento: 11, aliquotaIpi: 5 },
+      { cliente: 10, tabela: "T", produto: "FORA", precoCento: 10, aliquotaIpi: 9.75 },
     ];
     expect(montarTabelasDoPedido(dados(), precos, new Set(["A"]), ID).produto_ipi).toEqual([{ produto: "A", aliquota: 5 }]);
   });

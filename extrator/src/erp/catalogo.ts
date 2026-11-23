@@ -70,8 +70,7 @@ export function lerPrecosDoCliente(oracle: Oracle, cliente: number, produtos: re
 /** `doCliente` é a condição do WHERE sobre a view V. */
 async function lerPrecosDa(oracle: Oracle, doCliente: string, binds: Record<string, unknown>): Promise<PrecoDoCliente[]> {
   const linhas = await oracle.consultar(
-    `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ), MAX(V.VIEW_ALI_IPI),
-            LISTAGG(DISTINCT NULLIF(TRIM(V.VIEW_PNU), '0'), ', ') WITHIN GROUP (ORDER BY NULLIF(TRIM(V.VIEW_PNU), '0'))
+    `SELECT V.VIEW_CLI, TRIM(V.VIEW_TAB), TRIM(V.VIEW_PAC), MAX(V.VIEW_VLR_LIQ), MAX(V.VIEW_ALI_IPI)
        FROM ABC71.SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI V
       WHERE ${doCliente} AND V.VIEW_STA LIKE 'ATIVO%' AND TRIM(V.VIEW_IPR) = 'SIM' AND V.VIEW_VLR_LIQ > 0
         AND NOT EXISTS (SELECT 1 FROM ABC71.ESTQ E WHERE TRIM(E.C_PROD) = TRIM(V.VIEW_PAC) AND NVL(TRIM(E.QT_ALT_OBR), 'A') = 'I')
@@ -85,7 +84,6 @@ async function lerPrecosDa(oracle: Oracle, doCliente: string, binds: Record<stri
     produto: texto(linha, 2),
     precoCento: numero(linha, 3),
     aliquotaIpi: numero(linha, 4),
-    partNumbers: textoOuNulo(linha, 5),
   }));
 }
 

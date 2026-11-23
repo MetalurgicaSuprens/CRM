@@ -52,7 +52,6 @@ export function catalogoDoClienteFicticio(codigoCliente: string): CatalogoDoClie
       precoDaTabela,
       ultimaCompra: jaComprou ? ultimaCompraFicticia(produto.codigo, precoDaTabela) : null,
       partNumbers: jaComprou && aleatorio.chance(0.6) ? [`${sigla}-${aleatorio.inteiro(1_000, 9_999)}`] : [],
-      partNumbersDoCliente: aleatorio.chance(0.3) ? `${sigla}${aleatorio.inteiro(100_000, 999_999)}` : null,
       pesoKg: Math.round(aleatorio.entre(0.005, 0.06) * 100_000) / 100_000,
       jaComprou,
     };
