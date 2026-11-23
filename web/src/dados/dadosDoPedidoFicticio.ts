@@ -30,8 +30,6 @@ const CONDICOES: CondicaoDePagamento[] = [
   { codigo: "1120", descricao: "28/56/84 DDL" },
 ];
 
-const ALIQUOTAS_DE_IPI = [0, 3.25, 5, 9.75];
-
 let transportadorasEmCache: Transportadora[] | null = null;
 
 /** O cliente como a ficha o conhece: o resumo e a razão social. */
@@ -147,9 +145,9 @@ function ultimoPedidoFicticio(aleatorio: Aleatorio, produtos: readonly ProdutoDo
   return { data, itens };
 }
 
+/** As alíquotas do ERP (foto de 2026-11-23): 9,75% nas abraçadeiras Zip e 5% em quase todo o resto. */
 function aliquotaDaFamilia(familia: string): number {
-  const semente = [...familia].reduce((soma, letra) => soma + letra.charCodeAt(0), 0);
-  return ALIQUOTAS_DE_IPI[semente % ALIQUOTAS_DE_IPI.length] ?? 0;
+  return familia.toUpperCase().includes("ZIP") ? 9.75 : 5;
 }
 
 /** Um CNPJ com os dígitos verificadores certos, a partir da raiz de 8 dígitos e da filial. */

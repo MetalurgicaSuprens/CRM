@@ -264,6 +264,12 @@
   padding-right: 10px;
 }
 
+/* Linhas verticais entre as colunas, para o olho seguir a coluna (pedido do Lucas em 2026-11-23) */
+.itens th + th,
+.itens td + td {
+  border-left: 1px solid #e1e0d9;
+}
+
 .itens .numero {
   text-align: right;
   white-space: nowrap;
@@ -289,7 +295,7 @@
    */
   .folha {
     max-width: none;
-    padding: 10mm 14mm;
+    padding: 10mm 9mm;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
     border: 0;
