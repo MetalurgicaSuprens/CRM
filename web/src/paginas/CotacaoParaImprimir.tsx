@@ -111,10 +111,13 @@ function Folha({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDaFolha) {
       <ClienteDaCotacao catalogo={catalogo} />
       <CondicoesDaCotacao cotacao={cotacao} catalogo={catalogo} representante={representante} hoje={hoje} />
 
-      <Bloco titulo="Itens" semGrade podeQuebrar>
+      {/* Sem o Bloco: a faixa "Itens" fica no cabeçalho da tabela, que o navegador repete em cada página */}
+      <section className={estilos.bloco}>
         <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} pesoPorItem={peso.porItem} />
-        <TotaisDaCotacao totais={totaisDoPedido(cotacao.itens, ipi)} peso={peso} />
-      </Bloco>
+        <div className={estilos.corpo}>
+          <TotaisDaCotacao totais={totaisDoPedido(cotacao.itens, ipi)} peso={peso} />
+        </div>
+      </section>
 
       <EnderecosDaCotacao cotacao={cotacao} catalogo={catalogo} />
 
@@ -204,9 +207,16 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
   const temOrdem = cotacao.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || Boolean(cotacao.escolhas?.pedidoDoCliente.trim());
   const ordemDoPedido = cotacao.escolhas?.pedidoDoCliente.trim() ?? "";
+  // Item, produto, quantidade, cento, valor sem IPI e peso; mais a ordem de compra e o IPI, quando há.
+  const colunas = 6 + (temOrdem ? 2 : 0) + (ipi ? 2 : 0);
   return (
     <table className={estilos.itens}>
       <thead>
+        <tr>
+          <th colSpan={colunas} className={estilos.faixa}>
+            Itens
+          </th>
+        </tr>
         <tr>
           <th>Item</th>
           <th>Produto</th>
@@ -361,12 +371,12 @@ function Local({ rotulo, local }: { rotulo: string; local: LocalDoCadastro | nul
   );
 }
 
-type PropsDoBloco = { titulo: string; colunas?: 3 | 4; semGrade?: boolean; podeQuebrar?: boolean; children: ReactNode };
+type PropsDoBloco = { titulo: string; colunas?: 3 | 4; semGrade?: boolean; children: ReactNode };
 
 /** Uma parte da folha: a faixa com o título e, embaixo, os dados numa grade (ou o conteúdo como vem). */
-function Bloco({ titulo, colunas = 4, semGrade = false, podeQuebrar = false, children }: PropsDoBloco) {
+function Bloco({ titulo, colunas = 4, semGrade = false, children }: PropsDoBloco) {
   return (
-    <section className={podeQuebrar ? estilos.bloco : `${estilos.bloco} ${estilos.inteiro}`}>
+    <section className={`${estilos.bloco} ${estilos.inteiro}`}>
       <h3 className={estilos.faixa}>{titulo}</h3>
       <div className={estilos.corpo}>{semGrade ? children : <dl className={colunas === 3 ? `${estilos.dados} ${estilos.tresColunas}` : estilos.dados}>{children}</dl>}</div>
     </section>
