@@ -147,6 +147,14 @@ export function pesoDosItens(itens: readonly { codigo: string; quantidade: numbe
   return { porItem, total: porItem.reduce<number>((soma, peso) => soma + (peso ?? 0), 0), semPeso: porItem.filter((peso) => peso === null).length };
 }
 
+/**
+ * A alíquota do IPI no pedido inteiro, em %: o IPI sobre o valor sem IPI. Com produtos de alíquotas
+ * diferentes, é a média ponderada pelo valor; com uma só, é ela. Null sem valor ou sem IPI.
+ */
+export function aliquotaDoIpi(totais: Pick<TotaisDoPedido, "semIpi" | "ipi">): number | null {
+  return totais.ipi === null || totais.semIpi <= 0 ? null : (totais.ipi / totais.semIpi) * 100;
+}
+
 /** O rodapé do pedido, como a faixa de totais do SGI6R. Sem as alíquotas (foto antes da F5), o IPI fica null. */
 export type TotaisDoPedido = { itens: number; pecas: number; semIpi: number; ipi: number | null; comIpi: number | null };
 

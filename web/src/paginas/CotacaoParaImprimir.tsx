@@ -7,10 +7,11 @@ import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Voltar } from "../componentes/Voltar";
 import { carregarCatalogo, carregarCotacao, carregarSituacaoDosDados } from "../dados/api";
-import { ROTULOS_DA_CLASSIFICACAO, formatarCnpj, pesoDosItens, totaisDoPedido, transportadoraDe, valorDoIpi, type TotaisDoPedido } from "../dados/dadosDoPedido";
+import { ROTULOS_DA_CLASSIFICACAO, aliquotaDoIpi, formatarCnpj, pesoDosItens, totaisDoPedido, transportadoraDe, valorDoIpi, type TotaisDoPedido } from "../dados/dadosDoPedido";
 import type { CatalogoDoCliente, Cotacao, LocalDoCadastro } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import {
+  formatarAliquota,
   formatarCep,
   formatarComCentavos,
   formatarContagem,
@@ -291,7 +292,7 @@ function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: Retur
         <Total rotulo="Valor s/ IPI">{formatarReaisComCentavos(totais.semIpi)}</Total>
         {totais.ipi !== null && totais.comIpi !== null ? (
           <>
-            <Total rotulo="IPI">{formatarReaisComCentavos(totais.ipi)}</Total>
+            <Total rotulo={rotuloDoIpi(totais)}>{formatarReaisComCentavos(totais.ipi)}</Total>
             <Total rotulo="Valor total c/ IPI" isDestaque>
               {formatarReaisComCentavos(totais.comIpi)}
             </Total>
@@ -300,6 +301,12 @@ function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: Retur
       </dl>
     </div>
   );
+}
+
+/** "IPI (2,84%)": a alíquota do pedido inteiro entre parênteses (pedido do Lucas em 2026-11-23). */
+function rotuloDoIpi(totais: TotaisDoPedido): string {
+  const aliquota = aliquotaDoIpi(totais);
+  return aliquota === null ? "IPI" : `IPI (${formatarAliquota(aliquota)})`;
 }
 
 type PropsDoTotal = { rotulo: string; Icone?: LucideIcon; isDestaque?: boolean; children: ReactNode };

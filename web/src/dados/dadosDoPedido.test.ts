@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   condicaoInicial,
+  aliquotaDoIpi,
   isClienteXped,
   pesoDosItens,
   escolhasIniciais,
@@ -104,6 +105,18 @@ describe("pesoDosItens", () => {
     expect(peso.porItem[1]).toBeNull();
     expect(peso.total).toBeCloseTo(10.875);
     expect(peso.semPeso).toBe(1);
+  });
+});
+
+describe("aliquotaDoIpi", () => {
+  it("dá a alíquota do pedido: o IPI sobre o valor sem IPI, a média quando os produtos têm alíquotas diferentes", () => {
+    expect(aliquotaDoIpi({ semIpi: 1_000, ipi: 50 })).toBe(5);
+    expect(aliquotaDoIpi({ semIpi: 5_304.85, ipi: 150.73 })).toBeCloseTo(2.841, 3);
+  });
+
+  it("não dá alíquota sem valor ou sem o IPI", () => {
+    expect(aliquotaDoIpi({ semIpi: 0, ipi: 0 })).toBeNull();
+    expect(aliquotaDoIpi({ semIpi: 100, ipi: null })).toBeNull();
   });
 });
 

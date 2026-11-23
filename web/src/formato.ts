@@ -40,6 +40,13 @@ export function formatarComCentavos(valor: number): string {
   return COM_CENTAVOS.format(valor);
 }
 
+/** "5%", "3,25%", "2,84%": a alíquota com até duas casas. */
+export function formatarAliquota(percentual: number): string {
+  return `${ATE_DUAS_CASAS.format(percentual)}%`;
+}
+
+const ATE_DUAS_CASAS = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
+
 /** "102,67 kg": o peso com duas casas, como o relatório do pedido do app antigo. */
 export function formatarPeso(kg: number): string {
   return `${COM_CENTAVOS.format(kg)} kg`;
