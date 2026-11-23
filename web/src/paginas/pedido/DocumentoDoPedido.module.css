@@ -110,3 +110,11 @@
     border-top: 0;
   }
 }
+
+/* No computador, o PDF e o descartar ficam na barra de baixo (RodapeDoPedido): saem da linha do "Cotação salva" */
+@container (min-width: 48rem) {
+  .rascunho .pdf,
+  .rascunho .descartar {
+    display: none;
+  }
+}

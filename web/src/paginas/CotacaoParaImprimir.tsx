@@ -115,7 +115,6 @@ function Folha({ rascunho, catalogo, representante, hoje }: PropsDaFolha) {
 }
 
 function ItensDaCotacao({ rascunho, catalogo }: { rascunho: Rascunho; catalogo: CatalogoDoCliente }) {
-  const familias = new Map(catalogo.produtos.map((produto) => [produto.codigo, produto.familia]));
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
   const totais = totaisDoPedido(rascunho.itens, ipi);
   const temOrdem = rascunho.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || rascunho.escolhas?.pedidoDoCliente;
@@ -151,7 +150,7 @@ function ItensDaCotacao({ rascunho, catalogo }: { rascunho: Rascunho; catalogo: 
             <tr key={item.codigo}>
               <td>{posicao + 1}</td>
               <td>
-                <span className={estilos.codigo}>{item.codigo}</span> {familias.get(item.codigo) ?? ""}
+                <span className={estilos.codigo}>{item.codigo}</span>
               </td>
               {temOrdem ? (
                 <>

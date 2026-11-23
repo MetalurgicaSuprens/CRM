@@ -8,11 +8,11 @@ describe("etapas do pedido no celular", () => {
     expect(etapaDoEndereco("itens")).toBe("itens");
   });
 
-  it("anda na ordem em que o representante trabalha: cliente, itens, condições e revisão", () => {
-    expect(etapaSeguinte("cliente")).toBe("itens");
-    expect(etapaSeguinte("itens")).toBe("condicoes");
-    expect(etapaSeguinte("condicoes")).toBe("revisar");
-    expect(etapaAnterior("revisar")).toBe("condicoes");
+  it("anda na ordem em que o representante trabalha: cliente, condições (onde se decide o xPed), itens e revisão", () => {
+    expect(etapaSeguinte("cliente")).toBe("condicoes");
+    expect(etapaSeguinte("condicoes")).toBe("itens");
+    expect(etapaSeguinte("itens")).toBe("revisar");
+    expect(etapaAnterior("revisar")).toBe("itens");
   });
 
   it("não passa da revisão nem volta antes do cliente", () => {

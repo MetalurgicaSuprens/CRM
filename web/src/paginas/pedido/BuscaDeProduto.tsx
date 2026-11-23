@@ -106,7 +106,7 @@ export function BuscaDeProduto({ produtos, noPedido, aoEscolher, campo }: Props)
       </label>
       {isAberta ? (
         <div className={estilos.lista}>
-          <p className={estilos.titulo}>{tituloDaLista(termo, achados.length, jaComprados.length)}</p>
+          <p className={estilos.titulo}>{tituloDaLista(termo, achados.length, { jaComprados: jaComprados.length, total: produtos.length })}</p>
           <ul id={`${id}-lista`} role="listbox" aria-label="Produtos" className={estilos.opcoes}>
             {visiveis.map((produto, indice) => (
               <li
@@ -151,8 +151,10 @@ function darLugarParaALista(campo: HTMLElement): void {
   campo.scrollIntoView({ block: "start", behavior: isSemMovimento ? "auto" : "smooth" });
 }
 
-function tituloDaLista(termo: string, achados: number, jaComprados: number): string {
-  if (!termo) return jaComprados > 0 ? `O que este cliente já comprou (${formatarNumero(jaComprados)})` : "Digite o código, a medida ou o part number do produto.";
+/** Com a busca vazia, o atalho do que o cliente já comprou; o que se digita procura na tabela de preço inteira do cliente. */
+function tituloDaLista(termo: string, achados: number, { jaComprados, total }: { jaComprados: number; total: number }): string {
+  const naTabela = `Digite o código, a medida ou o part number para buscar nos ${formatarNumero(total)} produtos da tabela do cliente.`;
+  if (!termo) return jaComprados > 0 ? `Já comprados pelo cliente (${formatarNumero(jaComprados)}). ${naTabela}` : naTabela;
   if (achados === 0) return "Nenhum produto com essa busca no catálogo do cliente.";
   if (achados > MAXIMO_NA_LISTA) return `${formatarNumero(achados)} produtos: os ${MAXIMO_NA_LISTA} primeiros. Continue digitando para afunilar.`;
   return achados === 1 ? "1 produto. Enter inclui." : `${formatarNumero(achados)} produtos. Setas escolhem, Enter inclui.`;

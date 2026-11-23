@@ -127,6 +127,24 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
     );
   };
 
+  // No celular, na linha do "Cotação salva"; no computador, na barra de baixo (o CSS escolhe qual aparece).
+  const acoesDaCotacao = (
+    <>
+      {linhas.length > 0 ? (
+        <button type="button" className={estilos.pdf} onClick={gerarPdf}>
+          <FileText size={14} aria-hidden="true" />
+          PDF da cotação
+        </button>
+      ) : null}
+      {existe ? (
+        <button type="button" className={estilos.descartar} onClick={descartar}>
+          <Trash size={14} aria-hidden="true" />
+          Descartar cotação
+        </button>
+      ) : null}
+    </>
+  );
+
   return (
     <div className={estilos.documento} data-etapa={etapa}>
       <CabecalhoPagina antes={<Voltar para="/pedidos" rotulo="Pedidos" />} titulo="Incluir pedido" />
@@ -180,18 +198,7 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
             erroAoSalvar ??
             (salvoEm ? `Cotação salva ${formatarMomento(salvoEm, relogio)}: fica em Pedidos, na aba Cotações.` : "A cotação é salva sozinha enquanto você monta o pedido.")}
         </p>
-        {linhas.length > 0 ? (
-          <button type="button" className={estilos.pdf} onClick={gerarPdf}>
-            <FileText size={14} aria-hidden="true" />
-            PDF da cotação
-          </button>
-        ) : null}
-        {existe ? (
-          <button type="button" className={estilos.descartar} onClick={descartar}>
-            <Trash size={14} aria-hidden="true" />
-            Descartar cotação
-          </button>
-        ) : null}
+        {acoesDaCotacao}
       </div>
       <RodapeDoPedido
         cliente={catalogo.cliente.nome}
@@ -201,6 +208,7 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
         aoIrPara={irPara}
         aoEnviar={() => setConfirmando(true)}
         aoSalvarRascunho={salvarComoRascunho}
+        acoesDaCotacao={acoesDaCotacao}
       />
       <ConfirmarEnvio
         aberto={confirmando}

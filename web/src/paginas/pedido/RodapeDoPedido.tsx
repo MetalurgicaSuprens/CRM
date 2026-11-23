@@ -24,9 +24,11 @@ type Props = {
   aoEnviar: () => void;
   /** Guarda o pedido nos rascunhos e sai dele, para enviar depois (pedido do Lucas em 2026-11-18). */
   aoSalvarRascunho: () => void;
+  /** O PDF e o descartar da cotação: no computador, entre os totais e o "Salvar cotação". */
+  acoesDaCotacao: ReactNode;
 };
 
-export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, aoEnviar, aoSalvarRascunho }: Props) {
+export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, aoEnviar, aoSalvarRascunho, acoesDaCotacao }: Props) {
   const anterior = etapaAnterior(etapa);
   const seguinte = etapaSeguinte(etapa);
   const [primeiroProblema] = problemas;
@@ -76,6 +78,7 @@ export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, ao
         ) : null}
       </p>
       <div className={estilos.envio}>
+        <div className={estilos.acoesDaCotacao}>{acoesDaCotacao}</div>
         {primeiroProblema ? <p className={estilos.problema}>{primeiroProblema}</p> : null}
         {botoesDoFim}
       </div>

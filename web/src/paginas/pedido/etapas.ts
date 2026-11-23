@@ -4,7 +4,8 @@
  * muda nada. A etapa fica no endereço (?etapa=), para o voltar do navegador voltar uma etapa.
  */
 
-export const ETAPAS = ["cliente", "itens", "condicoes", "revisar"] as const;
+/** As condições antes dos itens: nelas se decide o cliente xPed, que numera os itens (pedido do Lucas em 2026-11-23). */
+export const ETAPAS = ["cliente", "condicoes", "itens", "revisar"] as const;
 
 export type Etapa = (typeof ETAPAS)[number];
 
