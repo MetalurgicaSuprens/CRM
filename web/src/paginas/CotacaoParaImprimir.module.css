@@ -1,4 +1,4 @@
-/* Na tela, a folha é um papel branco no meio da página; na impressão, ela é a página inteira */
+/* Na tela, as folhas A4 são papéis brancos um embaixo do outro; na impressão, cada uma é uma página */
 .dica,
 .aviso {
   margin: 0 0 var(--esp-4);
@@ -10,22 +10,61 @@
   gap: var(--esp-2);
 }
 
-.folha {
+.folhas {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 60rem;
-  margin: 0 auto;
-  padding: var(--esp-8);
-  border: 1px solid var(--cor-linha);
-  border-radius: var(--raio-pequeno);
+  align-items: flex-start;
+  gap: var(--esp-6);
+  overflow-x: auto;
+  padding: 2px 2px var(--esp-6);
+}
+
+.pagina,
+.coluna {
+  box-sizing: border-box;
   background: #ffffff;
   color: #161616;
   font-size: 0.8125rem;
-  overflow-x: auto;
   /* As faixas cinza saem na impressão: sem isto, o navegador não imprime fundos */
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
+}
+
+.pagina {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 210mm;
+  height: 297mm;
+  margin-inline: auto;
+  padding: 10mm 9mm 8mm;
+  box-shadow: 0 0 0 1px var(--cor-linha);
+}
+
+/* As partes da folha, uma embaixo da outra; o que não cabe é cortado (a divisão já mediu o que cabe) */
+.conteudo,
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.conteudo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Onde as partes são desenhadas para medir, fora da vista: na largura da folha sem as margens */
+.medidor {
+  position: absolute;
+  top: 0;
+  left: -10000px;
+  visibility: hidden;
+}
+
+.coluna {
+  width: 192mm;
 }
 
 .topo {
@@ -75,9 +114,70 @@
   border-radius: 4px;
 }
 
-/* As caixas curtas não se partem entre páginas; a dos itens, que pode ter dezenas, continua na seguinte */
-.inteiro {
-  break-inside: avoid;
+/* A caixa dos itens que segue na folha seguinte: aberta embaixo, com o "continua" */
+.aberto {
+  border-bottom-style: dashed;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.continua {
+  margin: 0;
+  padding: 5px 10px;
+  border-top: 1px solid #161616;
+  font-size: 0.75rem;
+  text-align: right;
+  color: #52514e;
+}
+
+.continuacao {
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #6b6b69;
+}
+
+/* O topo das folhas seguintes: a marca pequena, "Cotação" e o cliente, cortado com "…" se for longo */
+.cabecalhoCurto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 7px;
+  border-bottom: 2px solid #161616;
+  font-size: 0.75rem;
+}
+
+.cabecalhoCurto strong {
+  flex: none;
+  font-size: 1rem;
+}
+
+.cabecalhoCurto span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rodapePagina {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 5px;
+  border-top: 1px solid #c3c2b7;
+  font-size: 0.6875rem;
+  color: #6b6b69;
+}
+
+.rodapePagina span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rodapePagina .numeroDaPagina {
+  flex: none;
 }
 
 .faixa,
@@ -106,10 +206,6 @@
   margin: 0;
 }
 
-.tresColunas {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
 .dados dt {
   font-size: 0.6875rem;
   color: #6b6b69;
@@ -133,14 +229,26 @@
   font-weight: 600;
 }
 
-/* Os endereços em linhas: a razão social forte, o resto embaixo */
-.linhaForte,
-.linha {
-  display: block;
+/* Os endereços em linhas largas: o nome escuro e em negrito, e o valor logo ao lado */
+.linhas {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 7px 14px;
+  margin: 0;
 }
 
-.linhaForte {
+.linhas > div {
+  display: contents;
+}
+
+.linhas dt {
   font-weight: 600;
+  color: #383836;
+}
+
+.linhas dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 /*
@@ -156,7 +264,6 @@
   padding-top: 10px;
   border-top: 1px solid #161616;
   font-variant-numeric: tabular-nums;
-  break-inside: avoid;
 }
 
 .quantidades,
@@ -219,10 +326,11 @@
   color: #6b6b69;
 }
 
-.rodape {
+.condicoesGerais {
+  margin: 0;
+  padding: 0 2px;
   font-size: 0.6875rem;
-  color: #6b6b69;
-  text-align: center;
+  color: #52514e;
 }
 
 /* Até 11 colunas na largura do A4: letra e recuo menores que os do resto da folha */
@@ -231,6 +339,11 @@
   border-collapse: collapse;
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
+}
+
+/* Nas folhas, as colunas têm as larguras medidas na tabela inteira: iguais da primeira à última folha */
+.colunasFixas {
+  table-layout: fixed;
 }
 
 .itens th {
@@ -289,22 +402,20 @@
     display: none;
   }
 
-  /*
-   * A margem fica dentro da folha, e não na página (@page, abaixo): com o clone, o recuo se repete em
-   * cada página, e a largura é a mesma da primeira à última.
-   */
-  .folha {
-    max-width: none;
-    padding: 10mm 9mm;
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-    border: 0;
-    border-radius: 0;
+  .folhas {
+    display: block;
+    padding: 0;
     overflow: visible;
   }
 
-  .itens tr {
-    break-inside: avoid;
+  .pagina {
+    margin: 0;
+    box-shadow: none;
+    break-after: page;
+  }
+
+  .pagina:last-child {
+    break-after: auto;
   }
 }
 

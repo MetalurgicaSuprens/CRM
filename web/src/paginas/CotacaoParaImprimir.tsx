@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useParams } from "react-router";
 import { ListOrdered, Package, Printer, Weight, type LucideIcon } from "lucide-react";
 import { dataDoMomento, horaDoMomento, somarDias } from "dominio/datas";
@@ -23,6 +23,7 @@ import {
 } from "../formato";
 import { Carregando } from "./Carregando";
 import estilos from "./CotacaoParaImprimir.module.css";
+import { paginarCotacao, type FolhaDaCotacao, type MedidasDaCotacao } from "./paginacaoDaCotacao";
 
 /*
  * A cotação formalizada para o cliente (pedido do Lucas em 2026-11-23): a página que o navegador
@@ -72,68 +73,213 @@ function ComCatalogo({ cotacao }: { cotacao: Cotacao }) {
             </button>
           }
         />
-        <p className={estilos.dica}>Na janela de impressão, escolha "Salvar como PDF" para mandar o arquivo ao cliente.</p>
+        {/* O "Microsoft Print to PDF" do Windows troca o A4 pelo Carta e desenha as letras (visto em 2026-11-23) */}
+        <p className={estilos.dica}>
+          Na janela de impressão, escolha o destino <strong>Salvar como PDF</strong>: o arquivo sai em A4 e com o texto selecionável. Não use o "Microsoft Print to PDF", que muda o papel.
+        </p>
       </div>
-      <Folha cotacao={cotacao} catalogo={catalogo} nomeDoLogin={situacao.representante.nome} hoje={dataDoMomento(situacao.relogio)} />
+      <Folhas cotacao={cotacao} catalogo={catalogo} nomeDoLogin={situacao.representante.nome} hoje={dataDoMomento(situacao.relogio)} />
     </>
   );
 }
 
-type PropsDaFolha = { cotacao: Cotacao; catalogo: CatalogoDoCliente; nomeDoLogin: string; hoje: string };
+type PropsDasFolhas = { cotacao: Cotacao; catalogo: CatalogoDoCliente; nomeDoLogin: string; hoje: string };
 
 /**
- * A folha A4, com tudo o que o relatório do pedido do app antigo dos representantes mostra
+ * A cotação em folhas A4, com tudo o que o relatório do pedido do app antigo dos representantes mostra
  * (frmPedidos_RelPedidoEnvio) e o que a cotação tem a mais, na ordem em que o cliente lê: para quem é,
- * em que condições, o que leva e quanto dá, e para onde vai.
+ * em que condições, o que leva e quanto dá, e para onde vai. As folhas são montadas aqui, e não pelo
+ * navegador, para cada uma ter o cliente no topo, "Página X de Y" no rodapé e o "continua" no fim dos
+ * itens (pedido do Lucas em 2026-11-23): primeiro as partes são desenhadas escondidas e medidas; depois,
+ * divididas pelas folhas.
  */
-function Folha({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDaFolha) {
+function Folhas({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDasFolhas) {
   const emitidaEm = dataDoMomento(cotacao.atualizadoEm);
   const validaAte = somarDias(emitidaEm, DIAS_DE_VALIDADE_DA_COTACAO);
+  const cliente = catalogo.dadosDoPedido?.cadastro.razaoSocial ?? catalogo.cliente.nome;
   useTituloDoArquivo(`Cotação Suprens - ${catalogo.cliente.nome} - ${formatarData(emitidaEm).replaceAll("/", "-")}`);
+  const medidor = useRef<HTMLDivElement>(null);
+  const paginacao = usePaginacao(medidor);
+
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
   const peso = pesoDosItens(cotacao.itens, new Map(catalogo.produtos.map((produto) => [produto.codigo, produto.pesoKg])));
   const representante = catalogo.representante ? `${catalogo.representante.codigo} - ${catalogo.representante.nome}` : nomeDoLogin;
+  const abertura = [
+    <Topo key="topo" cotacao={cotacao} validaAte={validaAte} />,
+    <ClienteDaCotacao key="cliente" catalogo={catalogo} />,
+    <CondicoesDaCotacao key="condicoes" cotacao={cotacao} catalogo={catalogo} representante={representante} hoje={hoje} />,
+  ];
+  const cabecalhoCurto = <CabecalhoCurto cliente={cliente} documento={catalogo.dadosDoPedido?.cadastro.documento ?? formatarDocumentoDoCliente(catalogo.cliente)} />;
+  const totais = (
+    <div className={estilos.corpo} data-totais>
+      <TotaisDaCotacao totais={totaisDoPedido(cotacao.itens, ipi)} peso={peso} />
+    </div>
+  );
+  const fechamento = [
+    <EnderecosDaCotacao key="enderecos" cotacao={cotacao} catalogo={catalogo} />,
+    cotacao.observacao.trim() ? (
+      <Bloco key="observacoes" titulo="Observações" semGrade>
+        <p className={estilos.observacao}>{cotacao.observacao}</p>
+      </Bloco>
+    ) : null,
+    <p key="condicoesGerais" className={estilos.condicoesGerais}>
+      Preços em reais, por cento de peças. Cotação válida até {formatarData(validaAte)}. O valor total é com IPI e sem ICMS-ST. A ST, quando devida, conforme o estado de
+      destino e a finalidade da compra, será cobrada na nota fiscal.
+    </p>,
+  ].filter((parte) => parte !== null);
+  const itens = (trecho: TrechoDosItens, larguras: readonly number[] | null) => (
+    <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} pesoPorItem={peso.porItem} trecho={trecho} larguras={larguras} />
+  );
+  const rodape = (pagina: number, total: number) => (
+    <footer className={estilos.rodapePagina}>
+      <span>
+        Metalúrgica Suprens Ltda · Cotação para {cliente} · emitida em {formatarData(emitidaEm)}
+      </span>
+      <span className={estilos.numeroDaPagina}>
+        Página {pagina} de {total}
+      </span>
+    </footer>
+  );
+
+  if (!paginacao) {
+    return (
+      <div ref={medidor} className={estilos.medidor} aria-hidden="true">
+        <section className={estilos.pagina}>
+          <div className={estilos.conteudo} data-medida="util" />
+          {rodape(1, 1)}
+        </section>
+        <div className={estilos.coluna}>
+          {abertura.map((parte) => (
+            <div key={parte.key} data-medida="abertura">
+              {parte}
+            </div>
+          ))}
+          <div data-medida="cabecalhoCurto">{cabecalhoCurto}</div>
+          <div data-medida="itens">
+            <CaixaDosItens continuaNa={2}>
+              {itens({ primeiro: 0, fim: cotacao.itens.length }, null)}
+              {totais}
+            </CaixaDosItens>
+          </div>
+          {fechamento.map((parte) => (
+            <div key={parte.key} data-medida="fechamento">
+              {parte}
+            </div>
+          ))}
+          <div data-medida="fim" />
+        </div>
+      </div>
+    );
+  }
+  const { folhas, larguras } = paginacao;
   return (
-    <article className={estilos.folha} aria-label="Cotação para imprimir">
-      <header className={estilos.topo}>
-        <img src="/marca/suprens-96.png" alt="Suprens" width={64} height={61} />
-        <div className={estilos.titulo}>
-          <p className={estilos.empresa}>Metalúrgica Suprens Ltda</p>
-          <h2>Cotação</h2>
-        </div>
-        <dl className={estilos.datas}>
-          <Dado rotulo="Emitida em">
-            {formatarData(emitidaEm)} às {horaDoMomento(cotacao.atualizadoEm)}
-          </Dado>
-          <Dado rotulo="Válida até">{formatarData(validaAte)}</Dado>
-        </dl>
-      </header>
+    <div className={estilos.folhas} aria-label="Cotação para imprimir">
+      {folhas.map((folha, indice) => (
+        <section key={indice} className={estilos.pagina}>
+          <div className={estilos.conteudo}>
+            {indice === 0 ? abertura : cabecalhoCurto}
+            {temCaixaDosItens(folha) ? (
+              <CaixaDosItens continuaNa={folha.isContinua ? indice + 2 : null}>
+                {itens(folha, larguras)}
+                {folha.temTotais ? totais : null}
+              </CaixaDosItens>
+            ) : null}
+            {fechamento.slice(folha.primeiroDoFechamento, folha.fimDoFechamento)}
+          </div>
+          {rodape(indice + 1, folhas.length)}
+        </section>
+      ))}
+    </div>
+  );
+}
 
-      <ClienteDaCotacao catalogo={catalogo} />
-      <CondicoesDaCotacao cotacao={cotacao} catalogo={catalogo} representante={representante} hoje={hoje} />
+const temCaixaDosItens = (folha: FolhaDaCotacao) => folha.fim > folha.primeiro || folha.temTotais;
 
-      {/* Sem o Bloco: a faixa "Itens" fica no cabeçalho da tabela, que o navegador repete em cada página */}
-      <section className={estilos.bloco}>
-        <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} pesoPorItem={peso.porItem} />
-        <div className={estilos.corpo}>
-          <TotaisDaCotacao totais={totaisDoPedido(cotacao.itens, ipi)} peso={peso} />
-        </div>
-      </section>
+type Paginacao = { folhas: FolhaDaCotacao[]; larguras: number[] };
 
-      <EnderecosDaCotacao cotacao={cotacao} catalogo={catalogo} />
+/** Mede as partes desenhadas no medidor e divide a cotação em folhas; até lá, devolve null. */
+function usePaginacao(medidor: RefObject<HTMLDivElement | null>): Paginacao | null {
+  const [paginacao, setPaginacao] = useState<Paginacao | null>(null);
+  useEffect(() => {
+    let atual = true;
+    // Mede com as fontes da folha carregadas: com a letra de reserva, as linhas teriam outra altura.
+    void document.fonts.ready.then(() => {
+      if (!atual || !medidor.current) return;
+      const { medidas, larguras } = medir(medidor.current);
+      setPaginacao({ folhas: paginarCotacao(medidas), larguras });
+    });
+    return () => {
+      atual = false;
+    };
+  }, [medidor]);
+  return paginacao;
+}
 
-      {cotacao.observacao.trim() ? (
-        <Bloco titulo="Observações" semGrade>
-          <p className={estilos.observacao}>{cotacao.observacao}</p>
-        </Bloco>
-      ) : null}
+/** Uma sobra contra o arredondamento das medidas, para a última linha nunca encostar no rodapé. */
+const FOLGA_EM_PIXELS = 2;
 
-      <footer className={estilos.rodape}>
-        Preços em reais, por cento de peças. Cotação válida até {formatarData(validaAte)}.
-        <br />
-        O valor total é com IPI e sem ICMS-ST. A ST, quando devida, conforme o estado de destino e a finalidade da compra, será cobrada na nota fiscal.
-      </footer>
-    </article>
+function medir(medidor: HTMLElement): { medidas: MedidasDaCotacao; larguras: number[] } {
+  const parte = (seletor: string) => {
+    const elemento = medidor.querySelector<HTMLElement>(seletor);
+    if (!elemento) throw new Error(`Parte da cotação sem medida: ${seletor}`);
+    return elemento;
+  };
+  const somaDe = (nome: string) => [...medidor.querySelectorAll<HTMLElement>(`[data-medida="${nome}"]`)].reduce((soma, elemento) => soma + alturaComEspaco(elemento), 0);
+  const caixa = parte('[data-medida="itens"]');
+  const linhas = [...caixa.querySelectorAll("tbody tr")].map(alturaDe);
+  const continua = alturaDe(parte("[data-continua]"));
+  const totais = alturaDe(parte("[data-totais]"));
+  const medidas: MedidasDaCotacao = {
+    util: parte('[data-medida="util"]').clientHeight - FOLGA_EM_PIXELS,
+    abertura: somaDe("abertura"),
+    cabecalhoCurto: somaDe("cabecalhoCurto"),
+    caixaVazia: alturaComEspaco(caixa) - linhas.reduce((soma, altura) => soma + altura, 0) - continua - totais,
+    linhas,
+    continua,
+    totais,
+    fechamento: [...medidor.querySelectorAll<HTMLElement>('[data-medida="fechamento"]')].map(alturaComEspaco),
+  };
+  const larguras = [...caixa.querySelectorAll("thead tr:last-child th")].map((coluna) => coluna.getBoundingClientRect().width);
+  return { medidas, larguras };
+}
+
+const alturaDe = (elemento: Element) => elemento.getBoundingClientRect().height;
+
+/** A altura da parte mais o espaço até a seguinte: a distância entre o topo de uma e o da outra. */
+function alturaComEspaco(parte: HTMLElement): number {
+  const seguinte = parte.nextElementSibling;
+  if (!seguinte) throw new Error("A coluna do medidor termina num marcador");
+  return seguinte.getBoundingClientRect().top - parte.getBoundingClientRect().top;
+}
+
+function Topo({ cotacao, validaAte }: { cotacao: Cotacao; validaAte: string }) {
+  return (
+    <header className={estilos.topo}>
+      <img src="/marca/suprens-96.png" alt="Suprens" width={64} height={61} />
+      <div className={estilos.titulo}>
+        <p className={estilos.empresa}>Metalúrgica Suprens Ltda</p>
+        <h2>Cotação</h2>
+      </div>
+      <dl className={estilos.datas}>
+        <Dado rotulo="Emitida em">
+          {formatarData(dataDoMomento(cotacao.atualizadoEm))} às {horaDoMomento(cotacao.atualizadoEm)}
+        </Dado>
+        <Dado rotulo="Válida até">{formatarData(validaAte)}</Dado>
+      </dl>
+    </header>
+  );
+}
+
+/** O topo das folhas seguintes: o cliente, sem as datas, que ficam só na primeira (pedido do Lucas em 2026-11-23). */
+function CabecalhoCurto({ cliente, documento }: { cliente: string; documento: string }) {
+  return (
+    <header className={estilos.cabecalhoCurto}>
+      <img src="/marca/suprens-96.png" alt="" width={28} height={27} />
+      <strong>Cotação</strong>
+      <span>
+        {cliente} · {documento}
+      </span>
+    </header>
   );
 }
 
@@ -201,21 +347,55 @@ function CondicoesDaCotacao({ cotacao, catalogo, representante, hoje }: PropsDas
   );
 }
 
-type PropsDosItens = { cotacao: Cotacao; catalogo: CatalogoDoCliente; pesoPorItem: readonly (number | null)[] };
+/** A caixa dos itens; a que segue na folha seguinte fecha com a borda tracejada e o "continua". */
+function CaixaDosItens({ continuaNa, children }: { continuaNa: number | null; children: ReactNode }) {
+  return (
+    <section className={continuaNa === null ? estilos.bloco : `${estilos.bloco} ${estilos.aberto}`}>
+      {children}
+      {continuaNa === null ? null : (
+        <p className={estilos.continua} data-continua>
+          Continua na página {continuaNa} →
+        </p>
+      )}
+    </section>
+  );
+}
 
-/** Os itens: só o código do produto, sem o part number (decisão do Lucas em 2026-11-23). */
-function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
+/** Os itens de uma folha: do índice `primeiro` até antes do `fim`. */
+type TrechoDosItens = { primeiro: number; fim: number };
+
+type PropsDosItens = {
+  cotacao: Cotacao;
+  catalogo: CatalogoDoCliente;
+  pesoPorItem: readonly (number | null)[];
+  trecho: TrechoDosItens;
+  /** As larguras medidas na tabela inteira, para as colunas ficarem iguais em todas as folhas. */
+  larguras: readonly number[] | null;
+};
+
+/**
+ * Os itens: só o código do produto, sem o part number (decisão do Lucas em 2026-11-23). As colunas da
+ * ordem de compra só aparecem quando algum item a tem.
+ */
+function ItensDaCotacao({ cotacao, catalogo, pesoPorItem, trecho, larguras }: PropsDosItens) {
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
   const temOrdem = cotacao.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || Boolean(cotacao.escolhas?.pedidoDoCliente.trim());
   const ordemDoPedido = cotacao.escolhas?.pedidoDoCliente.trim() ?? "";
   // Item, produto, quantidade, cento, valor sem IPI e peso; mais a ordem de compra e o IPI, quando há.
   const colunas = 6 + (temOrdem ? 2 : 0) + (ipi ? 2 : 0);
   return (
-    <table className={estilos.itens}>
+    <table className={larguras ? `${estilos.itens} ${estilos.colunasFixas}` : estilos.itens}>
+      {larguras ? (
+        <colgroup>
+          {larguras.map((largura, indice) => (
+            <col key={indice} style={{ width: largura }} />
+          ))}
+        </colgroup>
+      ) : null}
       <thead>
         <tr>
           <th colSpan={colunas} className={estilos.faixa}>
-            Itens
+            Itens{trecho.primeiro > 0 ? <span className={estilos.continuacao}> (continuação)</span> : null}
           </th>
         </tr>
         <tr>
@@ -240,7 +420,8 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
         </tr>
       </thead>
       <tbody>
-        {cotacao.itens.map((item, posicao) => {
+        {cotacao.itens.slice(trecho.primeiro, trecho.fim).map((item, indiceNoTrecho) => {
+          const posicao = trecho.primeiro + indiceNoTrecho;
           const semIpi = valorDaLinha(item);
           const valorIpi = ipi ? valorDoIpi(item, ipi) : 0;
           const pesoDoItem = pesoPorItem[posicao] ?? null;
@@ -327,77 +508,94 @@ function Total({ rotulo, Icone, isDestaque = false, children }: PropsDoTotal) {
   );
 }
 
-/** Entrega, cobrança e transporte, como os "Endereços Complementares" do relatório do app antigo: um ao lado do outro. */
+/**
+ * Entrega, cobrança e transporte, como os "Endereços Complementares" do relatório do app antigo: uma
+ * linha larga para cada um, com o nome em negrito ao lado (pedido do Lucas em 2026-11-23). Entrega e
+ * cobrança no faturamento viram uma linha só.
+ */
 function EnderecosDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: CatalogoDoCliente }) {
   const dados = catalogo.dadosDoPedido;
   if (!dados) return null;
-  const escolhida = cotacao.escolhas?.transportadora ?? null;
-  const transportadora = escolhida && "codigo" in escolhida ? transportadoraDe(dados, escolhida.codigo) : null;
-  const nova = escolhida && "nova" in escolhida ? escolhida.nova : null;
+  const { entrega, cobranca } = dados.cadastro;
   return (
-    <Bloco titulo="Entrega, cobrança e transporte" colunas={3}>
-      <Local rotulo="Entrega" local={dados.cadastro.entrega} />
-      <Local rotulo="Cobrança" local={dados.cadastro.cobranca} />
-      <Dado rotulo="Transportadora">
-        {transportadora ? (
+    <Bloco titulo="Entrega, cobrança e transporte" semGrade>
+      <dl className={estilos.linhas}>
+        {entrega || cobranca ? (
           <>
-            <span className={estilos.linhaForte}>{transportadora.razaoSocial}</span>
-            <span className={estilos.linha}>CNPJ {transportadora.cnpj}</span>
-            <span className={estilos.linha}>
-              {[transportadora.endereco, transportadora.bairro].filter(Boolean).join(" · ")}
-            </span>
-            <span className={estilos.linha}>
-              {transportadora.cidade}/{transportadora.uf}
-              {transportadora.cep ? ` · ${formatarCep(transportadora.cep)}` : ""}
-            </span>
-          </>
-        ) : nova ? (
-          <>
-            <span className={estilos.linhaForte}>{nova.nome}</span>
-            <span className={estilos.linha}>CNPJ {formatarCnpj(nova.cnpj)}</span>
-            <span className={estilos.linha}>
-              {nova.cidade}/{nova.uf}
-            </span>
+            <Linha rotulo="Entrega">
+              <Local local={entrega} />
+            </Linha>
+            <Linha rotulo="Cobrança">
+              <Local local={cobranca} />
+            </Linha>
           </>
         ) : (
-          "A combinar"
+          <Linha rotulo="Entrega e cobrança">No endereço do faturamento</Linha>
         )}
-      </Dado>
+        <Linha rotulo="Transportadora">
+          <Transportadora cotacao={cotacao} dados={dados} />
+        </Linha>
+      </dl>
     </Bloco>
   );
 }
 
-function Local({ rotulo, local }: { rotulo: string; local: LocalDoCadastro | null }) {
+function Linha({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
-    <Dado rotulo={rotulo}>
-      {local ? (
-        <>
-          <span className={estilos.linhaForte}>{local.razaoSocial}</span>
-          <span className={estilos.linha}>
-            CNPJ {local.documento}
-            {local.inscricaoEstadual ? ` · IE ${local.inscricaoEstadual}` : ""}
-          </span>
-          <span className={estilos.linha}>{[local.texto, local.bairro].filter(Boolean).join(" · ")}</span>
-          <span className={estilos.linha}>
-            {local.cidade}/{local.uf}
-            {local.cep ? ` · ${formatarCep(local.cep)}` : ""}
-          </span>
-        </>
-      ) : (
-        "No endereço do faturamento"
-      )}
-    </Dado>
+    <div>
+      <dt>{rotulo}:</dt>
+      <dd>{children}</dd>
+    </div>
   );
 }
 
-type PropsDoBloco = { titulo: string; colunas?: 3 | 4; semGrade?: boolean; children: ReactNode };
+function Local({ local }: { local: LocalDoCadastro | null }) {
+  if (!local) return "No endereço do faturamento";
+  return (
+    <>
+      <strong>{local.razaoSocial}</strong> · CNPJ {local.documento}
+      {local.inscricaoEstadual ? ` · IE ${local.inscricaoEstadual}` : ""}
+      <br />
+      {[local.texto, local.bairro, `${local.cidade}/${local.uf}`, local.cep ? formatarCep(local.cep) : null].filter(Boolean).join(" · ")}
+    </>
+  );
+}
+
+type DadosDoPedido = NonNullable<CatalogoDoCliente["dadosDoPedido"]>;
+
+function Transportadora({ cotacao, dados }: { cotacao: Cotacao; dados: DadosDoPedido }) {
+  const escolhida = cotacao.escolhas?.transportadora ?? null;
+  if (escolhida && "nova" in escolhida) {
+    const { nova } = escolhida;
+    return (
+      <>
+        <strong>{nova.nome}</strong> · CNPJ {formatarCnpj(nova.cnpj)}
+        <br />
+        {nova.cidade}/{nova.uf}
+      </>
+    );
+  }
+  const transportadora = escolhida ? transportadoraDe(dados, escolhida.codigo) : null;
+  if (!transportadora) return "A combinar";
+  return (
+    <>
+      <strong>{transportadora.razaoSocial}</strong> · CNPJ {transportadora.cnpj}
+      <br />
+      {[transportadora.endereco, transportadora.bairro, `${transportadora.cidade}/${transportadora.uf}`, transportadora.cep ? formatarCep(transportadora.cep) : null]
+        .filter(Boolean)
+        .join(" · ")}
+    </>
+  );
+}
+
+type PropsDoBloco = { titulo: string; semGrade?: boolean; children: ReactNode };
 
 /** Uma parte da folha: a faixa com o título e, embaixo, os dados numa grade (ou o conteúdo como vem). */
-function Bloco({ titulo, colunas = 4, semGrade = false, children }: PropsDoBloco) {
+function Bloco({ titulo, semGrade = false, children }: PropsDoBloco) {
   return (
-    <section className={`${estilos.bloco} ${estilos.inteiro}`}>
+    <section className={estilos.bloco}>
       <h3 className={estilos.faixa}>{titulo}</h3>
-      <div className={estilos.corpo}>{semGrade ? children : <dl className={colunas === 3 ? `${estilos.dados} ${estilos.tresColunas}` : estilos.dados}>{children}</dl>}</div>
+      <div className={estilos.corpo}>{semGrade ? children : <dl className={estilos.dados}>{children}</dl>}</div>
     </section>
   );
 }
