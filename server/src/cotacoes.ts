@@ -1,7 +1,7 @@
 import type { DatabaseSync } from "node:sqlite";
 import { dataDoMomento, isDataDeVerdade, momentoEmBrasilia } from "dominio/datas";
 import { arredondarAoCentavo, totalDoPedido, valorDaLinha } from "dominio/pedido";
-import type { ClienteResumo, EscolhasDoPedido, ItemDoPedido, PedidoDaFicha, Rascunho, RascunhoParaSalvar } from "../../web/src/dados/tipos.ts";
+import type { ClienteResumo, EscolhasDoPedido, ItemDoPedido, PedidoDaFicha, Cotacao, CotacaoParaSalvar } from "../../web/src/dados/tipos.ts";
 import { emTransacao } from "./bancoDoApp.ts";
 import { clienteDoPedido } from "./leituras/catalogo.ts";
 import { lerResumoNaCarteira } from "./leituras/clientes.ts";
@@ -9,53 +9,53 @@ import { lerLinhas, numero, texto, textoOuNulo } from "./leituras/linhas.ts";
 import type { Sessao } from "./sessao.ts";
 
 /*
- * Os rascunhos de pedido, no app.db (docs/dados-por-tela.md, "O que fica no app.db"): de um login,
+ * As cotações de pedido, no app.db (docs/dados-por-tela.md, "O que fica no app.db"): de um login,
  * para um CNPJ da carteira dele (o id opaco da foto), com os itens em peças e o preço do cento que vai
- * no pedido. A tela salva sozinha enquanto o pedido é montado, e o rascunho sobrevive a fechar o
+ * no pedido. A tela salva sozinha enquanto o pedido é montado, e a cotação sobrevive a fechar o
  * navegador ou desligar o computador (pedido do Lucas em 2026-11-05). O nome do cliente, a família e o
- * total vêm da foto na leitura: o app.db não guarda nome de cliente. O rascunho de cliente que saiu da
+ * total vêm da foto na leitura: o app.db não guarda nome de cliente. A cotação de cliente que saiu da
  * carteira some, como a ficha.
  */
 
-/** Itens num rascunho: o catálogo de um cliente tem umas 800 linhas, e um pedido de verdade, bem menos. */
+/** Itens numa cotação: o catálogo de um cliente tem umas 800 linhas, e um pedido de verdade, bem menos. */
 export const LIMITE_DE_ITENS = 300;
-/** Rascunhos guardados por login: acima disso, é enviar ou descartar algum. */
-export const LIMITE_DE_RASCUNHOS = 100;
+/** Cotações guardadas por login: acima disso, é enviar ou descartar alguma. */
+export const LIMITE_DE_COTACOES = 100;
 
 /** As escolhas são opcionais no corpo: a tela aberta antes de 2026-11-17 não as manda. */
-export type ConteudoDoRascunho = Omit<RascunhoParaSalvar, "id" | "escolhas"> & { escolhas?: EscolhasDoPedido | null };
-export type RecusaDoRascunho = { status: 400 | 404 | 409; erro: string };
+export type ConteudoDoCotacao = Omit<CotacaoParaSalvar, "id" | "escolhas"> & { escolhas?: EscolhasDoPedido | null };
+export type RecusaDoCotacao = { status: 400 | 404 | 409; erro: string };
 
-const NAO_ENCONTRADO: RecusaDoRascunho = { status: 404, erro: "Cotação não encontrada." };
+const NAO_ENCONTRADO: RecusaDoCotacao = { status: 404, erro: "Cotação não encontrada." };
 const REAIS = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 /**
- * Cria ou atualiza o rascunho com o id que a tela gerou: o mesmo id, salvo de novo, nunca duplica.
+ * Cria ou atualiza a cotação com o id que a tela gerou: o mesmo id, salvo de novo, nunca duplica.
  * O id de outro login responde como se não existisse.
  */
-export function salvarRascunho(
+export function salvarCotacao(
   banco: DatabaseSync,
   foto: DatabaseSync,
   sessao: Sessao,
   id: string,
-  conteudo: ConteudoDoRascunho,
+  conteudo: ConteudoDoCotacao,
   agora: Date,
-): { rascunho: Rascunho; criado: boolean } | RecusaDoRascunho {
+): { cotacao: Cotacao; criado: boolean } | RecusaDoCotacao {
   const recusa = recusaDoConteudo(foto, sessao, conteudo);
   if (recusa) return recusa;
-  // O salvamento automático que chega depois do envio não ressuscita o rascunho.
-  if (banco.prepare("SELECT 1 FROM pedidos_enviados WHERE rascunho = ?").get(id)) return { status: 409, erro: "Este pedido já foi enviado." };
-  const existente = banco.prepare("SELECT usuario, cliente FROM rascunhos WHERE id = ?").get(id);
+  // O salvamento automático que chega depois do envio não ressuscita a cotação.
+  if (banco.prepare("SELECT 1 FROM pedidos_enviados WHERE cotacao = ?").get(id)) return { status: 409, erro: "Este pedido já foi enviado." };
+  const existente = banco.prepare("SELECT usuario, cliente FROM cotacoes WHERE id = ?").get(id);
   if (existente && String(existente.usuario) !== sessao.idDoUsuario) return NAO_ENCONTRADO;
   if (existente && String(existente.cliente) !== conteudo.codigoCliente) return { status: 409, erro: "Esta cotação é de outro cliente." };
   if (!existente && conteudo.itens.length === 0) return { status: 400, erro: "A cotação começa com pelo menos um produto." };
-  if (!existente && quantosRascunhos(banco, sessao) >= LIMITE_DE_RASCUNHOS) {
-    return { status: 409, erro: `Você já tem ${LIMITE_DE_RASCUNHOS} cotações. Envie ou descarte alguma para começar outra.` };
+  if (!existente && quantosCotacoes(banco, sessao) >= LIMITE_DE_COTACOES) {
+    return { status: 409, erro: `Você já tem ${LIMITE_DE_COTACOES} cotações. Envie ou descarte alguma para começar outra.` };
   }
   gravar(banco, sessao, id, conteudo, momentoEmBrasilia(agora));
-  const rascunho = lerRascunho(banco, foto, sessao, id);
-  if (!rascunho) throw new Error("O rascunho gravado não voltou na leitura.");
-  return { rascunho, criado: !existente };
+  const cotacao = lerCotacao(banco, foto, sessao, id);
+  if (!cotacao) throw new Error("A cotação gravada não voltou na leitura.");
+  return { cotacao, criado: !existente };
 }
 
 /**
@@ -65,8 +65,8 @@ export function salvarRascunho(
 export function recusaDoConteudo(
   foto: DatabaseSync,
   sessao: Sessao,
-  conteudo: Pick<ConteudoDoRascunho, "codigoCliente" | "itens" | "entrega">,
-): RecusaDoRascunho | null {
+  conteudo: Pick<ConteudoDoCotacao, "codigoCliente" | "itens" | "entrega">,
+): RecusaDoCotacao | null {
   const cliente = clienteDoPedido(foto, sessao, conteudo.codigoCliente);
   if (!cliente) return { status: 404, erro: "Cliente não encontrado na sua carteira." };
   if ("bloqueado" in cliente) return { status: 409, erro: cliente.bloqueado };
@@ -74,53 +74,53 @@ export function recusaDoConteudo(
   return problema ? { status: 400, erro: problema } : null;
 }
 
-/** O rascunho do login, com o cliente da foto; null se não existe, é de outro login ou o cliente saiu da carteira. */
-export function lerRascunho(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao, id: string): Rascunho | null {
-  const linha = banco.prepare("SELECT id, cliente, entrega, observacao, escolhas, atualizado_em FROM rascunhos WHERE id = ? AND usuario = ?").get(id, sessao.idDoUsuario);
-  return linha ? montarRascunho(banco, foto, sessao, linha) : null;
+/** A cotação do login, com o cliente da foto; null se não existe, é de outro login ou o cliente saiu da carteira. */
+export function lerCotacao(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao, id: string): Cotacao | null {
+  const linha = banco.prepare("SELECT id, cliente, entrega, observacao, escolhas, atualizado_em FROM cotacoes WHERE id = ? AND usuario = ?").get(id, sessao.idDoUsuario);
+  return linha ? montarCotacao(banco, foto, sessao, linha) : null;
 }
 
-/** Os rascunhos do login, do salvo por último ao mais antigo: a aba Rascunhos de Pedidos. */
-export function rascunhosDoLogin(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao): Rascunho[] {
+/** As cotações do login, do salvo por último ao mais antigo: a aba Cotações de Pedidos. */
+export function cotacoesDoLogin(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao): Cotacao[] {
   return banco
-    .prepare("SELECT id, cliente, entrega, observacao, escolhas, atualizado_em FROM rascunhos WHERE usuario = ? ORDER BY atualizado_em DESC")
+    .prepare("SELECT id, cliente, entrega, observacao, escolhas, atualizado_em FROM cotacoes WHERE usuario = ? ORDER BY atualizado_em DESC")
     .all(sessao.idDoUsuario)
-    .flatMap((linha) => montarRascunho(banco, foto, sessao, linha) ?? []);
+    .flatMap((linha) => montarCotacao(banco, foto, sessao, linha) ?? []);
 }
 
 /**
- * Os rascunhos do login como linhas do histórico da ficha: os do cliente ou, na ficha do grupo, os de
+ * As cotações do login como linhas do histórico da ficha: as do cliente ou, na ficha do grupo, as de
  * todos os CNPJs dele, cada um com o seu CNPJ.
  */
-export function rascunhosNaFicha(
+export function cotacoesNaFicha(
   banco: DatabaseSync,
   foto: DatabaseSync,
   sessao: Sessao,
   ficha: { codigo: string; cnpjs: readonly ClienteResumo[] | null },
 ): PedidoDaFicha[] {
   const codigos = new Set(ficha.cnpjs ? ficha.cnpjs.map(({ codigo }) => codigo) : [ficha.codigo]);
-  return rascunhosDoLogin(banco, foto, sessao)
-    .filter((rascunho) => codigos.has(rascunho.cliente.codigo))
-    .map((rascunho) => ({
-      id: rascunho.id,
-      cnpj: ficha.cnpjs ? { codigo: rascunho.cliente.codigo, nome: rascunho.cliente.nome } : null,
+  return cotacoesDoLogin(banco, foto, sessao)
+    .filter((cotacao) => codigos.has(cotacao.cliente.codigo))
+    .map((cotacao) => ({
+      id: cotacao.id,
+      cnpj: ficha.cnpjs ? { codigo: cotacao.cliente.codigo, nome: cotacao.cliente.nome } : null,
       numero: null,
-      status: "rascunho",
-      emissao: dataDoMomento(rascunho.atualizadoEm),
-      entrega: rascunho.entrega,
-      itens: itensNaFicha(foto, rascunho.itens),
-      valor: rascunho.totalEstimado,
+      status: "cotacao",
+      emissao: dataDoMomento(cotacao.atualizadoEm),
+      entrega: cotacao.entrega,
+      itens: itensNaFicha(foto, cotacao.itens),
+      valor: cotacao.totalEstimado,
       valorComIpi: null,
       cfop: null,
       notas: [],
     }));
 }
 
-/** Descarta o rascunho do login e devolve o cliente dele, para a auditoria; null se não havia. */
-export function excluirRascunho(banco: DatabaseSync, sessao: Sessao, id: string): string | null {
-  const linha = banco.prepare("SELECT cliente FROM rascunhos WHERE id = ? AND usuario = ?").get(id, sessao.idDoUsuario);
+/** Descarta a cotação do login e devolve o cliente dele, para a auditoria; null se não havia. */
+export function excluirCotacao(banco: DatabaseSync, sessao: Sessao, id: string): string | null {
+  const linha = banco.prepare("SELECT cliente FROM cotacoes WHERE id = ? AND usuario = ?").get(id, sessao.idDoUsuario);
   if (!linha) return null;
-  banco.prepare("DELETE FROM rascunhos WHERE id = ? AND usuario = ?").run(id, sessao.idDoUsuario);
+  banco.prepare("DELETE FROM cotacoes WHERE id = ? AND usuario = ?").run(id, sessao.idDoUsuario);
   return String(linha.cliente);
 }
 
@@ -148,23 +148,23 @@ function problemaNaEntrega(entrega: string | null): string | null {
   return entrega === null || isDataDeVerdade(entrega) ? null : "Essa data de entrega não existe.";
 }
 
-function quantosRascunhos(banco: DatabaseSync, sessao: Sessao): number {
-  return Number(banco.prepare("SELECT COUNT(*) AS quantos FROM rascunhos WHERE usuario = ?").get(sessao.idDoUsuario)?.quantos ?? 0);
+function quantosCotacoes(banco: DatabaseSync, sessao: Sessao): number {
+  return Number(banco.prepare("SELECT COUNT(*) AS quantos FROM cotacoes WHERE usuario = ?").get(sessao.idDoUsuario)?.quantos ?? 0);
 }
 
-/** O rascunho e os itens, de uma vez: os itens são trocados inteiros a cada salvamento. */
-function gravar(banco: DatabaseSync, sessao: Sessao, id: string, conteudo: ConteudoDoRascunho, momento: string): void {
+/** A cotação e os itens, de uma vez: os itens são trocados inteiros a cada salvamento. */
+function gravar(banco: DatabaseSync, sessao: Sessao, id: string, conteudo: ConteudoDoCotacao, momento: string): void {
   emTransacao(banco, () => {
     banco
       .prepare(
-        `INSERT INTO rascunhos (id, usuario, cliente, entrega, observacao, escolhas, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO cotacoes (id, usuario, cliente, entrega, observacao, escolhas, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (id) DO UPDATE SET entrega = excluded.entrega, observacao = excluded.observacao, escolhas = excluded.escolhas,
                                         atualizado_em = excluded.atualizado_em`,
       )
       .run(id, sessao.idDoUsuario, conteudo.codigoCliente, conteudo.entrega, conteudo.observacao, conteudo.escolhas ? JSON.stringify(conteudo.escolhas) : null, momento, momento);
-    banco.prepare("DELETE FROM rascunho_itens WHERE rascunho = ?").run(id);
+    banco.prepare("DELETE FROM cotacao_itens WHERE cotacao = ?").run(id);
     const inserir = banco.prepare(
-      "INSERT INTO rascunho_itens (rascunho, ordem, produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO cotacao_itens (cotacao, ordem, produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra) VALUES (?, ?, ?, ?, ?, ?, ?)",
     );
     conteudo.itens.forEach((item, i) =>
       inserir.run(id, i + 1, item.codigo, item.quantidade, arredondarAoCentavo(item.precoCento), item.ordemDeCompra, item.itemDaOrdemDeCompra),
@@ -172,12 +172,12 @@ function gravar(banco: DatabaseSync, sessao: Sessao, id: string, conteudo: Conte
   });
 }
 
-function montarRascunho(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao, linha: Record<string, unknown>): Rascunho | null {
+function montarCotacao(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao, linha: Record<string, unknown>): Cotacao | null {
   const cliente = lerResumoNaCarteira(foto, sessao, String(linha.cliente));
   if (!cliente) return null;
   const id = String(linha.id);
   const itens = banco
-    .prepare("SELECT produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra FROM rascunho_itens WHERE rascunho = ? ORDER BY ordem")
+    .prepare("SELECT produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra FROM cotacao_itens WHERE cotacao = ? ORDER BY ordem")
     .all(id)
     .map((item) => ({
       codigo: String(item.produto),
@@ -192,14 +192,14 @@ function montarRascunho(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao,
     itens,
     entrega: linha.entrega === null ? null : String(linha.entrega),
     observacao: String(linha.observacao),
-    // O rascunho salvo antes da marca xPed (2026-11-23) não a tem: sem ela, o cliente não exige.
+    // A cotação salva antes da marca xPed (2026-11-23) não a tem: sem ela, o cliente não exige.
     escolhas: linha.escolhas === null ? null : { clienteXped: false, ...(JSON.parse(String(linha.escolhas)) as Partial<EscolhasDoPedido>) } as EscolhasDoPedido,
     atualizadoEm: String(linha.atualizado_em),
     totalEstimado: totalDoPedido(itens),
   };
 }
 
-/** Os itens do rascunho como os do ERP na ficha: a família vem da foto, e o valor é o do preço do item. */
+/** Os itens da cotação como os do ERP na ficha: a família vem da foto, e o valor é o do preço do item. */
 function itensNaFicha(foto: DatabaseSync, itens: readonly ItemDoPedido[]): PedidoDaFicha["itens"] {
   if (itens.length === 0) return [];
   const familias = new Map(

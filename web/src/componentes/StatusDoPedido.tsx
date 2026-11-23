@@ -7,7 +7,7 @@ export const STATUS_DO_PEDIDO = {
   faturado: { rotulo: "Faturado", icone: ReceiptText, tom: "ok" },
   em_aberto: { rotulo: "Em aberto", icone: ClipboardList, tom: "pendente" },
   enviado: { rotulo: "Enviado pelo CRM", icone: Send, tom: "neutro" },
-  rascunho: { rotulo: "Cotação", icone: FilePen, tom: "rascunho" },
+  cotacao: { rotulo: "Cotação", icone: FilePen, tom: "cotacao" },
 } as const satisfies Record<StatusDoPedido, { rotulo: string; icone: LucideIcon; tom: TomDoSelo }>;
 
 export function SeloDoPedido({ status }: { status: StatusDoPedido }) {

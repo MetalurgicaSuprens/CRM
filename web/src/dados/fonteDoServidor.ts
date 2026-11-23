@@ -5,7 +5,7 @@ import type { PedidoEnviado } from "./tipos";
 
 /*
  * Os dados reais: a API do servidor, que lê a foto do ERP (server/src/rotas.ts). Mesma origem,
- * sem CORS; o representante vem da sessão, nunca daqui. Os rascunhos e os pedidos enviados ficam no
+ * sem CORS; o representante vem da sessão, nunca daqui. As cotações e os pedidos enviados ficam no
  * app.db do servidor.
  */
 
@@ -18,9 +18,9 @@ export const fonteDoServidor: FonteDeDados = {
   carregarCatalogo: (codigoCliente) => buscarOuNulo(`/api/clientes/${encodeURIComponent(codigoCliente)}/catalogo`),
   carregarPedidos: () => buscar("/api/pedidos"),
   carregarPedidoEnviado: (numero) => buscarOuNulo(`/api/pedidos/enviados/${encodeURIComponent(numero)}`),
-  carregarRascunho: (id) => buscarOuNulo(`/api/rascunhos/${encodeURIComponent(id)}`),
-  salvarRascunho: ({ id, ...conteudo }, opcoes) => gravar("PUT", `/api/rascunhos/${encodeURIComponent(id)}`, conteudo, opcoes?.aoSairDaPagina),
-  excluirRascunho: (id) => gravar("DELETE", `/api/rascunhos/${encodeURIComponent(id)}`),
+  carregarCotacao: (id) => buscarOuNulo(`/api/cotacoes/${encodeURIComponent(id)}`),
+  salvarCotacao: ({ id, ...conteudo }, opcoes) => gravar("PUT", `/api/cotacoes/${encodeURIComponent(id)}`, conteudo, opcoes?.aoSairDaPagina),
+  excluirCotacao: (id) => gravar("DELETE", `/api/cotacoes/${encodeURIComponent(id)}`),
   enviarPedido,
   carregarVisitas: () => buscar("/api/visitas"),
   registrarVisita: (codigo) => mudarVisita("POST", codigo, {}),
@@ -28,11 +28,11 @@ export const fonteDoServidor: FonteDeDados = {
 };
 
 /**
- * O envio pede ao aparelho a chave de acesso de novo: o servidor dá um desafio com o hash do rascunho
- * e só aceita a assinatura se o rascunho ainda estiver igual (server/src/envio/rotasDoEnvio.ts).
+ * O envio pede ao aparelho a chave de acesso de novo: o servidor dá um desafio com o hash da cotação
+ * e só aceita a assinatura se a cotação ainda estiver igual (server/src/envio/rotasDoEnvio.ts).
  */
-async function enviarPedido(idDoRascunho: string): Promise<PedidoEnviado> {
-  const caminho = `/api/rascunhos/${encodeURIComponent(idDoRascunho)}/envio`;
+async function enviarPedido(idDoCotacao: string): Promise<PedidoEnviado> {
+  const caminho = `/api/cotacoes/${encodeURIComponent(idDoCotacao)}/envio`;
   const opcoes = await gravar<OpcoesDeEntradaJSON>("POST", `${caminho}/opcoes`);
   return gravar<PedidoEnviado>("POST", caminho, { resposta: await usarChave(opcoes) });
 }

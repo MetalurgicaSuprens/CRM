@@ -25,8 +25,8 @@ export function App() {
           <Route path="analises" element={<Analises />} />
           <Route path="pedidos" element={<Pedidos />} />
           <Route path="pedidos/novo" element={<MontarPedido />} />
-          <Route path="pedidos/rascunhos/:id" element={<MontarPedido />} />
-          <Route path="pedidos/rascunhos/:id/pdf" element={<CotacaoParaImprimir />} />
+          <Route path="pedidos/cotacoes/:id" element={<MontarPedido />} />
+          <Route path="pedidos/cotacoes/:id/pdf" element={<CotacaoParaImprimir />} />
           <Route path="pedidos/:numero" element={<DetalheDoPedido />} />
           <Route path="mapa" element={<Mapa />} />
           <Route path="*" element={<Navigate to="/" replace />} />

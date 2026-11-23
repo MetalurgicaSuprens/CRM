@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { salvarRascunho } from "../../dados/api";
-import type { EscolhasDoPedido, ItemDoPedido, Rascunho, RascunhoParaSalvar } from "../../dados/tipos";
+import { salvarCotacao } from "../../dados/api";
+import type { EscolhasDoPedido, ItemDoPedido, Cotacao, CotacaoParaSalvar } from "../../dados/tipos";
 import { mensagemDo } from "./mensagemDo";
 
-/** Tempo sem mexer no pedido até o rascunho ser salvo. */
+/** Tempo sem mexer no pedido até a cotação ser salva. */
 const ESPERA_PARA_SALVAR_MS = 700;
 
-export type ConteudoDoPedido = Omit<RascunhoParaSalvar, "id">;
+export type ConteudoDoPedido = Omit<CotacaoParaSalvar, "id">;
 
 /** O que vai para o servidor: a mesma ordem de chaves sempre, para comparar com o que já foi salvo. */
 export function conteudoDoPedido(
@@ -20,12 +20,12 @@ export function conteudoDoPedido(
 }
 
 /**
- * Salva o rascunho sozinho, um pouco depois da última mudança e, na hora, quando a página fecha, sai da
+ * Salva a cotação sozinha, um pouco depois da última mudança e, na hora, quando a página fecha, sai da
  * tela ou o representante vai para outra tela: o pedido sobrevive ao computador desligar (pedido do
  * Lucas em 2026-11-05). Só começa quando há o que guardar: abrir um pedido novo e sair sem escolher nada
- * não deixa rascunho vazio. O id vem do endereço, então salvar de novo nunca duplica.
+ * não deixa cotação vazia. O id vem do endereço, então salvar de novo nunca duplica.
  */
-export function useRascunhoAutomatico(id: string, inicial: Rascunho | null, conteudo: ConteudoDoPedido) {
+export function useCotacaoAutomatica(id: string, inicial: Cotacao | null, conteudo: ConteudoDoPedido) {
   const [existe, setExiste] = useState(inicial !== null);
   const [salvoEm, setSalvoEm] = useState(inicial?.atualizadoEm ?? null);
   const [erroAoSalvar, setErroAoSalvar] = useState<string | null>(null);
@@ -35,12 +35,12 @@ export function useRascunhoAutomatico(id: string, inicial: Rascunho | null, cont
   const temOQueGuardar = existe || conteudo.itens.length > 0;
 
   const salvarAgora = useCallback(async () => {
-    const rascunho = await salvarRascunho({ id, ...conteudo });
+    const cotacao = await salvarCotacao({ id, ...conteudo });
     ultimoSalvo.current = conteudoAtual;
     setExiste(true);
-    setSalvoEm(rascunho.atualizadoEm);
+    setSalvoEm(cotacao.atualizadoEm);
     setErroAoSalvar(null);
-    return rascunho;
+    return cotacao;
   }, [id, conteudo, conteudoAtual]);
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export function useRascunhoAutomatico(id: string, inicial: Rascunho | null, cont
         : () => {
             ultimoSalvo.current = conteudoAtual;
             // A página já está saindo: o erro não teria onde aparecer, e o salvamento normal mostra os dele.
-            salvarRascunho({ id, ...conteudo }, { aoSairDaPagina: true }).catch(() => undefined);
+            salvarCotacao({ id, ...conteudo }, { aoSairDaPagina: true }).catch(() => undefined);
           };
   });
   useEffect(() => {
@@ -77,7 +77,7 @@ export function useRascunhoAutomatico(id: string, inicial: Rascunho | null, cont
     };
   }, []);
 
-  /** Depois de enviar ou descartar, o rascunho não é salvo de novo. */
+  /** Depois de enviar ou descartar, a cotação não é salva de novo. */
   const pararDeSalvar = useCallback(() => {
     parado.current = true;
   }, []);

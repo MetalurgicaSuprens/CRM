@@ -33,7 +33,7 @@ export function lerCatalogo(db: DatabaseSync, sessao: Sessao, codigoDoCliente: s
 }
 
 /**
- * O cliente do pedido, no catálogo e no rascunho: um CNPJ da carteira do login (fora dela e no grupo,
+ * O cliente do pedido, no catálogo e na cotação: um CNPJ da carteira do login (fora dela e no grupo,
  * null) que esteja ativo no cadastro e tenha a tabela de preço principal (senão, o aviso com o motivo).
  */
 export function clienteDoPedido(db: DatabaseSync, sessao: Sessao, codigoDoCliente: string): ClienteDoPedido | PedidoBloqueado | null {

@@ -17,7 +17,7 @@ import { Janela } from "./Janela";
  * modo real, antes da F5), ficam só a entrega e as observações.
  */
 
-/** O tamanho do PV1_OCO que o rascunho aceita (server/src/rotas.ts). */
+/** O tamanho do PV1_OCO que a cotação aceita (server/src/rotas.ts). */
 const LIMITE_DA_ORDEM_DE_COMPRA = 30;
 const CLASSIFICACOES = Object.keys(ROTULOS_DA_CLASSIFICACAO) as Classificacao[];
 

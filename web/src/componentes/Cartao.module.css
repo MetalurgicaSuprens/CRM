@@ -61,9 +61,9 @@
   color: var(--cor-novo);
 }
 
-.rascunho {
-  background: linear-gradient(135deg, var(--cor-rascunho-fundo), color-mix(in srgb, var(--cor-rascunho-fundo) 82%, var(--cor-rascunho)));
-  color: var(--cor-rascunho);
+.cotacao {
+  background: linear-gradient(135deg, var(--cor-cotacao-fundo), color-mix(in srgb, var(--cor-cotacao-fundo) 82%, var(--cor-cotacao)));
+  color: var(--cor-cotacao);
 }
 
 .pendente {

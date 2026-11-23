@@ -228,7 +228,7 @@ describe("pedidoJaEnviadoHoje", () => {
 });
 
 describe("escolhasNoCatalogo", () => {
-  it("mantém as escolhas do rascunho que ainda valem", () => {
+  it("mantém as escolhas da cotação que ainda valem", () => {
     const salvas = { condicaoDePagamento: "1060", classificacao: "uso_consumo" as const, pedidoDoCliente: "OC 77", aceitaParcial: true, clienteXped: true, transportadora: { codigo: "101" } };
     expect(escolhasNoCatalogo(salvas, dados())).toEqual(salvas);
   });
@@ -238,7 +238,7 @@ describe("escolhasNoCatalogo", () => {
     expect(escolhasNoCatalogo(salvas, dados())).toMatchObject({ condicaoDePagamento: "1030", transportadora: null });
   });
 
-  it("dá ao rascunho salvo antes da marca xPed a do histórico do cliente", () => {
+  it("dá à cotação salva antes da marca xPed a do histórico do cliente", () => {
     const salvas = { condicaoDePagamento: "1030", classificacao: "comercializacao" as const, pedidoDoCliente: "", aceitaParcial: false, transportadora: null };
     expect(escolhasNoCatalogo(salvas as never, dados({ xpedUsado: { com: 9, sem: 1 } })).clienteXped).toBe(true);
   });

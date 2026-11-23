@@ -4,7 +4,7 @@ import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { dadosDoPedidoFicticio } from "./dadosDoPedidoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
-import { SEM_ORDEM_DE_COMPRA_NO_ITEM, STATUS_NA_FICHA, novoIdDeRascunho, precoInicialDoItem } from "./pedido";
+import { SEM_ORDEM_DE_COMPRA_NO_ITEM, STATUS_NA_FICHA, novoIdDeCotacao, precoInicialDoItem } from "./pedido";
 import { ROTULOS_DE_MERCADO } from "./rotulos";
 import type {
   CatalogoDoCliente,
@@ -18,16 +18,16 @@ import type {
   PedidoDaFicha,
   PedidoEnviado,
   ProdutoDoCatalogo,
-  Rascunho,
-  RascunhoParaSalvar,
+  Cotacao,
+  CotacaoParaSalvar,
 } from "./tipos";
 
 /*
- * Pedidos do protótipo (F1). Os rascunhos e os pedidos enviados ficam só na memória do navegador:
+ * Pedidos do protótipo (F1). As cotações e os pedidos enviados ficam só na memória do navegador:
  * somem ao recarregar a página. Na F5, quem guarda é o servidor (app.db).
  */
 
-const rascunhos = new Map<string, Rascunho>();
+const cotacoes = new Map<string, Cotacao>();
 const enviadosNaSessao: PedidoEnviado[] = [];
 let isExemploCriado = false;
 let proximoNumero = 109;
@@ -59,31 +59,31 @@ export function catalogoDoClienteFicticio(codigoCliente: string): CatalogoDoClie
 }
 
 export function painelDePedidosFicticio(): PainelDePedidos {
-  garantirRascunhoDeExemplo();
+  garantirCotacaoDeExemplo();
   return {
     enviados: [...enviadosNaSessao, ...pedidosDeExemplo()],
-    rascunhos: [...rascunhos.values()].sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm)),
+    cotacoes: [...cotacoes.values()].sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm)),
     emAberto: pedidosNoErpFicticios(),
     faturados: notasFaturadasFicticias(),
   };
 }
 
-/** Os rascunhos e os pedidos enviados do cliente, como linhas do histórico da ficha. */
+/** As cotações e os pedidos enviados do cliente, como linhas do histórico da ficha. */
 export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
-  garantirRascunhoDeExemplo();
+  garantirCotacaoDeExemplo();
   const catalogo = catalogoDoClienteFicticio(codigoCliente);
   if (!catalogo) return [];
   const doCliente = ({ cliente }: { cliente: ClienteResumo }) => cliente.codigo === codigoCliente;
-  const rascunhosDoCliente = [...rascunhos.values()].filter(doCliente).map(
-    (rascunho): PedidoDaFicha => ({
-      id: rascunho.id,
+  const cotacoesDoCliente = [...cotacoes.values()].filter(doCliente).map(
+    (cotacao): PedidoDaFicha => ({
+      id: cotacao.id,
       cnpj: null,
       numero: null,
-      status: "rascunho",
-      emissao: dataDoMomento(rascunho.atualizadoEm),
-      entrega: rascunho.entrega,
-      itens: itensDaFicha(itensEnviados(rascunho.itens, catalogo)),
-      valor: rascunho.totalEstimado,
+      status: "cotacao",
+      emissao: dataDoMomento(cotacao.atualizadoEm),
+      entrega: cotacao.entrega,
+      itens: itensDaFicha(itensEnviados(cotacao.itens, catalogo)),
+      valor: cotacao.totalEstimado,
       valorComIpi: null,
       cfop: null,
       notas: [],
@@ -109,23 +109,23 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
       },
     ];
   });
-  return [...rascunhosDoCliente, ...enviados];
+  return [...cotacoesDoCliente, ...enviados];
 }
 
 export function pedidoEnviadoFicticio(numero: string): PedidoEnviado | null {
   return [...enviadosNaSessao, ...pedidosDeExemplo()].find((pedido) => pedido.numero === numero) ?? null;
 }
 
-export function rascunhoFicticio(id: string): Rascunho | null {
-  garantirRascunhoDeExemplo();
-  return rascunhos.get(id) ?? null;
+export function cotacaoFicticio(id: string): Cotacao | null {
+  garantirCotacaoDeExemplo();
+  return cotacoes.get(id) ?? null;
 }
 
-export function salvarRascunhoFicticio(dados: RascunhoParaSalvar): Rascunho | null {
+export function salvarCotacaoFicticio(dados: CotacaoParaSalvar): Cotacao | null {
   const catalogo = catalogoDoClienteFicticio(dados.codigoCliente);
   if (!catalogo) return null;
   const itens = dados.itens.filter((item) => item.quantidade > 0);
-  const rascunho: Rascunho = {
+  const cotacao: Cotacao = {
     id: dados.id,
     cliente: catalogo.cliente,
     itens,
@@ -135,28 +135,28 @@ export function salvarRascunhoFicticio(dados: RascunhoParaSalvar): Rascunho | nu
     atualizadoEm: momentoEmBrasilia(),
     totalEstimado: totalDoPedido(itens),
   };
-  rascunhos.set(dados.id, rascunho);
-  return rascunho;
+  cotacoes.set(dados.id, cotacao);
+  return cotacao;
 }
 
-export function excluirRascunhoFicticio(id: string): void {
-  rascunhos.delete(id);
+export function excluirCotacaoFicticio(id: string): void {
+  cotacoes.delete(id);
 }
 
-/** O rascunho vira pedido enviado, com número CRM; a partir daqui ninguém o altera no CRM. */
-export function enviarRascunhoFicticio(id: string): PedidoEnviado | null {
-  const rascunho = rascunhos.get(id);
-  const catalogo = rascunho ? catalogoDoClienteFicticio(rascunho.cliente.codigo) : null;
-  if (!rascunho || !catalogo) return null;
+/** A cotação vira pedido enviado, com número CRM; a partir daqui ninguém o altera no CRM. */
+export function enviarCotacaoFicticio(id: string): PedidoEnviado | null {
+  const cotacao = cotacoes.get(id);
+  const catalogo = cotacao ? catalogoDoClienteFicticio(cotacao.cliente.codigo) : null;
+  if (!cotacao || !catalogo) return null;
   const agora = momentoEmBrasilia();
   const pedido: PedidoEnviado = {
     numero: numeroDoPedidoCrm(proximoNumero++),
-    cliente: rascunho.cliente,
+    cliente: cotacao.cliente,
     enviadoEm: agora,
-    entrega: rascunho.entrega,
-    observacao: rascunho.observacao,
-    itens: itensEnviados(rascunho.itens, catalogo),
-    totalEstimado: rascunho.totalEstimado,
+    entrega: cotacao.entrega,
+    observacao: cotacao.observacao,
+    itens: itensEnviados(cotacao.itens, catalogo),
+    totalEstimado: cotacao.totalEstimado,
     totalSgi: null,
     numeroSgi: null,
     numeroErp: null,
@@ -165,7 +165,7 @@ export function enviarRascunhoFicticio(id: string): PedidoEnviado | null {
     historico: [{ etapa: "enviado", em: agora }],
   };
   enviadosNaSessao.unshift(pedido);
-  rascunhos.delete(id);
+  cotacoes.delete(id);
   return pedido;
 }
 
@@ -251,7 +251,7 @@ function gerarExemplos(): PedidoEnviado[] {
   });
 }
 
-function garantirRascunhoDeExemplo(): void {
+function garantirCotacaoDeExemplo(): void {
   if (isExemploCriado) return;
   isExemploCriado = true;
   const cliente = clientesFicticios().find((resumo) => resumo.situacao === "ativo");
@@ -261,7 +261,7 @@ function garantirRascunhoDeExemplo(): void {
     .filter((produto) => produto.jaComprou)
     .slice(0, 2)
     .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4, precoCento: precoInicialDoItem(produto), ...SEM_ORDEM_DE_COMPRA_NO_ITEM }));
-  salvarRascunhoFicticio({ id: novoIdDeRascunho(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "", escolhas: null });
+  salvarCotacaoFicticio({ id: novoIdDeCotacao(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "", escolhas: null });
 }
 
 // ---------------------------------------------------------------- apoio

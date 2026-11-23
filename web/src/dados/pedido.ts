@@ -43,10 +43,10 @@ export function precoDigitado(texto: string, minimo: number): { preco: number; s
 }
 
 /**
- * O rascunho salvo diante do catálogo de hoje: o produto que saiu da lista do cliente sai do pedido, e o
+ * A cotação salva diante do catálogo de hoje: o produto que saiu da lista do cliente sai do pedido, e o
  * preço que ficou abaixo da tabela (ela subiu) sobe para ela. Diz quantos de cada, para a tela avisar.
  */
-export function rascunhoNoCatalogo(
+export function cotacaoNoCatalogo(
   itens: readonly ItemDoPedido[],
   produtos: readonly Pick<ProdutoDoCatalogo, "codigo" | "precoDaTabela">[],
 ): { itens: ItemDoPedido[]; foraDoCatalogo: number; subiramAoMinimo: number } {
@@ -253,11 +253,11 @@ export function problemasDoPedido(linhas: readonly LinhaDoPedido[], observacao: 
 }
 
 /**
- * O id de um rascunho novo: um UUID versão 4, o formato que o servidor aceita. Sai de
+ * O id de uma cotação nova: um UUID versão 4, o formato que o servidor aceita. Sai de
  * crypto.getRandomValues, e não de crypto.randomUUID, que o navegador só tem em endereço seguro (HTTPS
  * ou localhost): no protótipo aberto pelo IP da rede interna, a tela do pedido ficava em branco.
  */
-export function novoIdDeRascunho(): string {
+export function novoIdDeCotacao(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   // Os bits que marcam a versão 4 e a variante do padrão (RFC 9562).
   bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;

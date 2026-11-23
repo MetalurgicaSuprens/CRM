@@ -41,6 +41,9 @@ const EVENTOS: Readonly<Record<string, string>> = {
   ficha_consultada: "Ficha consultada",
   visita_registrada: "Visita registrada",
   visita_desfeita: "Visita desfeita",
+  cotacao_criada: "Cotação criada",
+  cotacao_descartada: "Cotação descartada",
+  // Os nomes de antes de 2026-11-23, que ficam no registro já gravado.
   rascunho_criado: "Cotação criada",
   rascunho_descartado: "Cotação descartada",
   pedido_enviado: "Pedido enviado",

@@ -3,10 +3,10 @@ import estilos from "./Selo.module.css";
 
 /**
  * Os primeiros seguem a situação (bom, atenção, crítico, sem situação); "novo" é o cliente que acabou
- * de chegar; "rascunho" e "pendente" são o pedido ainda não enviado e o que está em aberto no ERP;
+ * de chegar; "cotação" e "pendente" são o pedido ainda não enviado e o que está em aberto no ERP;
  * "grupo" é o cliente que junta vários CNPJs.
  */
-export type TomDoSelo = "ok" | "alerta" | "critico" | "neutro" | "novo" | "rascunho" | "pendente" | "grupo";
+export type TomDoSelo = "ok" | "alerta" | "critico" | "neutro" | "novo" | "cotacao" | "pendente" | "grupo";
 
 type Props = {
   rotulo: string;

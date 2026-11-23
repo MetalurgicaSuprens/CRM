@@ -6,8 +6,8 @@ import type {
   PainelDePedidos,
   PainelInicio,
   PedidoEnviado,
-  Rascunho,
-  RascunhoParaSalvar,
+  Cotacao,
+  CotacaoParaSalvar,
   SituacaoDosDados,
   UltimasVisitas,
 } from "./tipos";
@@ -18,7 +18,7 @@ import type {
  */
 export class PedidoBloqueado extends Error {}
 
-/** Ao fechar a página ou ela sair da tela: o navegador termina de mandar o rascunho mesmo depois de ela sair. */
+/** Ao fechar a página ou ela sair da tela: o navegador termina de mandar a cotação mesmo depois de ela sair. */
 export type OpcoesDoSalvamento = { aoSairDaPagina?: boolean };
 
 /** O que as telas pedem, venha dos dados fictícios (fonteFicticia) ou do servidor (fonteDoServidor). */
@@ -31,11 +31,11 @@ export type FonteDeDados = {
   carregarCatalogo(codigoCliente: string): Promise<CatalogoDoCliente | null>;
   carregarPedidos(): Promise<PainelDePedidos>;
   carregarPedidoEnviado(numero: string): Promise<PedidoEnviado | null>;
-  carregarRascunho(id: string): Promise<Rascunho | null>;
-  salvarRascunho(dados: RascunhoParaSalvar, opcoes?: OpcoesDoSalvamento): Promise<Rascunho>;
-  excluirRascunho(id: string): Promise<void>;
+  carregarCotacao(id: string): Promise<Cotacao | null>;
+  salvarCotacao(dados: CotacaoParaSalvar, opcoes?: OpcoesDoSalvamento): Promise<Cotacao>;
+  excluirCotacao(id: string): Promise<void>;
   /** O envio leva junto a confirmação da chave de acesso, ligada ao conteúdo do pedido. */
-  enviarPedido(idDoRascunho: string): Promise<PedidoEnviado>;
+  enviarPedido(idDoCotacao: string): Promise<PedidoEnviado>;
   carregarVisitas(): Promise<UltimasVisitas>;
   /** Marca a visita de hoje e devolve as visitas do cliente, da mais recente à mais antiga. */
   registrarVisita(codigoCliente: string): Promise<string[]>;

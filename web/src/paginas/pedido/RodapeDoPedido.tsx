@@ -9,7 +9,7 @@ import estilos from "./RodapeDoPedido.module.css";
 
 /*
  * O rodapé do documento, sempre à vista enquanto a página rola, como a faixa de totais do app antigo:
- * itens, peças, valor sem IPI, IPI e valor com IPI, e depois o salvar como rascunho, em cinza, e o
+ * itens, peças, valor sem IPI, IPI e valor com IPI, e depois o salvar como cotação, em cinza, e o
  * envio, em verde. No celular, ele leva de uma etapa à outra e só oferece os dois na revisão.
  */
 
@@ -22,20 +22,20 @@ type Props = {
   etapa: Etapa;
   aoIrPara: (etapa: Etapa) => void;
   aoEnviar: () => void;
-  /** Guarda o pedido nos rascunhos e sai dele, para enviar depois (pedido do Lucas em 2026-11-18). */
-  aoSalvarRascunho: () => void;
+  /** Guarda o pedido nas cotações e sai dele, para enviar depois (pedido do Lucas em 2026-11-18). */
+  aoSalvarCotacao: () => void;
   /** O PDF e o descartar da cotação: no computador, entre os totais e o "Salvar cotação". */
   acoesDaCotacao: ReactNode;
 };
 
-export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, aoEnviar, aoSalvarRascunho, acoesDaCotacao }: Props) {
+export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, aoEnviar, aoSalvarCotacao, acoesDaCotacao }: Props) {
   const anterior = etapaAnterior(etapa);
   const seguinte = etapaSeguinte(etapa);
   const [primeiroProblema] = problemas;
-  // Os dois juntos, sempre nesta ordem: o rascunho guarda até o pedido incompleto, mas não o vazio.
+  // Os dois juntos, sempre nesta ordem: a cotação guarda até o pedido incompleto, mas não o vazio.
   const botoesDoFim = (
     <>
-      <button type="button" className={`${botoes.secundario} ${estilos.salvarRascunho}`} disabled={totais.itens === 0} onClick={aoSalvarRascunho}>
+      <button type="button" className={`${botoes.secundario} ${estilos.salvarCotacao}`} disabled={totais.itens === 0} onClick={aoSalvarCotacao}>
         Salvar cotação
       </button>
       <button type="button" className={`${botoes.primario} ${botoes.positivo} ${estilos.enviar}`} disabled={problemas.length > 0} onClick={aoEnviar}>

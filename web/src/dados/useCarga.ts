@@ -4,7 +4,7 @@ type Carga<T> = {
   dados: T | null;
   carregando: boolean;
   erro: Error | null;
-  /** Busca de novo, depois de uma mudança feita pela própria tela (ex.: excluir um rascunho). */
+  /** Busca de novo, depois de uma mudança feita pela própria tela (ex.: excluir uma cotação). */
   recarregar: () => void;
 };
 

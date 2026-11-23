@@ -38,7 +38,7 @@ type Props = {
   aoRenumerar: (() => void) | null;
   /** A ordem de compra do pedido (pedidoDoCliente): é a de cada item que não tem outra. */
   ordemDeCompraDoPedido: string;
-  /** Entre a busca e os itens: o aviso do rascunho que voltou diferente. */
+  /** Entre a busca e os itens: o aviso da cotação que voltou diferente. */
   children?: ReactNode;
 };
 

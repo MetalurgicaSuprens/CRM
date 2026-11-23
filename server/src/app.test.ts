@@ -8,7 +8,7 @@ import { criarAppDoAdmin } from "./admin/appDoAdmin.ts";
 import { criarApp } from "./app.ts";
 import { abrirBancoDoApp } from "./bancoDoApp.ts";
 import { criarFotoAtual, type FotoAtual } from "./foto/fotoAtual.ts";
-import type { Analises, CatalogoDoCliente, ClienteResumo, FichaCliente, PainelDePedidos, Rascunho } from "../../web/src/dados/tipos.ts";
+import type { Analises, CatalogoDoCliente, ClienteResumo, FichaCliente, PainelDePedidos, Cotacao } from "../../web/src/dados/tipos.ts";
 import {
   CLIENTE_DE_A,
   CLIENTE_DE_B,
@@ -58,15 +58,15 @@ function comoA(app: FastifyInstance, url: string) {
   return app.inject({ method: "GET", url, headers: { cookie: loginDeA } });
 }
 
-const RASCUNHO = "3f1c2b8e-5d4a-4c6b-9e7f-0a1b2c3d4e5f";
+const COTACAO = "3f1c2b8e-5d4a-4c6b-9e7f-0a1b2c3d4e5f";
 
-/** Um rascunho válido de A: 300 peças do F-100 pelo preço da última compra, acima da tabela (95,50). */
-function rascunhoDeA(parcial: object = {}) {
+/** Uma cotação válida de A: 300 peças do F-100 pelo preço da última compra, acima da tabela (95,50). */
+function cotacaoDeA(parcial: object = {}) {
   return { codigoCliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "", ...parcial };
 }
 
 function salvarComoA(app: FastifyInstance, id: string, corpo: object, origem = ORIGEM) {
-  return app.inject({ method: "PUT", url: `/api/rascunhos/${id}`, headers: { cookie: loginDeA, origin: origem }, payload: corpo });
+  return app.inject({ method: "PUT", url: `/api/cotacoes/${id}`, headers: { cookie: loginDeA, origin: origem }, payload: corpo });
 }
 
 /** Uma credencial no formato certo, que nenhum aparelho assinou: só passa do schema. */
@@ -83,25 +83,25 @@ function gravarPedidoEnviadoDeB(): string {
   const usuario = String(banco.prepare("SELECT usuario FROM usuario_codigos WHERE codigo = '9999'").get()?.usuario);
   const conteudo = { cliente: CLIENTE_DE_B, itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 50, precoCento: 82, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "", escolhas: null };
   banco
-    .prepare("INSERT INTO pedidos_enviados (usuario, cliente, rascunho, conteudo, hash, chave, assinatura, enviado_em) VALUES (?, ?, ?, ?, '', ?, '{}', ?)")
+    .prepare("INSERT INTO pedidos_enviados (usuario, cliente, cotacao, conteudo, hash, chave, assinatura, enviado_em) VALUES (?, ?, ?, ?, '', ?, '{}', ?)")
     .run(usuario, CLIENTE_DE_B, "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d4e", JSON.stringify(conteudo), `chave-de-${usuario}`, "2026-10-14T09:00:00");
   return "CRM-00001";
 }
 
-/** O corpo de cada rota que grava: no rascunho de B, um rascunho válido de A ou uma confirmação no formato certo. */
+/** O corpo de cada rota que grava: na cotação de B, uma cotação válida de A ou uma confirmação no formato certo. */
 function corpoDaRota(metodo: string, url: string): object | undefined {
   if (metodo === "GET" || url.endsWith("/envio/opcoes")) return undefined;
   if (url.endsWith("/envio")) return { resposta: CREDENCIAL_DE_MENTIRA };
-  return url.includes(":id") ? rascunhoDeA() : {};
+  return url.includes(":id") ? cotacaoDeA() : {};
 }
 
-/** O login B e um rascunho dele, no cliente dele: devolve o id. */
-async function criarRascunhoDeB(app: FastifyInstance): Promise<string> {
+/** O login B e uma cotação dele, no cliente dele: devolve o id. */
+async function criarCotacaoDeB(app: FastifyInstance): Promise<string> {
   const id = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
   const loginDeB = entrarComo(banco, ["9999"]);
   const resposta = await app.inject({
     method: "PUT",
-    url: `/api/rascunhos/${id}`,
+    url: `/api/cotacoes/${id}`,
     headers: { cookie: loginDeB, origin: ORIGEM },
     payload: { codigoCliente: CLIENTE_DE_B, itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 50, precoCento: 82, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "" },
   });
@@ -139,13 +139,13 @@ describe("escopo: o login A nunca vê os dados de B", () => {
   it("percorre todas as rotas: ficha de B dá 404, e nenhuma resposta traz B", async () => {
     const app = criarAppDeTeste();
     await app.ready();
-    const rascunhoDeB = await criarRascunhoDeB(app);
+    const cotacaoDeB = await criarCotacaoDeB(app);
     const pedidoDeB = gravarPedidoEnviadoDeB();
     expect(app.rotasRegistradas.length).toBeGreaterThan(0);
     for (const { metodo, url } of app.rotasRegistradas) {
-      // No rascunho de B, o corpo é um rascunho válido de A: nem assim ele aparece ou muda.
+      // Na cotação de B, o corpo é uma cotação válida de A: nem assim ele aparece ou muda.
       const corpo = corpoDaRota(metodo, url);
-      const comB = url.replace(":codigo", CLIENTE_DE_B).replace(":id", rascunhoDeB).replace(":numero", pedidoDeB);
+      const comB = url.replace(":codigo", CLIENTE_DE_B).replace(":id", cotacaoDeB).replace(":numero", pedidoDeB);
       const resposta = await app.inject({ method: metodo, url: comB, headers: { cookie: loginDeA, origin: ORIGEM }, payload: corpo });
       if (/:(codigo|id|numero)/.test(url)) expect(resposta.statusCode, url).toBe(404);
       else if (metodo === "GET") expect(resposta.statusCode, url).toBe(200);
@@ -511,23 +511,23 @@ describe("entrada hostil: o campo que o schema não lista é recusado, e não ap
   });
 });
 
-describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
-  it("salva o rascunho e o devolve com o cliente e o total; ele aparece em Pedidos e na ficha", async () => {
+describe("cotações: o pedido em montagem fica no servidor, do login", () => {
+  it("salva a cotação e a devolve com o cliente e o total; ela aparece em Pedidos e na ficha", async () => {
     const app = criarAppDeTeste();
-    const resposta = await salvarComoA(app, RASCUNHO, rascunhoDeA());
+    const resposta = await salvarComoA(app, COTACAO, cotacaoDeA());
     expect(resposta.statusCode, resposta.body).toBe(200);
     expect(resposta.json()).toMatchObject({
-      id: RASCUNHO,
+      id: COTACAO,
       cliente: { codigo: CLIENTE_DE_A },
       itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }],
       entrega: null,
       totalEstimado: 295.2,
     });
-    expect((await comoA(app, `/api/rascunhos/${RASCUNHO}`)).json<Rascunho>().itens).toEqual([{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }]);
-    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos.map(({ id }) => id)).toEqual([RASCUNHO]);
+    expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).json<Cotacao>().itens).toEqual([{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }]);
+    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().cotacoes.map(({ id }) => id)).toEqual([COTACAO]);
     expect((await comoA(app, `/api/clientes/${CLIENTE_DE_A}`)).json<FichaCliente>().pedidos[0]).toMatchObject({
-      id: RASCUNHO,
-      status: "rascunho",
+      id: COTACAO,
+      status: "cotacao",
       numero: null,
       valor: 295.2,
       itens: [{ codigo: "F-100", familia: "FLEXIL", pecas: 300, valor: 295.2 }],
@@ -537,33 +537,33 @@ describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
   it("guarda a ordem de compra e o item dela em cada item, e recusa o item da ordem fora do limite", async () => {
     const app = criarAppDeTeste();
     const item = { codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 1 };
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [item] }))).statusCode).toBe(200);
-    expect((await comoA(app, `/api/rascunhos/${RASCUNHO}`)).json<Rascunho>().itens).toEqual([item]);
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [{ ...item, itemDaOrdemDeCompra: 1_000_000 }] }))).statusCode).toBe(400);
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [{ ...item, ordemDeCompra: "151220" }] }))).statusCode).toBe(400);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [item] }))).statusCode).toBe(200);
+    expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).json<Cotacao>().itens).toEqual([item]);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ ...item, itemDaOrdemDeCompra: 1_000_000 }] }))).statusCode).toBe(400);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ ...item, ordemDeCompra: "151220" }] }))).statusCode).toBe(400);
   });
 
-  it("salvar de novo com o mesmo id atualiza o rascunho, sem duplicar, e troca os itens", async () => {
+  it("salvar de novo com o mesmo id atualiza a cotação, sem duplicar, e troca os itens", async () => {
     const app = criarAppDeTeste();
-    await salvarComoA(app, RASCUNHO, rascunhoDeA());
-    const segunda = await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: "2027-01-15", observacao: "Entregar\nna portaria" }));
+    await salvarComoA(app, COTACAO, cotacaoDeA());
+    const segunda = await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: "2027-01-15", observacao: "Entregar\nna portaria" }));
     expect(segunda.statusCode, segunda.body).toBe(200);
     expect(segunda.json()).toMatchObject({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: "2027-01-15", observacao: "Entregar\nna portaria", totalEstimado: 9.1 });
-    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos).toHaveLength(1);
+    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().cotacoes).toHaveLength(1);
   });
 
   it("guarda os dados do pedido escolhidos, com a transportadora do ERP ou uma nova", async () => {
     const app = criarAppDeTeste();
     const escolhas = { condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "OC 4512", aceitaParcial: true, clienteXped: true, transportadora: { codigo: "101" } };
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ escolhas }))).json<Rascunho>().escolhas).toEqual(escolhas);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ escolhas }))).json<Cotacao>().escolhas).toEqual(escolhas);
     const nova = { ...escolhas, transportadora: { nova: { cnpj: "11222333000181", nome: "Nova Log", cidade: "Maringá", uf: "PR" } } };
-    await salvarComoA(app, RASCUNHO, rascunhoDeA({ escolhas: nova }));
-    expect((await comoA(app, `/api/rascunhos/${RASCUNHO}`)).json<Rascunho>().escolhas).toEqual(nova);
+    await salvarComoA(app, COTACAO, cotacaoDeA({ escolhas: nova }));
+    expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).json<Cotacao>().escolhas).toEqual(nova);
   });
 
-  it("aceita o rascunho sem os dados do pedido, da tela aberta antes deles", async () => {
-    const resposta = await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA());
-    expect(resposta.json<Rascunho>().escolhas).toBeNull();
+  it("aceita a cotação sem os dados do pedido, da tela aberta antes deles", async () => {
+    const resposta = await salvarComoA(criarAppDeTeste(), COTACAO, cotacaoDeA());
+    expect(resposta.json<Cotacao>().escolhas).toBeNull();
   });
 
   it("recusa dados do pedido com campo a mais, classificação desconhecida ou CNPJ fora do formato", async () => {
@@ -575,22 +575,22 @@ describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
       { ...base, transportadora: { nova: { cnpj: "11.222.333/0001-81", nome: "X Log", cidade: "Maringá", uf: "PR" } } },
       { ...base, transportadora: { codigo: "101", nova: { cnpj: "11222333000181", nome: "X Log", cidade: "Maringá", uf: "PR" } } },
     ]) {
-      expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ escolhas }))).statusCode, JSON.stringify(escolhas)).toBe(400);
+      expect((await salvarComoA(app, COTACAO, cotacaoDeA({ escolhas }))).statusCode, JSON.stringify(escolhas)).toBe(400);
     }
   });
 
-  it("guarda o rascunho no app.db: outro servidor, no mesmo banco, o encontra", async () => {
-    await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA());
-    expect((await comoA(criarAppDeTeste(), `/api/rascunhos/${RASCUNHO}`)).statusCode).toBe(200);
+  it("guarda a cotação no app.db: outro servidor, no mesmo banco, a encontra", async () => {
+    await salvarComoA(criarAppDeTeste(), COTACAO, cotacaoDeA());
+    expect((await comoA(criarAppDeTeste(), `/api/cotacoes/${COTACAO}`)).statusCode).toBe(200);
   });
 
-  it("descarta o rascunho; depois dele, 404", async () => {
+  it("descarta a cotação; depois dela, 404", async () => {
     const app = criarAppDeTeste();
-    await salvarComoA(app, RASCUNHO, rascunhoDeA());
-    const descarte = await app.inject({ method: "DELETE", url: `/api/rascunhos/${RASCUNHO}`, headers: { cookie: loginDeA, origin: ORIGEM } });
+    await salvarComoA(app, COTACAO, cotacaoDeA());
+    const descarte = await app.inject({ method: "DELETE", url: `/api/cotacoes/${COTACAO}`, headers: { cookie: loginDeA, origin: ORIGEM } });
     expect(descarte.statusCode).toBe(204);
-    expect((await comoA(app, `/api/rascunhos/${RASCUNHO}`)).statusCode).toBe(404);
-    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos).toEqual([]);
+    expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).statusCode).toBe(404);
+    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().cotacoes).toEqual([]);
   });
 
   it("recusa o produto fora do catálogo, o preço abaixo da tabela, o produto repetido e a data que não existe", async () => {
@@ -602,29 +602,29 @@ describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
       [{ entrega: "2027-02-30" }, /não existe/],
     ];
     for (const [parcial, erro] of casos) {
-      const resposta = await salvarComoA(app, RASCUNHO, rascunhoDeA(parcial));
+      const resposta = await salvarComoA(app, COTACAO, cotacaoDeA(parcial));
       expect(resposta.statusCode, JSON.stringify(parcial)).toBe(400);
       expect(resposta.json().erro).toMatch(erro);
     }
   });
 
   it("aceita o preço igual à tabela, que é o mínimo", async () => {
-    const resposta = await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA({ itens: [{ codigo: "F-100", quantidade: 100, precoCento: 95.5, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }));
+    const resposta = await salvarComoA(criarAppDeTeste(), COTACAO, cotacaoDeA({ itens: [{ codigo: "F-100", quantidade: 100, precoCento: 95.5, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }));
     expect(resposta.statusCode, resposta.body).toBe(200);
   });
 
-  it("não cria rascunho vazio, mas deixa esvaziar o que já existe", async () => {
+  it("não cria cotação vazia, mas deixa esvaziar a que já existe", async () => {
     const app = criarAppDeTeste();
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [] }))).statusCode).toBe(400);
-    await salvarComoA(app, RASCUNHO, rascunhoDeA());
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [] }))).statusCode).toBe(200);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [] }))).statusCode).toBe(400);
+    await salvarComoA(app, COTACAO, cotacaoDeA());
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [] }))).statusCode).toBe(200);
   });
 
   it("recusa o cliente de B e o grupo (404) e o cliente inativo (409, com o aviso)", async () => {
     const app = criarAppDeTeste();
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: CLIENTE_DE_B }))).statusCode).toBe(404);
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: GRUPO_DE_A }))).statusCode).toBe(404);
-    const inativo = await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: CLIENTE_INATIVO_DE_A }));
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ codigoCliente: CLIENTE_DE_B }))).statusCode).toBe(404);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ codigoCliente: GRUPO_DE_A }))).statusCode).toBe(404);
+    const inativo = await salvarComoA(app, COTACAO, cotacaoDeA({ codigoCliente: CLIENTE_INATIVO_DE_A }));
     expect(inativo.statusCode).toBe(409);
     expect(inativo.json().erro).toMatch(/inativo no cadastro/);
   });
@@ -634,42 +634,42 @@ describe("rascunhos: o pedido em montagem fica no servidor, do login", () => {
     const catalogo = await comoA(app, `/api/clientes/${CLIENTE_SEM_TABELA_DE_A}/catalogo`);
     expect(catalogo.statusCode).toBe(409);
     expect(catalogo.json().erro).toBe(AVISO_DE_SEM_TABELA);
-    const rascunho = await salvarComoA(app, RASCUNHO, rascunhoDeA({ codigoCliente: CLIENTE_SEM_TABELA_DE_A }));
-    expect(rascunho.statusCode).toBe(409);
-    expect(rascunho.json().erro).toBe(AVISO_DE_SEM_TABELA);
+    const cotacao = await salvarComoA(app, COTACAO, cotacaoDeA({ codigoCliente: CLIENTE_SEM_TABELA_DE_A }));
+    expect(cotacao.statusCode).toBe(409);
+    expect(cotacao.json().erro).toBe(AVISO_DE_SEM_TABELA);
   });
 
-  it("não deixa A ler, salvar por cima nem descartar o rascunho de B", async () => {
+  it("não deixa A ler, salvar por cima nem descartar a cotação de B", async () => {
     const app = criarAppDeTeste();
-    const deB = await criarRascunhoDeB(app);
-    expect((await comoA(app, `/api/rascunhos/${deB}`)).statusCode).toBe(404);
-    expect((await salvarComoA(app, deB, rascunhoDeA())).statusCode).toBe(404);
-    const descarte = await app.inject({ method: "DELETE", url: `/api/rascunhos/${deB}`, headers: { cookie: loginDeA, origin: ORIGEM } });
+    const deB = await criarCotacaoDeB(app);
+    expect((await comoA(app, `/api/cotacoes/${deB}`)).statusCode).toBe(404);
+    expect((await salvarComoA(app, deB, cotacaoDeA())).statusCode).toBe(404);
+    const descarte = await app.inject({ method: "DELETE", url: `/api/cotacoes/${deB}`, headers: { cookie: loginDeA, origin: ORIGEM } });
     expect(descarte.statusCode).toBe(404);
-    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().rascunhos).toEqual([]);
+    expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().cotacoes).toEqual([]);
   });
 
   it("recusa o campo a mais, o preço zerado, o id fora do formato e a observação com caractere de controle", async () => {
     const app = criarAppDeTeste();
-    expect((await salvarComoA(app, RASCUNHO, { ...rascunhoDeA(), representante: "9999" })).statusCode).toBe(400);
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 0, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }))).statusCode).toBe(400);
-    expect((await salvarComoA(app, "R1", rascunhoDeA())).statusCode).toBe(400);
-    expect((await salvarComoA(app, RASCUNHO, rascunhoDeA({ observacao: "a\u0000b" }))).statusCode).toBe(400);
+    expect((await salvarComoA(app, COTACAO, { ...cotacaoDeA(), representante: "9999" })).statusCode).toBe(400);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 0, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }))).statusCode).toBe(400);
+    expect((await salvarComoA(app, "R1", cotacaoDeA())).statusCode).toBe(400);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ observacao: "a\u0000b" }))).statusCode).toBe(400);
   });
 
-  it("recusa o rascunho pedido de outra origem", async () => {
-    expect((await salvarComoA(criarAppDeTeste(), RASCUNHO, rascunhoDeA(), "https://outro.exemplo")).statusCode).toBe(403);
+  it("recusa a cotação pedida de outra origem", async () => {
+    expect((await salvarComoA(criarAppDeTeste(), COTACAO, cotacaoDeA(), "https://outro.exemplo")).statusCode).toBe(403);
   });
 
   it("registra na auditoria a criação e o descarte, com o id do cliente, e não cada salvamento", async () => {
     const app = criarAppDeTeste();
-    await salvarComoA(app, RASCUNHO, rascunhoDeA());
-    await salvarComoA(app, RASCUNHO, rascunhoDeA({ observacao: "outra" }));
-    await app.inject({ method: "DELETE", url: `/api/rascunhos/${RASCUNHO}`, headers: { cookie: loginDeA, origin: ORIGEM } });
-    const eventos = banco.prepare("SELECT evento, alvo FROM auditoria WHERE evento LIKE 'rascunho_%' ORDER BY id").all();
+    await salvarComoA(app, COTACAO, cotacaoDeA());
+    await salvarComoA(app, COTACAO, cotacaoDeA({ observacao: "outra" }));
+    await app.inject({ method: "DELETE", url: `/api/cotacoes/${COTACAO}`, headers: { cookie: loginDeA, origin: ORIGEM } });
+    const eventos = banco.prepare("SELECT evento, alvo FROM auditoria WHERE evento LIKE 'cotacao_%' ORDER BY id").all();
     expect(eventos.map((linha) => ({ ...linha }))).toEqual([
-      { evento: "rascunho_criado", alvo: CLIENTE_DE_A },
-      { evento: "rascunho_descartado", alvo: CLIENTE_DE_A },
+      { evento: "cotacao_criada", alvo: CLIENTE_DE_A },
+      { evento: "cotacao_descartada", alvo: CLIENTE_DE_A },
     ]);
   });
 });

@@ -121,7 +121,7 @@
 
 .enviar,
 .avancar,
-.salvarRascunho {
+.salvarCotacao {
   flex-shrink: 0;
   height: 2.75rem;
   padding: 0 var(--esp-5);
@@ -130,19 +130,19 @@
 }
 
 /* Em cinza, ao lado do verde: guardar para depois é a saída secundária do pedido */
-.salvarRascunho {
+.salvarCotacao {
   border-color: var(--cor-linha-forte);
   background: var(--cor-superficie-3);
   color: var(--cor-texto-2);
   box-shadow: none;
 }
 
-.salvarRascunho:hover:not(:disabled) {
+.salvarCotacao:hover:not(:disabled) {
   background: var(--cor-linha);
   color: var(--cor-texto);
 }
 
-.salvarRascunho:disabled {
+.salvarCotacao:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
@@ -218,20 +218,20 @@
 
   .enviar,
   .avancar,
-  .salvarRascunho {
+  .salvarCotacao {
     padding: 0 var(--esp-4);
   }
 
   /* Na revisão, os dois botões e o voltar dividem a largura: o resumo dos totais sai, porque a revisão já o mostra */
-  .rodape:has(.passos .salvarRascunho) .totaisNoCelular {
+  .rodape:has(.passos .salvarCotacao) .totaisNoCelular {
     display: none;
   }
 
-  .rodape:has(.passos .salvarRascunho) .passos {
+  .rodape:has(.passos .salvarCotacao) .passos {
     flex: 1 1 auto;
   }
 
-  .passos .salvarRascunho,
+  .passos .salvarCotacao,
   .passos .enviar {
     flex: 1 1 0;
     min-width: 0;

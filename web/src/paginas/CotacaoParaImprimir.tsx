@@ -6,9 +6,9 @@ import { primeiraEntregaPossivel, valorDaLinha } from "dominio/pedido";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Voltar } from "../componentes/Voltar";
-import { carregarCatalogo, carregarRascunho, carregarSituacaoDosDados } from "../dados/api";
+import { carregarCatalogo, carregarCotacao, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DA_CLASSIFICACAO, nomeDaTransportadora, totaisDoPedido, valorDoIpi } from "../dados/dadosDoPedido";
-import type { CatalogoDoCliente, Rascunho } from "../dados/tipos";
+import type { CatalogoDoCliente, Cotacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarComCentavos, formatarData, formatarDocumentoDoCliente, formatarEnderecoDoCadastro, formatarNumero, formatarReaisComCentavos } from "../formato";
 import { Carregando } from "./Carregando";
@@ -26,24 +26,24 @@ export const DIAS_DE_VALIDADE_DA_COTACAO = 10;
 
 export function CotacaoParaImprimir() {
   const { id = "" } = useParams();
-  const [busca, setBusca] = useState<{ id: string; rascunho: Rascunho | null } | null>(null);
+  const [busca, setBusca] = useState<{ id: string; cotacao: Cotacao | null } | null>(null);
   useEffect(() => {
     let atual = true;
-    carregarRascunho(id).then(
-      (rascunho) => atual && setBusca({ id, rascunho }),
-      () => atual && setBusca({ id, rascunho: null }),
+    carregarCotacao(id).then(
+      (cotacao) => atual && setBusca({ id, cotacao }),
+      () => atual && setBusca({ id, cotacao: null }),
     );
     return () => {
       atual = false;
     };
   }, [id]);
   if (busca?.id !== id) return <Carregando />;
-  if (!busca.rascunho) return <p className={estilos.aviso}>Cotação não encontrada: ela foi enviada ou descartada.</p>;
-  return <ComCatalogo rascunho={busca.rascunho} />;
+  if (!busca.cotacao) return <p className={estilos.aviso}>Cotação não encontrada: ela foi enviada ou descartada.</p>;
+  return <ComCatalogo cotacao={busca.cotacao} />;
 }
 
-function ComCatalogo({ rascunho }: { rascunho: Rascunho }) {
-  const codigo = rascunho.cliente.codigo;
+function ComCatalogo({ cotacao }: { cotacao: Cotacao }) {
+  const codigo = cotacao.cliente.codigo;
   const { dados: catalogo, carregando } = useCarga(`catalogo:${codigo}`, () => carregarCatalogo(codigo));
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   if (carregando || !situacao) return <Carregando />;
@@ -52,7 +52,7 @@ function ComCatalogo({ rascunho }: { rascunho: Rascunho }) {
     <>
       <div className={estilos.naTela}>
         <CabecalhoPagina
-          antes={<Voltar para={`/pedidos/rascunhos/${rascunho.id}`} rotulo="Cotação" />}
+          antes={<Voltar para={`/pedidos/cotacoes/${cotacao.id}`} rotulo="Cotação" />}
           titulo="Cotação em PDF"
           acoes={
             <button type="button" className={`${botoes.primario} ${estilos.imprimir}`} onClick={() => window.print()}>
@@ -63,17 +63,17 @@ function ComCatalogo({ rascunho }: { rascunho: Rascunho }) {
         />
         <p className={estilos.dica}>Na janela de impressão, escolha "Salvar como PDF" para mandar o arquivo ao cliente.</p>
       </div>
-      <Folha rascunho={rascunho} catalogo={catalogo} representante={situacao.representante.nome} hoje={dataDoMomento(situacao.relogio)} />
+      <Folha cotacao={cotacao} catalogo={catalogo} representante={situacao.representante.nome} hoje={dataDoMomento(situacao.relogio)} />
     </>
   );
 }
 
-type PropsDaFolha = { rascunho: Rascunho; catalogo: CatalogoDoCliente; representante: string; hoje: string };
+type PropsDaFolha = { cotacao: Cotacao; catalogo: CatalogoDoCliente; representante: string; hoje: string };
 
 /** A folha A4: a Suprens e a cotação, o cliente, os itens, as condições e os totais. */
-function Folha({ rascunho, catalogo, representante, hoje }: PropsDaFolha) {
+function Folha({ cotacao, catalogo, representante, hoje }: PropsDaFolha) {
   const dados = catalogo.dadosDoPedido;
-  const emitidaEm = dataDoMomento(rascunho.atualizadoEm);
+  const emitidaEm = dataDoMomento(cotacao.atualizadoEm);
   return (
     <article className={estilos.folha} aria-label="Cotação para imprimir">
       <header className={estilos.topo}>
@@ -93,19 +93,19 @@ function Folha({ rascunho, catalogo, representante, hoje }: PropsDaFolha) {
         {dados ? <p>{formatarEnderecoDoCadastro(dados.cadastro.faturamento)}</p> : null}
       </section>
 
-      <ItensDaCotacao rascunho={rascunho} catalogo={catalogo} />
+      <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} />
 
       <section className={`${estilos.bloco} ${estilos.condicoes}`}>
         <h3>Condições</h3>
         <dl>
-          <CondicoesDaCotacao rascunho={rascunho} catalogo={catalogo} hoje={hoje} />
+          <CondicoesDaCotacao cotacao={cotacao} catalogo={catalogo} hoje={hoje} />
         </dl>
       </section>
 
-      {rascunho.observacao.trim() ? (
+      {cotacao.observacao.trim() ? (
         <section className={estilos.bloco}>
           <h3>Observações</h3>
-          <p className={estilos.observacao}>{rascunho.observacao}</p>
+          <p className={estilos.observacao}>{cotacao.observacao}</p>
         </section>
       ) : null}
 
@@ -114,11 +114,11 @@ function Folha({ rascunho, catalogo, representante, hoje }: PropsDaFolha) {
   );
 }
 
-function ItensDaCotacao({ rascunho, catalogo }: { rascunho: Rascunho; catalogo: CatalogoDoCliente }) {
+function ItensDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: CatalogoDoCliente }) {
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
-  const totais = totaisDoPedido(rascunho.itens, ipi);
-  const temOrdem = rascunho.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || rascunho.escolhas?.pedidoDoCliente;
-  const ordemDoPedido = rascunho.escolhas?.pedidoDoCliente.trim() ?? "";
+  const totais = totaisDoPedido(cotacao.itens, ipi);
+  const temOrdem = cotacao.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || cotacao.escolhas?.pedidoDoCliente;
+  const ordemDoPedido = cotacao.escolhas?.pedidoDoCliente.trim() ?? "";
   return (
     <table className={estilos.itens}>
       <thead>
@@ -143,7 +143,7 @@ function ItensDaCotacao({ rascunho, catalogo }: { rascunho: Rascunho; catalogo: 
         </tr>
       </thead>
       <tbody>
-        {rascunho.itens.map((item, posicao) => {
+        {cotacao.itens.map((item, posicao) => {
           const semIpi = valorDaLinha(item);
           const valorIpi = ipi ? valorDoIpi(item, ipi) : 0;
           return (
@@ -191,10 +191,10 @@ function ItensDaCotacao({ rascunho, catalogo }: { rascunho: Rascunho; catalogo: 
   );
 }
 
-function CondicoesDaCotacao({ rascunho, catalogo, hoje }: { rascunho: Rascunho; catalogo: CatalogoDoCliente; hoje: string }) {
+function CondicoesDaCotacao({ cotacao, catalogo, hoje }: { cotacao: Cotacao; catalogo: CatalogoDoCliente; hoje: string }) {
   const dados = catalogo.dadosDoPedido;
-  const escolhas = rascunho.escolhas;
-  const entrega = rascunho.entrega ? `Programada para ${formatarData(rascunho.entrega)}` : `Assim que possível, a partir de ${formatarData(primeiraEntregaPossivel(hoje))}`;
+  const escolhas = cotacao.escolhas;
+  const entrega = cotacao.entrega ? `Programada para ${formatarData(cotacao.entrega)}` : `Assim que possível, a partir de ${formatarData(primeiraEntregaPossivel(hoje))}`;
   return (
     <>
       <Condicao rotulo="Entrega">{entrega}</Condicao>

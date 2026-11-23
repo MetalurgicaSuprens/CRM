@@ -11,9 +11,9 @@ import { sessaoDa, type Sessao } from "../sessao.ts";
 import { concluirEnvio, desafioDoEnvio, finalidadeDoEnvio, hashNoDesafio, lerPedidoEnviado, prepararEnvio, type EnvioPreparado } from "./pedidosEnviados.ts";
 
 /*
- * As rotas do envio do pedido (F5). Primeiro a tela pede as opções da chave de acesso para o rascunho;
+ * As rotas do envio do pedido (F5). Primeiro a tela pede as opções da chave de acesso para a cotação;
  * o desafio delas leva o hash do conteúdo. Depois manda a resposta do aparelho, e o servidor confere a
- * assinatura contra o rascunho como ele está: se mudou no meio, a confirmação não vale. Enquanto a LAN
+ * assinatura contra a cotação como ela está: se mudou no meio, a confirmação não vale. Enquanto a LAN
  * não leva os pedidos ao SGI, o envio fica desligado na produção (sem pasta de saída).
  */
 
@@ -32,8 +32,8 @@ const ENVIO_DESLIGADO = "O envio de pedidos pelo CRM ainda não foi liberado. A 
 const CONFIRMACAO_NAO_CONFERIDA = "Não deu para confirmar o envio com a chave de acesso. Confira o pedido e confirme de novo.";
 const PEDIDO_NAO_ENCONTRADO = { erro: "Pedido não encontrado." };
 
-/** O id do rascunho: o UUID versão 4 que a tela gera (rotas.ts). */
-const PARAMETRO_RASCUNHO = {
+/** O id da cotação: o UUID versão 4 que a tela gera (rotas.ts). */
+const PARAMETRO_COTACAO = {
   type: "object",
   properties: { id: { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" } },
   required: ["id"],
@@ -47,18 +47,18 @@ const PARAMETRO_NUMERO = {
 } as const;
 const CORPO_DA_CONFIRMACAO = { type: "object", properties: { resposta: CREDENCIAL_USADA }, required: ["resposta"], additionalProperties: false } as const;
 
-type ComRascunho = { Params: { id: string } };
+type ComCotacao = { Params: { id: string } };
 
 export function registrarRotasDoEnvio(app: FastifyInstance, dependencias: DependenciasDoEnvio): void {
   const { banco, foto } = dependencias;
 
-  app.post<ComRascunho>("/api/rascunhos/:id/envio/opcoes", { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_RASCUNHO } }, (requisicao, resposta) =>
+  app.post<ComCotacao>("/api/cotacoes/:id/envio/opcoes", { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_COTACAO } }, (requisicao, resposta) =>
     opcoesDoEnvio(dependencias, requisicao, resposta),
   );
 
-  app.post<ComRascunho & { Body: { resposta: RespostaDeEntrada } }>(
-    "/api/rascunhos/:id/envio",
-    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_RASCUNHO, body: CORPO_DA_CONFIRMACAO } },
+  app.post<ComCotacao & { Body: { resposta: RespostaDeEntrada } }>(
+    "/api/cotacoes/:id/envio",
+    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_COTACAO, body: CORPO_DA_CONFIRMACAO } },
     (requisicao, resposta) => confirmarEnvio(dependencias, requisicao, requisicao.body.resposta, resposta),
   );
 
@@ -68,7 +68,7 @@ export function registrarRotasDoEnvio(app: FastifyInstance, dependencias: Depend
   });
 }
 
-async function opcoesDoEnvio({ banco, foto, site, desafios, pastaDeSaida, agora }: DependenciasDoEnvio, requisicao: FastifyRequest<ComRascunho>, resposta: FastifyReply) {
+async function opcoesDoEnvio({ banco, foto, site, desafios, pastaDeSaida, agora }: DependenciasDoEnvio, requisicao: FastifyRequest<ComCotacao>, resposta: FastifyReply) {
   const sessao = sessaoDa(requisicao);
   const { id } = requisicao.params;
   const envio = prepararEnvio(banco, foto.abrir(), sessao, id, agora());
@@ -81,7 +81,7 @@ async function opcoesDoEnvio({ banco, foto, site, desafios, pastaDeSaida, agora 
 
 async function confirmarEnvio(
   dependencias: DependenciasDoEnvio,
-  requisicao: FastifyRequest<ComRascunho>,
+  requisicao: FastifyRequest<ComCotacao>,
   credencial: RespostaDeEntrada,
   resposta: FastifyReply,
 ) {
@@ -97,7 +97,7 @@ async function confirmarEnvio(
     return resposta.code(400).send({ erro: CONFIRMACAO_NAO_CONFERIDA });
   }
   const pedido = concluirEnvio(banco, foto.abrir(), sessao, {
-    idDoRascunho: id,
+    idDoCotacao: id,
     envio,
     confirmacao: { chave: credencial.id, assinatura: credencial.response },
     pastaDeSaida,
@@ -110,7 +110,7 @@ async function confirmarEnvio(
 
 /**
  * O motivo para recusar a confirmação, para a auditoria; null se ela vale. A chave tem de ser ativa e
- * deste login, e a assinatura, de um desafio dado para este rascunho com este mesmo conteúdo.
+ * deste login, e a assinatura, de um desafio dado para esta cotação com este mesmo conteúdo.
  */
 async function recusaDaConfirmacao(
   { banco, site, desafios, agora }: DependenciasDoEnvio,

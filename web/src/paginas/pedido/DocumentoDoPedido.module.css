@@ -31,8 +31,8 @@
   display: none;
 }
 
-/* Embaixo dos itens: se o rascunho foi salvo e o descartar */
-.rascunho {
+/* Embaixo dos itens: se a cotação foi salva e o descartar */
+.cotacao {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -70,8 +70,8 @@
   color: var(--cor-queda);
 }
 
-/* O rascunho que voltou diferente do salvo: produto que saiu do catálogo ou preço que subiu para a tabela */
-.avisoDoRascunho {
+/* A cotação que voltou diferente do salvo: produto que saiu do catálogo ou preço que subiu para a tabela */
+.avisoDoCotacao {
   padding: var(--esp-2) var(--esp-3);
   border-radius: var(--raio-pequeno);
   background: var(--cor-alerta-fundo);
@@ -113,8 +113,8 @@
 
 /* No computador, o PDF e o descartar ficam na barra de baixo (RodapeDoPedido): saem da linha do "Cotação salva" */
 @container (min-width: 48rem) {
-  .rascunho .pdf,
-  .rascunho .descartar {
+  .cotacao .pdf,
+  .cotacao .descartar {
     display: none;
   }
 }

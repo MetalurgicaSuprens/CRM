@@ -45,7 +45,7 @@
 /*
  * No celular, cada item é um bloco: a foto da família, o produto, o valor e o X; a quantidade e o preço
  * do cento; o aviso do preço, quando há; o IPI e o valor com IPI; as setas da ordem, a ordem de compra e o item
- * dela. Com lugar (62 rem), vira uma linha de tabela embaixo dos títulos das colunas, como a grade do app
+ * dela. Com lugar (64 rem), vira uma linha de tabela embaixo dos títulos das colunas, como a grade do app
  * antigo: a alça de arrastar, a foto, o produto, a ordem de compra e o item dela, e os números.
  */
 .item,
@@ -140,7 +140,7 @@
   color: var(--cor-texto-suave);
 }
 
-/* Pequeno e apagado; sob o mouse, fica vermelho, como o "Descartar rascunho" */
+/* Pequeno e apagado; sob o mouse, fica vermelho, como o "Descartar cotação" */
 .tirar {
   grid-area: tirar;
   display: grid;
@@ -328,16 +328,19 @@
   font-weight: 500;
 }
 
-@container (min-width: 62rem) {
+@container (min-width: 64rem) {
   .item,
   .titulos {
-    grid-template-columns: 1.25rem 3.25rem minmax(0, 1fr) 6.5rem 3.5rem 8.5rem 6.5rem 6rem 5rem 6rem 28px;
-    column-gap: var(--esp-2);
+    /* A sobra da largura se divide entre o produto e as outras colunas, e não fica toda no produto */
+    grid-template-columns:
+      1.25rem 3.25rem minmax(8rem, 2fr) minmax(6.5rem, 1.1fr) minmax(3.5rem, 0.5fr) 8.5rem minmax(6.5rem, 1fr)
+      minmax(6rem, 1fr) minmax(5rem, 0.8fr) minmax(6rem, 1fr) 28px;
+    column-gap: var(--esp-3);
   }
 
   .semIpi .item,
   .semIpi .titulos {
-    grid-template-columns: 1.25rem 3.25rem minmax(0, 1fr) 6.5rem 3.5rem 8.5rem 6.5rem 6rem 28px;
+    grid-template-columns: 1.25rem 3.25rem minmax(8rem, 2fr) minmax(6.5rem, 1.1fr) minmax(3.5rem, 0.5fr) 8.5rem minmax(6.5rem, 1fr) minmax(6rem, 1fr) 28px;
   }
 
   /* A alça e a foto ocupam as duas linhas do item, ao lado do produto e do aviso do preço */

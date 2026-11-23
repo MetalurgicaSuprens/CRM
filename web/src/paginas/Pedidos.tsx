@@ -12,9 +12,9 @@ import { STATUS_DO_PEDIDO } from "../componentes/StatusDoPedido";
 import travada from "../componentes/PaginaTravada.module.css";
 import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
-import { carregarPedidos, carregarSituacaoDosDados, excluirRascunho, isDadosReais } from "../dados/api";
+import { carregarPedidos, carregarSituacaoDosDados, excluirCotacao, isDadosReais } from "../dados/api";
 import { correspondeAoCliente } from "../dados/busca";
-import type { ClienteResumo, NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Rascunho, SituacaoDosDados } from "../dados/tipos";
+import type { ClienteResumo, NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Cotacao, SituacaoDosDados } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarContagem, formatarData, formatarDocumentoDoCliente, formatarTempoDesde } from "../formato";
 import { DataRelativa, MomentoRelativo } from "../componentes/Quando";
@@ -29,11 +29,11 @@ const ABAS: Record<Aba, { rotulo: string; icone: LucideIcon; tom: TomDoSelo }> =
   faturados: { ...STATUS_DO_PEDIDO.faturado, rotulo: "Faturados" },
   emAberto: { ...STATUS_DO_PEDIDO.em_aberto, rotulo: "Em aberto no ERP" },
   enviados: { ...STATUS_DO_PEDIDO.enviado, rotulo: "Enviados pelo CRM" },
-  rascunhos: { ...STATUS_DO_PEDIDO.rascunho, rotulo: "Cotações" },
+  cotacoes: { ...STATUS_DO_PEDIDO.cotacao, rotulo: "Cotações" },
 };
 
 /** A ordem dos cartões; a página abre no primeiro. */
-const ORDEM_DAS_ABAS: readonly Aba[] = ["faturados", "emAberto", "enviados", "rascunhos"];
+const ORDEM_DAS_ABAS: readonly Aba[] = ["faturados", "emAberto", "enviados", "cotacoes"];
 const ABA_INICIAL: Aba = "faturados";
 /** A lista vazia por causa da busca de cliente, no lugar do texto de cada aba. */
 const SEM_RESULTADO = "Nada nesta aba para esse cliente.";
@@ -104,7 +104,7 @@ function filtrarPorCliente(painel: PainelDePedidos, busca: string): PainelDePedi
   const doCliente = <T extends { cliente: ClienteResumo }>(lista: T[]) => lista.filter((item) => correspondeAoCliente(item.cliente, busca));
   return {
     enviados: doCliente(painel.enviados),
-    rascunhos: doCliente(painel.rascunhos),
+    cotacoes: doCliente(painel.cotacoes),
     emAberto: doCliente(painel.emAberto),
     faturados: doCliente(painel.faturados),
   };
@@ -118,8 +118,8 @@ function AbaEscolhida({ aba, painel, situacao, recarregar, vazio }: PropsDaAba) 
   switch (aba) {
     case "enviados":
       return <Enviados pedidos={painel.enviados} relogio={situacao.relogio} vazio={vazio} />;
-    case "rascunhos":
-      return <Rascunhos rascunhos={painel.rascunhos} relogio={situacao.relogio} recarregar={recarregar} vazio={vazio} />;
+    case "cotacoes":
+      return <Cotacoes cotacoes={painel.cotacoes} relogio={situacao.relogio} recarregar={recarregar} vazio={vazio} />;
     case "emAberto":
       return <EmAberto pedidos={painel.emAberto} hoje={situacao.hoje} vazio={vazio} />;
     case "faturados":
@@ -172,46 +172,46 @@ function Enviados({ pedidos, relogio, vazio }: { pedidos: PedidoEnviado[]; relog
   );
 }
 
-const SUBTITULO_DOS_RASCUNHOS = isDadosReais
+const SUBTITULO_DOS_COTACOES = isDadosReais
   ? "Pedidos começados e ainda não enviados: ficam guardados até você enviar ou descartar."
   : "Pedidos começados e ainda não enviados. No protótipo, ficam só até recarregar a página.";
 
-function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascunho[]; relogio: string; recarregar: () => void; vazio: string | undefined }) {
+function Cotacoes({ cotacoes, relogio, recarregar, vazio }: { cotacoes: Cotacao[]; relogio: string; recarregar: () => void; vazio: string | undefined }) {
   return (
-    <CartaoDaAba aba="rascunhos" subtitulo={SUBTITULO_DOS_RASCUNHOS}>
+    <CartaoDaAba aba="cotacoes" subtitulo={SUBTITULO_DOS_COTACOES}>
       <TabelaResponsiva
         className={travada.rola}
         descricao="Cotações"
-        itens={rascunhos}
-        chaveDe={(rascunho) => rascunho.id}
+        itens={cotacoes}
+        chaveDe={(cotacao) => cotacao.id}
         vazio={vazio ?? "Nenhuma cotação. Os pedidos começados e não enviados aparecem aqui."}
         ordemInicial={{ coluna: "Atualizado", sentido: "decrescente" }}
         colunas={[
-          ...colunasDoCliente<Rascunho>(),
-          { titulo: "Produtos", largura: 6.5, fixa: true, ordenarPor: (rascunho) => rascunho.itens.length, celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
-          { titulo: "Atualizado", largura: 7, fixa: true, ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} relogio={relogio} /> },
-          { titulo: "Total estimado", numerica: true, largura: 8, fixa: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} comCentavos /> },
-          { titulo: "Ações", largura: 12, fixa: true, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
+          ...colunasDoCliente<Cotacao>(),
+          { titulo: "Produtos", largura: 6.5, fixa: true, ordenarPor: (cotacao) => cotacao.itens.length, celula: (cotacao) => formatarContagem(cotacao.itens.length, "produto", "produtos") },
+          { titulo: "Atualizado", largura: 7, fixa: true, ordenarPor: (cotacao) => cotacao.atualizadoEm, celula: (cotacao) => <MomentoRelativo momento={cotacao.atualizadoEm} relogio={relogio} /> },
+          { titulo: "Total estimado", numerica: true, largura: 8, fixa: true, ordenarPor: (cotacao) => cotacao.totalEstimado, celula: (cotacao) => <Valor valor={cotacao.totalEstimado} comCentavos /> },
+          { titulo: "Ações", largura: 12, fixa: true, celula: (cotacao) => <AcoesDoCotacao cotacao={cotacao} aoExcluir={recarregar} /> },
         ]}
       />
     </CartaoDaAba>
   );
 }
 
-function AcoesDoRascunho({ rascunho, aoExcluir }: { rascunho: Rascunho; aoExcluir: () => void }) {
+function AcoesDoCotacao({ cotacao, aoExcluir }: { cotacao: Cotacao; aoExcluir: () => void }) {
   const excluir = () => {
-    if (!window.confirm(`Descartar a cotação de ${rascunho.cliente.nome}?`)) return;
-    void excluirRascunho(rascunho.id).then(aoExcluir);
+    if (!window.confirm(`Descartar a cotação de ${cotacao.cliente.nome}?`)) return;
+    void excluirCotacao(cotacao.id).then(aoExcluir);
   };
   return (
     <span className={estilos.acoes}>
-      <Link to={`/pedidos/rascunhos/${rascunho.id}`} className={`${botoes.secundario} ${estilos.compacto}`}>
+      <Link to={`/pedidos/cotacoes/${cotacao.id}`} className={`${botoes.secundario} ${estilos.compacto}`}>
         Continuar
       </Link>
-      <Link to={`/pedidos/rascunhos/${rascunho.id}/pdf`} className={`${botoes.secundario} ${estilos.compacto}`} aria-label={`PDF da cotação de ${rascunho.cliente.nome}`}>
+      <Link to={`/pedidos/cotacoes/${cotacao.id}/pdf`} className={`${botoes.secundario} ${estilos.compacto}`} aria-label={`PDF da cotação de ${cotacao.cliente.nome}`}>
         PDF
       </Link>
-      <button type="button" className={botoes.icone} onClick={excluir} aria-label={`Descartar a cotação de ${rascunho.cliente.nome}`}>
+      <button type="button" className={botoes.icone} onClick={excluir} aria-label={`Descartar a cotação de ${cotacao.cliente.nome}`}>
         <Trash size={16} aria-hidden="true" />
       </button>
     </span>

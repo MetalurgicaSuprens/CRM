@@ -10,7 +10,7 @@ import {
   situacaoDosDadosFicticia,
 } from "./ficticio";
 import { PedidoBloqueado } from "./fonteDeDados";
-import { salvarRascunhoFicticio } from "./pedidosFicticios";
+import { salvarCotacaoFicticio } from "./pedidosFicticios";
 import { fonteFicticia } from "./fonteFicticia";
 
 // Contrato que o extrator (F2) também precisa cumprir: tendência, faturado e variação contam a mesma história.
@@ -105,11 +105,11 @@ describe("histórico de pedidos da ficha", () => {
     }
   });
 
-  it("traz o rascunho do cliente, junto dos pedidos do ERP", async () => {
+  it("traz a cotação do cliente, junto dos pedidos do ERP", async () => {
     const codigo = maior?.codigo ?? "";
-    const rascunho = salvarRascunhoFicticio({ id: "rascunho-de-teste", codigoCliente: codigo, itens: [], entrega: null, observacao: "", escolhas: null });
+    const cotacao = salvarCotacaoFicticio({ id: "cotacao-de-teste", codigoCliente: codigo, itens: [], entrega: null, observacao: "", escolhas: null });
     const ficha = await fonteFicticia.carregarFicha(codigo);
-    expect(ficha?.pedidos.find((pedido) => pedido.id === rascunho?.id)).toMatchObject({ numero: null, status: "rascunho" });
+    expect(ficha?.pedidos.find((pedido) => pedido.id === cotacao?.id)).toMatchObject({ numero: null, status: "cotacao" });
   });
 });
 

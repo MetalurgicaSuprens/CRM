@@ -38,7 +38,7 @@ export type SituacaoDosDados = {
  * mesmo representante, mostrados como um cliente só, com os números deles somados.
  */
 export type ClienteResumo = {
-  /** Identificador do cliente no CRM: endereço da ficha e rascunhos. Não aparece na tela. */
+  /** Identificador do cliente no CRM: endereço da ficha e cotações. Não aparece na tela. */
   codigo: string;
   /** Código do cliente no ERP, para mostrar e buscar. Nulo na pessoa física, em que ele é o CPF, e no grupo. */
   codigoErp: string | null;
@@ -129,7 +129,7 @@ export type PedidoEmAberto = {
 };
 
 /** Onde o pedido está hoje: as abas de Pedidos, uma por status. */
-export type StatusDoPedido = "faturado" | "em_aberto" | "enviado" | "rascunho";
+export type StatusDoPedido = "faturado" | "em_aberto" | "enviado" | "cotacao";
 
 /** Uma linha do histórico de pedidos da ficha, venha do ERP ou do CRM. */
 export type PedidoDaFicha = {
@@ -137,10 +137,10 @@ export type PedidoDaFicha = {
   id: string;
   /** Na ficha do grupo, o CNPJ do pedido; null na ficha de um cliente. */
   cnpj: { codigo: string; nome: string } | null;
-  /** O número do ERP ou, até o pedido chegar lá, o do CRM ("CRM-00106"); null no rascunho. */
+  /** O número do ERP ou, até o pedido chegar lá, o do CRM ("CRM-00106"); null na cotação. */
   numero: string | null;
   status: StatusDoPedido;
-  /** A emissão no ERP; no CRM, o envio ou o último salvamento do rascunho. */
+  /** A emissão no ERP; no CRM, o envio ou o último salvamento da cotação. */
   emissao: string;
   /** Faturado: a última nota. Em aberto: a entrega mais próxima. No CRM: a entrega pedida, se houver. */
   entrega: string | null;
@@ -417,8 +417,8 @@ export type ItemDoPedido = OrdemDeCompraDoItem & {
 };
 
 /** O que a tela manda para salvar: o representante vem sempre da sessão. */
-export type RascunhoParaSalvar = {
-  /** Gerado na tela (UUID) quando o pedido começa: salvar de novo, até ao fechar a página, não duplica o rascunho. */
+export type CotacaoParaSalvar = {
+  /** Gerado na tela (UUID) quando o pedido começa: salvar de novo, até ao fechar a página, não duplica a cotação. */
   id: string;
   codigoCliente: string;
   itens: ItemDoPedido[];
@@ -429,7 +429,7 @@ export type RascunhoParaSalvar = {
   escolhas: EscolhasDoPedido | null;
 };
 
-export type Rascunho = {
+export type Cotacao = {
   id: string;
   cliente: ClienteResumo;
   itens: ItemDoPedido[];
@@ -526,7 +526,7 @@ export type NotaFaturada = {
 
 export type PainelDePedidos = {
   enviados: PedidoEnviado[];
-  rascunhos: Rascunho[];
+  cotacoes: Cotacao[];
   emAberto: PedidoNoErp[];
   faturados: NotaFaturada[];
 };

@@ -4,7 +4,7 @@ import { SEM_ORDEM_DE_COMPRA_NO_ITEM, comMarcaXped, comNumeracao, comOrdemDeComp
   comQuantidade,
   embalagemAnterior,
   linhasEscolhidas,
-  novoIdDeRascunho,
+  novoIdDeCotacao,
   passosDoAndamento,
   precoDigitado,
   precoDoCento,
@@ -12,7 +12,7 @@ import { SEM_ORDEM_DE_COMPRA_NO_ITEM, comMarcaXped, comNumeracao, comOrdemDeComp
   problemasDoPedido,
   proximaEmbalagem,
   quantidadeDigitada,
-  rascunhoNoCatalogo,
+  cotacaoNoCatalogo,
   resumirPorFamilia,
   type LinhaDoPedido,
 } from "./pedido";
@@ -182,15 +182,15 @@ describe("precoInicialDoItem", () => {
   });
 });
 
-describe("rascunhoNoCatalogo", () => {
+describe("cotacaoNoCatalogo", () => {
   const produtos = [
     { codigo: "FAB1422P", precoDaTabela: 95.5 },
     { codigo: "MAB1216P", precoDaTabela: 120 },
   ];
 
-  it("deixa como está o rascunho que cabe no catálogo de hoje", () => {
+  it("deixa como está a cotação que cabe no catálogo de hoje", () => {
     const itens = [{ codigo: "FAB1422P", quantidade: 300, precoCento: 98.4, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
-    expect(rascunhoNoCatalogo(itens, produtos)).toEqual({ itens, foraDoCatalogo: 0, subiramAoMinimo: 0 });
+    expect(cotacaoNoCatalogo(itens, produtos)).toEqual({ itens, foraDoCatalogo: 0, subiramAoMinimo: 0 });
   });
 
   it("tira o produto que saiu do catálogo e sobe para a tabela o preço que ficou abaixo dela", () => {
@@ -199,7 +199,7 @@ describe("rascunhoNoCatalogo", () => {
       { codigo: "SAIU", quantidade: 100, precoCento: 50, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
       { codigo: "MAB1216P", quantidade: 500, precoCento: 130, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
     ];
-    expect(rascunhoNoCatalogo(itens, produtos)).toEqual({
+    expect(cotacaoNoCatalogo(itens, produtos)).toEqual({
       itens: [
         { codigo: "FAB1422P", quantidade: 300, precoCento: 95.5, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
         { codigo: "MAB1216P", quantidade: 500, precoCento: 130, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
@@ -346,23 +346,23 @@ describe("problemasDoPedido", () => {
   });
 });
 
-describe("novoIdDeRascunho", () => {
-  // O mesmo padrão que o servidor confere no endereço do rascunho (server/src/rotas.ts).
+describe("novoIdDeCotacao", () => {
+  // O mesmo padrão que o servidor confere no endereço da cotação (server/src/rotas.ts).
   const UUID_VERSAO_4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
   it("gera o UUID versão 4 que o servidor aceita", () => {
-    for (let i = 0; i < 200; i += 1) expect(novoIdDeRascunho()).toMatch(UUID_VERSAO_4);
+    for (let i = 0; i < 200; i += 1) expect(novoIdDeCotacao()).toMatch(UUID_VERSAO_4);
   });
 
   it("não repete o id", () => {
-    const ids = new Set(Array.from({ length: 1_000 }, novoIdDeRascunho));
+    const ids = new Set(Array.from({ length: 1_000 }, novoIdDeCotacao));
     expect(ids.size).toBe(1_000);
   });
 
   it("funciona no navegador sem crypto.randomUUID, como no endereço sem HTTPS da rede interna", () => {
     Object.defineProperty(crypto, "randomUUID", { value: undefined, configurable: true });
     try {
-      expect(novoIdDeRascunho()).toMatch(UUID_VERSAO_4);
+      expect(novoIdDeCotacao()).toMatch(UUID_VERSAO_4);
     } finally {
       Reflect.deleteProperty(crypto, "randomUUID");
     }

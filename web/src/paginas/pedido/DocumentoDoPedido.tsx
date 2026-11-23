@@ -6,10 +6,10 @@ import { primeiraEntregaPossivel, type OrdemDeCompraDoItem } from "dominio/pedid
 import { CabecalhoPagina } from "../../componentes/CabecalhoPagina";
 import cartao from "../../componentes/Cartao.module.css";
 import { Voltar } from "../../componentes/Voltar";
-import { carregarPedidos, enviarPedido, excluirRascunho } from "../../dados/api";
+import { carregarPedidos, enviarPedido, excluirCotacao } from "../../dados/api";
 import { escolhasNoCatalogo, itensDoUltimoPedido, pedidoJaEnviadoHoje, problemasDasEscolhas, totaisDoPedido } from "../../dados/dadosDoPedido";
-import { comMarcaXped, comNumeracao, comOrdemDeCompra, comQuantidade, isNumeracaoAutomatica, linhasEscolhidas, moverItem, numerarItens, problemasDoPedido, rascunhoNoCatalogo, type ItemEscolhido } from "../../dados/pedido";
-import type { CatalogoDoCliente, EscolhasDoPedido, Rascunho } from "../../dados/tipos";
+import { comMarcaXped, comNumeracao, comOrdemDeCompra, comQuantidade, isNumeracaoAutomatica, linhasEscolhidas, moverItem, numerarItens, problemasDoPedido, cotacaoNoCatalogo, type ItemEscolhido } from "../../dados/pedido";
+import type { CatalogoDoCliente, EscolhasDoPedido, Cotacao } from "../../dados/tipos";
 import { useCarga } from "../../dados/useCarga";
 import { formatarContagem, formatarMomento, formatarNumero } from "../../formato";
 import { ClienteDoPedido } from "./ClienteDoPedido";
@@ -22,7 +22,7 @@ import { ItensDoPedido } from "./ItensDoPedido";
 import { mensagemDo } from "./mensagemDo";
 import { ResumoDoPedido, RevisaoDoPedido, type PedidoParaRevisar } from "./RevisaoDoPedido";
 import { RodapeDoPedido } from "./RodapeDoPedido";
-import { conteudoDoPedido, useRascunhoAutomatico } from "./useRascunhoAutomatico";
+import { conteudoDoPedido, useCotacaoAutomatica } from "./useCotacaoAutomatica";
 
 /*
  * O pedido como um documento, de cima para baixo, como no app antigo dos representantes (redesenho
@@ -32,24 +32,24 @@ import { conteudoDoPedido, useRascunhoAutomatico } from "./useRascunhoAutomatico
  * largura, e não a tela.
  */
 
-type Props = { catalogo: CatalogoDoCliente; idDoRascunho: string; inicial: Rascunho | null; relogio: string };
+type Props = { catalogo: CatalogoDoCliente; idDoCotacao: string; inicial: Cotacao | null; relogio: string };
 
-/** Só os preços que o representante mudou, ou que vieram do rascunho; o resto usa o preço inicial do item. */
+/** Só os preços que o representante mudou, ou que vieram da cotação; o resto usa o preço inicial do item. */
 type Precos = Record<string, number>;
 
-export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: Props) {
+export function DocumentoDoPedido({ catalogo, idDoCotacao, inicial, relogio }: Props) {
   const navegar = useNavigate();
   const [parametros, setParametros] = useSearchParams();
   const etapa = etapaDoEndereco(parametros.get("etapa"));
   const hoje = dataDoMomento(relogio);
   const primeiraEntrega = primeiraEntregaPossivel(hoje);
   const dados = catalogo.dadosDoPedido;
-  // O rascunho diante do catálogo de hoje: o produto que saiu dele fica de fora, e o preço abaixo da tabela sobe para ela.
-  const [doRascunho] = useState(() => rascunhoNoCatalogo(inicial?.itens ?? [], catalogo.produtos));
+  // A cotação diante do catálogo de hoje: o produto que saiu dele fica de fora, e o preço abaixo da tabela sobe para ela.
+  const [doCotacao] = useState(() => cotacaoNoCatalogo(inicial?.itens ?? [], catalogo.produtos));
   const [itens, setItens] = useState<ItemEscolhido[]>(() =>
-    doRascunho.itens.map(({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra }) => ({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra })),
+    doCotacao.itens.map(({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra }) => ({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra })),
   );
-  const [precos, setPrecos] = useState<Precos>(() => Object.fromEntries(doRascunho.itens.map((item) => [item.codigo, item.precoCento])));
+  const [precos, setPrecos] = useState<Precos>(() => Object.fromEntries(doCotacao.itens.map((item) => [item.codigo, item.precoCento])));
   const [entrega, setEntrega] = useState<string | null>(inicial?.entrega ?? null);
   const [observacao, setObservacao] = useState(inicial?.observacao ?? "");
   const [escolhas, setEscolhas] = useState<EscolhasDoPedido | null>(() => (dados ? escolhasNoCatalogo(inicial?.escolhas ?? null, dados) : null));
@@ -59,7 +59,7 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
 
   const linhas = useMemo(() => linhasEscolhidas(itens, precos, catalogo.produtos), [itens, precos, catalogo.produtos]);
   const conteudo = useMemo(() => conteudoDoPedido(catalogo.cliente.codigo, linhas, entrega, observacao, escolhas), [catalogo, linhas, entrega, observacao, escolhas]);
-  const { existe, salvoEm, erroAoSalvar, salvarAgora, pararDeSalvar } = useRascunhoAutomatico(idDoRascunho, inicial, conteudo);
+  const { existe, salvoEm, erroAoSalvar, salvarAgora, pararDeSalvar } = useCotacaoAutomatica(idDoCotacao, inicial, conteudo);
   const totais = totaisDoPedido(linhas, dados?.ipi ?? null);
   const problemas = [...problemasDoPedido(linhas, observacao, entrega, hoje), ...(escolhas ? problemasDasEscolhas(escolhas) : [])];
   const enviadoHojeAs = pedidos ? pedidoJaEnviadoHoje(pedidos.enviados, catalogo.cliente.codigo, hoje) : null;
@@ -92,8 +92,8 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
 
   const enviar = useCallback(async () => {
     try {
-      const rascunho = await salvarAgora();
-      const pedido = await enviarPedido(rascunho.id);
+      const cotacao = await salvarAgora();
+      const pedido = await enviarPedido(cotacao.id);
       pararDeSalvar();
       navegar(`/pedidos/${pedido.numero}?enviado=1`, { replace: true });
     } catch (erro) {
@@ -102,10 +102,10 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
     }
   }, [salvarAgora, pararDeSalvar, navegar]);
 
-  /** Guarda o pedido como está e volta para os rascunhos, para o representante decidir depois se envia. */
-  const salvarComoRascunho = () => {
+  /** Guarda o pedido como está e volta para as cotações, para o representante decidir depois se envia. */
+  const salvarComoCotacao = () => {
     salvarAgora().then(
-      () => navegar("/pedidos?aba=rascunhos"),
+      () => navegar("/pedidos?aba=cotacoes"),
       (erro: unknown) => setErroAoEnviar(mensagemDo(erro)),
     );
   };
@@ -113,7 +113,7 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
   /** Salva a cotação como está e abre a folha para imprimir ou salvar em PDF. */
   const gerarPdf = () => {
     salvarAgora().then(
-      () => navegar(`/pedidos/rascunhos/${idDoRascunho}/pdf`),
+      () => navegar(`/pedidos/cotacoes/${idDoCotacao}/pdf`),
       (erro: unknown) => setErroAoEnviar(mensagemDo(erro)),
     );
   };
@@ -121,8 +121,8 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
   const descartar = () => {
     if (!existe || !window.confirm("Descartar esta cotação?")) return;
     pararDeSalvar();
-    excluirRascunho(idDoRascunho).then(
-      () => navegar("/pedidos?aba=rascunhos", { replace: true }),
+    excluirCotacao(idDoCotacao).then(
+      () => navegar("/pedidos?aba=cotacoes", { replace: true }),
       (erro: unknown) => setErroAoEnviar(mensagemDo(erro)),
     );
   };
@@ -186,13 +186,13 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
             ordemDeCompraDoPedido={escolhas?.pedidoDoCliente ?? ""}
             aoRenumerar={isXped && !isNumeracaoAutomatica(itens) ? renumerar : null}
           >
-            <AvisoDoRascunho foraDoCatalogo={doRascunho.foraDoCatalogo} subiramAoMinimo={doRascunho.subiramAoMinimo} />
+            <AvisoDoCotacao foraDoCatalogo={doCotacao.foraDoCatalogo} subiramAoMinimo={doCotacao.subiramAoMinimo} />
           </ItensDoPedido>
       </div>
       <div className={estilos.parte} data-parte="revisar">
         <RevisaoDoPedido pedido={paraRevisar} linhas={linhas} observacao={observacao} problemas={problemas} />
       </div>
-      <div className={estilos.rascunho}>
+      <div className={estilos.cotacao}>
         <p className={estilos.salvo} role="status">
           {erroAoEnviar ??
             erroAoSalvar ??
@@ -207,7 +207,7 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
         etapa={etapa}
         aoIrPara={irPara}
         aoEnviar={() => setConfirmando(true)}
-        aoSalvarRascunho={salvarComoRascunho}
+        aoSalvarCotacao={salvarComoCotacao}
         acoesDaCotacao={acoesDaCotacao}
       />
       <ConfirmarEnvio
@@ -221,8 +221,8 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
   );
 }
 
-/** O rascunho que voltou diferente do salvo, porque o catálogo do cliente mudou. */
-function AvisoDoRascunho({ foraDoCatalogo, subiramAoMinimo }: { foraDoCatalogo: number; subiramAoMinimo: number }) {
+/** A cotação que voltou diferente do salvo, porque o catálogo do cliente mudou. */
+function AvisoDoCotacao({ foraDoCatalogo, subiramAoMinimo }: { foraDoCatalogo: number; subiramAoMinimo: number }) {
   if (foraDoCatalogo === 0 && subiramAoMinimo === 0) return null;
   const avisos = [
     foraDoCatalogo === 1 ? "1 produto da cotação saiu do catálogo do cliente e ficou fora do pedido." : null,
@@ -230,7 +230,7 @@ function AvisoDoRascunho({ foraDoCatalogo, subiramAoMinimo }: { foraDoCatalogo: 
     subiramAoMinimo > 0 ? `O preço de ${formatarContagem(subiramAoMinimo, "produto", "produtos")} subiu para a tabela do cliente, que aumentou.` : null,
   ];
   return (
-    <p className={estilos.avisoDoRascunho} role="status">
+    <p className={estilos.avisoDoCotacao} role="status">
       {avisos.filter(Boolean).join(" ")}
     </p>
   );

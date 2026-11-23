@@ -138,6 +138,14 @@ const MIGRACOES: readonly string[] = [
   ALTER TABLE rascunho_itens ADD COLUMN ordem_de_compra TEXT;
   ALTER TABLE rascunho_itens ADD COLUMN item_da_ordem_de_compra INTEGER;
   `,
+  // 8. O rascunho passa a se chamar cotação (2026-11-23), como no app antigo dos representantes: as tabelas, as
+  // colunas e os eventos da auditoria. O SQLite leva junto as chaves estrangeiras e os índices.
+  `
+  ALTER TABLE rascunhos RENAME TO cotacoes;
+  ALTER TABLE rascunho_itens RENAME TO cotacao_itens;
+  ALTER TABLE cotacao_itens RENAME COLUMN rascunho TO cotacao;
+  ALTER TABLE pedidos_enviados RENAME COLUMN rascunho TO cotacao;
+  `,
 ];
 
 /** Abre o app.db (cria a pasta e o arquivo na primeira vez) e aplica as migrações que faltam. ":memory:" nos testes. */

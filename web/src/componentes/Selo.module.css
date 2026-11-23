@@ -40,9 +40,9 @@
   background: var(--cor-novo-fundo);
 }
 
-.rascunho {
-  color: var(--cor-rascunho);
-  background: var(--cor-rascunho-fundo);
+.cotacao {
+  color: var(--cor-cotacao);
+  background: var(--cor-cotacao-fundo);
 }
 
 .pendente {

@@ -10,7 +10,7 @@ import { isClienteDaCarteira, lerCarteira, lerFicha } from "./leituras/clientes.
 import { lerPainel } from "./leituras/painel.ts";
 import { lerPedidos } from "./leituras/pedidos.ts";
 import { lerSituacao } from "./leituras/situacao.ts";
-import { LIMITE_DE_ITENS, excluirRascunho, lerRascunho, rascunhosDoLogin, rascunhosNaFicha, salvarRascunho, type ConteudoDoRascunho } from "./rascunhos.ts";
+import { LIMITE_DE_ITENS, excluirCotacao, lerCotacao, cotacoesDoLogin, cotacoesNaFicha, salvarCotacao, type ConteudoDoCotacao } from "./cotacoes.ts";
 import { sessaoDa } from "./sessao.ts";
 import { dataDaVisita, desfazerVisita, registrarVisita, ultimasVisitas, visitasDosClientes, type ProblemaNaData } from "./visitas.ts";
 
@@ -43,14 +43,14 @@ const PARAMETRO_CLIENTE = {
   additionalProperties: false,
 } as const;
 
-/** O id do rascunho: o UUID versão 4 que a tela gera quando o pedido começa (novoIdDeRascunho, em web/src/dados/pedido.ts). */
-const PARAMETRO_RASCUNHO = {
+/** O id da cotação: o UUID versão 4 que a tela gera quando o pedido começa (novoIdDeCotacao, em web/src/dados/pedido.ts). */
+const PARAMETRO_COTACAO = {
   type: "object",
   properties: { id: { type: "string", pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" } },
   required: ["id"],
   additionalProperties: false,
 } as const;
-const RASCUNHO_NAO_ENCONTRADO = { erro: "Cotação não encontrada." };
+const COTACAO_NAO_ENCONTRADO = { erro: "Cotação não encontrada." };
 
 /** Texto curto de uma linha, sem caractere de controle: nomes, cidades e o número do pedido do cliente. */
 const LINHA_DE_TEXTO = (maximo: number) => ({ type: "string", maxLength: maximo, pattern: "^[^\\u0000-\\u001F\\u007F]*$" }) as const;
@@ -98,12 +98,12 @@ const ESCOLHAS_DO_PEDIDO = {
 } as const;
 
 /**
- * O rascunho que a tela salva: o cliente, os itens (produto, peças e o preço do cento), a entrega e a
+ * A cotação que a tela salva: o cliente, os itens (produto, peças e o preço do cento), a entrega e a
  * observação. O representante vem da sessão. O servidor confere o resto: cliente da carteira, produto
- * do catálogo dele e preço não abaixo da tabela (rascunhos.ts). A observação não leva caractere de
+ * do catálogo dele e preço não abaixo da tabela (cotações.ts). A observação não leva caractere de
  * controle além da quebra de linha.
  */
-const CORPO_DO_RASCUNHO = {
+const CORPO_DO_COTACAO = {
   type: "object",
   properties: {
     codigoCliente: { type: "string", pattern: "^[0-9a-f]{16}$" },
@@ -145,8 +145,8 @@ export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () =
       auditar(banco, { usuario: sessao.idDoUsuario, evento: "ficha_consultada", alvo: requisicao.params.codigo });
       // No grupo, as visitas a qualquer CNPJ dele: a visita é sempre num CNPJ.
       const visitados = ficha.cnpjs ? ficha.cnpjs.map(({ codigo }) => codigo) : [ficha.codigo];
-      // Os rascunhos e os enviados do login entram no histórico, do mais recente ao mais antigo, como os pedidos.
-      const doCrm = [...rascunhosNaFicha(banco, foto.abrir(), sessao, ficha), ...enviadosNaFicha(banco, foto.abrir(), sessao, ficha)];
+      // As cotações e os enviados do login entram no histórico, do mais recente ao mais antigo, como os pedidos.
+      const doCrm = [...cotacoesNaFicha(banco, foto.abrir(), sessao, ficha), ...enviadosNaFicha(banco, foto.abrir(), sessao, ficha)];
       const pedidos = [...doCrm, ...ficha.pedidos].sort((a, b) => b.emissao.localeCompare(a.emissao));
       return { ...ficha, pedidos, visitas: visitasDosClientes(banco, sessao.idDoUsuario, visitados) };
     },
@@ -190,37 +190,37 @@ export function registrarRotas(app: FastifyInstance, { foto, banco, agora = () =
   }
   app.get("/api/pedidos", DO_REPRESENTANTE, (requisicao) => {
     const sessao = sessaoDa(requisicao);
-    return { ...lerPedidos(foto.abrir(), sessao), enviados: pedidosEnviadosDoLogin(banco, foto.abrir(), sessao), rascunhos: rascunhosDoLogin(banco, foto.abrir(), sessao) };
+    return { ...lerPedidos(foto.abrir(), sessao), enviados: pedidosEnviadosDoLogin(banco, foto.abrir(), sessao), cotacoes: cotacoesDoLogin(banco, foto.abrir(), sessao) };
   });
   /**
-   * O rascunho do login: ler, salvar (criar ou atualizar pelo id que a tela gerou) e descartar. O de
+   * A cotação do login: ler, salvar (criar ou atualizar pelo id que a tela gerou) e descartar. A de
    * outro login responde 404, como se não existisse.
    */
   app.get<{ Params: { id: string } }>(
-    "/api/rascunhos/:id",
-    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_RASCUNHO } },
-    (requisicao, resposta) => lerRascunho(banco, foto.abrir(), sessaoDa(requisicao), requisicao.params.id) ?? resposta.code(404).send(RASCUNHO_NAO_ENCONTRADO),
+    "/api/cotacoes/:id",
+    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_COTACAO } },
+    (requisicao, resposta) => lerCotacao(banco, foto.abrir(), sessaoDa(requisicao), requisicao.params.id) ?? resposta.code(404).send(COTACAO_NAO_ENCONTRADO),
   );
-  app.put<{ Params: { id: string }; Body: ConteudoDoRascunho }>(
-    "/api/rascunhos/:id",
-    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_RASCUNHO, body: CORPO_DO_RASCUNHO } },
+  app.put<{ Params: { id: string }; Body: ConteudoDoCotacao }>(
+    "/api/cotacoes/:id",
+    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_COTACAO, body: CORPO_DO_COTACAO } },
     (requisicao, resposta) => {
       const sessao = sessaoDa(requisicao);
-      const resultado = salvarRascunho(banco, foto.abrir(), sessao, requisicao.params.id, requisicao.body, agora());
+      const resultado = salvarCotacao(banco, foto.abrir(), sessao, requisicao.params.id, requisicao.body, agora());
       if ("status" in resultado) return resposta.code(resultado.status).send({ erro: resultado.erro });
       // Só a criação: a tela salva sozinha a cada mudança.
-      if (resultado.criado) auditar(banco, { usuario: sessao.idDoUsuario, evento: "rascunho_criado", alvo: requisicao.body.codigoCliente });
-      return resultado.rascunho;
+      if (resultado.criado) auditar(banco, { usuario: sessao.idDoUsuario, evento: "cotacao_criada", alvo: requisicao.body.codigoCliente });
+      return resultado.cotacao;
     },
   );
   app.delete<{ Params: { id: string } }>(
-    "/api/rascunhos/:id",
-    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_RASCUNHO } },
+    "/api/cotacoes/:id",
+    { ...DO_REPRESENTANTE, schema: { params: PARAMETRO_COTACAO } },
     (requisicao, resposta) => {
       const sessao = sessaoDa(requisicao);
-      const cliente = excluirRascunho(banco, sessao, requisicao.params.id);
-      if (!cliente) return resposta.code(404).send(RASCUNHO_NAO_ENCONTRADO);
-      auditar(banco, { usuario: sessao.idDoUsuario, evento: "rascunho_descartado", alvo: cliente });
+      const cliente = excluirCotacao(banco, sessao, requisicao.params.id);
+      if (!cliente) return resposta.code(404).send(COTACAO_NAO_ENCONTRADO);
+      auditar(banco, { usuario: sessao.idDoUsuario, evento: "cotacao_descartada", alvo: cliente });
       return resposta.code(204).send();
     },
   );

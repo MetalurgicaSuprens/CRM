@@ -9,12 +9,12 @@ import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { AvisoDePedidoBloqueado, StatusDoCliente } from "../componentes/StatusDoCliente";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Voltar } from "../componentes/Voltar";
-import { carregarCatalogo, carregarClientes, carregarRascunho, carregarSituacaoDosDados, isDadosReais } from "../dados/api";
+import { carregarCatalogo, carregarClientes, carregarCotacao, carregarSituacaoDosDados, isDadosReais } from "../dados/api";
 import { correspondeAoClienteOuCidade } from "../dados/busca";
 import { PedidoBloqueado } from "../dados/fonteDeDados";
-import { novoIdDeRascunho } from "../dados/pedido";
+import { novoIdDeCotacao } from "../dados/pedido";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
-import type { Rascunho } from "../dados/tipos";
+import type { Cotacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarLocalECodigo } from "../formato";
 import { Carregando } from "./Carregando";
@@ -23,42 +23,42 @@ import { DocumentoDoPedido } from "./pedido/DocumentoDoPedido";
 import { mensagemDo } from "./pedido/mensagemDo";
 
 /**
- * /pedidos/novo?cliente=... começa um pedido e põe no endereço o id do rascunho (&rascunho=...): recarregar
+ * /pedidos/novo?cliente=... começa um pedido e põe no endereço o id da cotação (&cotacao=...): recarregar
  * a página, ou o navegador reabrir a aba depois de o computador desligar, continua o mesmo pedido.
- * /pedidos/novo?grupo=... escolhe antes o CNPJ do grupo; /pedidos/rascunhos/:id continua um rascunho.
+ * /pedidos/novo?grupo=... escolhe antes o CNPJ do grupo; /pedidos/cotacoes/:id continua uma cotação.
  */
 export function MontarPedido() {
   const { id } = useParams();
   const [parametros, setParametros] = useSearchParams();
   const codigoCliente = parametros.get("cliente");
-  const idDoNovo = parametros.get("rascunho");
+  const idDoNovo = parametros.get("cotacao");
   useEffect(() => {
     if (id || !codigoCliente || idDoNovo) return;
     const proximos = new URLSearchParams(parametros);
-    proximos.set("rascunho", novoIdDeRascunho());
+    proximos.set("cotacao", novoIdDeCotacao());
     setParametros(proximos, { replace: true });
   }, [id, codigoCliente, idDoNovo, parametros, setParametros]);
-  if (id) return <ContinuarRascunho id={id} codigoDoNovo={null} />;
+  if (id) return <ContinuarCotacao id={id} codigoDoNovo={null} />;
   if (!codigoCliente) return <EscolherCliente codigoDoGrupo={parametros.get("grupo")} />;
-  return idDoNovo ? <ContinuarRascunho id={idDoNovo} codigoDoNovo={codigoCliente} /> : <Carregando />;
+  return idDoNovo ? <ContinuarCotacao id={idDoNovo} codigoDoNovo={codigoCliente} /> : <Carregando />;
 }
 
-type BuscaDoRascunho = { id: string; rascunho: Rascunho | null; erro: string | null };
+type BuscaDoCotacao = { id: string; cotacao: Cotacao | null; erro: string | null };
 
 /**
- * O rascunho como está no servidor agora: sem o cache das telas, que podia trazer uma versão de antes.
- * No pedido novo, o rascunho ainda não existe e começa vazio, com o id do endereço.
+ * A cotação como está no servidor agora: sem o cache das telas, que podia trazer uma versão de antes.
+ * No pedido novo, a cotação ainda não existe e começa vazia, com o id do endereço.
  */
-function ContinuarRascunho({ id, codigoDoNovo }: { id: string; codigoDoNovo: string | null }) {
-  const [busca, setBusca] = useState<BuscaDoRascunho | null>(null);
+function ContinuarCotacao({ id, codigoDoNovo }: { id: string; codigoDoNovo: string | null }) {
+  const [busca, setBusca] = useState<BuscaDoCotacao | null>(null);
   useEffect(() => {
     let atual = true;
-    carregarRascunho(id).then(
-      (rascunho) => {
-        if (atual) setBusca({ id, rascunho, erro: null });
+    carregarCotacao(id).then(
+      (cotacao) => {
+        if (atual) setBusca({ id, cotacao, erro: null });
       },
       (erro: unknown) => {
-        if (atual) setBusca({ id, rascunho: null, erro: mensagemDo(erro) });
+        if (atual) setBusca({ id, cotacao: null, erro: mensagemDo(erro) });
       },
     );
     return () => {
@@ -67,24 +67,24 @@ function ContinuarRascunho({ id, codigoDoNovo }: { id: string; codigoDoNovo: str
   }, [id]);
   if (busca?.id !== id) return <Carregando />;
   if (busca.erro) return <Indisponivel texto={busca.erro} />;
-  const codigoCliente = busca.rascunho?.cliente.codigo ?? codigoDoNovo;
-  if (!codigoCliente) return <Indisponivel texto={RASCUNHO_NAO_ENCONTRADO} />;
-  return <Montagem codigoCliente={codigoCliente} idDoRascunho={id} inicial={busca.rascunho} />;
+  const codigoCliente = busca.cotacao?.cliente.codigo ?? codigoDoNovo;
+  if (!codigoCliente) return <Indisponivel texto={COTACAO_NAO_ENCONTRADO} />;
+  return <Montagem codigoCliente={codigoCliente} idDoCotacao={id} inicial={busca.cotacao} />;
 }
 
-const RASCUNHO_NAO_ENCONTRADO = isDadosReais
+const COTACAO_NAO_ENCONTRADO = isDadosReais
   ? "Cotação não encontrada: ela foi enviada ou descartada."
   : "Cotação não encontrada. No protótipo, as cotações somem quando a página é recarregada.";
 
-type PropsDaMontagem = { codigoCliente: string; idDoRascunho: string; inicial: Rascunho | null };
+type PropsDaMontagem = { codigoCliente: string; idDoCotacao: string; inicial: Cotacao | null };
 
-function Montagem({ codigoCliente, idDoRascunho, inicial }: PropsDaMontagem) {
+function Montagem({ codigoCliente, idDoCotacao, inicial }: PropsDaMontagem) {
   const { dados: catalogo, carregando, erro } = useCarga(`catalogo:${codigoCliente}`, () => carregarCatalogo(codigoCliente));
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   if (carregando || !situacao) return <Carregando />;
   if (erro instanceof PedidoBloqueado) return <ClienteSemPedido aviso={erro.message} />;
   if (!catalogo) return <Indisponivel texto={erro?.message ?? "Cliente não encontrado na sua carteira."} />;
-  return <DocumentoDoPedido catalogo={catalogo} idDoRascunho={idDoRascunho} inicial={inicial} relogio={situacao.relogio} />;
+  return <DocumentoDoPedido catalogo={catalogo} idDoCotacao={idDoCotacao} inicial={inicial} relogio={situacao.relogio} />;
 }
 
 // ---------------------------------------------------------------- escolha do cliente

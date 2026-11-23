@@ -3,19 +3,19 @@ import { analisesFicticias, clientesFicticios, fichaFicticia, painelFicticio, si
 import { PedidoBloqueado, type FonteDeDados } from "./fonteDeDados";
 import {
   catalogoDoClienteFicticio,
-  enviarRascunhoFicticio,
-  excluirRascunhoFicticio,
+  enviarCotacaoFicticio,
+  excluirCotacaoFicticio,
   painelDePedidosFicticio,
   pedidoEnviadoFicticio,
   pedidosDoCrmNaFicha,
-  rascunhoFicticio,
-  salvarRascunhoFicticio,
+  cotacaoFicticio,
+  salvarCotacaoFicticio,
 } from "./pedidosFicticios";
 
 /** Tempo que o protótipo finge esperar o aparelho liberar a chave de acesso no envio. */
 const ESPERA_DA_CHAVE_MS = 1_200;
 
-/** As visitas do protótipo, de cada cliente, da mais recente à mais antiga: só na memória, como os rascunhos. */
+/** As visitas do protótipo, de cada cliente, da mais recente à mais antiga: só na memória, como as cotações. */
 const visitasFicticias = new Map<string, string[]>();
 
 function mudarVisitaFicticia(codigo: string, mudar: (datas: string[]) => string[]): Promise<string[]> {
@@ -24,7 +24,7 @@ function mudarVisitaFicticia(codigo: string, mudar: (datas: string[]) => string[
   return Promise.resolve(datas);
 }
 
-/** O protótipo (F1): a carteira fictícia, sem servidor. Os rascunhos e as visitas ficam só na memória do navegador. */
+/** O protótipo (F1): a carteira fictícia, sem servidor. As cotações e as visitas ficam só na memória do navegador. */
 export const fonteFicticia: FonteDeDados = {
   carregarSituacaoDosDados: () => Promise.resolve(situacaoDosDadosFicticia()),
   carregarPainel: () => Promise.resolve(painelFicticio()),
@@ -44,18 +44,18 @@ export const fonteFicticia: FonteDeDados = {
   },
   carregarPedidos: () => Promise.resolve(painelDePedidosFicticio()),
   carregarPedidoEnviado: (numero) => Promise.resolve(pedidoEnviadoFicticio(numero)),
-  carregarRascunho: (id) => Promise.resolve(rascunhoFicticio(id)),
-  salvarRascunho(dados) {
-    const rascunho = salvarRascunhoFicticio(dados);
-    return rascunho ? Promise.resolve(rascunho) : Promise.reject(new Error("Cliente fora da carteira"));
+  carregarCotacao: (id) => Promise.resolve(cotacaoFicticio(id)),
+  salvarCotacao(dados) {
+    const cotacao = salvarCotacaoFicticio(dados);
+    return cotacao ? Promise.resolve(cotacao) : Promise.reject(new Error("Cliente fora da carteira"));
   },
-  excluirRascunho(id) {
-    excluirRascunhoFicticio(id);
+  excluirCotacao(id) {
+    excluirCotacaoFicticio(id);
     return Promise.resolve();
   },
-  async enviarPedido(idDoRascunho) {
+  async enviarPedido(idDoCotacao) {
     await new Promise((resolver) => window.setTimeout(resolver, ESPERA_DA_CHAVE_MS));
-    const pedido = enviarRascunhoFicticio(idDoRascunho);
+    const pedido = enviarCotacaoFicticio(idDoCotacao);
     if (!pedido) throw new Error("Cotação não encontrada");
     return pedido;
   },

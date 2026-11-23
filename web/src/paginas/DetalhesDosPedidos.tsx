@@ -72,7 +72,7 @@ export function DetalheDaNota({ nota }: { nota: NotaFaturada }) {
 }
 
 /**
- * Na ficha do cliente: o resumo e os itens; a entrega de cada item, no pedido em aberto. O rascunho
+ * Na ficha do cliente: o resumo e os itens; a entrega de cada item, no pedido em aberto. A cotação
  * leva à montagem, para continuar, e o enviado, à página dele, com o andamento.
  */
 export function DetalheDoPedidoDaFicha({ pedido, hoje }: { pedido: PedidoDaFicha; hoje: string }) {
@@ -99,7 +99,7 @@ export function DetalheDoPedidoDaFicha({ pedido, hoje }: { pedido: PedidoDaFicha
 }
 
 const CAMINHO_NO_CRM: Partial<Record<PedidoDaFicha["status"], (id: string) => { para: string; texto: string }>> = {
-  rascunho: (id) => ({ para: `/pedidos/rascunhos/${id}`, texto: "Continuar a cotação" }),
+  cotacao: (id) => ({ para: `/pedidos/cotacoes/${id}`, texto: "Continuar a cotação" }),
   enviado: (id) => ({ para: `/pedidos/${id}`, texto: "Ver o andamento" }),
 };
 
