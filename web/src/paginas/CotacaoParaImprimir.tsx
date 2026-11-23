@@ -126,6 +126,8 @@ function Folha({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDaFolha) {
 
       <footer className={estilos.rodape}>
         Preços em reais, por cento de peças. Cotação válida até {formatarData(validaAte)}.
+        <br />
+        O valor total é com IPI e sem ICMS-ST. A ST, quando devida, conforme o estado de destino e a finalidade da compra, será cobrada na nota fiscal.
       </footer>
     </article>
   );
