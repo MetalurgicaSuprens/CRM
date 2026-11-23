@@ -177,12 +177,20 @@
 .total {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 16px;
 }
 
 .total dt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   color: #52514e;
+}
+
+.iconeDoTotal {
+  flex: none;
+  color: #6b6b69;
 }
 
 .total dd {

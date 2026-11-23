@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router";
-import { Printer } from "lucide-react";
+import { ListOrdered, Package, Percent, Printer, Weight, type LucideIcon } from "lucide-react";
 import { dataDoMomento, horaDoMomento, somarDias } from "dominio/datas";
 import { primeiraEntregaPossivel, valorDaLinha } from "dominio/pedido";
 import botoes from "../componentes/Botao.module.css";
@@ -276,9 +276,13 @@ function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: Retur
   return (
     <div className={estilos.totais}>
       <dl className={estilos.quantidades}>
-        <Total rotulo="Itens">{formatarNumero(totais.itens)}</Total>
-        <Total rotulo="Quantidade">{formatarNumero(totais.pecas)} pç</Total>
-        <Total rotulo="Peso total">
+        <Total rotulo="Itens" Icone={ListOrdered}>
+          {formatarNumero(totais.itens)}
+        </Total>
+        <Total rotulo="Quantidade" Icone={Package}>
+          {formatarNumero(totais.pecas)} pç
+        </Total>
+        <Total rotulo="Peso total" Icone={Weight}>
           {formatarPeso(peso.total)}
           {peso.semPeso > 0 ? <span className={estilos.nota}> ({formatarContagem(peso.semPeso, "item sem peso", "itens sem peso")})</span> : null}
         </Total>
@@ -287,7 +291,9 @@ function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: Retur
         <Total rotulo="Valor s/ IPI">{formatarReaisComCentavos(totais.semIpi)}</Total>
         {totais.ipi !== null && totais.comIpi !== null ? (
           <>
-            <Total rotulo="IPI">{formatarReaisComCentavos(totais.ipi)}</Total>
+            <Total rotulo="IPI" Icone={Percent}>
+              {formatarReaisComCentavos(totais.ipi)}
+            </Total>
             <Total rotulo="Valor total c/ IPI" isDestaque>
               {formatarReaisComCentavos(totais.comIpi)}
             </Total>
@@ -298,11 +304,19 @@ function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: Retur
   );
 }
 
-/** Uma linha dos totais: o nome à esquerda e o número à direita. */
-function Total({ rotulo, isDestaque = false, children }: { rotulo: string; isDestaque?: boolean; children: ReactNode }) {
+type PropsDoTotal = { rotulo: string; Icone?: LucideIcon; isDestaque?: boolean; children: ReactNode };
+
+/**
+ * Uma linha dos totais: o nome à esquerda e o número à direita. O ícone pequeno, só nas quantidades e no
+ * IPI (escolha do Lucas em 2026-11-23): nos valores em reais, a coluna fica limpa, como numa nota.
+ */
+function Total({ rotulo, Icone, isDestaque = false, children }: PropsDoTotal) {
   return (
     <div className={isDestaque ? `${estilos.total} ${estilos.totalEmDestaque}` : estilos.total}>
-      <dt>{rotulo}</dt>
+      <dt>
+        {Icone ? <Icone size={13} strokeWidth={1.75} className={estilos.iconeDoTotal} aria-hidden="true" /> : null}
+        {rotulo}
+      </dt>
       <dd>{children}</dd>
     </div>
   );
