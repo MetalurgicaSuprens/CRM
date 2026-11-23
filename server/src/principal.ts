@@ -1,8 +1,10 @@
+import type { DatabaseSync } from "node:sqlite";
 import { criarAppDoAdmin } from "./admin/appDoAdmin.ts";
 import { criarApp } from "./app.ts";
 import { auditar } from "./auditoria.ts";
 import { abrirBancoDoApp } from "./bancoDoApp.ts";
 import { lerConfiguracao, lerConfiguracaoDaRedeInterna } from "./configuracao.ts";
+import { limparCaixaDeSaida } from "./envio/caixaDeSaida.ts";
 import { criarFotoAtual } from "./foto/fotoAtual.ts";
 import { apagarRegistrosAntigos } from "./limpeza.ts";
 
@@ -20,6 +22,7 @@ const configuracao = process.argv.includes("--rede-interna") ? lerConfiguracaoDa
 const banco = abrirBancoDoApp(configuracao.arquivoDoApp);
 const foto = criarFotoAtual(configuracao.fotos, {
   aoRecusar: ({ foto: arquivo, motivo }) => auditar(banco, { usuario: null, evento: "foto_recusada", alvo: arquivo, resultado: motivo }),
+  aoTrocar: (nova) => limparCaixaDeSaidaDa(nova),
 });
 const crm = criarApp({ foto, banco, origem: configuracao.origem, loginProvisorio: configuracao.loginProvisorio, pastaDeSaida: configuracao.pastaDeSaida });
 const admin = criarAppDoAdmin({ foto, banco, origem: configuracao.origemDoAdmin, origemDoCrm: configuracao.origem });
@@ -31,6 +34,13 @@ console.log(`Fotos chegam em ${configuracao.fotos.entrada} e são conferidas em 
 console.log(configuracao.pastaDeSaida ? `Pedidos enviados vão para ${configuracao.pastaDeSaida}.` : "Envio de pedidos desligado (CRM_ENVIO_DE_PEDIDOS).");
 limparRegistrosAntigos();
 setInterval(limparRegistrosAntigos, UM_DIA_MS).unref();
+
+/** A caixa de saída só existe com o envio ligado; com ele desligado, ela fica como está. */
+function limparCaixaDeSaidaDa(nova: DatabaseSync): void {
+  if (!configuracao.pastaDeSaida) return;
+  const apagados = limparCaixaDeSaida(configuracao.pastaDeSaida, nova);
+  if (apagados > 0) console.log(`Pedidos já recebidos pela LAN, apagados da caixa de saída: ${apagados}.`);
+}
 
 function limparRegistrosAntigos(): void {
   const { registro, sessoes, convites } = apagarRegistrosAntigos(banco, new Date());

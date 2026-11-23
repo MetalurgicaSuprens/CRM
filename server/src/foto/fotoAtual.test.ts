@@ -61,6 +61,18 @@ describe("criarFotoAtual", () => {
     expect(geradaEmDaFotoEmUso()).toBe("2026-10-13T10:30");
   });
 
+  it("avisa cada troca de foto, com a foto nova, para a limpeza da caixa de saída", () => {
+    const trocas: unknown[] = [];
+    foto.fechar();
+    foto = criarFotoAtual(pastas, { agora: () => agora, aoTrocar: (nova) => trocas.push(nova.prepare("SELECT gerada_em FROM foto").get()?.gerada_em) });
+    foto.abrir();
+    entregarFotoDeTeste(pastas.entrada, fotoGeradaEm("2026-10-13T10:30"));
+    esperarAProximaConferencia();
+    foto.abrir();
+
+    expect(trocas).toEqual(["2026-10-13T09:55", "2026-10-13T10:30"]);
+  });
+
   it("continua com a foto em uso quando a nova é recusada, e diz no log por quê", () => {
     foto.abrir();
     entregarFotoDeTeste(pastas.entrada, fotoGeradaEm("2026-10-13T10:30"), (manifesto) => ({ ...manifesto, sha256: "0".repeat(64) }));

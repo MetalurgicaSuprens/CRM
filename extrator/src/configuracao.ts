@@ -21,6 +21,8 @@ export type Configuracao = {
   autorizados: string[];
   chaveDoIdDoCliente: Buffer;
   pastaDasFotos: string;
+  /** A pasta dos pedidos do CRM: a foto leva o andamento deles (pedidos/andamento.ts). */
+  pastaDosPedidos: string;
   localizacao: FontesDaLocalizacao;
   /** Grava a foto mesmo que ela mude demais desde a anterior (foto/comparacao.ts). */
   aceitarMudanca: boolean;
@@ -71,6 +73,7 @@ export function lerConfiguracao(argumentos: string[]): Configuracao {
     autorizados: lerAutorizados(path.join(pastaDeDados, ARQUIVO_DE_AUTORIZADOS)),
     chaveDoIdDoCliente: lerOuCriarChave(path.join(pastaDeDados, ARQUIVO_DA_CHAVE)),
     pastaDasFotos: path.join(pastaDeDados, PASTA_DAS_FOTOS),
+    pastaDosPedidos: path.join(pastaDeDados, PASTA_DOS_PEDIDOS),
     localizacao: { pastaDoCnefe: path.join(pastaDeDados, "cnefe"), arquivoDosPontos: path.join(pastaDeDados, "pontos-dos-enderecos.db") },
     aceitarMudanca: values["aceitar-mudanca"],
     isGravacaoNoSgiLigada: lerGravacaoNoSgi(lerEnv(arquivoEnv).CRM_GRAVAR_NO_SGI),

@@ -1,12 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { DatabaseSync } from "node:sqlite";
 import type { EscolhasDoPedido, ItemDoPedido } from "../../../web/src/dados/tipos.ts";
 
 /*
  * A caixa de saída dos pedidos (docs/plano.md, "Pedidos: caminho até o ERP"): um arquivo JSON por
  * pedido enviado, que a máquina do extrator busca pelo SFTP, revalida no Oracle e grava no SGI. O
  * servidor é o único que escreve nesta pasta. O arquivo nasce com nome provisório e só ganha o nome
- * final inteiro e gravado no disco: quem busca nunca vê um pedido pela metade.
+ * final inteiro e gravado no disco: quem busca nunca vê um pedido pela metade. O pedido que a foto já
+ * mostra com andamento (pedido_crm) chegou à LAN e sai da caixa de saída.
  */
 
 /** O formato do arquivo. Muda junto com a leitura do extrator. */
@@ -51,4 +53,13 @@ export function gravarNaCaixaDeSaida(pasta: string, pedido: PedidoParaOErp): str
   }
   fs.renameSync(provisorio, arquivo);
   return arquivo;
+}
+
+/** Apaga da caixa de saída os pedidos que a foto já mostra recebidos pela LAN; devolve quantos. */
+export function limparCaixaDeSaida(pasta: string, foto: DatabaseSync): number {
+  if (!fs.existsSync(pasta)) return 0;
+  const naLan = new Set(foto.prepare("SELECT numero FROM pedido_crm").all().map((linha) => `${String(linha.numero)}.json`));
+  const recebidos = fs.readdirSync(pasta).filter((nome) => naLan.has(nome));
+  for (const nome of recebidos) fs.rmSync(path.join(pasta, nome), { force: true });
+  return recebidos.length;
 }

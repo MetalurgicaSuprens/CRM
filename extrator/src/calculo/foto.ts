@@ -2,20 +2,22 @@ import { semestreDoRitmo } from "dominio/analises";
 import { diaUtilDoMes, diasUteisDoMes } from "dominio/calendario";
 import { VERSAO_DO_ESQUEMA, type Foto } from "dominio/esquemaDaFoto";
 import type { ClienteDaCarteira, DadosDoErp } from "../erp/tipos.ts";
+import type { PedidoDoCrmNaLan } from "../pedidos/andamento.ts";
 import { idDoCliente, idDoGrupo } from "../idDoCliente.ts";
 import { montarClientes } from "./clientes.ts";
 import { montarTabelasDoPedido } from "./dadosDoPedido.ts";
 import { montarHistoricoDoPainel, montarPainel } from "./painel.ts";
 import { montarPedidos, montarPedidosFaturados } from "./pedidos.ts";
+import { montarPedidosDoCrm } from "./pedidosDoCrm.ts";
 import { juntarProdutos } from "./produtos.ts";
 import type { Referencia } from "./referencia.ts";
 
 /**
  * A foto inteira a partir do que foi lido do ERP. Pedidos e notas vão só dos representantes
  * autorizados; o cliente deles vai pelo id quando está na carteira de um autorizado, e nulo nos
- * outros casos.
+ * outros casos. O andamento dos pedidos enviados pelo CRM vem da máquina do extrator (pedidos/andamento.ts).
  */
-export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizados: string[], chaveDoId: Buffer): Foto {
+export function montarFoto(dados: DadosDoErp & { pedidosDoCrm: readonly PedidoDoCrmNaLan[] }, referencia: Referencia, autorizados: string[], chaveDoId: Buffer): Foto {
   const idDe = (cliente: ClienteDaCarteira) => idDoCliente(chaveDoId, cliente.empresa, cliente.cliente);
   const idPorChave = new Map(dados.carteira.map((cliente) => [cliente.chave, idDe(cliente)]));
   const idNaCarteira = (chave: string) => idPorChave.get(chave) ?? null;
@@ -51,5 +53,9 @@ export function montarFoto(dados: DadosDoErp, referencia: Referencia, autorizado
     ...montarPedidos({ pedidos, notas: dados.notas }, referencia, idNaCarteira),
     ...montarPedidosFaturados(dados.pedidosFaturados, dados.pedidos, idNaCarteira),
     ...montarTabelasDoPedido(dados.dadosDoPedido, dados.precos, new Set(clientes.lista_de_precos.map(({ produto }) => produto)), idNaCarteira),
+    pedido_crm: montarPedidosDoCrm(dados.pedidosDoCrm, {
+      emAberto: new Set(dados.pedidos.map(({ pedido }) => pedido)),
+      comNota: new Set(dados.pedidosFaturados.map(({ pedido }) => pedido)),
+    }),
   };
 }

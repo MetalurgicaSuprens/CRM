@@ -494,7 +494,7 @@ export type PedidoEnviado = {
   etapa: EtapaDoPedido;
   motivoRecusa: string | null;
   /** Quando o pedido chegou a cada etapa, em ordem. */
-  historico: { etapa: EtapaDoPedido; em: string }[];
+  historico: { etapa: EtapaDoPedido; em: string | null }[];
 };
 
 /** Uma linha de pedido ou de nota do ERP: produto, quantidade e valor. */

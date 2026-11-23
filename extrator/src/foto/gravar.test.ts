@@ -63,6 +63,7 @@ function fotoDe(geradaEm: string, vendasPorMes = 1_200): Foto {
     representante_transportadora: [],
     condicao_pagamento: [],
     produto_ipi: [],
+    pedido_crm: [],
   };
 }
 

@@ -25,6 +25,8 @@ export type OpcoesDaFotoAtual = {
   agora?: () => number;
   /** Cada foto recusada, para o servidor registrar no app.db. */
   aoRecusar?: (recusa: RecusaDaFoto) => void;
+  /** A foto nova, logo depois de entrar em uso: a limpeza da caixa de saída dos pedidos (envio/caixaDeSaida.ts). */
+  aoTrocar?: (foto: DatabaseSync) => void;
 };
 
 export type FotoAtual = {
@@ -37,7 +39,7 @@ export type FotoAtual = {
 
 export class FotoIndisponivel extends Error {}
 
-export function criarFotoAtual(pastas: PastasDaFoto, { agora = Date.now, aoRecusar = () => {} }: OpcoesDaFotoAtual = {}): FotoAtual {
+export function criarFotoAtual(pastas: PastasDaFoto, { agora = Date.now, aoRecusar = () => {}, aoTrocar = () => {} }: OpcoesDaFotoAtual = {}): FotoAtual {
   let atual: FotoConferida | null = null;
   let ultimaRecusa: RecusaDaFoto | null = null;
   const manifestosVistos = new Set<string>();
@@ -51,6 +53,7 @@ export function criarFotoAtual(pastas: PastasDaFoto, { agora = Date.now, aoRecus
       atual?.db.close();
       atual = nova;
       apagarCopiasAntigas(pastas.conferidas, nova.arquivo);
+      aoTrocar(nova.db);
     }
     // A recusa que fica é a mais nova desta passada; sem nenhuma, a troca apaga a de antes.
     if (nova || recusas.length > 0) ultimaRecusa = recusas[0] ?? null;

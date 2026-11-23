@@ -4,7 +4,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { dataDoMomento, momentoEmBrasilia } from "dominio/datas";
 import { conteudoCanonico } from "dominio/conteudoDoPedido";
 import { DIAS_UTEIS_ATE_A_ENTREGA, numeroDoPedidoCrm, primeiraEntregaPossivel, totalDoPedido, valorDaLinha } from "dominio/pedido";
-import type { ClienteResumo, EscolhasDoPedido, ItemDoPedido, ItemEnviado, PedidoDaFicha, PedidoEnviado, Cotacao } from "../../../web/src/dados/tipos.ts";
+import type { ClienteResumo, Cotacao, EscolhasDoPedido, EtapaDoPedido, ItemDoPedido, ItemEnviado, PedidoDaFicha, PedidoEnviado } from "../../../web/src/dados/tipos.ts";
 import { emTransacao } from "../bancoDoApp.ts";
 import { lerResumoNaCarteira } from "../leituras/clientes.ts";
 import { lerLinhas, texto, textoOuNulo } from "../leituras/linhas.ts";
@@ -28,6 +28,7 @@ export type Confirmacao = { chave: string; assinatura: object };
 
 const NAO_ENCONTRADO: RecusaDoCotacao = { status: 404, erro: "Cotação não encontrada." };
 const BYTES_ALEATORIOS_DO_DESAFIO = 16;
+const ETAPAS_ANTES_DO_ERP: ReadonlySet<EtapaDoPedido> = new Set(["enviado", "recebido", "em_aprovacao", "aprovado"]);
 const NUMERO_DO_CRM = /^CRM-(\d{5,9})$/;
 
 /** A cotação do login pronta para confirmar, ou o motivo de ainda não poder ser enviada. */
@@ -117,11 +118,15 @@ export function lerPedidoEnviado(banco: DatabaseSync, foto: DatabaseSync, sessao
   return linha ? montarPedidoEnviado(foto, sessao, linha) : null;
 }
 
-/** Os enviados do login como linhas do histórico da ficha, como as cotações (cotacoesNaFicha). */
+/**
+ * Os enviados do login como linhas do histórico da ficha, como as cotações (cotacoesNaFicha), até o
+ * pedido chegar ao ERP: de lá em diante, ele já está na ficha como pedido do Omega. O recusado e o
+ * cancelado não viraram pedido e ficam fora, como na tela (web/src/dados/pedido.ts, STATUS_NA_FICHA).
+ */
 export function enviadosNaFicha(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao, ficha: { codigo: string; cnpjs: readonly ClienteResumo[] | null }): PedidoDaFicha[] {
   const codigos = new Set(ficha.cnpjs ? ficha.cnpjs.map(({ codigo }) => codigo) : [ficha.codigo]);
   return pedidosEnviadosDoLogin(banco, foto, sessao)
-    .filter((pedido) => codigos.has(pedido.cliente.codigo))
+    .filter((pedido) => codigos.has(pedido.cliente.codigo) && ETAPAS_ANTES_DO_ERP.has(pedido.etapa))
     .map((pedido) => ({
       id: pedido.numero,
       cnpj: ficha.cnpjs ? { codigo: pedido.cliente.codigo, nome: pedido.cliente.nome } : null,
@@ -153,20 +158,33 @@ function montarPedidoEnviado(foto: DatabaseSync, sessao: Sessao, linha: Record<s
   if (!cliente) return null;
   const conteudo = JSON.parse(String(linha.conteudo)) as ConteudoDoPedido;
   const enviadoEm = String(linha.enviado_em);
+  const numero = numeroDoPedidoCrm(Number(linha.numero));
   return {
-    numero: numeroDoPedidoCrm(Number(linha.numero)),
+    numero,
     cliente,
     enviadoEm,
     entrega: conteudo.entrega,
     observacao: conteudo.observacao,
     itens: itensComProduto(foto, conteudo.itens),
     totalEstimado: totalDoPedido(conteudo.itens),
-    totalSgi: null,
-    numeroSgi: null,
-    numeroErp: null,
-    etapa: "enviado",
-    motivoRecusa: null,
-    historico: [{ etapa: "enviado", em: enviadoEm }],
+    ...andamentoNaFoto(foto, numero, enviadoEm),
+  };
+}
+
+type Andamento = Pick<PedidoEnviado, "etapa" | "historico" | "numeroSgi" | "numeroErp" | "totalSgi" | "motivoRecusa">;
+
+/** O andamento que a máquina do extrator mandou na foto (pedido_crm); sem linha lá, o pedido só foi enviado. */
+function andamentoNaFoto(foto: DatabaseSync, numero: string, enviadoEm: string): Andamento {
+  const enviado = { etapa: "enviado" as const, em: enviadoEm };
+  const [linha] = lerLinhas(foto, "SELECT etapa, numero_sgi, numero_erp, total_sgi, motivo_recusa, historico FROM pedido_crm WHERE numero = ?", [numero]);
+  if (!linha) return { etapa: "enviado", historico: [enviado], numeroSgi: null, numeroErp: null, totalSgi: null, motivoRecusa: null };
+  return {
+    etapa: texto(linha, "etapa") as EtapaDoPedido,
+    historico: [enviado, ...(JSON.parse(texto(linha, "historico")) as PedidoEnviado["historico"])],
+    numeroSgi: textoOuNulo(linha, "numero_sgi"),
+    numeroErp: textoOuNulo(linha, "numero_erp"),
+    totalSgi: linha.total_sgi === null ? null : Number(linha.total_sgi),
+    motivoRecusa: textoOuNulo(linha, "motivo_recusa"),
   };
 }
 

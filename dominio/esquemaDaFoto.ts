@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 22;
+export const VERSAO_DO_ESQUEMA = 23;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -318,6 +318,16 @@ CREATE TABLE produto_ipi (
   produto TEXT PRIMARY KEY,
   aliquota REAL NOT NULL
 ) STRICT;
+
+CREATE TABLE pedido_crm (
+  numero TEXT PRIMARY KEY,
+  etapa TEXT NOT NULL,
+  numero_sgi TEXT,
+  numero_erp TEXT,
+  total_sgi REAL,
+  motivo_recusa TEXT,
+  historico TEXT NOT NULL
+) STRICT;
 `;
 
 /** Uma nota de um pedido faturado, na lista em JSON de `pedido_faturado.notas`. */
@@ -567,4 +577,23 @@ export type Foto = {
   condicao_pagamento: { codigo: string; descricao: string }[];
   /** A alíquota de IPI de cada produto de alguma lista, em %. */
   produto_ipi: { produto: string; aliquota: number }[];
+  /**
+   * O andamento dos pedidos enviados pelo CRM (versão 23), como a máquina do extrator sabe: o pedido é
+   * ligado pelo número do CRM, e o servidor mostra a cada login só os dele (app.db). Sem cliente nem item.
+   */
+  pedido_crm: {
+    /** "CRM-00106" */
+    numero: string;
+    /** web/src/dados/tipos.ts, EtapaDoPedido, menos "enviado", que o servidor sabe sozinho. */
+    etapa: string;
+    /** O número do pedido no SGI (PV1_NPE), depois de gravado. */
+    numero_sgi: string | null;
+    /** O número do pedido no Omega (VEPM.NUMERO, o mesmo do SGI), depois de chegar lá. */
+    numero_erp: string | null;
+    /** O total do pedido no SGI, sem IPI: a soma da quantidade pelo preço de venda dos itens. */
+    total_sgi: number | null;
+    motivo_recusa: string | null;
+    /** Em JSON, os passos que a LAN conhece, em ordem: [{"etapa": "recebido", "em": "2026-11-23T16:10"}]. */
+    historico: string;
+  }[];
 };

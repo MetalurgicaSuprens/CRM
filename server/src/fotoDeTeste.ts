@@ -300,7 +300,7 @@ export function montarFotoDeTeste(): Foto {
  */
 function dadosDoPedidoDeTeste(): Pick<
   Foto,
-  "cliente_cadastro" | "cliente_local" | "cliente_escolha" | "ultimo_pedido_item" | "transportadora" | "representante_transportadora" | "condicao_pagamento" | "produto_ipi"
+  "cliente_cadastro" | "cliente_local" | "cliente_escolha" | "ultimo_pedido_item" | "transportadora" | "representante_transportadora" | "condicao_pagamento" | "produto_ipi" | "pedido_crm"
 > {
   const cadastro = (cliente: string, documento: string) => ({
     cliente,
@@ -352,6 +352,8 @@ function dadosDoPedidoDeTeste(): Pick<
       { produto: "P-200", aliquota: 9.75 },
       { produto: "PRODUTO-SO-DE-B", aliquota: 5 },
     ],
+    // O andamento dos pedidos do CRM: os testes que precisam põem as linhas deles (envio/envio.test.ts).
+    pedido_crm: [],
   };
 }
 

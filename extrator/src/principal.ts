@@ -6,10 +6,11 @@ import { lerDadosDoErp } from "./erp/lerDoErp.ts";
 import { FotoRecusada, gravarFoto } from "./foto/gravar.ts";
 import { localizarClientes, type ResumoDaLocalizacao } from "./localizacao/localizarClientes.ts";
 import { abrirOracle } from "./oracle.ts";
+import { lerAndamentoDosPedidosDoCrm } from "./pedidos/andamento.ts";
 
 /*
  * Gera uma foto: lê o ERP, põe o ponto do endereço das empresas, aplica as regras e grava a foto.db
- * na pasta de fotos, com o manifesto. A foto igual à anterior, porque nada mudou no ERP, e a que
+ * na pasta de fotos, com o manifesto. Leva também o andamento dos pedidos enviados pelo CRM. A foto igual à anterior, porque nada mudou no ERP, e a que
  * mudou demais desde ela não são gravadas.
  * Uso: npm run foto -- [--env <arquivo .env>] [--dados <pasta>] [--aceitar-mudanca]
  * O resumo só tem contagens: nenhum nome, código de cliente ou valor do .env.
@@ -23,7 +24,8 @@ try {
   const inicioDaLocalizacao = Date.now();
   const { carteira, resumo: localizacao } = await localizarClientes(dados.carteira, configuracao.localizacao);
   console.log(`  pontos dos endereços: ${((Date.now() - inicioDaLocalizacao) / 1000).toFixed(1)} s`);
-  const foto = montarFoto({ ...dados, carteira }, referencia, configuracao.autorizados, configuracao.chaveDoIdDoCliente);
+  const pedidosDoCrm = await lerAndamentoDosPedidosDoCrm(oracle, configuracao.pastaDosPedidos);
+  const foto = montarFoto({ ...dados, carteira, pedidosDoCrm }, referencia, configuracao.autorizados, configuracao.chaveDoIdDoCliente);
   const { arquivo, isNova, semComparar } = gravarFoto(foto, configuracao.pastaDasFotos, { aceitarMudanca: configuracao.aceitarMudanca });
   if (isNova) {
     console.log(resumir(foto, arquivo, Date.now() - inicio));

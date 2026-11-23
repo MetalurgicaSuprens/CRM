@@ -175,6 +175,32 @@ export async function isPedidoNoSgi(oracle: Oracle, npe: number, cliente: number
   return linha !== undefined && numero(linha, 0) > 0;
 }
 
+/** Quantos pedidos por consulta: o Oracle não aceita mais de 1.000 itens numa lista, e aqui são dois binds por pedido. */
+const PEDIDOS_POR_CONSULTA = 400;
+
+/**
+ * O status e o total (sem IPI) de cada pedido do CRM no SGI, pelo número e pelo cliente: o número do SGI
+ * volta a 1 depois de 2.999.999, e só o cliente distingue o pedido de hoje do antigo de mesmo número.
+ */
+export async function lerSituacaoNoSgi(oracle: Oracle, pedidos: readonly { numeroSgi: number; cliente: number }[]): Promise<Map<number, { status: string; total: number }>> {
+  const situacoes = new Map<number, { status: string; total: number }>();
+  for (let inicio = 0; inicio < pedidos.length; inicio += PEDIDOS_POR_CONSULTA) {
+    const lote = pedidos.slice(inicio, inicio + PEDIDOS_POR_CONSULTA);
+    const condicao = lote.map((_, i) => `(A.PV1_NPE = :n${i} AND A.PV1_CLI = :c${i})`).join(" OR ");
+    const binds = Object.fromEntries(lote.flatMap(({ numeroSgi, cliente }, i) => [[`n${i}`, numeroSgi], [`c${i}`, cliente]]));
+    const linhas = await oracle.consultar(
+      `SELECT A.PV1_NPE, TRIM(A.PV1_STA), NVL(SUM(B.PV2_QTD * B.PV2_VLR_VEN), 0)
+         FROM ABC71.SGI5_TAB_VEN_PV1_V2 A
+         LEFT JOIN ABC71.SGI5_TAB_VEN_PV2_V2 B ON B.PV2_NPE = A.PV1_NPE
+        WHERE ${condicao}
+        GROUP BY A.PV1_NPE, TRIM(A.PV1_STA)`,
+      binds,
+    );
+    for (const linha of linhas) situacoes.set(numero(linha, 0), { status: texto(linha, 1), total: numero(linha, 2) });
+  }
+  return situacoes;
+}
+
 /** A data de hoje no relógio do Oracle, "2026-11-23": é ela que o SGI6R grava (o Date do Delphi, no servidor do SGI). */
 export async function lerHojeNoOracle(oracle: Oracle): Promise<string> {
   const [linha] = await oracle.consultar(`SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD') FROM DUAL`);

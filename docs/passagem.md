@@ -105,7 +105,17 @@ Falta, em ordem:
      - sem valor-teto: o Lucas tirou a revisão manual em 2026-11-19, porque o pedido nasce PEDIDO BLOQUEADO e a liberação no SGI já é a conferência da Suprens. O teto de 30 pedidos por login por dia ficou confirmado;
      - as consultas novas ainda não rodaram no Oracle de verdade: rodam pela primeira vez com o primeiro pedido. Se uma falhar, a passada para com erro, e o pedido fica para a passada seguinte, sem ir para a quarentena;
    - **Feito em 2026-11-23 (etapa 4):** a gravação dos conferidos no SGI pelas procedures, campo a campo como o SGI6R ([`pedido-no-sgi.md`](pedido-no-sgi.md), "Gravação no SGI"). Testada em 2026-11-23: o `CRM-00001` entrou no SGI como pedido 1149872, PEDIDO BLOQUEADO, foi conferido pelo Lucas e cancelado. Fora de teste, fica desligada (`CRM_GRAVAR_NO_SGI=ligado` no `extrator.env` liga), e o envio no servidor também (`CRM_ENVIO_DE_PEDIDOS`);
-   - **Etapa 5:** a situação do pedido de volta ao CRM, pela foto, ligada pelo número do SGI que a gravação guarda em `gravados/`;
+   - **Feito em 2026-11-23 (etapa 5):** a situação do pedido de volta ao CRM, pela foto (versão 23, tabela `pedido_crm`, ligada pelo número CRM):
+     - **Na máquina do extrator** (`extrator/src/pedidos/andamento.ts` e `calculo/pedidosDoCrm.ts`): recebido, ou recusado com o motivo; o erro técnico da gravação vira um aviso ao representante.
+     - **Do SGI, pelo número e pelo cliente:**
+       - `COTACAO` e `PEDIDO BLOQUEADO` ficam em aprovação, e `PEDIDO`, aprovado;
+       - `PEDIDO OMEGA` fica no ERP, faturado em parte ou faturado, pelo saldo e pelas notas do pedido no Omega;
+       - o cancelado também aparece;
+       - vêm junto o número e o total do SGI.
+     - A hora vem só nos passos que a LAN conhece: o recebimento, a recusa e a gravação.
+     - **No servidor:** o pedido enviado mostra a etapa da foto, e a ficha só o mostra até ele chegar ao ERP; de lá em diante, ele aparece como pedido do Omega.
+     - **Limpeza da caixa de saída:** o servidor apaga dela o pedido que a foto nova mostra recebido.
+     - Os pedidos ficam na foto por 180 dias depois de recebidos;
    - uma rotina na LAN que busca os pedidos, revalida no Oracle e grava no SGI pelas procedures de pedido, como o app antigo dos representantes: cotação (operação 1) e efetivação logo em seguida (operação 13). Veja "Pedidos: caminho até o ERP" no plano;
    - só depende da conta Oracle com EXECUTE nas duas procedures (`docs/conta-oracle-do-crm.md`), que o Lucas pediu ao DBA em 2026-11-17.
    - Na revalidação:
