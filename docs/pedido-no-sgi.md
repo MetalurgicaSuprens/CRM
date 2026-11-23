@@ -170,7 +170,10 @@ Na máquina do extrator, no mesmo `npm run pedidos`, depois da conferência (`ex
 - **A queda da conexão** para a passada, e o pedido fica para a próxima.
 - **Gravado,** o pedido vai para `gravados/`, com o número do SGI em `<número CRM>.sgi.json`. É a ligação do pedido do CRM com o do SGI, de que a etapa 5 precisa.
 - **Na linha do item da view de preço,** a primeira pelo part number, se houver mais de uma. No SGI6R, quem escolhe é o representante.
-- **Ainda não rodou no Oracle de verdade:** os testes conferem os valores campo a campo, com um Oracle de mentira. O primeiro pedido real é o teste, com o Lucas.
+- **Testada em 2026-11-23 com um pedido real** ([`roteiro-primeiro-pedido.md`](roteiro-primeiro-pedido.md)):
+  - o `CRM-00001`, enviado pelo Lucas no login Suprens às 16:06, entrou no SGI às 16:10 como **pedido 1149872, PEDIDO BLOQUEADO**, pela tarefa agendada, na primeira tentativa;
+  - o Lucas conferiu o pedido no SGI, sem diferença apontada, e o cancelou;
+  - depois o envio no servidor e a gravação na máquina do extrator voltaram a ficar desligados.
 
 ## Ainda a decidir com o Lucas
 
