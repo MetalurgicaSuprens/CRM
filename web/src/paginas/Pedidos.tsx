@@ -29,7 +29,7 @@ const ABAS: Record<Aba, { rotulo: string; icone: LucideIcon; tom: TomDoSelo }> =
   faturados: { ...STATUS_DO_PEDIDO.faturado, rotulo: "Faturados" },
   emAberto: { ...STATUS_DO_PEDIDO.em_aberto, rotulo: "Em aberto no ERP" },
   enviados: { ...STATUS_DO_PEDIDO.enviado, rotulo: "Enviados pelo CRM" },
-  rascunhos: { ...STATUS_DO_PEDIDO.rascunho, rotulo: "Rascunhos" },
+  rascunhos: { ...STATUS_DO_PEDIDO.rascunho, rotulo: "Cotações" },
 };
 
 /** A ordem dos cartões; a página abre no primeiro. */
@@ -74,7 +74,7 @@ export function Pedidos() {
     <div className={`${estilos.pagina} ${travada.pagina}`}>
       <CabecalhoPagina
         titulo="Pedidos"
-        descricao="Os pedidos do ERP, o que você enviou pelo CRM e os rascunhos"
+        descricao="Os pedidos do ERP, o que você enviou pelo CRM e as cotações"
         naLinhaDaDescricao={<CampoDeBusca rotulo="Buscar cliente" valor={busca} dica="Cliente: nome fantasia ou CNPJ" aoMudar={buscar} className={estilos.busca} />}
         acoes={
           <Link to="/pedidos/novo" className={`${botoes.primario} ${botoes.positivo}`}>
@@ -181,17 +181,17 @@ function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascu
     <CartaoDaAba aba="rascunhos" subtitulo={SUBTITULO_DOS_RASCUNHOS}>
       <TabelaResponsiva
         className={travada.rola}
-        descricao="Rascunhos de pedido"
+        descricao="Cotações"
         itens={rascunhos}
         chaveDe={(rascunho) => rascunho.id}
-        vazio={vazio ?? "Nenhum rascunho. Os pedidos começados e não enviados aparecem aqui."}
+        vazio={vazio ?? "Nenhuma cotação. Os pedidos começados e não enviados aparecem aqui."}
         ordemInicial={{ coluna: "Atualizado", sentido: "decrescente" }}
         colunas={[
           ...colunasDoCliente<Rascunho>(),
           { titulo: "Produtos", largura: 6.5, fixa: true, ordenarPor: (rascunho) => rascunho.itens.length, celula: (rascunho) => formatarContagem(rascunho.itens.length, "produto", "produtos") },
           { titulo: "Atualizado", largura: 7, fixa: true, ordenarPor: (rascunho) => rascunho.atualizadoEm, celula: (rascunho) => <MomentoRelativo momento={rascunho.atualizadoEm} relogio={relogio} /> },
           { titulo: "Total estimado", numerica: true, largura: 8, fixa: true, ordenarPor: (rascunho) => rascunho.totalEstimado, celula: (rascunho) => <Valor valor={rascunho.totalEstimado} comCentavos /> },
-          { titulo: "Ações", largura: 8.5, fixa: true, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
+          { titulo: "Ações", largura: 12, fixa: true, celula: (rascunho) => <AcoesDoRascunho rascunho={rascunho} aoExcluir={recarregar} /> },
         ]}
       />
     </CartaoDaAba>
@@ -200,7 +200,7 @@ function Rascunhos({ rascunhos, relogio, recarregar, vazio }: { rascunhos: Rascu
 
 function AcoesDoRascunho({ rascunho, aoExcluir }: { rascunho: Rascunho; aoExcluir: () => void }) {
   const excluir = () => {
-    if (!window.confirm(`Descartar o rascunho de ${rascunho.cliente.nome}?`)) return;
+    if (!window.confirm(`Descartar a cotação de ${rascunho.cliente.nome}?`)) return;
     void excluirRascunho(rascunho.id).then(aoExcluir);
   };
   return (
@@ -208,7 +208,10 @@ function AcoesDoRascunho({ rascunho, aoExcluir }: { rascunho: Rascunho; aoExclui
       <Link to={`/pedidos/rascunhos/${rascunho.id}`} className={`${botoes.secundario} ${estilos.compacto}`}>
         Continuar
       </Link>
-      <button type="button" className={botoes.icone} onClick={excluir} aria-label={`Descartar o rascunho de ${rascunho.cliente.nome}`}>
+      <Link to={`/pedidos/rascunhos/${rascunho.id}/pdf`} className={`${botoes.secundario} ${estilos.compacto}`} aria-label={`PDF da cotação de ${rascunho.cliente.nome}`}>
+        PDF
+      </Link>
+      <button type="button" className={botoes.icone} onClick={excluir} aria-label={`Descartar a cotação de ${rascunho.cliente.nome}`}>
         <Trash size={16} aria-hidden="true" />
       </button>
     </span>

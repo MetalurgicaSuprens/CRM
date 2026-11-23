@@ -26,7 +26,7 @@ export type EnvioPreparado = { conteudo: ConteudoDoPedido; hash: string };
 /** A prova da confirmação, guardada com o pedido: a chave e o que o aparelho assinou. */
 export type Confirmacao = { chave: string; assinatura: object };
 
-const NAO_ENCONTRADO: RecusaDoRascunho = { status: 404, erro: "Rascunho não encontrado." };
+const NAO_ENCONTRADO: RecusaDoRascunho = { status: 404, erro: "Cotação não encontrada." };
 const BYTES_ALEATORIOS_DO_DESAFIO = 16;
 const NUMERO_DO_CRM = /^CRM-(\d{5,9})$/;
 

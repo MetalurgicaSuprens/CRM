@@ -6,6 +6,7 @@ import { Convite } from "./paginas/Convite";
 import { DetalheDoPedido } from "./paginas/DetalheDoPedido";
 import { Entrar } from "./paginas/Entrar";
 import { MontarPedido } from "./paginas/MontarPedido";
+import { CotacaoParaImprimir } from "./paginas/CotacaoParaImprimir";
 import { Pedidos } from "./paginas/Pedidos";
 import { FichaCliente } from "./paginas/FichaCliente";
 import { Inicio } from "./paginas/Inicio";
@@ -25,6 +26,7 @@ export function App() {
           <Route path="pedidos" element={<Pedidos />} />
           <Route path="pedidos/novo" element={<MontarPedido />} />
           <Route path="pedidos/rascunhos/:id" element={<MontarPedido />} />
+          <Route path="pedidos/rascunhos/:id/pdf" element={<CotacaoParaImprimir />} />
           <Route path="pedidos/:numero" element={<DetalheDoPedido />} />
           <Route path="mapa" element={<Mapa />} />
           <Route path="*" element={<Navigate to="/" replace />} />

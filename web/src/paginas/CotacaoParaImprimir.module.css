@@ -1,0 +1,147 @@
+/* Na tela, a folha é um papel branco no meio da página; na impressão, ela é a página inteira */
+.dica,
+.aviso {
+  margin: 0 0 var(--esp-4);
+  font-size: var(--tam-pequeno);
+  color: var(--cor-texto-suave);
+}
+
+.imprimir {
+  gap: var(--esp-2);
+}
+
+.folha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-5);
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: var(--esp-8);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio-pequeno);
+  background: #ffffff;
+  color: #161616;
+  font-size: 0.8125rem;
+  overflow-x: auto;
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-4);
+  padding-bottom: var(--esp-4);
+  border-bottom: 2px solid #161616;
+}
+
+.titulo h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.titulo p {
+  margin: 2px 0 0;
+  color: #52514e;
+}
+
+.bloco h3 {
+  margin: 0 0 var(--esp-2);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #52514e;
+}
+
+.bloco p {
+  margin: 0;
+}
+
+.destaque {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.itens {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.itens th {
+  padding: 6px 8px;
+  border-bottom: 1px solid #161616;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.itens td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e1e0d9;
+  vertical-align: top;
+}
+
+.itens tfoot td {
+  border-top: 1px solid #161616;
+  border-bottom: 0;
+  font-weight: 600;
+}
+
+.itens .numero {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.codigo {
+  font-weight: 600;
+}
+
+.condicoes dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--esp-3) var(--esp-5);
+  margin: 0;
+}
+
+.condicoes dt {
+  font-size: 0.6875rem;
+  color: #52514e;
+}
+
+.condicoes dd {
+  margin: 0;
+}
+
+.observacao {
+  white-space: pre-wrap;
+}
+
+.rodape {
+  padding-top: var(--esp-3);
+  border-top: 1px solid #e1e0d9;
+  color: #52514e;
+}
+
+@media print {
+  .naTela {
+    display: none;
+  }
+
+  .folha {
+    max-width: none;
+    padding: 0;
+    border: 0;
+    overflow: visible;
+  }
+
+  .itens tr {
+    break-inside: avoid;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}

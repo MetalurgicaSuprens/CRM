@@ -28,7 +28,7 @@ export type DependenciasDoEnvio = {
 };
 
 const DO_REPRESENTANTE = { config: { acesso: "representante" as const } };
-const ENVIO_DESLIGADO = "O envio de pedidos pelo CRM ainda não foi liberado. O rascunho está salvo em Pedidos, na aba Rascunhos.";
+const ENVIO_DESLIGADO = "O envio de pedidos pelo CRM ainda não foi liberado. A cotação está salva em Pedidos, na aba Cotações.";
 const CONFIRMACAO_NAO_CONFERIDA = "Não deu para confirmar o envio com a chave de acesso. Confira o pedido e confirme de novo.";
 const PEDIDO_NAO_ENCONTRADO = { erro: "Pedido não encontrado." };
 
@@ -103,7 +103,7 @@ async function confirmarEnvio(
     pastaDeSaida,
     agora: agora(),
   });
-  if (!pedido) return resposta.code(404).send({ erro: "Rascunho não encontrado." });
+  if (!pedido) return resposta.code(404).send({ erro: "Cotação não encontrada." });
   auditar(banco, { usuario: sessao.idDoUsuario, evento: "pedido_enviado", alvo: pedido.numero });
   return pedido;
 }

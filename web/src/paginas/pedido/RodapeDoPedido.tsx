@@ -34,7 +34,7 @@ export function RodapeDoPedido({ cliente, totais, problemas, etapa, aoIrPara, ao
   const botoesDoFim = (
     <>
       <button type="button" className={`${botoes.secundario} ${estilos.salvarRascunho}`} disabled={totais.itens === 0} onClick={aoSalvarRascunho}>
-        Salvar rascunho
+        Salvar cotação
       </button>
       <button type="button" className={`${botoes.primario} ${botoes.positivo} ${estilos.enviar}`} disabled={problemas.length > 0} onClick={aoEnviar}>
         Enviar pedido

@@ -138,7 +138,8 @@ Proposta: a ligação do pedido com o CRM fica na máquina do extrator, que esco
 - **Ordem dos itens:** o representante muda a ordem arrastando (no celular, pelas setas). É a ordem do `V_ITE` no SGI.
 - **Ordem Compra e Item OC sempre visíveis** em cada item, logo depois do produto.
 - **"Cliente exige xPed"** nas condições do pedido (`clienteXped`), marcado sozinho para o cliente que mandou o item da ordem de compra em pelo menos metade dos pedidos dos 24 meses (`cliente_escolha`, tipo `xped`). Marcado, o Item OC vai de 1 a N na ordem dos itens e acompanha a ordem; o número digitado à mão desliga isso até "Renumerar de 1 a N". O 10 em 10 (5% dos pedidos) fica à mão. A marca não vai ao SGI: só muda a tela.
-- **A decidir:** "Rascunho" vira "Cotação", com um PDF para mandar ao cliente.
+- **"Rascunho" virou "Cotação"** na tela, como no app antigo (o pedido salvo como COTAÇÃO e depois a "Efetivação Pedido Venda"). No código e nas rotas, o nome continua rascunho. A cotação do CRM fica só no CRM até ser enviada; não vai ao SGI como COTACAO.
+- **PDF da cotação:** a página `/pedidos/rascunhos/:id/pdf`, que o navegador imprime ou salva em PDF. Validade de 10 dias, como o V_DVA do SGI6R; sem o contato do representante, só o nome.
 
 ## Decisões do Lucas em 2026-11-19
 

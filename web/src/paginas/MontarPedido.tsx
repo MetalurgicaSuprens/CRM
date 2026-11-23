@@ -73,8 +73,8 @@ function ContinuarRascunho({ id, codigoDoNovo }: { id: string; codigoDoNovo: str
 }
 
 const RASCUNHO_NAO_ENCONTRADO = isDadosReais
-  ? "Rascunho não encontrado: ele foi enviado ou descartado."
-  : "Rascunho não encontrado. No protótipo, os rascunhos somem quando a página é recarregada.";
+  ? "Cotação não encontrada: ela foi enviada ou descartada."
+  : "Cotação não encontrada. No protótipo, as cotações somem quando a página é recarregada.";
 
 type PropsDaMontagem = { codigoCliente: string; idDoRascunho: string; inicial: Rascunho | null };
 

@@ -56,7 +56,7 @@ export const fonteFicticia: FonteDeDados = {
   async enviarPedido(idDoRascunho) {
     await new Promise((resolver) => window.setTimeout(resolver, ESPERA_DA_CHAVE_MS));
     const pedido = enviarRascunhoFicticio(idDoRascunho);
-    if (!pedido) throw new Error("Rascunho não encontrado");
+    if (!pedido) throw new Error("Cotação não encontrada");
     return pedido;
   },
   carregarVisitas: () => Promise.resolve(Object.fromEntries([...visitasFicticias].flatMap(([codigo, [ultima]]) => (ultima ? [[codigo, ultima]] : [])))),

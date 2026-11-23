@@ -26,7 +26,7 @@ export const LIMITE_DE_RASCUNHOS = 100;
 export type ConteudoDoRascunho = Omit<RascunhoParaSalvar, "id" | "escolhas"> & { escolhas?: EscolhasDoPedido | null };
 export type RecusaDoRascunho = { status: 400 | 404 | 409; erro: string };
 
-const NAO_ENCONTRADO: RecusaDoRascunho = { status: 404, erro: "Rascunho não encontrado." };
+const NAO_ENCONTRADO: RecusaDoRascunho = { status: 404, erro: "Cotação não encontrada." };
 const REAIS = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 /**
@@ -47,10 +47,10 @@ export function salvarRascunho(
   if (banco.prepare("SELECT 1 FROM pedidos_enviados WHERE rascunho = ?").get(id)) return { status: 409, erro: "Este pedido já foi enviado." };
   const existente = banco.prepare("SELECT usuario, cliente FROM rascunhos WHERE id = ?").get(id);
   if (existente && String(existente.usuario) !== sessao.idDoUsuario) return NAO_ENCONTRADO;
-  if (existente && String(existente.cliente) !== conteudo.codigoCliente) return { status: 409, erro: "Este rascunho é de outro cliente." };
-  if (!existente && conteudo.itens.length === 0) return { status: 400, erro: "O rascunho começa com pelo menos um produto." };
+  if (existente && String(existente.cliente) !== conteudo.codigoCliente) return { status: 409, erro: "Esta cotação é de outro cliente." };
+  if (!existente && conteudo.itens.length === 0) return { status: 400, erro: "A cotação começa com pelo menos um produto." };
   if (!existente && quantosRascunhos(banco, sessao) >= LIMITE_DE_RASCUNHOS) {
-    return { status: 409, erro: `Você já tem ${LIMITE_DE_RASCUNHOS} rascunhos. Envie ou descarte algum para começar outro.` };
+    return { status: 409, erro: `Você já tem ${LIMITE_DE_RASCUNHOS} cotações. Envie ou descarte alguma para começar outra.` };
   }
   gravar(banco, sessao, id, conteudo, momentoEmBrasilia(agora));
   const rascunho = lerRascunho(banco, foto, sessao, id);

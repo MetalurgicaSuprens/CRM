@@ -346,3 +346,22 @@
   color: var(--cor-texto-2);
   text-align: center;
 }
+
+/* Na impressão (a cotação em PDF), só o conteúdo: sem menu, barra e abas */
+@media print {
+  .casca {
+    display: block;
+    min-height: 0;
+  }
+
+  .menu,
+  .barraSuperior,
+  .abas {
+    display: none !important;
+  }
+
+  .conteudo {
+    max-width: none;
+    padding: 0;
+  }
+}

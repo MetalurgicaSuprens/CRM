@@ -45,6 +45,12 @@
   color: var(--cor-texto-suave);
 }
 
+/* O PDF da cotação fica junto do descartar, à direita da linha */
+.pdf {
+  margin-left: auto;
+}
+
+.pdf,
 .descartar {
   display: inline-flex;
   align-items: center;
@@ -54,6 +60,10 @@
   background: none;
   font-size: var(--tam-pequeno);
   color: var(--cor-texto-2);
+}
+
+.pdf:hover {
+  color: var(--cor-texto);
 }
 
 .descartar:hover {

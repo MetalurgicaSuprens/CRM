@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { SlidersHorizontal, Trash } from "lucide-react";
+import { FileText, SlidersHorizontal, Trash } from "lucide-react";
 import { dataDoMomento } from "dominio/datas";
 import { primeiraEntregaPossivel, type OrdemDeCompraDoItem } from "dominio/pedido";
 import { CabecalhoPagina } from "../../componentes/CabecalhoPagina";
@@ -110,8 +110,16 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
     );
   };
 
+  /** Salva a cotação como está e abre a folha para imprimir ou salvar em PDF. */
+  const gerarPdf = () => {
+    salvarAgora().then(
+      () => navegar(`/pedidos/rascunhos/${idDoRascunho}/pdf`),
+      (erro: unknown) => setErroAoEnviar(mensagemDo(erro)),
+    );
+  };
+
   const descartar = () => {
-    if (!existe || !window.confirm("Descartar este rascunho?")) return;
+    if (!existe || !window.confirm("Descartar esta cotação?")) return;
     pararDeSalvar();
     excluirRascunho(idDoRascunho).then(
       () => navegar("/pedidos?aba=rascunhos", { replace: true }),
@@ -170,12 +178,18 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
         <p className={estilos.salvo} role="status">
           {erroAoEnviar ??
             erroAoSalvar ??
-            (salvoEm ? `Rascunho salvo ${formatarMomento(salvoEm, relogio)}: fica em Pedidos, na aba Rascunhos.` : "O rascunho é salvo sozinho enquanto você monta o pedido.")}
+            (salvoEm ? `Cotação salva ${formatarMomento(salvoEm, relogio)}: fica em Pedidos, na aba Cotações.` : "A cotação é salva sozinha enquanto você monta o pedido.")}
         </p>
+        {linhas.length > 0 ? (
+          <button type="button" className={estilos.pdf} onClick={gerarPdf}>
+            <FileText size={14} aria-hidden="true" />
+            PDF da cotação
+          </button>
+        ) : null}
         {existe ? (
           <button type="button" className={estilos.descartar} onClick={descartar}>
             <Trash size={14} aria-hidden="true" />
-            Descartar rascunho
+            Descartar cotação
           </button>
         ) : null}
       </div>
@@ -203,8 +217,8 @@ export function DocumentoDoPedido({ catalogo, idDoRascunho, inicial, relogio }: 
 function AvisoDoRascunho({ foraDoCatalogo, subiramAoMinimo }: { foraDoCatalogo: number; subiramAoMinimo: number }) {
   if (foraDoCatalogo === 0 && subiramAoMinimo === 0) return null;
   const avisos = [
-    foraDoCatalogo === 1 ? "1 produto do rascunho saiu do catálogo do cliente e ficou fora do pedido." : null,
-    foraDoCatalogo > 1 ? `${formatarNumero(foraDoCatalogo)} produtos do rascunho saíram do catálogo do cliente e ficaram fora do pedido.` : null,
+    foraDoCatalogo === 1 ? "1 produto da cotação saiu do catálogo do cliente e ficou fora do pedido." : null,
+    foraDoCatalogo > 1 ? `${formatarNumero(foraDoCatalogo)} produtos da cotação saíram do catálogo do cliente e ficaram fora do pedido.` : null,
     subiramAoMinimo > 0 ? `O preço de ${formatarContagem(subiramAoMinimo, "produto", "produtos")} subiu para a tabela do cliente, que aumentou.` : null,
   ];
   return (

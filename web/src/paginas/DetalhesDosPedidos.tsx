@@ -85,7 +85,7 @@ export function DetalheDoPedidoDaFicha({ pedido, hoje }: { pedido: PedidoDaFicha
       ) : null}
       <ResumoPorFamilia itens={pedido.itens} />
       <ItensDoErp
-        descricao={`Itens do pedido ${pedido.numero ?? "em rascunho"}`}
+        descricao={`Itens do pedido ${pedido.numero ?? "em cotação"}`}
         itens={pedido.itens}
         entregaAte={pedido.status === "em_aberto" ? hoje : undefined}
       />
@@ -99,7 +99,7 @@ export function DetalheDoPedidoDaFicha({ pedido, hoje }: { pedido: PedidoDaFicha
 }
 
 const CAMINHO_NO_CRM: Partial<Record<PedidoDaFicha["status"], (id: string) => { para: string; texto: string }>> = {
-  rascunho: (id) => ({ para: `/pedidos/rascunhos/${id}`, texto: "Continuar o rascunho" }),
+  rascunho: (id) => ({ para: `/pedidos/rascunhos/${id}`, texto: "Continuar a cotação" }),
   enviado: (id) => ({ para: `/pedidos/${id}`, texto: "Ver o andamento" }),
 };
 

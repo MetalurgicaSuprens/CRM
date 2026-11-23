@@ -50,7 +50,7 @@ const PARAMETRO_RASCUNHO = {
   required: ["id"],
   additionalProperties: false,
 } as const;
-const RASCUNHO_NAO_ENCONTRADO = { erro: "Rascunho não encontrado." };
+const RASCUNHO_NAO_ENCONTRADO = { erro: "Cotação não encontrada." };
 
 /** Texto curto de uma linha, sem caractere de controle: nomes, cidades e o número do pedido do cliente. */
 const LINHA_DE_TEXTO = (maximo: number) => ({ type: "string", maxLength: maximo, pattern: "^[^\\u0000-\\u001F\\u007F]*$" }) as const;
