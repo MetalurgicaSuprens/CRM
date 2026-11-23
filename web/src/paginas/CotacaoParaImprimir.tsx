@@ -264,26 +264,31 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
 /** Os totais logo abaixo dos itens, à direita, como no fim de uma nota: o valor com IPI é o destaque. */
 function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: ReturnType<typeof pesoDosItens> }) {
   return (
-    <dl className={estilos.totais}>
-      <Total rotulo="Itens">{formatarNumero(totais.itens)}</Total>
-      <Total rotulo="Quantidade">{formatarNumero(totais.pecas)} pç</Total>
-      <Total rotulo="Peso total">
-        {formatarPeso(peso.total)}
-        {peso.semPeso > 0 ? <span className={estilos.nota}> ({formatarContagem(peso.semPeso, "item sem peso", "itens sem peso")})</span> : null}
-      </Total>
-      <Total rotulo="Valor s/ IPI">{formatarReaisComCentavos(totais.semIpi)}</Total>
-      {totais.ipi !== null && totais.comIpi !== null ? (
-        <>
-          <Total rotulo="Valor IPI">{formatarReaisComCentavos(totais.ipi)}</Total>
-          <Total rotulo="Valor c/ IPI" isDestaque>
-            {formatarReaisComCentavos(totais.comIpi)}
-          </Total>
-        </>
-      ) : null}
-    </dl>
+    <div className={estilos.totais}>
+      <dl className={estilos.quantidades}>
+        <Total rotulo="Itens">{formatarNumero(totais.itens)}</Total>
+        <Total rotulo="Quantidade">{formatarNumero(totais.pecas)} pç</Total>
+        <Total rotulo="Peso total">
+          {formatarPeso(peso.total)}
+          {peso.semPeso > 0 ? <span className={estilos.nota}> ({formatarContagem(peso.semPeso, "item sem peso", "itens sem peso")})</span> : null}
+        </Total>
+      </dl>
+      <dl className={estilos.valores}>
+        <Total rotulo="Valor s/ IPI">{formatarReaisComCentavos(totais.semIpi)}</Total>
+        {totais.ipi !== null && totais.comIpi !== null ? (
+          <>
+            <Total rotulo="IPI">{formatarReaisComCentavos(totais.ipi)}</Total>
+            <Total rotulo="Valor total c/ IPI" isDestaque>
+              {formatarReaisComCentavos(totais.comIpi)}
+            </Total>
+          </>
+        ) : null}
+      </dl>
+    </div>
   );
 }
 
+/** Uma linha dos totais: o nome à esquerda e o número à direita. */
 function Total({ rotulo, isDestaque = false, children }: { rotulo: string; isDestaque?: boolean; children: ReactNode }) {
   return (
     <div className={isDestaque ? `${estilos.total} ${estilos.totalEmDestaque}` : estilos.total}>
