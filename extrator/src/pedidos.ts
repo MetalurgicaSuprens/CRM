@@ -5,21 +5,32 @@ import { ErroNoEnvio } from "./envio/sftp.ts";
 import { abrirOracle, type Oracle } from "./oracle.ts";
 import { conferirNoErp } from "./pedidos/conferencia.ts";
 import { gravarConferidos, pedidosParaGravar, type ResumoDaGravacao } from "./pedidos/gravacao.ts";
+import { travar } from "./pedidos/trava.ts";
 import { ARQUIVO_PARA_PAUSAR, RECEBIDOS, isPausada, pedidosParaTriar, triarRecebidos, type ResumoDaTriagem } from "./pedidos/triagem.ts";
 
 /*
  * Os pedidos que os representantes enviaram pelo CRM (F5, docs/plano.md, "Pedidos: caminho até o ERP"):
  * traz os novos da caixa de saída do servidor, confere cada um no Oracle (pedidos/triagem.ts) e grava
  * no SGI os conferidos (pedidos/gravacao.ts), se CRM_GRAVAR_NO_SGI=ligado. O arquivo PAUSAR suspende a
- * conferência e a gravação. O Oracle só é aberto quando há o que conferir ou gravar.
+ * conferência e a gravação. O Oracle só é aberto quando há o que conferir ou gravar. Uma passada por
+ * vez (pedidos/trava.ts): a outra que começar no meio não faz nada.
  * Uso: npm run pedidos -- [--env <arquivo .env>] [--dados <pasta>]
  * O resumo só tem os números dos pedidos (do CRM e do SGI) e os motivos: nenhum cliente, item ou valor.
  */
 
 const argumentos = process.argv.slice(2);
 const { pastaDosPedidos, destino } = lerConfiguracaoDoEnvio(argumentos);
-await buscar();
-await conferirEGravar();
+const trava = travar(pastaDosPedidos);
+if (!trava) {
+  console.log("Outra passada de pedidos está rodando: esta não faz nada.");
+} else {
+  try {
+    await buscar();
+    await conferirEGravar();
+  } finally {
+    trava.soltar();
+  }
+}
 
 /** Uma falha na busca não impede conferir e gravar o que já chegou. */
 async function buscar(): Promise<void> {
