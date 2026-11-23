@@ -7,7 +7,7 @@ import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Voltar } from "../componentes/Voltar";
 import { carregarCatalogo, carregarCotacao, carregarSituacaoDosDados } from "../dados/api";
-import { ROTULOS_DA_CLASSIFICACAO, formatarCnpj, pesoDosItens, totaisDoPedido, transportadoraDe, valorDoIpi } from "../dados/dadosDoPedido";
+import { ROTULOS_DA_CLASSIFICACAO, formatarCnpj, pesoDosItens, totaisDoPedido, transportadoraDe, valorDoIpi, type TotaisDoPedido } from "../dados/dadosDoPedido";
 import type { CatalogoDoCliente, Cotacao, LocalDoCadastro } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import {
@@ -16,7 +16,6 @@ import {
   formatarContagem,
   formatarData,
   formatarDocumentoDoCliente,
-  formatarEnderecoDoCadastro,
   formatarNumero,
   formatarPeso,
   formatarReaisComCentavos,
@@ -83,14 +82,14 @@ type PropsDaFolha = { cotacao: Cotacao; catalogo: CatalogoDoCliente; nomeDoLogin
 
 /**
  * A folha A4, com tudo o que o relatório do pedido do app antigo dos representantes mostra
- * (frmPedidos_RelPedidoEnvio) e o que a cotação tem a mais: o resumo, o cliente, os itens, as condições,
- * os endereços de entrega e cobrança e a transportadora.
+ * (frmPedidos_RelPedidoEnvio) e o que a cotação tem a mais, na ordem em que o cliente lê: para quem é,
+ * em que condições, o que leva e quanto dá, e para onde vai.
  */
 function Folha({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDaFolha) {
   const emitidaEm = dataDoMomento(cotacao.atualizadoEm);
+  const validaAte = somarDias(emitidaEm, DIAS_DE_VALIDADE_DA_COTACAO);
   useTituloDoArquivo(`Cotação Suprens - ${catalogo.cliente.nome} - ${formatarData(emitidaEm).replaceAll("/", "-")}`);
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
-  const totais = totaisDoPedido(cotacao.itens, ipi);
   const peso = pesoDosItens(cotacao.itens, new Map(catalogo.produtos.map((produto) => [produto.codigo, produto.pesoKg])));
   const representante = catalogo.representante ? `${catalogo.representante.codigo} - ${catalogo.representante.nome}` : nomeDoLogin;
   return (
@@ -102,34 +101,32 @@ function Folha({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDaFolha) {
           <h2>Cotação</h2>
         </div>
         <dl className={estilos.datas}>
-          <Dado rotulo="Emitida em">{formatarData(emitidaEm)} às {horaDoMomento(cotacao.atualizadoEm)}</Dado>
-          <Dado rotulo="Válida até">{formatarData(somarDias(emitidaEm, DIAS_DE_VALIDADE_DA_COTACAO))}</Dado>
+          <Dado rotulo="Emitida em">
+            {formatarData(emitidaEm)} às {horaDoMomento(cotacao.atualizadoEm)}
+          </Dado>
+          <Dado rotulo="Válida até">{formatarData(validaAte)}</Dado>
         </dl>
       </header>
 
-      <Bloco titulo="Resumo">
-        <Dado rotulo="Itens">{formatarNumero(totais.itens)}</Dado>
-        <Dado rotulo="Quantidade">{formatarNumero(totais.pecas)} pç</Dado>
-        <Dado rotulo="Valor s/ IPI">{formatarReaisComCentavos(totais.semIpi)}</Dado>
-        {totais.ipi !== null && totais.comIpi !== null ? (
-          <>
-            <Dado rotulo="Valor IPI">{formatarReaisComCentavos(totais.ipi)}</Dado>
-            <Dado rotulo="Valor c/ IPI">{formatarReaisComCentavos(totais.comIpi)}</Dado>
-          </>
-        ) : null}
-        <Dado rotulo="Peso total">
-          {formatarPeso(peso.total)}
-          {peso.semPeso > 0 ? ` (${formatarContagem(peso.semPeso, "item sem peso", "itens sem peso")})` : ""}
-        </Dado>
-        <Dado rotulo="Representante" isLargo>
-          {representante}
-        </Dado>
+      <ClienteDaCotacao catalogo={catalogo} />
+      <CondicoesDaCotacao cotacao={cotacao} catalogo={catalogo} representante={representante} hoje={hoje} />
+
+      <Bloco titulo="Itens" semGrade>
+        <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} pesoPorItem={peso.porItem} />
+        <TotaisDaCotacao totais={totaisDoPedido(cotacao.itens, ipi)} peso={peso} />
       </Bloco>
 
-      <ClienteDaCotacao catalogo={catalogo} />
-      <ItensDaCotacao cotacao={cotacao} catalogo={catalogo} pesoPorItem={peso.porItem} />
-      <CondicoesDaCotacao cotacao={cotacao} catalogo={catalogo} hoje={hoje} />
       <EnderecosDaCotacao cotacao={cotacao} catalogo={catalogo} />
+
+      {cotacao.observacao.trim() ? (
+        <Bloco titulo="Observações" semGrade>
+          <p className={estilos.observacao}>{cotacao.observacao}</p>
+        </Bloco>
+      ) : null}
+
+      <footer className={estilos.rodape}>
+        Preços em reais, por cento de peças. Cotação válida até {formatarData(validaAte)}.
+      </footer>
     </article>
   );
 }
@@ -140,7 +137,7 @@ function ClienteDaCotacao({ catalogo }: { catalogo: CatalogoDoCliente }) {
   if (!cadastro) {
     return (
       <Bloco titulo="Cliente">
-        <Dado rotulo="Razão social" isLargo>
+        <Dado rotulo="Razão social" colunas={3}>
           {catalogo.cliente.nome}
         </Dado>
         <Dado rotulo="CNPJ/CPF">{formatarDocumentoDoCliente(catalogo.cliente)}</Dado>
@@ -150,24 +147,50 @@ function ClienteDaCotacao({ catalogo }: { catalogo: CatalogoDoCliente }) {
   const { faturamento } = cadastro;
   return (
     <Bloco titulo="Cliente">
-      <Dado rotulo="Razão social" isLargo>
+      <Dado rotulo="Razão social" colunas={2} isDestaque>
         {cadastro.razaoSocial}
       </Dado>
       <Dado rotulo="CNPJ/CPF">{cadastro.documento}</Dado>
+      <Dado rotulo="Fone">{cadastro.telefone ?? "—"}</Dado>
       <Dado rotulo="Inscrição estadual">{cadastro.inscricaoEstadual ?? "—"}</Dado>
       <Dado rotulo="Suframa">{cadastro.suframa ?? "—"}</Dado>
-      <Dado rotulo="Fone">{cadastro.telefone ?? "—"}</Dado>
-      <Dado rotulo="E-mail do XML" isLargo>
+      <Dado rotulo="E-mail do XML" colunas={2}>
         {cadastro.emailDoXml ?? "—"}
       </Dado>
-      <Dado rotulo="Endereço" isLargo>
+      <Dado rotulo="Endereço" colunas={2}>
         {faturamento.texto}
+        {faturamento.bairro ? ` · ${faturamento.bairro}` : ""}
       </Dado>
-      <Dado rotulo="Bairro">{faturamento.bairro ?? "—"}</Dado>
       <Dado rotulo="Cidade/UF">
         {faturamento.cidade}/{faturamento.uf}
       </Dado>
       <Dado rotulo="CEP">{faturamento.cep ? formatarCep(faturamento.cep) : "—"}</Dado>
+    </Bloco>
+  );
+}
+
+type PropsDasCondicoes = { cotacao: Cotacao; catalogo: CatalogoDoCliente; representante: string; hoje: string };
+
+function CondicoesDaCotacao({ cotacao, catalogo, representante, hoje }: PropsDasCondicoes) {
+  const dados = catalogo.dadosDoPedido;
+  const escolhas = cotacao.escolhas;
+  const entrega = cotacao.entrega ? `Programada para ${formatarData(cotacao.entrega)}` : `Assim que possível, a partir de ${formatarData(primeiraEntregaPossivel(hoje))}`;
+  return (
+    <Bloco titulo="Condições comerciais">
+      {dados && escolhas ? (
+        <>
+          <Dado rotulo="Condição de pagamento">{dados.condicoes.find((condicao) => condicao.codigo === escolhas.condicaoDePagamento)?.descricao ?? escolhas.condicaoDePagamento}</Dado>
+          <Dado rotulo="Classificação da venda">{ROTULOS_DA_CLASSIFICACAO[escolhas.classificacao]}</Dado>
+          <Dado rotulo="Nº pedido do cliente">{escolhas.pedidoDoCliente.trim() || "—"}</Dado>
+          <Dado rotulo="Frete parcial">{escolhas.aceitaParcial ? "Aceita" : "Não aceita"}</Dado>
+        </>
+      ) : null}
+      <Dado rotulo="Entrega" colunas={2}>
+        {entrega}
+      </Dado>
+      <Dado rotulo="Representante" colunas={2}>
+        {representante}
+      </Dado>
     </Bloco>
   );
 }
@@ -241,32 +264,39 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem }: PropsDosItens) {
   );
 }
 
-function CondicoesDaCotacao({ cotacao, catalogo, hoje }: { cotacao: Cotacao; catalogo: CatalogoDoCliente; hoje: string }) {
-  const dados = catalogo.dadosDoPedido;
-  const escolhas = cotacao.escolhas;
-  const entrega = cotacao.entrega ? `Programada para ${formatarData(cotacao.entrega)}` : `Assim que possível, a partir de ${formatarData(primeiraEntregaPossivel(hoje))}`;
+/** Os totais logo abaixo dos itens, à direita, como no fim de uma nota: o valor com IPI é o destaque. */
+function TotaisDaCotacao({ totais, peso }: { totais: TotaisDoPedido; peso: ReturnType<typeof pesoDosItens> }) {
   return (
-    <Bloco titulo="Condições">
-      {dados && escolhas ? (
+    <dl className={estilos.totais}>
+      <Total rotulo="Itens">{formatarNumero(totais.itens)}</Total>
+      <Total rotulo="Quantidade">{formatarNumero(totais.pecas)} pç</Total>
+      <Total rotulo="Peso total">
+        {formatarPeso(peso.total)}
+        {peso.semPeso > 0 ? <span className={estilos.nota}> ({formatarContagem(peso.semPeso, "item sem peso", "itens sem peso")})</span> : null}
+      </Total>
+      <Total rotulo="Valor s/ IPI">{formatarReaisComCentavos(totais.semIpi)}</Total>
+      {totais.ipi !== null && totais.comIpi !== null ? (
         <>
-          <Dado rotulo="Condição de pagamento">{dados.condicoes.find((condicao) => condicao.codigo === escolhas.condicaoDePagamento)?.descricao ?? escolhas.condicaoDePagamento}</Dado>
-          <Dado rotulo="Classificação da venda">{ROTULOS_DA_CLASSIFICACAO[escolhas.classificacao]}</Dado>
-          <Dado rotulo="Nº pedido do cliente">{escolhas.pedidoDoCliente.trim() || "—"}</Dado>
-          <Dado rotulo="Frete parcial">{escolhas.aceitaParcial ? "Aceita" : "Não aceita"}</Dado>
+          <Total rotulo="Valor IPI">{formatarReaisComCentavos(totais.ipi)}</Total>
+          <Total rotulo="Valor c/ IPI" isDestaque>
+            {formatarReaisComCentavos(totais.comIpi)}
+          </Total>
         </>
       ) : null}
-      <Dado rotulo="Entrega">{entrega}</Dado>
-      <Dado rotulo="Preços">Em reais, por cento de peças</Dado>
-      {cotacao.observacao.trim() ? (
-        <Dado rotulo="Observações" isLargo>
-          <span className={estilos.observacao}>{cotacao.observacao}</span>
-        </Dado>
-      ) : null}
-    </Bloco>
+    </dl>
   );
 }
 
-/** Entrega, cobrança e transporte, como os "Endereços Complementares" do relatório do app antigo. */
+function Total({ rotulo, isDestaque = false, children }: { rotulo: string; isDestaque?: boolean; children: ReactNode }) {
+  return (
+    <div className={isDestaque ? `${estilos.total} ${estilos.totalEmDestaque}` : estilos.total}>
+      <dt>{rotulo}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+/** Entrega, cobrança e transporte, como os "Endereços Complementares" do relatório do app antigo: um ao lado do outro. */
 function EnderecosDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: CatalogoDoCliente }) {
   const dados = catalogo.dadosDoPedido;
   if (!dados) return null;
@@ -274,20 +304,30 @@ function EnderecosDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo:
   const transportadora = escolhida && "codigo" in escolhida ? transportadoraDe(dados, escolhida.codigo) : null;
   const nova = escolhida && "nova" in escolhida ? escolhida.nova : null;
   return (
-    <Bloco titulo="Endereços">
+    <Bloco titulo="Entrega, cobrança e transporte" colunas={3}>
       <Local rotulo="Entrega" local={dados.cadastro.entrega} />
       <Local rotulo="Cobrança" local={dados.cadastro.cobranca} />
-      <Dado rotulo="Transportadora" isLargo>
+      <Dado rotulo="Transportadora">
         {transportadora ? (
           <>
-            {transportadora.razaoSocial} · CNPJ {transportadora.cnpj}
-            <br />
-            {[transportadora.endereco, transportadora.bairro, `${transportadora.cidade}/${transportadora.uf}`, transportadora.cep ? formatarCep(transportadora.cep) : null]
-              .filter(Boolean)
-              .join(" · ")}
+            <span className={estilos.linhaForte}>{transportadora.razaoSocial}</span>
+            <span className={estilos.linha}>CNPJ {transportadora.cnpj}</span>
+            <span className={estilos.linha}>
+              {[transportadora.endereco, transportadora.bairro].filter(Boolean).join(" · ")}
+            </span>
+            <span className={estilos.linha}>
+              {transportadora.cidade}/{transportadora.uf}
+              {transportadora.cep ? ` · ${formatarCep(transportadora.cep)}` : ""}
+            </span>
           </>
         ) : nova ? (
-          `${nova.nome} · CNPJ ${formatarCnpj(nova.cnpj)} · ${nova.cidade}/${nova.uf}`
+          <>
+            <span className={estilos.linhaForte}>{nova.nome}</span>
+            <span className={estilos.linha}>CNPJ {formatarCnpj(nova.cnpj)}</span>
+            <span className={estilos.linha}>
+              {nova.cidade}/{nova.uf}
+            </span>
+          </>
         ) : (
           "A combinar"
         )}
@@ -298,13 +338,19 @@ function EnderecosDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo:
 
 function Local({ rotulo, local }: { rotulo: string; local: LocalDoCadastro | null }) {
   return (
-    <Dado rotulo={rotulo} isLargo>
+    <Dado rotulo={rotulo}>
       {local ? (
         <>
-          {local.razaoSocial} · CNPJ {local.documento}
-          {local.inscricaoEstadual ? ` · IE ${local.inscricaoEstadual}` : ""}
-          <br />
-          {formatarEnderecoDoCadastro(local)}
+          <span className={estilos.linhaForte}>{local.razaoSocial}</span>
+          <span className={estilos.linha}>
+            CNPJ {local.documento}
+            {local.inscricaoEstadual ? ` · IE ${local.inscricaoEstadual}` : ""}
+          </span>
+          <span className={estilos.linha}>{[local.texto, local.bairro].filter(Boolean).join(" · ")}</span>
+          <span className={estilos.linha}>
+            {local.cidade}/{local.uf}
+            {local.cep ? ` · ${formatarCep(local.cep)}` : ""}
+          </span>
         </>
       ) : (
         "No endereço do faturamento"
@@ -313,18 +359,24 @@ function Local({ rotulo, local }: { rotulo: string; local: LocalDoCadastro | nul
   );
 }
 
-function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
+type PropsDoBloco = { titulo: string; colunas?: 3 | 4; semGrade?: boolean; children: ReactNode };
+
+/** Uma parte da folha: a faixa com o título e, embaixo, os dados numa grade (ou o conteúdo como vem). */
+function Bloco({ titulo, colunas = 4, semGrade = false, children }: PropsDoBloco) {
   return (
     <section className={estilos.bloco}>
-      <h3>{titulo}</h3>
-      <dl className={estilos.dados}>{children}</dl>
+      <h3 className={estilos.faixa}>{titulo}</h3>
+      <div className={estilos.corpo}>{semGrade ? children : <dl className={colunas === 3 ? `${estilos.dados} ${estilos.tresColunas}` : estilos.dados}>{children}</dl>}</div>
     </section>
   );
 }
 
-function Dado({ rotulo, isLargo = false, children }: { rotulo: string; isLargo?: boolean; children: ReactNode }) {
+type PropsDoDado = { rotulo: string; colunas?: 1 | 2 | 3; isDestaque?: boolean; children: ReactNode };
+
+function Dado({ rotulo, colunas = 1, isDestaque = false, children }: PropsDoDado) {
+  const classes = [colunas > 1 ? estilos[`ocupa${colunas}`] : "", isDestaque ? estilos.destaque : ""].filter(Boolean).join(" ");
   return (
-    <div className={isLargo ? estilos.largo : undefined}>
+    <div className={classes || undefined}>
       <dt>{rotulo}</dt>
       <dd>{children}</dd>
     </div>

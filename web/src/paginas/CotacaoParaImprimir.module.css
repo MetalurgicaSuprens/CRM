@@ -13,7 +13,7 @@
 .folha {
   display: flex;
   flex-direction: column;
-  gap: var(--esp-5);
+  gap: 12px;
   max-width: 60rem;
   margin: 0 auto;
   padding: var(--esp-8);
@@ -23,6 +23,9 @@
   color: #161616;
   font-size: 0.8125rem;
   overflow-x: auto;
+  /* As faixas cinza saem na impressão: sem isto, o navegador não imprime fundos */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .topo {
@@ -66,35 +69,114 @@
   font-weight: 600;
 }
 
-.bloco h3 {
-  margin: 0 0 var(--esp-2);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #52514e;
+/* Cada parte numa caixa com a faixa do título em cima, como os blocos do relatório do app antigo */
+.bloco {
+  border: 1px solid #c3c2b7;
+  border-radius: 4px;
+  break-inside: avoid;
 }
 
-/* Os dados de cada bloco numa grade: o nome em cima, pequeno, e o valor embaixo */
+.faixa {
+  margin: 0;
+  padding: 5px 10px;
+  border-bottom: 1px solid #c3c2b7;
+  background: #efefed;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #383836;
+}
+
+.corpo {
+  padding: 10px;
+}
+
+/* Os dados numa grade: o nome em cima, pequeno e cinza, e o valor embaixo */
 .dados {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--esp-3) var(--esp-4);
+  gap: 10px 16px;
   margin: 0;
+}
+
+.tresColunas {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .dados dt {
   font-size: 0.6875rem;
-  color: #52514e;
+  color: #6b6b69;
 }
 
 .dados dd {
-  margin: 0;
+  margin: 1px 0 0;
   overflow-wrap: anywhere;
 }
 
-.largo {
+.ocupa2 {
   grid-column: span 2;
+}
+
+.ocupa3 {
+  grid-column: span 3;
+}
+
+.destaque dd {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* Os endereços em linhas: a razão social forte, o resto embaixo */
+.linhaForte,
+.linha {
+  display: block;
+}
+
+.linhaForte {
+  font-weight: 600;
+}
+
+/* Os totais à direita, logo abaixo dos itens, como no fim de uma nota */
+.totais {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 22px;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid #161616;
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  text-align: right;
+}
+
+.total dt {
+  font-size: 0.6875rem;
+  color: #6b6b69;
+}
+
+.total dd {
+  margin: 1px 0 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.totalEmDestaque dd {
+  font-size: 1.0625rem;
+}
+
+.nota {
+  font-weight: 400;
+  color: #6b6b69;
+}
+
+.rodape {
+  font-size: 0.6875rem;
+  color: #6b6b69;
+  text-align: center;
 }
 
 /* Até 11 colunas na largura do A4: letra e recuo menores que os do resto da folha */
@@ -106,7 +188,7 @@
 }
 
 .itens th {
-  padding: 6px 5px;
+  padding: 0 5px 6px;
   border-bottom: 1px solid #161616;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -119,6 +201,10 @@
   padding: 5px;
   border-bottom: 1px solid #e1e0d9;
   vertical-align: top;
+}
+
+.itens tr:last-child td {
+  border-bottom: 0;
 }
 
 .itens .numero {
@@ -140,6 +226,7 @@
 }
 
 .observacao {
+  margin: 0;
   white-space: pre-wrap;
 }
 
