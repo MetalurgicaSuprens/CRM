@@ -37,7 +37,6 @@ describe("montarPedidosDoCrm", () => {
     ["PEDIDO BLOQUEADO", "em_aprovacao"],
     ["PEDIDO", "aprovado"],
     ["CANCELADO", "cancelado"],
-    [null, "em_aprovacao"],
   ])("o status %s no SGI é a etapa %s", (status, esperada) => {
     expect(etapa(gravado(status))).toBe(esperada);
   });
@@ -53,5 +52,11 @@ describe("montarPedidosDoCrm", () => {
 
   it("o cancelado no SGI encerra o caminho no cancelamento", () => {
     expect(JSON.parse(montarPedidosDoCrm([gravado("CANCELADO")], SEM_ERP)[0]?.historico ?? "").map((passo: { etapa: string }) => passo.etapa)).toEqual(["recebido", "em_aprovacao", "cancelado"]);
+  });
+
+  it("o gravado que sumiu do SGI foi excluído lá e aparece cancelado", () => {
+    const [linha] = montarPedidosDoCrm([gravado(null)], SEM_ERP);
+    expect(linha).toMatchObject({ etapa: "cancelado", numero_sgi: "1149872", numero_erp: null });
+    expect(JSON.parse(linha?.historico ?? "").map((passo: { etapa: string }) => passo.etapa)).toEqual(["recebido", "em_aprovacao", "cancelado"]);
   });
 });

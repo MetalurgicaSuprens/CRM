@@ -43,8 +43,13 @@ export function montarPedidosDoCrm(pedidos: readonly PedidoDoCrmNaLan[], erp: Pe
   });
 }
 
+/**
+ * O pedido gravado que não está mais no SGI foi excluído lá: a tela de pedidos do SGI não cancela, só
+ * exclui. A gravação só o marca como gravado depois de confirmar a transação, então ele chegou a existir.
+ */
 function etapaNoSgi(status: string | null, numero: string, { emAberto, comNota }: PedidosDoErp): string {
-  if (status === null || status === "COTACAO" || status === "PEDIDO BLOQUEADO") return "em_aprovacao";
+  if (status === null) return "cancelado";
+  if (status === "COTACAO" || status === "PEDIDO BLOQUEADO") return "em_aprovacao";
   if (status === "PEDIDO") return "aprovado";
   if (status.startsWith("CANCELAD")) return "cancelado";
   if (status !== "PEDIDO OMEGA") return "em_aprovacao";

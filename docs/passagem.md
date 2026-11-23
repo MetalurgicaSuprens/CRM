@@ -110,7 +110,7 @@ Falta, em ordem:
      - **Do SGI, pelo número e pelo cliente:**
        - `COTACAO` e `PEDIDO BLOQUEADO` ficam em aprovação, e `PEDIDO`, aprovado;
        - `PEDIDO OMEGA` fica no ERP, faturado em parte ou faturado, pelo saldo e pelas notas do pedido no Omega;
-       - o cancelado também aparece;
+       - o cancelado também aparece, e o pedido gravado que sumiu do SGI conta como cancelado: a tela de pedidos do SGI não cancela, só exclui (o cancelamento só existe no SGI6R, e só para COTACAO);
        - vêm junto o número e o total do SGI.
      - A hora vem só nos passos que a LAN conhece: o recebimento, a recusa e a gravação.
      - **No servidor:** o pedido enviado mostra a etapa da foto, e a ficha só o mostra até ele chegar ao ERP; de lá em diante, ele aparece como pedido do Omega.
