@@ -16,7 +16,14 @@ export function conteudoDoPedido(
   observacao: string,
   escolhas: EscolhasDoPedido | null,
 ): ConteudoDoPedido {
-  return { codigoCliente, itens: itens.map(({ codigo, quantidade, precoCento, ordemDeCompra, itemDaOrdemDeCompra }) => ({ codigo, quantidade, precoCento, ordemDeCompra, itemDaOrdemDeCompra })), entrega, observacao, escolhas };
+  return { codigoCliente, itens: itens.map(({ codigo, quantidade, precoCento, ordemDeCompra, itemDaOrdemDeCompra, partNumber }) => ({
+      codigo,
+      quantidade,
+      precoCento,
+      ordemDeCompra,
+      itemDaOrdemDeCompra,
+      partNumber,
+    })), entrega, observacao, escolhas };
 }
 
 /**

@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 23;
+export const VERSAO_DO_ESQUEMA = 24;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -96,6 +96,14 @@ CREATE TABLE produto_part_number (
   produto TEXT NOT NULL,
   part_number TEXT NOT NULL,
   PRIMARY KEY (produto, part_number)
+) STRICT;
+
+CREATE TABLE cliente_part_number (
+  cliente TEXT NOT NULL,
+  produto TEXT NOT NULL,
+  part_number TEXT NOT NULL,
+  is_sugerido INTEGER NOT NULL CHECK (is_sugerido IN (0, 1)),
+  PRIMARY KEY (cliente, produto, part_number)
 ) STRICT;
 
 CREATE TABLE produto_comprado (
@@ -419,6 +427,12 @@ export type Foto = {
    * montadora, só dos produtos de alguma lista. Sem o nome da montadora, que nenhuma tela usa.
    */
   produto_part_number: { produto: string; part_number: string }[];
+  /**
+   * O part number de cada produto da lista para o cliente (versão 24), para o item do pedido: os da tabela
+   * própria do cliente e o último que ele usou, sem os das tabelas gerais. O `is_sugerido` (0 ou 1) é o que
+   * o item já traz preenchido; sem nenhum, o representante escolhe ou digita (extrator/src/calculo/partNumbers.ts).
+   */
+  cliente_part_number: { cliente: string; produto: string; part_number: string; is_sugerido: number }[];
   /**
    * Os produtos da lista do cliente que ele comprou nos últimos 24 meses: a aba "Já comprados". Com a
    * última compra com preço (versão 17): o dia e o preço do cento na nota, o preço com que o item entra no

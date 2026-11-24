@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, GripVertical, History, ListOrdered, PackageSearch, X } from "lucide-react";
-import { LIMITE_DA_ORDEM_DE_COMPRA, valorDaLinha, type OrdemDeCompraDoItem } from "dominio/pedido";
+import { LIMITE_DA_ORDEM_DE_COMPRA, LIMITE_DO_PART_NUMBER, valorDaLinha, type OrdemDeCompraDoItem } from "dominio/pedido";
 import botoes from "../../componentes/Botao.module.css";
 import cartao from "../../componentes/Cartao.module.css";
 import { Quantidade } from "../../componentes/Quantidade";
 import { Valor } from "../../componentes/Valor";
 import { useValores } from "../../contexto/valores";
 import { valorDoIpi } from "../../dados/dadosDoPedido";
-import { itemDaOrdemDigitado, ordemDeCompraDigitada, precoDigitado, type LinhaEscolhida } from "../../dados/pedido";
+import { itemDaOrdemDigitado, ordemDeCompraDigitada, partNumberDigitado, precoDigitado, type LinhaEscolhida } from "../../dados/pedido";
 import type { DadosDoPedido, ProdutoDoCatalogo } from "../../dados/tipos";
 import { formatarComCentavos, formatarContagem, formatarDataCurta, formatarNumero } from "../../formato";
 import { BuscaDeProduto } from "./BuscaDeProduto";
@@ -32,6 +32,7 @@ type Props = {
   alterar: (codigo: string, pecas: number) => void;
   alterarPreco: (codigo: string, preco: number) => void;
   alterarOrdemDeCompra: (codigo: string, ordem: OrdemDeCompraDoItem) => void;
+  alterarPartNumber: (codigo: string, partNumber: string | null) => void;
   /** Leva o item para a posição `destino` (0 é o primeiro). */
   mover: (codigo: string, destino: number) => void;
   /** Com o item da ordem de compra digitado à mão no pedido xPed: volta à numeração de 1 a N. */
@@ -137,14 +138,14 @@ export function ItensDoPedido(props: Props) {
 /** O item que está sendo arrastado, de todos os itens: cada um vira alvo ao passar por cima dele. */
 type Arrasto = { arrastado: string | null; aoComecar: (codigo: string) => void; aoTerminar: () => void };
 
-type PropsDoItem = Pick<Props, "ipi" | "alterar" | "alterarPreco" | "alterarOrdemDeCompra" | "ordemDeCompraDoPedido" | "mover"> & {
+type PropsDoItem = Pick<Props, "ipi" | "alterar" | "alterarPreco" | "alterarOrdemDeCompra" | "alterarPartNumber" | "ordemDeCompraDoPedido" | "mover"> & {
   linha: LinhaEscolhida;
   posicao: number;
   total: number;
   arrasto: Arrasto;
 };
 
-function Item({ linha, posicao, total, ipi, alterar, alterarPreco, alterarOrdemDeCompra, ordemDeCompraDoPedido, mover, arrasto }: PropsDoItem) {
+function Item({ linha, posicao, total, ipi, alterar, alterarPreco, alterarOrdemDeCompra, alterarPartNumber, ordemDeCompraDoPedido, mover, arrasto }: PropsDoItem) {
   const semIpi = valorDaLinha(linha);
   // O item só fica arrastável enquanto a alça está apertada: arrastar pelos campos seleciona o texto, como sempre.
   const [isArrastavel, setArrastavel] = useState(false);
@@ -207,6 +208,7 @@ function Item({ linha, posicao, total, ipi, alterar, alterarPreco, alterarOrdemD
         <span className={estilos.codigo}>{linha.codigo}</span>
         <span className={estilos.descricao}>{linha.familia}</span>
       </span>
+      <PartNumberDoItem linha={linha} aoMudar={(partNumber) => alterarPartNumber(linha.codigo, partNumber)} />
       <OrdemDeCompraDoItem linha={linha} doPedido={ordemDeCompraDoPedido} aoMudar={(ordem) => alterarOrdemDeCompra(linha.codigo, ordem)} />
       <Quantidade valor={linha.quantidade} embalagem={linha.embalagem} rotulo={linha.codigo} aoMudar={(pecas) => alterar(linha.codigo, pecas)} />
       <PrecoDoItem linha={linha} aoMudar={(preco) => alterarPreco(linha.codigo, preco)} />
@@ -280,6 +282,50 @@ function OrdemDeCompraDoItem({ linha, doPedido, aoMudar }: { linha: LinhaEscolhi
         />
       </label>
     </>
+  );
+}
+
+/**
+ * O part number do cliente no item, embaixo do produto, como o "Part Number:" do app antigo: vem com o
+ * sugerido para o cliente, e o representante troca ou apaga. As opções da tabela própria do cliente e a
+ * última que ele usou aparecem na lista do campo; com mais de uma e nenhuma sugerida, ele escolhe.
+ */
+function PartNumberDoItem({ linha, aoMudar }: { linha: LinhaEscolhida; aoMudar: (partNumber: string | null) => void }) {
+  const [texto, setTexto] = useState(linha.partNumber ?? "");
+  useEffect(() => setTexto(linha.partNumber ?? ""), [linha.partNumber]);
+  const { opcoes } = linha.partNumberDoCliente;
+  const idDasOpcoes = `part-numbers-${linha.codigo}`;
+  const confirmar = () => {
+    const novo = partNumberDigitado(texto);
+    setTexto(novo ?? "");
+    if (novo !== linha.partNumber) aoMudar(novo);
+  };
+  return (
+    <label className={estilos.partNumber}>
+      <span className={estilos.rotuloDoPartNumber}>PN</span>
+      <input
+        className={estilos.campoDoPartNumber}
+        type="text"
+        value={texto}
+        maxLength={LIMITE_DO_PART_NUMBER}
+        list={opcoes.length > 0 ? idDasOpcoes : undefined}
+        placeholder={opcoes.length > 1 && !linha.partNumber ? "escolha o part number" : "sem part number"}
+        aria-label={`Part number do cliente para ${linha.codigo}`}
+        title="Part number do cliente neste item; vazio, o item vai sem"
+        onChange={(evento) => setTexto(evento.target.value)}
+        onBlur={confirmar}
+        onKeyDown={(evento) => {
+          if (evento.key === "Enter") confirmar();
+        }}
+      />
+      {opcoes.length > 0 ? (
+        <datalist id={idDasOpcoes}>
+          {opcoes.map((opcao) => (
+            <option key={opcao} value={opcao} />
+          ))}
+        </datalist>
+      ) : null}
+    </label>
   );
 }
 

@@ -30,8 +30,8 @@ export type CadastroDoPedido = {
 /** O produto na view de preço do cliente, como o SGI6R o põe no item. */
 export type ProdutoDoPedido = {
   produto: string;
-  partNumber: string;
-  partNumberDoFornecedor: string;
+  /** Os part numbers da tabela para o produto (VIEW_PNU, sem o '0'), cada um com o do fornecedor (VIEW_PNU_FOR). */
+  partNumbersDaTabela: ReadonlyMap<string, string>;
   procedencia: number;
   aliquotaDoIpi: number;
   desconto: string;
@@ -96,8 +96,8 @@ export async function lerCadastroDoPedido(oracle: Oracle, empresa: number, clien
 
 /**
  * Os produtos do pedido na view de preço do cliente, só os ativos e liberados para representante. A
- * view repete o produto por part number; o SGI6R deixa o representante escolher a linha, e aqui vale a
- * primeira pelo part number, sempre a mesma.
+ * view repete o produto por part number, com o mesmo preço: os valores vêm da primeira linha, e os part
+ * numbers de todas, para o item achar o do fornecedor do número que o representante escolheu.
  */
 export async function lerProdutosDoPedido(oracle: Oracle, cliente: number, tabela: string, produtos: readonly string[]): Promise<Map<string, ProdutoDoPedido>> {
   const lista = emListaDeTexto("p", produtos);
@@ -113,11 +113,17 @@ export async function lerProdutosDoPedido(oracle: Oracle, cliente: number, tabel
   const porProduto = new Map<string, ProdutoDoPedido>();
   for (const linha of linhas) {
     const produto = texto(linha, 0);
-    if (porProduto.has(produto)) continue;
+    const partNumber = texto(linha, 1);
+    const jaLido = porProduto.get(produto);
+    const partNumbers = new Map(jaLido?.partNumbersDaTabela ?? []);
+    if (partNumber !== "" && partNumber !== "0") partNumbers.set(partNumber, texto(linha, 2));
+    if (jaLido) {
+      porProduto.set(produto, { ...jaLido, partNumbersDaTabela: partNumbers });
+      continue;
+    }
     porProduto.set(produto, {
       produto,
-      partNumber: texto(linha, 1),
-      partNumberDoFornecedor: texto(linha, 2),
+      partNumbersDaTabela: partNumbers,
       procedencia: numero(linha, 3),
       aliquotaDoIpi: numero(linha, 4),
       desconto: texto(linha, 5),

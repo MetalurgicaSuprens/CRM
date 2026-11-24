@@ -64,7 +64,7 @@ describe("decidir", () => {
   });
 
   it("deixa seguir o pedido de valor alto, que o SGI recebe bloqueado e a Suprens libera", () => {
-    const decisao = decidir(pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1_000_000, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }), lidoDoErp());
+    const decisao = decidir(pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 1_000_000, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }] }), lidoDoErp());
     expect(decisao).toMatchObject({ destino: "conferidos", erp: { cliente: 123456 } });
   });
 });

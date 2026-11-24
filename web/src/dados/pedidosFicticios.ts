@@ -4,7 +4,7 @@ import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
 import { dadosDoPedidoFicticio } from "./dadosDoPedidoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
-import { SEM_ORDEM_DE_COMPRA_NO_ITEM, STATUS_NA_FICHA, novoIdDeCotacao, precoInicialDoItem } from "./pedido";
+import { SEM_REFERENCIAS_DO_CLIENTE, STATUS_NA_FICHA, novoIdDeCotacao, precoInicialDoItem } from "./pedido";
 import { ROTULOS_DE_MERCADO } from "./rotulos";
 import type {
   CatalogoDoCliente,
@@ -41,6 +41,8 @@ export function catalogoDoClienteFicticio(codigoCliente: string): CatalogoDoClie
   const comprados = new Set(ficha.produtos.map((produto) => produto.codigo));
   const sigla = siglaDe(ficha.nome);
   const tabela = `Tabela ${aleatorio.inteiro(10, 40)} · ${ROTULOS_DE_MERCADO[ficha.mercado]}`;
+  // Outro sorteio para o part number do cliente, para ele não mudar o resto do catálogo fictício.
+  const sorteioDoPartNumber = criarAleatorio(Number(codigoCliente.slice(0, 8)) + 11);
   const produtos = catalogoFicticio().map((produto): ProdutoDoCatalogo => {
     const jaComprou = comprados.has(produto.codigo);
     const precoDaTabela = Math.round(produto.precoBase * fatorDaTabela);
@@ -52,6 +54,7 @@ export function catalogoDoClienteFicticio(codigoCliente: string): CatalogoDoClie
       precoDaTabela,
       ultimaCompra: jaComprou ? ultimaCompraFicticia(produto.codigo, precoDaTabela) : null,
       partNumbers: jaComprou && aleatorio.chance(0.6) ? [`${sigla}-${aleatorio.inteiro(1_000, 9_999)}`] : [],
+      partNumberDoCliente: partNumberDoClienteFicticio(sorteioDoPartNumber, jaComprou),
       pesoKg: Math.round(aleatorio.entre(0.005, 0.06) * 100_000) / 100_000,
       jaComprou,
     };
@@ -232,7 +235,7 @@ function gerarExemplos(): PedidoEnviado[] {
       codigo: produto.codigo,
       quantidade: produto.embalagem * aleatorio.inteiro(2, 20),
       precoCento: precoInicialDoItem(produto),
-      ...SEM_ORDEM_DE_COMPRA_NO_ITEM,
+      ...SEM_REFERENCIAS_DO_CLIENTE,
     }));
     const enviadoEm = agora - minutosAtras * 60_000;
     const caminho = CAMINHOS[etapa];
@@ -267,7 +270,7 @@ function garantirCotacaoDeExemplo(): void {
   const itens = catalogo.produtos
     .filter((produto) => produto.jaComprou)
     .slice(0, 2)
-    .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4, precoCento: precoInicialDoItem(produto), ...SEM_ORDEM_DE_COMPRA_NO_ITEM }));
+    .map((produto) => ({ codigo: produto.codigo, quantidade: produto.embalagem * 4, precoCento: precoInicialDoItem(produto), ...SEM_REFERENCIAS_DO_CLIENTE }));
   salvarCotacaoFicticio({ id: novoIdDeCotacao(), codigoCliente: catalogo.cliente.codigo, itens, entrega: null, observacao: "", escolhas: null });
 }
 
@@ -277,6 +280,15 @@ function garantirCotacaoDeExemplo(): void {
  * A última compra do produto que o cliente já comprou: um pouco acima ou abaixo da tabela, e o dia,
  * tirados do código, para não mexer na sequência dos sorteios do resto do protótipo.
  */
+/** Metade dos produtos comprados com part number; de vez em quando, dois na tabela, sem sugestão, para o representante escolher. */
+function partNumberDoClienteFicticio(sorteio: ReturnType<typeof criarAleatorio>, jaComprou: boolean): ProdutoDoCatalogo["partNumberDoCliente"] {
+  if (!jaComprou || !sorteio.chance(0.5)) return { opcoes: [], sugerido: null };
+  const numero = () => `0${sorteio.inteiro(1_000, 9_999)}`;
+  if (sorteio.chance(0.15)) return { opcoes: [numero(), numero()], sugerido: null };
+  const unico = numero();
+  return { opcoes: [unico], sugerido: unico };
+}
+
 function ultimaCompraFicticia(codigo: string, precoDaTabela: number): { precoCento: number; data: string } {
   const semente = [...codigo].reduce((soma, letra) => soma + letra.charCodeAt(0), 0);
   const hoje = dataDoMomento(momentoEmBrasilia());

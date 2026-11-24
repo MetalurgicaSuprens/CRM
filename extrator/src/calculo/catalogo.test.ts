@@ -85,6 +85,12 @@ describe("montarCatalogo", () => {
         { produto: "FAB1422P", partNumber: "N906227" },
         { produto: "FORA-DAS-LISTAS", partNumber: "999" },
       ],
+      // A PDR02 é tabela geral: o part number dela não vai para o item.
+      partNumbersDasTabelas: [{ tabela: "PDR02", produto: "FAB1422P", partNumber: "N906227" }],
+      partNumbersUsados: [
+        { chave: "1/1", produto: "MAB1216P", partNumber: "01853" },
+        { chave: "1/1", produto: "FORA-DAS-LISTAS", partNumber: "777" },
+      ],
       produtosDasTabelas: [
         { produto: "FAB1422P", familia: "FLEXIL", medidaMinimaMm: 14, medidaMaximaMm: 22, embalagem: 100, pesoKg: 0.02 },
         { produto: "MAB1216P", familia: null, medidaMinimaMm: null, medidaMaximaMm: null, embalagem: 500, pesoKg: null },
@@ -100,8 +106,8 @@ describe("montarCatalogo", () => {
   );
 
   it("dá aos clientes de preços iguais a mesma lista, e uma lista nova a quem tem desconto diferente", () => {
-    expect(catalogo.porCliente.get("id-1")).toEqual({ tabela: "PADRAO - FEV", lista: 1 });
-    expect(catalogo.porCliente.get("id-2")).toEqual({ tabela: "PADRAO - FEV", lista: 1 });
+    expect(catalogo.porCliente.get("id-1")).toEqual({ tabela: "PADRAO - FEV", codigo: "PDR02", lista: 1 });
+    expect(catalogo.porCliente.get("id-2")).toEqual({ tabela: "PADRAO - FEV", codigo: "PDR02", lista: 1 });
     expect(catalogo.porCliente.get("id-3")?.lista).toBe(2);
     expect(catalogo.lista_de_precos).toHaveLength(4);
   });
@@ -130,6 +136,10 @@ describe("montarCatalogo", () => {
       { produto: "FAB1422P", part_number: "N906227" },
       { produto: "MAB1216P", part_number: "5U0-123" },
     ]);
+  });
+
+  it("leva o part number que o cliente usou, só dos produtos da lista dele e sem o da tabela geral", () => {
+    expect(catalogo.cliente_part_number).toEqual([{ cliente: "id-1", produto: "MAB1216P", part_number: "01853", is_sugerido: 1 }]);
   });
 
   it("leva a família, a medida, a embalagem e o peso só dos produtos de alguma lista", () => {

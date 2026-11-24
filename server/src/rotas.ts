@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
 import type { FastifyInstance } from "fastify";
-import { LIMITE_DA_OBSERVACAO, LIMITE_DA_ORDEM_DE_COMPRA, MAIOR_ITEM_DA_ORDEM_DE_COMPRA } from "dominio/pedido";
+import { LIMITE_DA_OBSERVACAO, LIMITE_DA_ORDEM_DE_COMPRA, LIMITE_DO_PART_NUMBER, MAIOR_ITEM_DA_ORDEM_DE_COMPRA } from "dominio/pedido";
 import { auditar } from "./auditoria.ts";
 import { enviadosNaFicha, pedidosEnviadosDoLogin } from "./envio/pedidosEnviados.ts";
 import type { FotoAtual } from "./foto/fotoAtual.ts";
@@ -118,8 +118,9 @@ const CORPO_DO_COTACAO = {
           precoCento: { type: "number", exclusiveMinimum: 0, maximum: 10_000_000 },
           ordemDeCompra: { anyOf: [{ type: "null" }, { ...LINHA_DE_TEXTO(LIMITE_DA_ORDEM_DE_COMPRA), minLength: 1 }] },
           itemDaOrdemDeCompra: { type: ["integer", "null"], minimum: 1, maximum: MAIOR_ITEM_DA_ORDEM_DE_COMPRA },
+          partNumber: { anyOf: [{ type: "null" }, { ...LINHA_DE_TEXTO(LIMITE_DO_PART_NUMBER), minLength: 1 }] },
         },
-        required: ["codigo", "quantidade", "precoCento", "ordemDeCompra", "itemDaOrdemDeCompra"],
+        required: ["codigo", "quantidade", "precoCento", "ordemDeCompra", "itemDaOrdemDeCompra", "partNumber"],
         additionalProperties: false,
       },
     },

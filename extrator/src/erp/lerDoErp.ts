@@ -2,10 +2,10 @@ import { montarReferencia, type Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
 import { lerMomentoDoOracle, lerNomesDosRepresentantes } from "./cadastros.ts";
 import { lerCarteira, lerDatasDeCompra, lerVendasPorMes } from "./carteira.ts";
-import { lerPartNumbersDaBiblia, lerPrecos, lerProdutosDasTabelas, lerProdutosJaComprados, lerTabelasDosClientes } from "./catalogo.ts";
+import { lerPartNumbersDaBiblia, lerPartNumbersDasTabelas, lerPrecos, lerProdutosDasTabelas, lerProdutosJaComprados, lerTabelasDosClientes } from "./catalogo.ts";
 import { lerNotasRecentes, lerPedidosFaturados, lerVendasPorDia } from "./faturamento.ts";
 import { lerFamiliasDaSuprens, lerProdutosDoAno } from "./familias.ts";
-import { lerCadastros, lerCondicoes, lerEscolhas, lerLocais, lerTransportadoras, lerTransportadorasDosRepresentantes, lerUltimosPedidos } from "./dadosDoPedido.ts";
+import { lerCadastros, lerCondicoes, lerEscolhas, lerLocais, lerPartNumbersUsados, lerTransportadoras, lerTransportadorasDosRepresentantes, lerUltimosPedidos } from "./dadosDoPedido.ts";
 import { lerPedidosEmAberto } from "./pedidos.ts";
 import type { DadosDoErp } from "./tipos.ts";
 
@@ -41,6 +41,10 @@ export async function lerDadosDoErp(
     tabelas,
     precos: await etapa("preços", () => lerPrecos(oracle, referencia, autorizados)),
     partNumbers: await etapa("part numbers da Bíblia Montadora", () => lerPartNumbersDaBiblia(oracle)),
+    partNumbersDasTabelas: await etapa("part numbers das tabelas próprias", () =>
+      lerPartNumbersDasTabelas(oracle, [...new Set(tabelas.map((tabela) => tabela.tabela))]),
+    ),
+    partNumbersUsados: await etapa("part numbers usados nos pedidos", () => lerPartNumbersUsados(oracle, referencia, autorizados)),
     produtosDasTabelas: await etapa("produtos das tabelas", () =>
       lerProdutosDasTabelas(oracle, [...new Set(tabelas.map((tabela) => tabela.tabela))]),
     ),

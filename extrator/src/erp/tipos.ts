@@ -188,6 +188,12 @@ export type PrecoDoCliente = {
 /** Um part number da Bíblia Montadora: o código que uma montadora dá ao produto. */
 export type PartNumberDaBiblia = { produto: string; partNumber: string };
 
+/** O part number de um produto ativo numa tabela de preço ("Código Cliente", TP2_CMO), o mesmo da view de preço. */
+export type PartNumberDaTabela = { tabela: string; produto: string; partNumber: string };
+
+/** O último part number que o cliente usou para o produto nos pedidos do SGI (PV2_PNU). */
+export type PartNumberUsado = { chave: string; produto: string; partNumber: string };
+
 /** Família, medida e embalagem de um produto das tabelas de preço. */
 export type ProdutoDaTabela = {
   produto: string;
@@ -299,6 +305,8 @@ export type DadosDoErp = {
   tabelas: TabelaDoCliente[];
   precos: PrecoDoCliente[];
   partNumbers: PartNumberDaBiblia[];
+  partNumbersDasTabelas: PartNumberDaTabela[];
+  partNumbersUsados: PartNumberUsado[];
   produtosDasTabelas: ProdutoDaTabela[];
   jaComprados: ProdutoJaComprado[];
   dadosDoPedido: DadosDoPedidoDoErp;

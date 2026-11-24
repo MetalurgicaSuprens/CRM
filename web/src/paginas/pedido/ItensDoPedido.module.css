@@ -63,6 +63,7 @@
     "quantidade quantidade preco preco"
     "referencias referencias referencias referencias"
     "ipi ipi comipi comipi"
+    "partnumber partnumber partnumber partnumber"
     "mover ordem itemoc itemoc";
   row-gap: var(--esp-2);
   padding: var(--esp-3) 0;
@@ -76,6 +77,7 @@
     "foto produto valor tirar"
     "quantidade quantidade preco preco"
     "referencias referencias referencias referencias"
+    "partnumber partnumber partnumber partnumber"
     "mover ordem itemoc itemoc";
 }
 
@@ -157,6 +159,40 @@
 .tirar:hover {
   background: var(--cor-superficie-2);
   color: var(--cor-queda);
+}
+
+/* O part number do cliente: "PN" e o campo, embaixo do produto na tabela; no celular, uma linha do item */
+.partNumber {
+  grid-area: partnumber;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-2);
+  min-width: 0;
+  font-size: var(--tam-legenda);
+}
+
+.rotuloDoPartNumber {
+  flex: none;
+  font-weight: 600;
+  color: var(--cor-texto-suave);
+}
+
+.campoDoPartNumber {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 1.75rem;
+  padding: 0 var(--esp-2);
+  border: 1px solid var(--cor-linha-forte);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-superficie);
+  font-size: var(--tam-legenda);
+}
+
+.campoDoPartNumber:focus-visible {
+  border-color: var(--cor-acento);
+  box-shadow: var(--foco-campo);
+  outline: none;
 }
 
 /* A ordem de compra do cliente e o item dela: no celular, com o nome em cima; na tabela, só o campo */
@@ -348,7 +384,7 @@
     --tamanho-da-foto: 3.25rem;
     grid-template-areas:
       "mover foto produto ordem itemoc quantidade preco valor ipi comipi tirar"
-      "mover foto referencias referencias referencias referencias referencias referencias referencias referencias referencias";
+      "mover foto partnumber referencias referencias referencias referencias referencias referencias referencias referencias";
     row-gap: 4px;
     padding: var(--esp-2) var(--esp-2) var(--esp-2) 0;
   }
@@ -356,7 +392,7 @@
   .semIpi .item {
     grid-template-areas:
       "mover foto produto ordem itemoc quantidade preco valor tirar"
-      "mover foto referencias referencias referencias referencias referencias referencias referencias";
+      "mover foto partnumber referencias referencias referencias referencias referencias referencias";
   }
 
   .mover {

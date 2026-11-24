@@ -54,7 +54,7 @@ beforeEach(() => {
   loginDeA = entrarComo(banco, ["1401"]);
   app = criarApp({ foto, banco, origem: ORIGEM });
   const usuario = String(banco.prepare("SELECT usuario FROM usuario_codigos WHERE codigo = '1401'").get()?.usuario);
-  const conteudo = JSON.stringify({ cliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "", escolhas: null });
+  const conteudo = JSON.stringify({ cliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: null, observacao: "", escolhas: null });
   const inserir = banco.prepare("INSERT INTO pedidos_enviados (usuario, cliente, cotacao, conteudo, hash, chave, assinatura, enviado_em) VALUES (?, ?, ?, ?, '', ?, '{}', ?)");
   for (const [i, cotacao] of ["0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d41", "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d42", "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d43", "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d44"].entries()) {
     inserir.run(usuario, CLIENTE_DE_A, cotacao, conteudo, `chave-de-${usuario}`, `2026-11-23T16:0${i}`);

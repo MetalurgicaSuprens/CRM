@@ -8,7 +8,7 @@ import cartao from "../../componentes/Cartao.module.css";
 import { Voltar } from "../../componentes/Voltar";
 import { carregarPedidos, enviarPedido, excluirCotacao } from "../../dados/api";
 import { escolhasNoCatalogo, itensDoUltimoPedido, pedidoJaEnviadoHoje, problemasDasEscolhas, totaisDoPedido } from "../../dados/dadosDoPedido";
-import { comMarcaXped, comNumeracao, comOrdemDeCompra, comQuantidade, isNumeracaoAutomatica, linhasEscolhidas, moverItem, numerarItens, problemasDoPedido, cotacaoNoCatalogo, type ItemEscolhido } from "../../dados/pedido";
+import { comMarcaXped, comNumeracao, comOrdemDeCompra, comPartNumber, comQuantidade, isNumeracaoAutomatica, linhasEscolhidas, moverItem, numerarItens, problemasDoPedido, cotacaoNoCatalogo, type ItemEscolhido } from "../../dados/pedido";
 import type { CatalogoDoCliente, EscolhasDoPedido, Cotacao } from "../../dados/tipos";
 import { useCarga } from "../../dados/useCarga";
 import { formatarContagem, formatarMomento, formatarNumero } from "../../formato";
@@ -47,7 +47,7 @@ export function DocumentoDoPedido({ catalogo, idDoCotacao, inicial, relogio }: P
   // A cotação diante do catálogo de hoje: o produto que saiu dele fica de fora, e o preço abaixo da tabela sobe para ela.
   const [doCotacao] = useState(() => cotacaoNoCatalogo(inicial?.itens ?? [], catalogo.produtos));
   const [itens, setItens] = useState<ItemEscolhido[]>(() =>
-    doCotacao.itens.map(({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra }) => ({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra })),
+    doCotacao.itens.map(({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra, partNumber }) => ({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra, partNumber })),
   );
   const [precos, setPrecos] = useState<Precos>(() => Object.fromEntries(doCotacao.itens.map((item) => [item.codigo, item.precoCento])));
   const [entrega, setEntrega] = useState<string | null>(inicial?.entrega ?? null);
@@ -69,7 +69,14 @@ export function DocumentoDoPedido({ catalogo, idDoCotacao, inicial, relogio }: P
   const isXped = escolhas?.clienteXped ?? false;
   /** Incluir, tirar e mover passam por aqui: no pedido xPed, o item da ordem de compra acompanha a ordem. */
   const mudarItens = useCallback((mudar: (atuais: ItemEscolhido[]) => ItemEscolhido[]) => setItens((atuais) => comNumeracao(atuais, mudar(atuais), isXped)), [isXped]);
-  const alterar = useCallback((codigo: string, pecas: number) => mudarItens((atuais) => comQuantidade(atuais, codigo, pecas)), [mudarItens]);
+  const produtosPorCodigo = useMemo(() => new Map(catalogo.produtos.map((produto) => [produto.codigo, produto])), [catalogo.produtos]);
+  const alterar = useCallback(
+    (codigo: string, pecas: number) => {
+      const produto = produtosPorCodigo.get(codigo);
+      if (produto) mudarItens((atuais) => comQuantidade(atuais, produto, pecas));
+    },
+    [mudarItens, produtosPorCodigo],
+  );
   const mover = useCallback((codigo: string, destino: number) => mudarItens((atuais) => moverItem(atuais, codigo, destino)), [mudarItens]);
   const renumerar = useCallback(() => setItens(numerarItens), []);
   const mudarEscolhas = (novas: EscolhasDoPedido) => {
@@ -78,6 +85,7 @@ export function DocumentoDoPedido({ catalogo, idDoCotacao, inicial, relogio }: P
   };
   const alterarPreco = useCallback((codigo: string, preco: number) => setPrecos((atuais) => ({ ...atuais, [codigo]: preco })), []);
   const alterarOrdemDeCompra = useCallback((codigo: string, ordem: OrdemDeCompraDoItem) => setItens((atuais) => comOrdemDeCompra(atuais, codigo, ordem)), []);
+  const alterarPartNumber = useCallback((codigo: string, partNumber: string | null) => setItens((atuais) => comPartNumber(atuais, codigo, partNumber)), []);
   const repetirUltimoPedido = () => {
     if (ultimoPedido) mudarItens(() => itensDoUltimoPedido(ultimoPedido, catalogo.produtos));
   };
@@ -182,6 +190,7 @@ export function DocumentoDoPedido({ catalogo, idDoCotacao, inicial, relogio }: P
             alterar={alterar}
             alterarPreco={alterarPreco}
             alterarOrdemDeCompra={alterarOrdemDeCompra}
+            alterarPartNumber={alterarPartNumber}
             mover={mover}
             ordemDeCompraDoPedido={escolhas?.pedidoDoCliente ?? ""}
             aoRenumerar={isXped && !isNumeracaoAutomatica(itens) ? renumerar : null}

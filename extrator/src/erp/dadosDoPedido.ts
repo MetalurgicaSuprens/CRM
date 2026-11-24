@@ -1,9 +1,10 @@
+import { TABELAS_GERAIS } from "../calculo/partNumbers.ts";
 import type { Referencia } from "../calculo/referencia.ts";
 import type { Oracle } from "../oracle.ts";
 import { condicaoDaCarteira } from "./carteira.ts";
 import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
-import { data, emLista } from "./sql.ts";
-import type { CadastroDoErp, CondicaoDoErp, EscolhasDoErp, LocalDoErp, TransportadoraDoErp, UltimoPedidoDoErp, UsoDaTransportadora } from "./tipos.ts";
+import { data, emLista, emListaDeTexto } from "./sql.ts";
+import type { CadastroDoErp, CondicaoDoErp, EscolhasDoErp, LocalDoErp, PartNumberUsado, TransportadoraDoErp, UltimoPedidoDoErp, UsoDaTransportadora } from "./tipos.ts";
 
 /*
  * O que a tela de pedido precisa, lido como o app antigo dos representantes (SGI6R) lê: o cadastro do
@@ -194,4 +195,28 @@ export async function lerUltimosPedidos(oracle: Oracle, referencia: Referencia, 
     // O item do SGI é sempre em cento (CT) nos 24 meses de 2026-11-17; em peça, fica como está.
     pecas: numero(linha, 5) * (texto(linha, 6) === "CT" ? 100 : 1),
   }));
+}
+
+/**
+ * O último part number de cada produto nos pedidos de cada cliente da carteira nos 24 meses (PV2_PNU; vazio
+ * e '0' não contam). Fica de fora o número igual ao de uma tabela geral para o produto: o app antigo o
+ * preenchia sozinho, e o representante nem sempre o apagava (decisão do Lucas em 2026-11-23). O último é o
+ * do pedido de data mais recente, e só no empate o de número maior.
+ */
+export async function lerPartNumbersUsados(oracle: Oracle, referencia: Referencia, autorizados: string[]): Promise<PartNumberUsado[]> {
+  const { lista, binds } = bindsDaCarteira(referencia, autorizados);
+  const gerais = emListaDeTexto("g", [...TABELAS_GERAIS]);
+  const linhas = await oracle.consultar(
+    `SELECT C.EMP_FIL, C.CLIENTE, TRIM(B.PV2_PAC), MAX(TRIM(B.PV2_PNU)) KEEP (DENSE_RANK LAST ORDER BY A.PV1_DCA, A.PV1_NPE)
+       FROM ABC71.SGI5_TAB_VEN_PV1_V2 A
+       JOIN ABC71.CRCL C ON C.CLIENTE = A.PV1_CLI
+       JOIN ABC71.SGI5_TAB_VEN_PV2_V2 B ON B.PV2_NPE = A.PV1_NPE
+      WHERE A.PV1_DCA >= ${data("inicio24")} AND ${PEDIDO_QUE_VALEU} AND ${condicaoDaCarteira(lista.sql)}
+        AND NULLIF(TRIM(B.PV2_PNU), '0') IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM ABC71.SGI5_TAB_VEN_TP2 G
+                         WHERE TRIM(G.TP2_COD) IN ${gerais.sql} AND TRIM(G.TP2_PRO) = TRIM(B.PV2_PAC) AND TRIM(G.TP2_CMO) = TRIM(B.PV2_PNU))
+      GROUP BY C.EMP_FIL, C.CLIENTE, TRIM(B.PV2_PAC)`,
+    { ...binds, ...gerais.binds, inicio24: referencia.inicio24 },
+  );
+  return linhas.map((linha) => ({ chave: chaveDoCliente(numero(linha, 0), numero(linha, 1)), produto: texto(linha, 2), partNumber: texto(linha, 3) }));
 }

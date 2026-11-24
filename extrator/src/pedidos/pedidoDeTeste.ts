@@ -17,7 +17,7 @@ export function pedidoDeTeste(parcial: Partial<PedidoRecebido> = {}): PedidoRece
     usuario: "00b083ba6c1f4430",
     codigos: ["1401"],
     cliente: CLIENTE_DO_PEDIDO,
-    itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }],
+    itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: "CF420118" }],
     entrega: null,
     observacao: "",
     escolhas: { condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "OC 4512", aceitaParcial: true, clienteXped: false, transportadora: { codigo: "101" } },

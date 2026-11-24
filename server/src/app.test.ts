@@ -62,7 +62,7 @@ const COTACAO = "3f1c2b8e-5d4a-4c6b-9e7f-0a1b2c3d4e5f";
 
 /** Uma cotação válida de A: 300 peças do F-100 pelo preço da última compra, acima da tabela (95,50). */
 function cotacaoDeA(parcial: object = {}) {
-  return { codigoCliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "", ...parcial };
+  return { codigoCliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: null, observacao: "", ...parcial };
 }
 
 function salvarComoA(app: FastifyInstance, id: string, corpo: object, origem = ORIGEM) {
@@ -81,7 +81,7 @@ const CREDENCIAL_DE_MENTIRA = {
 /** Um pedido enviado de B, gravado direto no app.db (o envio de verdade está em envio/envio.test.ts): devolve o número. */
 function gravarPedidoEnviadoDeB(): string {
   const usuario = String(banco.prepare("SELECT usuario FROM usuario_codigos WHERE codigo = '9999'").get()?.usuario);
-  const conteudo = { cliente: CLIENTE_DE_B, itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 50, precoCento: 82, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "", escolhas: null };
+  const conteudo = { cliente: CLIENTE_DE_B, itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 50, precoCento: 82, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: null, observacao: "", escolhas: null };
   banco
     .prepare("INSERT INTO pedidos_enviados (usuario, cliente, cotacao, conteudo, hash, chave, assinatura, enviado_em) VALUES (?, ?, ?, ?, '', ?, '{}', ?)")
     .run(usuario, CLIENTE_DE_B, "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d4e", JSON.stringify(conteudo), `chave-de-${usuario}`, "2026-10-14T09:00:00");
@@ -103,7 +103,7 @@ async function criarCotacaoDeB(app: FastifyInstance): Promise<string> {
     method: "PUT",
     url: `/api/cotacoes/${id}`,
     headers: { cookie: loginDeB, origin: ORIGEM },
-    payload: { codigoCliente: CLIENTE_DE_B, itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 50, precoCento: 82, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "" },
+    payload: { codigoCliente: CLIENTE_DE_B, itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 50, precoCento: 82, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: null, observacao: "" },
   });
   expect(resposta.statusCode, resposta.body).toBe(200);
   return id;
@@ -302,11 +302,23 @@ describe("escopo: o login A nunca vê os dados de B", () => {
           precoDaTabela: 95.5,
           ultimaCompra: { precoCento: 98.4, data: "2026-09-15" },
           partNumbers: ["CF420118", "N906227"],
+          partNumberDoCliente: { opcoes: ["01853"], sugerido: "01853" },
           pesoKg: 0.02175,
           jaComprou: true,
         },
         // Produto sem EAN: qualquer quantidade de peças. Sem part number na Bíblia, a lista vem vazia; sem compra, sem última compra.
-        { codigo: "P-200", familia: "PRESIL", medida: null, embalagem: 1, precoDaTabela: 120, ultimaCompra: null, partNumbers: [], pesoKg: null, jaComprou: false },
+        {
+          codigo: "P-200",
+          familia: "PRESIL",
+          medida: null,
+          embalagem: 1,
+          precoDaTabela: 120,
+          ultimaCompra: null,
+          partNumbers: [],
+          partNumberDoCliente: { opcoes: [], sugerido: null },
+          pesoKg: null,
+          jaComprou: false,
+        },
       ],
       representante: { codigo: "1401", nome: "STAR VENDAS" },
     });
@@ -522,11 +534,11 @@ describe("cotações: o pedido em montagem fica no servidor, do login", () => {
     expect(resposta.json()).toMatchObject({
       id: COTACAO,
       cliente: { codigo: CLIENTE_DE_A },
-      itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }],
+      itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }],
       entrega: null,
       totalEstimado: 295.2,
     });
-    expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).json<Cotacao>().itens).toEqual([{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }]);
+    expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).json<Cotacao>().itens).toEqual([{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }]);
     expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().cotacoes.map(({ id }) => id)).toEqual([COTACAO]);
     expect((await comoA(app, `/api/clientes/${CLIENTE_DE_A}`)).json<FichaCliente>().pedidos[0]).toMatchObject({
       id: COTACAO,
@@ -537,21 +549,31 @@ describe("cotações: o pedido em montagem fica no servidor, do login", () => {
     });
   });
 
-  it("guarda a ordem de compra e o item dela em cada item, e recusa o item da ordem fora do limite", async () => {
+  it("guarda o part number do item, o vazio como sem part number, e recusa o longo demais", async () => {
     const app = criarAppDeTeste();
-    const item = { codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 1 };
+    const item = { codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: "232.407-9RF" };
     expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [item] }))).statusCode).toBe(200);
     expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).json<Cotacao>().itens).toEqual([item]);
-    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ ...item, itemDaOrdemDeCompra: 1_000_000 }] }))).statusCode).toBe(400);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ ...item, partNumber: "" }] }))).statusCode).toBe(200);
+    expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).json<Cotacao>().itens[0]?.partNumber).toBeNull();
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ ...item, partNumber: "X".repeat(31) }] }))).statusCode).toBe(400);
+  });
+
+  it("guarda a ordem de compra e o item dela em cada item, e recusa o item da ordem fora do limite", async () => {
+    const app = criarAppDeTeste();
+    const item = { codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 1, partNumber: null };
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [item] }))).statusCode).toBe(200);
+    expect((await comoA(app, `/api/cotacoes/${COTACAO}`)).json<Cotacao>().itens).toEqual([item]);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ ...item, itemDaOrdemDeCompra: 1_000_000, partNumber: null }] }))).statusCode).toBe(400);
     expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ ...item, ordemDeCompra: "151220" }] }))).statusCode).toBe(400);
   });
 
   it("salvar de novo com o mesmo id atualiza a cotação, sem duplicar, e troca os itens", async () => {
     const app = criarAppDeTeste();
     await salvarComoA(app, COTACAO, cotacaoDeA());
-    const segunda = await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: "2027-01-15", observacao: "Entregar\nna portaria" }));
+    const segunda = await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: "2027-01-15", observacao: "Entregar\nna portaria" }));
     expect(segunda.statusCode, segunda.body).toBe(200);
-    expect(segunda.json()).toMatchObject({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: "2027-01-15", observacao: "Entregar\nna portaria", totalEstimado: 9.1 });
+    expect(segunda.json()).toMatchObject({ itens: [{ codigo: "P-200", quantidade: 7, precoCento: 130, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: "2027-01-15", observacao: "Entregar\nna portaria", totalEstimado: 9.1 });
     expect((await comoA(app, "/api/pedidos")).json<PainelDePedidos>().cotacoes).toHaveLength(1);
   });
 
@@ -599,9 +621,9 @@ describe("cotações: o pedido em montagem fica no servidor, do login", () => {
   it("recusa o produto fora do catálogo, o preço abaixo da tabela, o produto repetido e a data que não existe", async () => {
     const app = criarAppDeTeste();
     const casos: [object, RegExp][] = [
-      [{ itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 10, precoCento: 90, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }, /não está no catálogo/],
-      [{ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 95.49, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }, /abaixo da tabela do cliente/],
-      [{ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 96, ordemDeCompra: null, itemDaOrdemDeCompra: null }, { codigo: "F-100", quantidade: 20, precoCento: 96, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }, /duas vezes/],
+      [{ itens: [{ codigo: "PRODUTO-SO-DE-B", quantidade: 10, precoCento: 90, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }] }, /não está no catálogo/],
+      [{ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 95.49, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }] }, /abaixo da tabela do cliente/],
+      [{ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 96, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }, { codigo: "F-100", quantidade: 20, precoCento: 96, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }] }, /duas vezes/],
       [{ entrega: "2027-02-30" }, /não existe/],
     ];
     for (const [parcial, erro] of casos) {
@@ -612,7 +634,7 @@ describe("cotações: o pedido em montagem fica no servidor, do login", () => {
   });
 
   it("aceita o preço igual à tabela, que é o mínimo", async () => {
-    const resposta = await salvarComoA(criarAppDeTeste(), COTACAO, cotacaoDeA({ itens: [{ codigo: "F-100", quantidade: 100, precoCento: 95.5, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }));
+    const resposta = await salvarComoA(criarAppDeTeste(), COTACAO, cotacaoDeA({ itens: [{ codigo: "F-100", quantidade: 100, precoCento: 95.5, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }] }));
     expect(resposta.statusCode, resposta.body).toBe(200);
   });
 
@@ -655,7 +677,7 @@ describe("cotações: o pedido em montagem fica no servidor, do login", () => {
   it("recusa o campo a mais, o preço zerado, o id fora do formato e a observação com caractere de controle", async () => {
     const app = criarAppDeTeste();
     expect((await salvarComoA(app, COTACAO, { ...cotacaoDeA(), representante: "9999" })).statusCode).toBe(400);
-    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 0, ordemDeCompra: null, itemDaOrdemDeCompra: null }] }))).statusCode).toBe(400);
+    expect((await salvarComoA(app, COTACAO, cotacaoDeA({ itens: [{ codigo: "F-100", quantidade: 10, precoCento: 0, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }] }))).statusCode).toBe(400);
     expect((await salvarComoA(app, "R1", cotacaoDeA())).statusCode).toBe(400);
     expect((await salvarComoA(app, COTACAO, cotacaoDeA({ observacao: "a\u0000b" }))).statusCode).toBe(400);
   });

@@ -4,7 +4,8 @@ import type { Oracle } from "../oracle.ts";
 import { condicaoDaCarteira } from "./carteira.ts";
 import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
 import { ITENS_DAS_NOTAS, NOTA_DE_VENDA, data, emLista, emListaDeTexto, precoDoCento, textoDaData } from "./sql.ts";
-import type { PartNumberDaBiblia, PrecoDoCliente, ProdutoDaTabela, ProdutoJaComprado, TabelaDoCliente } from "./tipos.ts";
+import { TABELAS_GERAIS } from "../calculo/partNumbers.ts";
+import type { PartNumberDaBiblia, PartNumberDaTabela, PrecoDoCliente, ProdutoDaTabela, ProdutoJaComprado, TabelaDoCliente } from "./tipos.ts";
 
 /*
  * O catálogo dos clientes da carteira. O preço vem da view de preço líquido do SGI, a mesma da tela
@@ -102,6 +103,24 @@ export async function lerPartNumbersDaBiblia(oracle: Oracle): Promise<PartNumber
       WHERE B.TP1_TIP = 'M' AND TRIM(A.TP2_STA) LIKE 'ATIVO%' AND NULLIF(TRIM(A.TP2_CMO), '0') IS NOT NULL`,
   );
   return linhas.map((linha) => ({ produto: texto(linha, 0), partNumber: texto(linha, 1) }));
+}
+
+/**
+ * O part number ("Código Cliente", TP2_CMO) de cada produto ativo das tabelas próprias dos clientes: o que a
+ * view de preço mostra como VIEW_PNU e o app antigo preenche no item. Sem as tabelas gerais, que não têm
+ * part number de cliente (decisão do Lucas em 2026-11-23). O '0' é vazio.
+ */
+export async function lerPartNumbersDasTabelas(oracle: Oracle, tabelas: string[]): Promise<PartNumberDaTabela[]> {
+  const proprias = tabelas.filter((tabela) => !TABELAS_GERAIS.includes(tabela));
+  if (proprias.length === 0) return [];
+  const lista = emListaDeTexto("t", proprias);
+  const linhas = await oracle.consultar(
+    `SELECT DISTINCT TRIM(A.TP2_COD), TRIM(A.TP2_PRO), TRIM(A.TP2_CMO)
+       FROM ABC71.SGI5_TAB_VEN_TP2 A
+      WHERE TRIM(A.TP2_COD) IN ${lista.sql} AND TRIM(A.TP2_STA) LIKE 'ATIVO%' AND NULLIF(TRIM(A.TP2_CMO), '0') IS NOT NULL`,
+    lista.binds,
+  );
+  return linhas.map((linha) => ({ tabela: texto(linha, 0), produto: texto(linha, 1), partNumber: texto(linha, 2) }));
 }
 
 /** A embalagem é a quantidade do EAN do produto: em 14/10, cada produto do catálogo tinha um só. */

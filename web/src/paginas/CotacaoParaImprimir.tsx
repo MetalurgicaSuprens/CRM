@@ -381,8 +381,9 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem, trecho, larguras }: Pr
   const ipi = catalogo.dadosDoPedido?.ipi ?? null;
   const temOrdem = cotacao.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null) || Boolean(cotacao.escolhas?.pedidoDoCliente.trim());
   const ordemDoPedido = cotacao.escolhas?.pedidoDoCliente.trim() ?? "";
-  // Item, produto, quantidade, cento, valor sem IPI e peso; mais a ordem de compra e o IPI, quando há.
-  const colunas = 6 + (temOrdem ? 2 : 0) + (ipi ? 2 : 0);
+  const temPartNumber = cotacao.itens.some((item) => item.partNumber !== null);
+  // Item, produto, quantidade, cento, valor sem IPI e peso; mais o part number, a ordem de compra e o IPI, quando há.
+  const colunas = 6 + (temPartNumber ? 1 : 0) + (temOrdem ? 2 : 0) + (ipi ? 2 : 0);
   return (
     <table className={larguras ? `${estilos.itens} ${estilos.colunasFixas}` : estilos.itens}>
       {larguras ? (
@@ -401,6 +402,7 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem, trecho, larguras }: Pr
         <tr>
           <th>Item</th>
           <th>Produto</th>
+          {temPartNumber ? <th>Part number</th> : null}
           {temOrdem ? (
             <>
               <th>Ordem compra</th>
@@ -429,6 +431,7 @@ function ItensDaCotacao({ cotacao, catalogo, pesoPorItem, trecho, larguras }: Pr
             <tr key={item.codigo}>
               <td>{posicao + 1}</td>
               <td className={estilos.codigo}>{item.codigo}</td>
+              {temPartNumber ? <td className={estilos.codigo}>{item.partNumber ?? ""}</td> : null}
               {temOrdem ? (
                 <>
                   <td>{item.ordemDeCompra ?? ordemDoPedido}</td>

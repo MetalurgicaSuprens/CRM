@@ -142,7 +142,6 @@ function itemDoPedido(
   const produto = produtos.get(item.codigo);
   if (!produto) throw new Error(`O produto ${item.codigo} não está na tabela do cliente.`);
   const icms = PROCEDENCIAS_IMPORTADAS.has(produto.procedencia) && String(cadastro.cfop).startsWith("6") ? ICMS_DO_IMPORTADO : cadastro.aliquotaDoIcms;
-  const semPartNumber = produto.partNumber === "0" || produto.partNumber === "";
   const minimo = precoMinimo(minimos.get(item.codigo), produto.mercado, icms, cadastro.comissao);
   return {
     V_OPE: COTACAO,
@@ -153,8 +152,10 @@ function itemDoPedido(
     V_PIC: icms,
     V_PIP: cadastro.baseDoIpi === "SIM" ? produto.aliquotaDoIpi : 0,
     V_PAC: produto.produto,
-    V_PNU: semPartNumber ? null : produto.partNumber,
-    V_PNU_FOR: semPartNumber ? null : textoOuNulo(produto.partNumberDoFornecedor),
+    // O part number é o do item, que o representante viu e pôde trocar. O do fornecedor vem da tabela quando o
+    // número é dela; digitado, vai vazio, como no app antigo quando a tabela não tem part number.
+    V_PNU: item.partNumber,
+    V_PNU_FOR: item.partNumber === null ? null : textoOuNulo(produto.partNumbersDaTabela.get(item.partNumber) ?? ""),
     V_UNI: "CT",
     V_QTD: item.quantidade / PECAS_POR_CENTO,
     V_VLR_TAB: produto.valorDeTabela,

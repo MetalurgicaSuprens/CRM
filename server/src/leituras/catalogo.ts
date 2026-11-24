@@ -55,6 +55,7 @@ export function clienteDoPedido(db: DatabaseSync, sessao: Sessao, codigoDoClient
 function lerProdutos(db: DatabaseSync, codigoDoCliente: string, lista: number | null): CatalogoDoCliente["produtos"] {
   if (lista === null) return [];
   const partNumbers = partNumbersDaLista(db, lista);
+  const doCliente = partNumbersDoCliente(db, codigoDoCliente);
   return lerLinhas(
     db,
     `SELECT l.produto, p.familia, p.medida, p.embalagem, p.peso_kg, l.preco_cento,
@@ -72,6 +73,7 @@ function lerProdutos(db: DatabaseSync, codigoDoCliente: string, lista: number | 
     precoDaTabela: numero(linha, "preco_cento"),
     ultimaCompra: ultimaCompraDa(linha),
     partNumbers: partNumbers.get(texto(linha, "produto")) ?? [],
+    partNumberDoCliente: doCliente.get(texto(linha, "produto")) ?? SEM_PART_NUMBER_DO_CLIENTE,
     pesoKg: numeroOuNulo(linha, "peso_kg"),
     jaComprou: numero(linha, "ja_comprou") === 1,
   }));
@@ -82,6 +84,21 @@ function ultimaCompraDa(linha: Linha): ProdutoDoCatalogo["ultimaCompra"] {
   const data = textoOuNulo(linha, "ultima_compra");
   const precoCento = numeroOuNulo(linha, "preco_cento_na_ultima");
   return data !== null && precoCento !== null ? { precoCento, data } : null;
+}
+
+const SEM_PART_NUMBER_DO_CLIENTE: ProdutoDoCatalogo["partNumberDoCliente"] = { opcoes: [], sugerido: null };
+
+/** O part number do cliente em cada produto da lista dele, com o que o item já traz (extrator/src/calculo/partNumbers.ts). */
+function partNumbersDoCliente(db: DatabaseSync, codigoDoCliente: string): Map<string, ProdutoDoCatalogo["partNumberDoCliente"]> {
+  const porProduto = new Map<string, ProdutoDoCatalogo["partNumberDoCliente"]>();
+  const linhas = lerLinhas(db, "SELECT produto, part_number, is_sugerido FROM cliente_part_number WHERE cliente = ? ORDER BY produto, part_number", [codigoDoCliente]);
+  for (const linha of linhas) {
+    const produto = texto(linha, "produto");
+    const partNumber = texto(linha, "part_number");
+    const { opcoes, sugerido } = porProduto.get(produto) ?? SEM_PART_NUMBER_DO_CLIENTE;
+    porProduto.set(produto, { opcoes: [...opcoes, partNumber], sugerido: numero(linha, "is_sugerido") === 1 ? partNumber : sugerido });
+  }
+  return porProduto;
 }
 
 /** Os part numbers de cada produto da lista, em ordem. */

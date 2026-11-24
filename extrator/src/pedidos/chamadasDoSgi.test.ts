@@ -24,8 +24,7 @@ const CADASTRO: CadastroDoPedido = {
 
 const PRODUTO: ProdutoDoPedido = {
   produto: "F-100",
-  partNumber: "CF420118",
-  partNumberDoFornecedor: "PNF-1",
+  partNumbersDaTabela: new Map([["CF420118", "PNF-1"]]),
   procedencia: 0,
   aliquotaDoIpi: 5,
   desconto: "10+5",
@@ -159,7 +158,7 @@ describe("montarChamadas", () => {
   });
 
   it("põe a ordem de compra e o item dela no item, para o xPed", () => {
-    const pedido = pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 3 }] });
+    const pedido = pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 3, partNumber: null }] });
     expect(valores(montarChamadas(dados({ pedido }))[1])).toMatchObject({ V_OCO: "151220/ES", V_IOC: 3 });
   });
 
@@ -171,8 +170,18 @@ describe("montarChamadas", () => {
   });
 
   it("não cobra IPI do cliente fora da base e deixa sem o part number '0'", () => {
-    const semIpi = dados({ cadastro: { ...CADASTRO, baseDoIpi: "NAO" }, produtos: new Map([["F-100", { ...PRODUTO, partNumber: "0" }]]) });
-    expect(valores(montarChamadas(semIpi)[1])).toMatchObject({ V_PIP: 0, V_PNU: null, V_PNU_FOR: null });
+    const semIpi = dados({ cadastro: { ...CADASTRO, baseDoIpi: "NAO" } });
+    expect(valores(montarChamadas(semIpi)[1])).toMatchObject({ V_PIP: 0 });
+  });
+
+  it("manda o part number que o representante digitou, com o do fornecedor vazio por não ser da tabela", () => {
+    const pedido = pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: "01853" }] });
+    expect(valores(montarChamadas(dados({ pedido }))[1])).toMatchObject({ V_PNU: "01853", V_PNU_FOR: null });
+  });
+
+  it("manda o item sem part number quando o representante o apagou, mesmo que a tabela tenha", () => {
+    const pedido = pedidoDeTeste({ itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }] });
+    expect(valores(montarChamadas(dados({ pedido }))[1])).toMatchObject({ V_PNU: null, V_PNU_FOR: null });
   });
 
   it("efetiva só com a operação e o número, o resto nulo", () => {

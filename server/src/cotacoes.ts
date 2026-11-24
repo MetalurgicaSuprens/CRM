@@ -164,10 +164,11 @@ function gravar(banco: DatabaseSync, sessao: Sessao, id: string, conteudo: Conte
       .run(id, sessao.idDoUsuario, conteudo.codigoCliente, conteudo.entrega, conteudo.observacao, conteudo.escolhas ? JSON.stringify(conteudo.escolhas) : null, momento, momento);
     banco.prepare("DELETE FROM cotacao_itens WHERE cotacao = ?").run(id);
     const inserir = banco.prepare(
-      "INSERT INTO cotacao_itens (cotacao, ordem, produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      `INSERT INTO cotacao_itens (cotacao, ordem, produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra, part_number)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     );
     conteudo.itens.forEach((item, i) =>
-      inserir.run(id, i + 1, item.codigo, item.quantidade, arredondarAoCentavo(item.precoCento), item.ordemDeCompra, item.itemDaOrdemDeCompra),
+      inserir.run(id, i + 1, item.codigo, item.quantidade, arredondarAoCentavo(item.precoCento), item.ordemDeCompra, item.itemDaOrdemDeCompra, item.partNumber),
     );
   });
 }
@@ -177,7 +178,7 @@ function montarCotacao(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao, 
   if (!cliente) return null;
   const id = String(linha.id);
   const itens = banco
-    .prepare("SELECT produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra FROM cotacao_itens WHERE cotacao = ? ORDER BY ordem")
+    .prepare("SELECT produto, quantidade, preco_cento, ordem_de_compra, item_da_ordem_de_compra, part_number FROM cotacao_itens WHERE cotacao = ? ORDER BY ordem")
     .all(id)
     .map((item) => ({
       codigo: String(item.produto),
@@ -185,6 +186,7 @@ function montarCotacao(banco: DatabaseSync, foto: DatabaseSync, sessao: Sessao, 
       precoCento: Number(item.preco_cento),
       ordemDeCompra: item.ordem_de_compra === null ? null : String(item.ordem_de_compra),
       itemDaOrdemDeCompra: item.item_da_ordem_de_compra === null ? null : Number(item.item_da_ordem_de_compra),
+      partNumber: item.part_number === null ? null : String(item.part_number),
     }));
   return {
     id,

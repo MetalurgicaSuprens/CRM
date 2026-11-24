@@ -31,6 +31,7 @@ export type TabelasDosClientes = Pick<
   | "produto"
   | "lista_de_precos"
   | "produto_part_number"
+  | "cliente_part_number"
   | "produto_comprado"
   | "ficha_produto"
   | "cliente_mix"
@@ -93,6 +94,7 @@ export function montarClientes(dados: DadosDoErp, referencia: Referencia, ids: I
     produto: juntarProdutos(catalogo.produtos, produtosDaFicha),
     lista_de_precos: catalogo.lista_de_precos,
     produto_part_number: catalogo.produto_part_number,
+    cliente_part_number: catalogo.cliente_part_number,
     produto_comprado: catalogo.produto_comprado,
     ficha_produto: produtosDaFicha.map((produto) => ({
       cliente: produto.cliente,

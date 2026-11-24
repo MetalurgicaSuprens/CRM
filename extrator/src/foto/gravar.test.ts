@@ -40,6 +40,7 @@ function fotoDe(geradaEm: string, vendasPorMes = 1_200): Foto {
     produto: [],
     lista_de_precos: [],
     produto_part_number: [],
+    cliente_part_number: [],
     produto_comprado: [],
     ficha_produto: [],
     cliente_mix: [],

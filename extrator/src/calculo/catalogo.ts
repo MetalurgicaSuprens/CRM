@@ -2,18 +2,20 @@ import type { Foto } from "dominio/esquemaDaFoto";
 import type { Mercado } from "dominio/tipos";
 import type { ClienteDaCarteira, DadosDoErp, PartNumberDaBiblia, PrecoDoCliente, ProdutoDaTabela, TabelaDoCliente } from "../erp/tipos.ts";
 import { agruparPor } from "./agrupar.ts";
+import { montarPartNumbersDosClientes, type ClienteDosPartNumbers } from "./partNumbers.ts";
 import { SEM_FAMILIA } from "./produtos.ts";
 
 /*
  * O catálogo de cada cliente da carteira: a tabela escolhida e os preços dela. Clientes com a mesma
  * tabela e os mesmos descontos têm preços iguais e dividem uma lista, para o catálogo não se repetir
- * cliente a cliente na foto. O part number é do produto, o mesmo em toda lista: vem da Bíblia Montadora.
+ * cliente a cliente na foto. O part number da busca é do produto, o mesmo em toda lista: vem da Bíblia
+ * Montadora. O do item do pedido é do cliente: da tabela própria dele ou do que ele usou (partNumbers.ts).
  */
 
-/** O nome da tabela de preço do cliente e a lista dele em `lista_de_precos`. */
-export type TabelaEListaDoCliente = { tabela: string; lista: number };
+/** O nome da tabela de preço do cliente, o código dela no SGI e a lista dele em `lista_de_precos`. */
+export type TabelaEListaDoCliente = { tabela: string; codigo: string; lista: number };
 
-export type CatalogoDosClientes = Pick<Foto, "lista_de_precos" | "produto_comprado" | "produto_part_number"> & {
+export type CatalogoDosClientes = Pick<Foto, "lista_de_precos" | "produto_comprado" | "produto_part_number" | "cliente_part_number"> & {
   /** Id do cliente → tabela e lista dele. Cliente sem tabela usável fica de fora. */
   porCliente: Map<string, TabelaEListaDoCliente>;
   /** Os produtos de alguma lista, com medida e embalagem. */
@@ -22,7 +24,7 @@ export type CatalogoDosClientes = Pick<Foto, "lista_de_precos" | "produto_compra
 
 type ClienteDoCatalogo = { id: string; cliente: ClienteDaCarteira };
 
-type DadosDoCatalogo = Pick<DadosDoErp, "tabelas" | "precos" | "partNumbers" | "produtosDasTabelas" | "jaComprados">;
+type DadosDoCatalogo = Pick<DadosDoErp, "tabelas" | "precos" | "partNumbers" | "partNumbersDasTabelas" | "partNumbersUsados" | "produtosDasTabelas" | "jaComprados">;
 
 const MEDIDA = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 
@@ -49,6 +51,10 @@ export function montarCatalogo(clientes: readonly ClienteDoCatalogo[], dados: Da
     lista_de_precos: linhas,
     produto_comprado: produtosComprados(clientes, porCliente, linhas, dados.jaComprados),
     produto_part_number: partNumbersDosProdutos(dados.partNumbers, produtosDasListas),
+    cliente_part_number: montarPartNumbersDosClientes(clientesComLista(clientes, porCliente, linhas), {
+      daTabela: dados.partNumbersDasTabelas,
+      usados: dados.partNumbersUsados,
+    }),
     produtos: dados.produtosDasTabelas.filter(({ produto }) => produtosDasListas.has(produto)).map(linhaDoProduto),
   };
 }
@@ -76,7 +82,7 @@ function montarListas(clientes: readonly ClienteDoCatalogo[], dados: DadosDoCata
       listaPorAssinatura.set(assinatura, lista);
       for (const { produto, precoCento } of ordenados) linhas.push({ lista, produto, preco_cento: precoCento });
     }
-    porCliente.set(id, { tabela: tabela.nome ?? tabela.tabela, lista });
+    porCliente.set(id, { tabela: tabela.nome ?? tabela.tabela, codigo: tabela.tabela, lista });
   }
   return { porCliente, linhas };
 }
@@ -94,6 +100,27 @@ function partNumbersDosProdutos(partNumbers: readonly PartNumberDaBiblia[], prod
   return [...unicos.values()].sort((a, b) => a.produto.localeCompare(b.produto) || a.part_number.localeCompare(b.part_number));
 }
 
+/** Os clientes que têm lista, com o código da tabela e os produtos dela. */
+function clientesComLista(
+  clientes: readonly ClienteDoCatalogo[],
+  porCliente: CatalogoDosClientes["porCliente"],
+  linhas: Foto["lista_de_precos"],
+): ClienteDosPartNumbers[] {
+  const produtosPorLista = produtosDasListas(linhas);
+  return clientes.flatMap(({ id, cliente }) => {
+    const daLista = porCliente.get(id);
+    return daLista ? [{ id, chave: cliente.chave, tabela: daLista.codigo, produtos: produtosPorLista.get(daLista.lista) ?? new Set<string>() }] : [];
+  });
+}
+
+function produtosDasListas(linhas: Foto["lista_de_precos"]): Map<number, Set<string>> {
+  const produtosPorLista = new Map<number, Set<string>>();
+  for (const { lista, produto } of linhas) {
+    produtosPorLista.set(lista, (produtosPorLista.get(lista) ?? new Set()).add(produto));
+  }
+  return produtosPorLista;
+}
+
 /** Só os produtos comprados que estão na lista do cliente: são eles que a aba "Já comprados" mostra. */
 function produtosComprados(
   clientes: readonly ClienteDoCatalogo[],
@@ -101,10 +128,7 @@ function produtosComprados(
   linhas: Foto["lista_de_precos"],
   jaComprados: DadosDoCatalogo["jaComprados"],
 ): Foto["produto_comprado"] {
-  const produtosPorLista = new Map<number, Set<string>>();
-  for (const { lista, produto } of linhas) {
-    produtosPorLista.set(lista, (produtosPorLista.get(lista) ?? new Set()).add(produto));
-  }
+  const produtosPorLista = produtosDasListas(linhas);
   const compradosPorChave = agruparPor(jaComprados, (comprado) => comprado.chave);
   return clientes.flatMap(({ id, cliente }) => {
     const produtosDaLista = produtosPorLista.get(porCliente.get(id)?.lista ?? 0);

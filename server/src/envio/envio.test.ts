@@ -70,7 +70,7 @@ function ler(url: string, cookie: string): Promise<LightMyRequestResponse> {
 
 /** 300 peças do F-100 a 98,40 o cento, acima da tabela (95,50), com as condições escolhidas. */
 async function salvarCotacao({ cookie }: Representante, parcial: object = {}, id = COTACAO): Promise<void> {
-  const corpo = { codigoCliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "", escolhas: ESCOLHAS, ...parcial };
+  const corpo = { codigoCliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: null, observacao: "", escolhas: ESCOLHAS, ...parcial };
   const resposta = await app.inject({ method: "PUT", url: `/api/cotacoes/${id}`, headers: { cookie, origin: ORIGEM }, payload: corpo });
   expect(resposta.statusCode, resposta.body).toBe(200);
 }
@@ -106,7 +106,7 @@ describe("envio do pedido", () => {
     expect(resposta.statusCode, resposta.body).toBe(200);
     const pedido = resposta.json<PedidoEnviado>();
     expect(pedido).toMatchObject({ numero: "CRM-00001", etapa: "enviado", totalEstimado: 295.2, cliente: { codigo: CLIENTE_DE_A } });
-    expect(pedido.itens).toEqual([{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, familia: "FLEXIL", medida: "14–22 mm" }]);
+    expect(pedido.itens).toEqual([{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null, familia: "FLEXIL", medida: "14–22 mm" }]);
 
     const painel = (await ler("/api/pedidos", a.cookie)).json<PainelDePedidos>();
     expect(painel.cotacoes).toEqual([]);
@@ -126,7 +126,7 @@ describe("envio do pedido", () => {
       numero: "CRM-00001",
       codigos: ["1401", "1402"],
       cliente: CLIENTE_DE_A,
-      itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }],
+      itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }],
       observacao: "Entregar pela manhã",
       escolhas: ESCOLHAS,
       hash: expect.stringMatching(/^[0-9a-f]{64}$/),
@@ -136,7 +136,7 @@ describe("envio do pedido", () => {
 
   it("leva à caixa de saída a ordem de compra e o item dela de cada item", async () => {
     const a = await representante();
-    const item = { codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 3 };
+    const item = { codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 3, partNumber: null };
     await salvarCotacao(a, { itens: [item] });
     await enviar(a);
     expect((JSON.parse(fs.readFileSync(path.join(saida, "CRM-00001.json"), "utf8")) as PedidoParaOErp).itens).toEqual([item]);
@@ -146,7 +146,7 @@ describe("envio do pedido", () => {
     const a = await representante();
     await salvarCotacao(a);
     const opcoes = (await pedirOpcoes(a)).json();
-    await salvarCotacao(a, { itens: [{ codigo: "F-100", quantidade: 30_000, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }] });
+    await salvarCotacao(a, { itens: [{ codigo: "F-100", quantidade: 30_000, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }] });
     const resposta = await confirmar(a, a.aparelho.usar(opcoes, ORIGEM));
     expect(resposta.statusCode).toBe(400);
     expect(arquivosNaSaida()).toEqual([]);
@@ -201,7 +201,7 @@ describe("envio do pedido", () => {
     const a = await representante();
     await salvarCotacao(a);
     await enviar(a);
-    const corpo = { codigoCliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null }], entrega: null, observacao: "", escolhas: ESCOLHAS };
+    const corpo = { codigoCliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: null, observacao: "", escolhas: ESCOLHAS };
     const resposta = await app.inject({ method: "PUT", url: `/api/cotacoes/${COTACAO}`, headers: { cookie: a.cookie, origin: ORIGEM }, payload: corpo });
     expect(resposta.statusCode).toBe(409);
     expect((await ler("/api/pedidos", a.cookie)).json<PainelDePedidos>().cotacoes).toEqual([]);

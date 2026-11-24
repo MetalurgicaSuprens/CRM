@@ -21,6 +21,16 @@ export const LIMITE_DA_ORDEM_DE_COMPRA = 30;
 /** O maior número de item da ordem de compra: a nota fiscal eletrônica leva até 6 algarismos (nItemPed). */
 export const MAIOR_ITEM_DA_ORDEM_DE_COMPRA = 999_999;
 
+/** Caracteres do part number do item (PV2_PNU, VARCHAR2(30)). */
+export const LIMITE_DO_PART_NUMBER = 30;
+
+/**
+ * O part number do cliente no item, como no app antigo dos representantes (SGI6R, "Part Number:" na
+ * inclusão do item): nasce com o sugerido para o cliente (extrator/src/calculo/partNumbers.ts), e o
+ * representante pode trocar ou apagar. Null é sem part number.
+ */
+export type PartNumberDoItem = { partNumber: string | null };
+
 /**
  * A ordem de compra do cliente em cada item, como no app antigo dos representantes (SGI6R, "Ordem
  * Compra:" e "Item O.C.:" na inclusão do item). Os clientes que pedem o xPed na nota fiscal querem nela

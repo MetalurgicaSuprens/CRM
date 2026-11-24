@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SEM_ORDEM_DE_COMPRA_NO_ITEM, comMarcaXped, comNumeracao, comOrdemDeCompra, isNumeracaoAutomatica, moverItem, numerarItens, itemDaOrdemDigitado, ordemDeCompraDigitada,
+import { SEM_REFERENCIAS_DO_CLIENTE, comMarcaXped, comPartNumber, itemNovo, partNumberDigitado, comNumeracao, comOrdemDeCompra, isNumeracaoAutomatica, moverItem, numerarItens, itemDaOrdemDigitado, ordemDeCompraDigitada,
   STATUS_NA_FICHA,
   comQuantidade,
   embalagemAnterior,
@@ -51,24 +51,47 @@ describe("quantidadeDigitada", () => {
   });
 });
 
+const SEM_PART_NUMBER = { opcoes: [], sugerido: null };
+const produto = (codigo: string, partNumberDoCliente: { opcoes: string[]; sugerido: string | null } = SEM_PART_NUMBER) => ({ codigo, partNumberDoCliente });
+
 describe("comQuantidade", () => {
-  const itens = [{ codigo: "A", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }, { codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
+  const itens = [{ codigo: "A", quantidade: 100, ...SEM_REFERENCIAS_DO_CLIENTE }, { codigo: "B", quantidade: 200, ...SEM_REFERENCIAS_DO_CLIENTE }];
 
   it("põe o produto novo no fim do pedido, na ordem em que foi incluído", () => {
-    expect(comQuantidade(itens, "C", 50)).toEqual([...itens, { codigo: "C", quantidade: 50, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }]);
+    expect(comQuantidade(itens, produto("C"), 50)).toEqual([...itens, { codigo: "C", quantidade: 50, ...SEM_REFERENCIAS_DO_CLIENTE }]);
   });
 
   it("muda a quantidade do produto que já está no pedido sem tirá-lo do lugar", () => {
-    expect(comQuantidade(itens, "A", 300)).toEqual([{ codigo: "A", quantidade: 300, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }, { codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }]);
+    expect(comQuantidade(itens, produto("A"), 300)).toEqual([{ codigo: "A", quantidade: 300, ...SEM_REFERENCIAS_DO_CLIENTE }, { codigo: "B", quantidade: 200, ...SEM_REFERENCIAS_DO_CLIENTE }]);
   });
 
   it("tira do pedido o produto que zerou", () => {
-    expect(comQuantidade(itens, "A", 0)).toEqual([{ codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }]);
+    expect(comQuantidade(itens, produto("A"), 0)).toEqual([{ codigo: "B", quantidade: 200, ...SEM_REFERENCIAS_DO_CLIENTE }]);
+  });
+});
+
+describe("part number no item", () => {
+  it("o item novo já vem com o part number sugerido para o cliente", () => {
+    expect(itemNovo(produto("A", { opcoes: ["01853"], sugerido: "01853" }), 100)).toMatchObject({ partNumber: "01853" });
+  });
+
+  it("o item novo vem sem part number quando há várias opções e nenhuma sugerida", () => {
+    expect(itemNovo(produto("A", { opcoes: ["X1", "X2"], sugerido: null }), 100)).toMatchObject({ partNumber: null });
+  });
+
+  it("mudar a quantidade não troca o part number que o representante escolheu", () => {
+    const itens = comPartNumber([itemNovo(produto("A", { opcoes: ["01853"], sugerido: "01853" }), 100)], "A", "OUTRO");
+    expect(comQuantidade(itens, produto("A", { opcoes: ["01853"], sugerido: "01853" }), 300)).toEqual([{ codigo: "A", quantidade: 300, ...SEM_REFERENCIAS_DO_CLIENTE, partNumber: "OUTRO" }]);
+  });
+
+  it("trata o part number vazio como sem part number e tira os espaços das pontas", () => {
+    expect(partNumberDigitado("   ")).toBeNull();
+    expect(partNumberDigitado(" 232.407-9RF ")).toBe("232.407-9RF");
   });
 });
 
 describe("ordem dos itens e numeração xPed", () => {
-  const item = (codigo: string, itemDaOrdemDeCompra: number | null = null) => ({ codigo, quantidade: 100, ordemDeCompra: null, itemDaOrdemDeCompra });
+  const item = (codigo: string, itemDaOrdemDeCompra: number | null = null) => ({ codigo, quantidade: 100, ...SEM_REFERENCIAS_DO_CLIENTE, itemDaOrdemDeCompra });
   const codigos = (itens: readonly { codigo: string }[]) => itens.map(({ codigo }) => codigo);
   const numeros = (itens: readonly { itemDaOrdemDeCompra: number | null }[]) => itens.map(({ itemDaOrdemDeCompra }) => itemDaOrdemDeCompra);
 
@@ -111,12 +134,12 @@ describe("ordem dos itens e numeração xPed", () => {
 });
 
 describe("ordem de compra no item", () => {
-  const itens = [{ codigo: "A", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
-  const ordem = { ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 1 };
+  const itens = [{ codigo: "A", quantidade: 100, ...SEM_REFERENCIAS_DO_CLIENTE }];
+  const ordem = { ordemDeCompra: "151220/ES", itemDaOrdemDeCompra: 1, partNumber: null };
 
   it("guarda a ordem de compra no item e a mantém quando a quantidade muda", () => {
     const comOrdem = comOrdemDeCompra(itens, "A", ordem);
-    expect(comQuantidade(comOrdem, "A", 300)).toEqual([{ codigo: "A", quantidade: 300, ...ordem }]);
+    expect(comQuantidade(comOrdem, produto("A"), 300)).toEqual([{ codigo: "A", quantidade: 300, ...ordem }]);
   });
 
   it("trata a ordem vazia, ou igual à do pedido, como a do pedido", () => {
@@ -135,21 +158,21 @@ describe("ordem de compra no item", () => {
 });
 
 describe("linhasEscolhidas", () => {
-  const produto = (codigo: string, precoDaTabela: number) => ({ codigo, familia: "FLEXIL", medida: null, embalagem: 100, precoDaTabela, ultimaCompra: null, partNumbers: [], pesoKg: null, jaComprou: false });
+  const produto = (codigo: string, precoDaTabela: number) => ({ codigo, familia: "FLEXIL", medida: null, embalagem: 100, precoDaTabela, ultimaCompra: null, partNumbers: [], partNumberDoCliente: SEM_PART_NUMBER, pesoKg: null, jaComprou: false });
   const produtos = [produto("A", 90), produto("B", 120)];
 
   it("segue a ordem em que os itens entraram, e não a do catálogo", () => {
-    const linhas = linhasEscolhidas([{ codigo: "B", quantidade: 200, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }, { codigo: "A", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }], {}, produtos);
+    const linhas = linhasEscolhidas([{ codigo: "B", quantidade: 200, ...SEM_REFERENCIAS_DO_CLIENTE }, { codigo: "A", quantidade: 100, ...SEM_REFERENCIAS_DO_CLIENTE }], {}, produtos);
     expect(linhas.map(({ codigo, quantidade }) => [codigo, quantidade])).toEqual([["B", 200], ["A", 100]]);
   });
 
   it("usa o preço que o representante mudou e, sem mudança, o preço inicial do item", () => {
-    const linhas = linhasEscolhidas([{ codigo: "A", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }, { codigo: "B", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }], { A: 95.5 }, produtos);
+    const linhas = linhasEscolhidas([{ codigo: "A", quantidade: 100, ...SEM_REFERENCIAS_DO_CLIENTE }, { codigo: "B", quantidade: 100, ...SEM_REFERENCIAS_DO_CLIENTE }], { A: 95.5 }, produtos);
     expect(linhas.map(({ precoCento }) => precoCento)).toEqual([95.5, 120]);
   });
 
   it("deixa de fora o produto que saiu do catálogo", () => {
-    expect(linhasEscolhidas([{ codigo: "SAIU", quantidade: 100, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }], {}, produtos)).toEqual([]);
+    expect(linhasEscolhidas([{ codigo: "SAIU", quantidade: 100, ...SEM_REFERENCIAS_DO_CLIENTE }], {}, produtos)).toEqual([]);
   });
 });
 
@@ -189,20 +212,20 @@ describe("cotacaoNoCatalogo", () => {
   ];
 
   it("deixa como está a cotação que cabe no catálogo de hoje", () => {
-    const itens = [{ codigo: "FAB1422P", quantidade: 300, precoCento: 98.4, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
+    const itens = [{ codigo: "FAB1422P", quantidade: 300, precoCento: 98.4, ...SEM_REFERENCIAS_DO_CLIENTE }];
     expect(cotacaoNoCatalogo(itens, produtos)).toEqual({ itens, foraDoCatalogo: 0, subiramAoMinimo: 0 });
   });
 
   it("tira o produto que saiu do catálogo e sobe para a tabela o preço que ficou abaixo dela", () => {
     const itens = [
-      { codigo: "FAB1422P", quantidade: 300, precoCento: 90, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
-      { codigo: "SAIU", quantidade: 100, precoCento: 50, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
-      { codigo: "MAB1216P", quantidade: 500, precoCento: 130, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
+      { codigo: "FAB1422P", quantidade: 300, precoCento: 90, ...SEM_REFERENCIAS_DO_CLIENTE },
+      { codigo: "SAIU", quantidade: 100, precoCento: 50, ...SEM_REFERENCIAS_DO_CLIENTE },
+      { codigo: "MAB1216P", quantidade: 500, precoCento: 130, ...SEM_REFERENCIAS_DO_CLIENTE },
     ];
     expect(cotacaoNoCatalogo(itens, produtos)).toEqual({
       itens: [
-        { codigo: "FAB1422P", quantidade: 300, precoCento: 95.5, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
-        { codigo: "MAB1216P", quantidade: 500, precoCento: 130, ...SEM_ORDEM_DE_COMPRA_NO_ITEM },
+        { codigo: "FAB1422P", quantidade: 300, precoCento: 95.5, ...SEM_REFERENCIAS_DO_CLIENTE },
+        { codigo: "MAB1216P", quantidade: 500, precoCento: 130, ...SEM_REFERENCIAS_DO_CLIENTE },
       ],
       foraDoCatalogo: 1,
       subiramAoMinimo: 1,

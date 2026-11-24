@@ -190,6 +190,10 @@ export function montarFotoDeTeste(): Foto {
       { produto: "F-100", part_number: "N906227" },
       { produto: "PRODUTO-SO-DE-B", part_number: "SO-DE-B" },
     ],
+    cliente_part_number: [
+      { cliente: CLIENTE_DE_A, produto: "F-100", part_number: "01853", is_sugerido: 1 },
+      { cliente: CLIENTE_DE_B, produto: "PRODUTO-SO-DE-B", part_number: "PN-DE-B", is_sugerido: 1 },
+    ],
     produto_comprado: [
       { cliente: CLIENTE_DE_A, produto: "F-100", ultima_compra: "2026-09-15", preco_cento_na_ultima: 98.4 },
       { cliente: CLIENTE_DE_B, produto: "PRODUTO-SO-DE-B", ultima_compra: "2026-08-01", preco_cento_na_ultima: 82 },

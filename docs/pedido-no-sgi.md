@@ -97,7 +97,7 @@ O preço vem da view de preço do cliente (`SGI5_VIEW_VEN_TP2_VLR_LIQ_CLI`): `VI
 | `V_PIC` | ICMS | 4 se a procedência (`VIEW_PCD`) é 1, 3 ou 8 e o CFOP começa com 6; senão, a do cabeçalho | o mesmo |
 | `V_PIP` | IPI | `VIEW_ALI_IPI` se a base de IPI é `SIM`; senão, 0 | o mesmo |
 | `V_PAC` | produto | o código | o código |
-| `V_PNU`, `V_PNU_FOR` | part number e o do fornecedor | `VIEW_PNU` e `VIEW_PNU_FOR`; `0` vira vazio | o mesmo |
+| `V_PNU`, `V_PNU_FOR` | part number e o do fornecedor | o do item do CRM, que o representante pode trocar ou apagar; o do fornecedor é o `VIEW_PNU_FOR` da linha da view de preço com esse part number, e vazio quando ele não está na tabela (como faz o SGI6R) | o mesmo |
 | `V_UNI` | unidade | `CT` | `CT` |
 | `V_QTD` | quantidade | em centos | as peças ÷ 100 |
 | `V_VLR_TAB` | preço de tabela | `VIEW_VLR_TAB` | o mesmo |
@@ -169,7 +169,7 @@ Na máquina do extrator, no mesmo `npm run pedidos`, depois da conferência (`ex
   - na sexta tentativa, vai para a quarentena, com o motivo.
 - **A queda da conexão** para a passada, e o pedido fica para a próxima.
 - **Gravado,** o pedido vai para `gravados/`, com o número do SGI em `<número CRM>.sgi.json`. É a ligação do pedido do CRM com o do SGI, de que a etapa 5 precisa.
-- **Na linha do item da view de preço,** a primeira pelo part number, se houver mais de uma. No SGI6R, quem escolhe é o representante.
+- **O part number do item** é o que o representante deixou no campo PN do item (desde 2026-11-23). A sugestão vem da foto (`cliente_part_number`): o único da tabela própria do cliente; com vários, o último que o cliente usou entre eles; sem tabela própria, o último que ele usou que não seja de tabela geral (PDR01, PDR02 e EXPOR), decisão do Lucas em 2026-11-23.
 - **Testada em 2026-11-23 com um pedido real** ([`roteiro-primeiro-pedido.md`](roteiro-primeiro-pedido.md)):
   - o `CRM-00001`, enviado pelo Lucas no login Suprens às 16:06, entrou no SGI às 16:10 como **pedido 1149872, PEDIDO BLOQUEADO**, pela tarefa agendada, na primeira tentativa;
   - o Lucas conferiu o pedido no SGI, sem diferença apontada, e o cancelou;

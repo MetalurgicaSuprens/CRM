@@ -6,6 +6,7 @@ import {
   pecasEmCentos,
   primeiraEntregaPossivel,
   type OrdemDeCompraDoItem,
+  type PartNumberDoItem,
 } from "dominio/pedido";
 import { formatarData } from "../formato";
 import type { EtapaDoPedido, ItemDoPedido, PedidoEnviado, ProdutoDoCatalogo, StatusDoPedido } from "./tipos";
@@ -76,19 +77,31 @@ export function quantidadeDigitada(texto: string): number {
   return Number.isFinite(pecas) && pecas > 0 ? pecas : 0;
 }
 
-/** Um produto do pedido, as peças e a ordem de compra do cliente nele, na ordem em que o representante incluiu. */
-export type ItemEscolhido = OrdemDeCompraDoItem & { codigo: string; quantidade: number };
+/** O que é do cliente em cada item: a ordem de compra dele, o item nela e o part number dele. */
+export type ReferenciasDoCliente = OrdemDeCompraDoItem & PartNumberDoItem;
 
-/** O item novo: a ordem de compra é a do pedido, sem item, como o SGI6R preenche. */
-export const SEM_ORDEM_DE_COMPRA_NO_ITEM: OrdemDeCompraDoItem = { ordemDeCompra: null, itemDaOrdemDeCompra: null };
+/** Um produto do pedido, as peças e as referências do cliente nele, na ordem em que o representante incluiu. */
+export type ItemEscolhido = ReferenciasDoCliente & { codigo: string; quantidade: number };
+
+/** Sem referência do cliente: a ordem de compra é a do pedido, sem item, como o SGI6R preenche, e sem part number. */
+export const SEM_REFERENCIAS_DO_CLIENTE: ReferenciasDoCliente = { ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null };
+
+/** O produto que entra no pedido, com o part number do cliente para ele. */
+export type ProdutoQueEntra = Pick<ProdutoDoCatalogo, "codigo" | "partNumberDoCliente">;
+
+/** O item novo já vem com o part number sugerido para o cliente, como no app antigo (decisão do Lucas em 2026-11-23). */
+export function itemNovo(produto: ProdutoQueEntra, quantidade: number): ItemEscolhido {
+  return { codigo: produto.codigo, quantidade, ...SEM_REFERENCIAS_DO_CLIENTE, partNumber: produto.partNumberDoCliente.sugerido };
+}
 
 /**
  * O pedido com a quantidade nova do produto: o que já está nele fica no lugar, o novo entra no fim,
  * como numa nota, e o que zera sai.
  */
-export function comQuantidade(itens: readonly ItemEscolhido[], codigo: string, quantidade: number): ItemEscolhido[] {
+export function comQuantidade(itens: readonly ItemEscolhido[], produto: ProdutoQueEntra, quantidade: number): ItemEscolhido[] {
+  const { codigo } = produto;
   if (quantidade <= 0) return itens.filter((item) => item.codigo !== codigo);
-  if (!itens.some((item) => item.codigo === codigo)) return [...itens, { codigo, quantidade, ...SEM_ORDEM_DE_COMPRA_NO_ITEM }];
+  if (!itens.some((item) => item.codigo === codigo)) return [...itens, itemNovo(produto, quantidade)];
   return itens.map((item) => (item.codigo === codigo ? { ...item, quantidade } : item));
 }
 
@@ -128,6 +141,16 @@ export function comMarcaXped(itens: readonly ItemEscolhido[], isXped: boolean): 
   return isXped ? numerarItens(itens) : itens.map((item) => ({ ...item, itemDaOrdemDeCompra: null }));
 }
 
+/** O pedido com o part number novo no item do produto. */
+export function comPartNumber(itens: readonly ItemEscolhido[], codigo: string, partNumber: string | null): ItemEscolhido[] {
+  return itens.map((item) => (item.codigo === codigo ? { ...item, partNumber } : item));
+}
+
+/** O part number que o representante digitou no item: vazio é sem part number. */
+export function partNumberDigitado(texto: string): string | null {
+  return texto.trim() || null;
+}
+
 /** O pedido com a ordem de compra nova no item do produto. */
 export function comOrdemDeCompra(itens: readonly ItemEscolhido[], codigo: string, ordem: OrdemDeCompraDoItem): ItemEscolhido[] {
   return itens.map((item) => (item.codigo === codigo ? { ...item, ...ordem } : item));
@@ -152,7 +175,7 @@ export function itemDaOrdemDigitado(texto: string): number | null | undefined {
 }
 
 /** Um item do pedido com tudo o que a tela mostra dele: o produto do catálogo, as peças e o preço do cento. */
-export type LinhaEscolhida = ProdutoDoCatalogo & OrdemDeCompraDoItem & { quantidade: number; precoCento: number };
+export type LinhaEscolhida = ProdutoDoCatalogo & ReferenciasDoCliente & { quantidade: number; precoCento: number };
 
 /**
  * Os itens do pedido, na ordem em que entraram, com o produto do catálogo e o preço: o que o
@@ -160,9 +183,11 @@ export type LinhaEscolhida = ProdutoDoCatalogo & OrdemDeCompraDoItem & { quantid
  */
 export function linhasEscolhidas(itens: readonly ItemEscolhido[], precos: Readonly<Record<string, number>>, produtos: readonly ProdutoDoCatalogo[]): LinhaEscolhida[] {
   const noCatalogo = new Map(produtos.map((produto) => [produto.codigo, produto]));
-  return itens.flatMap(({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra }) => {
+  return itens.flatMap(({ codigo, quantidade, ordemDeCompra, itemDaOrdemDeCompra, partNumber }) => {
     const produto = noCatalogo.get(codigo);
-    return produto && quantidade > 0 ? [{ ...produto, quantidade, precoCento: precos[codigo] ?? precoInicialDoItem(produto), ordemDeCompra, itemDaOrdemDeCompra }] : [];
+    return produto && quantidade > 0
+      ? [{ ...produto, quantidade, precoCento: precos[codigo] ?? precoInicialDoItem(produto), ordemDeCompra, itemDaOrdemDeCompra, partNumber }]
+      : [];
   });
 }
 

@@ -4,7 +4,7 @@
  * Datas são texto ISO ("2026-10-07") e meses "2026-10".
  */
 
-import type { OrdemDeCompraDoItem } from "dominio/pedido";
+import type { OrdemDeCompraDoItem, PartNumberDoItem } from "dominio/pedido";
 import type { Projecao } from "dominio/projecao";
 import type { Mercado, OportunidadeMix, Porte, PrecisaoDoPonto, Situacao, StatusDoCadastro } from "dominio/tipos";
 
@@ -316,6 +316,12 @@ export type ProdutoDoCatalogo = {
    * ativos. Vazio quando nenhuma montadora tem o produto.
    */
   partNumbers: string[];
+  /**
+   * O part number do cliente para o produto, para o item do pedido: as opções (as da tabela própria dele e
+   * a última que ele usou, nunca as das tabelas gerais) e a que o item já traz. Sem opções, o representante
+   * digita, se quiser.
+   */
+  partNumberDoCliente: { opcoes: string[]; sugerido: string | null };
   /** O peso de uma peça, em kg; null sem cadastro no ERP. */
   pesoKg: number | null;
   jaComprou: boolean;
@@ -423,7 +429,7 @@ export type EscolhasDoPedido = {
   transportadora: EscolhaDaTransportadora | null;
 };
 
-export type ItemDoPedido = OrdemDeCompraDoItem & {
+export type ItemDoPedido = OrdemDeCompraDoItem & PartNumberDoItem & {
   codigo: string;
   /** Em peças. */
   quantidade: number;

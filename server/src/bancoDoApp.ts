@@ -146,6 +146,10 @@ const MIGRACOES: readonly string[] = [
   ALTER TABLE cotacao_itens RENAME COLUMN rascunho TO cotacao;
   ALTER TABLE pedidos_enviados RENAME COLUMN rascunho TO cotacao;
   `,
+  // 9. O part number do cliente em cada item (2026-11-23), como no app antigo dos representantes: null é sem.
+  `
+  ALTER TABLE cotacao_itens ADD COLUMN part_number TEXT;
+  `,
 ];
 
 /** Abre o app.db (cria a pasta e o arquivo na primeira vez) e aplica as migrações que faltam. ":memory:" nos testes. */

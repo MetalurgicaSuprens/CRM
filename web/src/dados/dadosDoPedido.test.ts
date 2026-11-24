@@ -225,11 +225,13 @@ describe("totaisDoPedido", () => {
 });
 
 describe("itensDoUltimoPedido", () => {
-  it("repete, na ordem do pedido, só os produtos que continuam no catálogo", () => {
+  it("repete, na ordem do pedido, só os produtos que continuam no catálogo, com o part number sugerido", () => {
     const ultimo = { data: "2026-10-01", itens: [{ codigo: "B", quantidade: 300 }, { codigo: "SAIU", quantidade: 200 }, { codigo: "A", quantidade: 500 }] };
-    expect(itensDoUltimoPedido(ultimo, [{ codigo: "A" }, { codigo: "B" }])).toEqual([
-      { codigo: "B", quantidade: 300, ordemDeCompra: null, itemDaOrdemDeCompra: null },
-      { codigo: "A", quantidade: 500, ordemDeCompra: null, itemDaOrdemDeCompra: null },
+    const semPartNumber = { opcoes: [], sugerido: null };
+    const produtos = [{ codigo: "A", partNumberDoCliente: semPartNumber }, { codigo: "B", partNumberDoCliente: { opcoes: ["01853"], sugerido: "01853" } }];
+    expect(itensDoUltimoPedido(ultimo, produtos)).toEqual([
+      { codigo: "B", quantidade: 300, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: "01853" },
+      { codigo: "A", quantidade: 500, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null },
     ]);
   });
 });
