@@ -136,12 +136,22 @@ function lerConferido(pastaDosPedidos: string, nome: string): { pedido: DadosDaG
   return { pedido: leitura.pedido, erp };
 }
 
+/** O que fica ao lado do pedido gravado (<número CRM>.sgi.json): o número no SGI e quando entrou lá. */
+export type RegistroDaGravacao = { numeroNoSgi: number; gravadoEm: string };
+
+/** O registro do pedido gravado, para o andamento (pedidos/andamento.ts); null se ele não foi gravado. */
+export function lerRegistroDaGravacao(pastaDosPedidos: string, numeroCrm: string): RegistroDaGravacao | null {
+  const arquivo = path.join(pastaDosPedidos, GRAVADOS, `${numeroCrm}.sgi.json`);
+  return fs.existsSync(arquivo) ? (JSON.parse(fs.readFileSync(arquivo, "utf8")) as RegistroDaGravacao) : null;
+}
+
 /** Gravado: o pedido e o que a LAN sabe dele vão para gravados/, com o número do SGI ao lado. */
 function concluir(pastaDosPedidos: string, nome: string, numeroNoSgi: number): void {
   const base = nome.replace(".json", "");
   const destino = path.join(pastaDosPedidos, GRAVADOS);
   fs.mkdirSync(destino, { recursive: true });
-  gravarInteiro(path.join(destino, `${base}.sgi.json`), JSON.stringify({ numeroNoSgi, gravadoEm: new Date().toISOString() }));
+  const registro: RegistroDaGravacao = { numeroNoSgi, gravadoEm: new Date().toISOString() };
+  gravarInteiro(path.join(destino, `${base}.sgi.json`), JSON.stringify(registro));
   for (const arquivo of [`${base}.erp.json`, nome]) fs.renameSync(path.join(pastaDosPedidos, CONFERIDOS, arquivo), path.join(destino, arquivo));
   fs.rmSync(path.join(pastaDosPedidos, ANDAMENTO, nome), { force: true });
 }

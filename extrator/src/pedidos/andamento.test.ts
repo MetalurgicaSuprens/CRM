@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { oracleDeTeste } from "../oracleDeTeste.ts";
 import { lerAndamentoDosPedidosDoCrm, lerPedidosNaLan } from "./andamento.ts";
+import type { RegistroDaGravacao } from "./gravacao.ts";
 
 let pasta: string;
 
@@ -21,7 +22,8 @@ function receber(numero: string): void {
 }
 
 function gravar(numero: string, numeroSgi: number): void {
-  fs.writeFileSync(path.join(pasta, "gravados", `${numero}.sgi.json`), JSON.stringify({ numeroSgi, gravadoEm: "2026-11-23T19:10:08.000Z" }));
+  const registro: RegistroDaGravacao = { numeroNoSgi: numeroSgi, gravadoEm: "2026-11-23T19:10:08.000Z" };
+  fs.writeFileSync(path.join(pasta, "gravados", `${numero}.sgi.json`), JSON.stringify(registro));
   fs.writeFileSync(path.join(pasta, "gravados", `${numero}.erp.json`), JSON.stringify({ empresa: 1, cliente: 123456 }));
 }
 

@@ -4,7 +4,7 @@ import { momentoEmBrasilia } from "dominio/datas";
 import { lerSituacaoNoSgi } from "../erp/dadosDaGravacao.ts";
 import type { Oracle } from "../oracle.ts";
 import type { PedidoNoErp } from "./conferencia.ts";
-import { GRAVADOS } from "./gravacao.ts";
+import { GRAVADOS, lerRegistroDaGravacao } from "./gravacao.ts";
 import { RECEBIDOS } from "./triagem.ts";
 
 /*
@@ -63,11 +63,10 @@ export function lerPedidosNaLan(pastaDosPedidos: string, agora: number): PedidoN
 
 function situacaoNaLan(pastaDosPedidos: string, nome: string, recebidoEm: string): PedidoNaLan {
   const numero = nome.replace(".json", "");
-  const gravado = path.join(pastaDosPedidos, GRAVADOS, `${numero}.sgi.json`);
-  if (fs.existsSync(gravado)) {
-    const { numeroSgi, gravadoEm } = JSON.parse(fs.readFileSync(gravado, "utf8")) as { numeroSgi: number; gravadoEm: string };
+  const gravado = lerRegistroDaGravacao(pastaDosPedidos, numero);
+  if (gravado) {
     const { cliente } = JSON.parse(fs.readFileSync(path.join(pastaDosPedidos, GRAVADOS, `${numero}.erp.json`), "utf8")) as PedidoNoErp;
-    return { numero, recebidoEm, situacao: "gravado", numeroSgi, cliente, gravadoEm: momentoEmBrasilia(new Date(gravadoEm)) };
+    return { numero, recebidoEm, situacao: "gravado", numeroSgi: gravado.numeroNoSgi, cliente, gravadoEm: momentoEmBrasilia(new Date(gravado.gravadoEm)) };
   }
   const motivo = path.join(pastaDosPedidos, "quarentena", `${numero}.motivo.txt`);
   if (fs.existsSync(motivo)) {

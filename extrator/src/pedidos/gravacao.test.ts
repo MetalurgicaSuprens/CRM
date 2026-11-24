@@ -6,6 +6,7 @@ import type { Linha } from "../oracle.ts";
 import { oracleDeTeste, type RespostasDoOracle } from "../oracleDeTeste.ts";
 import type { PedidoNoErp } from "./conferencia.ts";
 import { TENTATIVAS_ANTES_DA_QUARENTENA, gravarConferidos, pedidosParaGravar } from "./gravacao.ts";
+import { lerPedidosNaLan } from "./andamento.ts";
 import { pedidoDeTeste } from "./pedidoDeTeste.ts";
 import { pedidosParaTriar } from "./triagem.ts";
 
@@ -66,6 +67,11 @@ describe("gravarConferidos", () => {
     expect(em("gravados")).toEqual(["CRM-00001.erp.json", "CRM-00001.json", "CRM-00001.sgi.json"]);
     expect(JSON.parse(fs.readFileSync(path.join(pasta, "gravados", "CRM-00001.sgi.json"), "utf8"))).toMatchObject({ numeroNoSgi: 1001 });
     expect(em("andamento")).toEqual([]);
+  });
+
+  it("o andamento acha o número do SGI que a gravação deixou", async () => {
+    await gravarConferidos(pasta, oracleDoErp());
+    expect(lerPedidosNaLan(pasta, Date.now())).toEqual([expect.objectContaining({ numero: "CRM-00001", situacao: "gravado", numeroSgi: 1001, cliente: 123456 })]);
   });
 
   it("o gravado não volta para a conferência nem para a gravação", async () => {
