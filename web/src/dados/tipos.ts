@@ -490,6 +490,8 @@ export type PedidoEnviado = {
   enviadoEm: string;
   entrega: string | null;
   observacao: string;
+  /** As condições do pedido como foram enviadas: não mudam depois. */
+  escolhas: EscolhasDoPedido;
   itens: ItemEnviado[];
   totalEstimado: number;
   /** Total recalculado pelo SGI pela tabela do cliente; null até ele calcular. */

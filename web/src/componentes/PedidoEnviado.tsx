@@ -1,9 +1,21 @@
+import { dataDoMomento } from "dominio/datas";
 import { valorDaLinha } from "dominio/pedido";
+import {
+  ROTULOS_DA_CLASSIFICACAO,
+  aliquotaDoIpi,
+  descricaoDaCondicao,
+  pesoDosItens,
+  textoDaEntrega,
+  totaisDoPedido,
+  transportadoraParaMostrar,
+  valorDoIpi,
+} from "../dados/dadosDoPedido";
 import { passosDoAndamento, type PassoDoAndamento } from "../dados/pedido";
-import type { PedidoEnviado } from "../dados/tipos";
-import { formatarData, formatarMomento, formatarNumero } from "../formato";
+import type { CatalogoDoCliente, DadosDoPedido, ItemEnviado, LocalDoCadastro, PedidoEnviado } from "../dados/tipos";
+import { formatarAliquota, formatarCep, formatarContagem, formatarDocumentoDoCliente, formatarMomento, formatarNumero, formatarPeso } from "../formato";
 import { ETAPAS } from "./EtapaDoPedido";
-import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva } from "./TabelaResponsiva";
+import { DetalheDoFato, Fato } from "./Fato";
+import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva, type ColunaDaTabela } from "./TabelaResponsiva";
 import { Valor } from "./Valor";
 import estilos from "./PedidoEnviado.module.css";
 
@@ -48,8 +60,87 @@ function DetalheDoPasso({ passo, pedido }: { passo: PassoDoAndamento; pedido: Pe
   }
 }
 
-/** Os itens pelos preços do envio, os totais do CRM e do SGI, a entrega desejada e a observação. */
-export function ItensDoPedidoEnviado({ pedido }: { pedido: PedidoEnviado }) {
+/**
+ * Tudo o que o representante preencheu além dos itens, na ordem da inclusão (pedido do Lucas em
+ * 2026-11-24): para quem é e em que condições. O CNPJ da transportadora vai inteiro, quebrando a linha
+ * quando não cabe, como um fornecedor pediu. O cadastro vem do ERP de agora; as escolhas, do envio.
+ */
+export function CondicoesDoPedidoEnviado({ pedido, dados }: { pedido: PedidoEnviado; dados: DadosDoPedido | null }) {
+  const { escolhas } = pedido;
+  const transportadora = dados ? transportadoraParaMostrar(dados, escolhas.transportadora) : null;
+  return (
+    <div className={estilos.condicoes}>
+      <section className={estilos.parte}>
+        <h3 className={estilos.tituloDaParte}>Cliente</h3>
+        <dl className={estilos.fatos}>
+          <Fato rotulo="Razão social" largo>
+            {dados?.cadastro.razaoSocial ?? pedido.cliente.nome}
+          </Fato>
+          <Fato rotulo="CNPJ/CPF">{dados?.cadastro.documento ?? formatarDocumentoDoCliente(pedido.cliente)}</Fato>
+          <Fato rotulo="Entrega" largo>
+            <LocalDaEntrega local={dados?.cadastro.entrega ?? null} />
+          </Fato>
+        </dl>
+      </section>
+      <section className={estilos.parte}>
+        <h3 className={estilos.tituloDaParte}>Condições do pedido</h3>
+        <dl className={estilos.fatos}>
+          <Fato rotulo="Transportadora" largo>
+            {transportadora ? (
+              <>
+                {transportadora.nome}
+                <DetalheDoFato>CNPJ {transportadora.cnpj}</DetalheDoFato>
+                <DetalheDoFato>{transportadora.local}</DetalheDoFato>
+              </>
+            ) : (
+              "—"
+            )}
+          </Fato>
+          <Fato rotulo="Condição de pagamento">{dados ? descricaoDaCondicao(dados, escolhas.condicaoDePagamento) : escolhas.condicaoDePagamento}</Fato>
+          <Fato rotulo="Entrega">{textoDaEntrega(pedido.entrega, dataDoMomento(pedido.enviadoEm))}</Fato>
+          <Fato rotulo="Ordem de compra">{escolhas.pedidoDoCliente.trim() || "—"}</Fato>
+          <Fato rotulo="Classificação da venda">{ROTULOS_DA_CLASSIFICACAO[escolhas.classificacao]}</Fato>
+          <Fato rotulo="Cliente exige xPed">{escolhas.clienteXped ? "Sim" : "Não"}</Fato>
+          <Fato rotulo="Frete parcial">{escolhas.aceitaParcial ? "Aceita" : "Não aceita"}</Fato>
+          {pedido.observacao.trim() ? (
+            <Fato rotulo="Observações" largo>
+              <span className={estilos.observacao}>{pedido.observacao}</span>
+            </Fato>
+          ) : null}
+        </dl>
+      </section>
+    </div>
+  );
+}
+
+function LocalDaEntrega({ local }: { local: LocalDoCadastro | null }) {
+  if (!local) return "No endereço do faturamento";
+  return (
+    <>
+      {local.razaoSocial}
+      <DetalheDoFato>
+        {[local.texto, local.bairro, `${local.cidade}/${local.uf}`, local.cep ? formatarCep(local.cep) : null].filter(Boolean).join(" · ")}
+      </DetalheDoFato>
+    </>
+  );
+}
+
+type PropsDosItens = { pedido: PedidoEnviado; catalogo: CatalogoDoCliente | null };
+
+/**
+ * Os itens como na tabela do PDF: o part number e a ordem de compra só quando algum item tem; o IPI,
+ * pelas alíquotas do ERP de agora, quando a foto as traz.
+ */
+export function ItensDoPedidoEnviado({ pedido, catalogo }: PropsDosItens) {
+  const ipi = catalogo?.dadosDoPedido?.ipi ?? null;
+  const colunas: [ColunaDaTabela<ItemEnviado>, ...ColunaDaTabela<ItemEnviado>[]] = [
+    { titulo: "Produto", ordenarPor: (item) => item.codigo, celula: (item) => <Identificacao titulo={item.codigo} detalhe={[item.familia, item.medida].filter(Boolean).join(" · ")} /> },
+    ...colunasDasReferencias(pedido),
+    { titulo: "Peças", numerica: true, largura: 5, fixa: true, ordenarPor: (item) => item.quantidade, celula: (item) => formatarNumero(item.quantidade) },
+    { titulo: "Cento", numerica: true, largura: 5.5, fixa: true, ordenarPor: (item) => item.precoCento, celula: (item) => <Valor valor={item.precoCento} comCentavos /> },
+    { titulo: "Valor s/ IPI", numerica: true, largura: 6.5, fixa: true, ordenarPor: valorDaLinha, celula: (item) => <Valor valor={valorDaLinha(item)} comCentavos /> },
+    ...(ipi ? colunasDoIpi(ipi) : []),
+  ];
   return (
     <div className={estilos.itens}>
       <TabelaResponsiva
@@ -58,49 +149,72 @@ export function ItensDoPedidoEnviado({ pedido }: { pedido: PedidoEnviado }) {
         chaveDe={(item) => item.codigo}
         vazio="Pedido sem itens."
         parametroDaOrdem={ORDEM_DOS_ITENS}
-        colunas={[
-          { titulo: "Produto", ordenarPor: (item) => item.codigo, celula: (item) => <Identificacao titulo={item.codigo} detalhe={[item.familia, item.medida].filter(Boolean).join(" · ")} /> },
-          { titulo: "Peças", numerica: true, largura: 5, ordenarPor: (item) => item.quantidade, celula: (item) => formatarNumero(item.quantidade) },
-          { titulo: "Cento", numerica: true, largura: 5.5, ordenarPor: (item) => item.precoCento, celula: (item) => <Valor valor={item.precoCento} comCentavos /> },
-          { titulo: "Valor", numerica: true, ordenarPor: valorDaLinha, celula: (item) => <Valor valor={valorDaLinha(item)} comCentavos /> },
-        ]}
+        colunas={colunas}
       />
-      <Totais pedido={pedido} />
-      {pedido.entrega || pedido.observacao ? (
-        <dl className={estilos.extras}>
-          {pedido.entrega ? (
-            <div>
-              <dt>Entrega desejada</dt>
-              <dd>{formatarData(pedido.entrega)}</dd>
-            </div>
-          ) : null}
-          {pedido.observacao ? (
-            <div>
-              <dt>Observação</dt>
-              <dd>{pedido.observacao}</dd>
-            </div>
-          ) : null}
-        </dl>
-      ) : null}
+      <Totais pedido={pedido} catalogo={catalogo} />
     </div>
   );
 }
 
-function Totais({ pedido }: { pedido: PedidoEnviado }) {
+/** O part number e a ordem de compra do cliente, cada um só quando algum item tem. */
+function colunasDasReferencias(pedido: PedidoEnviado): ColunaDaTabela<ItemEnviado>[] {
+  const ordemDoPedido = pedido.escolhas.pedidoDoCliente.trim();
+  const ordemDe = (item: ItemEnviado) => item.ordemDeCompra ?? ordemDoPedido;
+  const colunas: ColunaDaTabela<ItemEnviado>[] = [];
+  if (pedido.itens.some((item) => item.partNumber !== null)) {
+    colunas.push({ titulo: "Part number", largura: 7, ordenarPor: (item) => item.partNumber ?? "", celula: (item) => item.partNumber ?? "—" });
+  }
+  if (ordemDoPedido !== "" || pedido.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null)) {
+    colunas.push({
+      titulo: "Ordem de compra",
+      largura: 8,
+      ordenarPor: ordemDe,
+      celula: (item) => [ordemDe(item), item.itemDaOrdemDeCompra === null ? null : `item ${item.itemDaOrdemDeCompra}`].filter(Boolean).join(" · ") || "—",
+    });
+  }
+  return colunas;
+}
+
+function colunasDoIpi(ipi: Readonly<Record<string, number>>): ColunaDaTabela<ItemEnviado>[] {
+  const comIpi = (item: ItemEnviado) => valorDaLinha(item) + valorDoIpi(item, ipi);
+  return [
+    { titulo: "IPI", numerica: true, largura: 5.5, fixa: true, ordenarPor: (item) => valorDoIpi(item, ipi), celula: (item) => <Valor valor={valorDoIpi(item, ipi)} comCentavos /> },
+    { titulo: "Valor c/ IPI", numerica: true, largura: 6.5, fixa: true, ordenarPor: comIpi, celula: (item) => <Valor valor={comIpi(item)} comCentavos /> },
+  ];
+}
+
+/** Os totais do envio, como no PDF, e o total que o SGI recalculou, quando já recebeu o pedido. */
+function Totais({ pedido, catalogo }: PropsDosItens) {
+  const totais = totaisDoPedido(pedido.itens, catalogo?.dadosDoPedido?.ipi ?? null);
+  const peso = catalogo ? pesoDosItens(pedido.itens, new Map(catalogo.produtos.map((produto) => [produto.codigo, produto.pesoKg]))) : null;
+  const aliquota = aliquotaDoIpi(totais);
   return (
     <div className={estilos.totais}>
-      <div className={estilos.linhaDoTotal}>
-        <span>Estimativa do CRM</span>
-        <Valor valor={pedido.totalEstimado} comCentavos />
-      </div>
+      <p className={estilos.suave}>
+        {formatarContagem(totais.itens, "item", "itens")} · {formatarNumero(totais.pecas)} peças
+        {peso ? ` · ${formatarPeso(peso.total)}` : ""}
+      </p>
+      <LinhaDoTotal rotulo="Valor s/ IPI" valor={totais.semIpi} />
+      {totais.ipi !== null && totais.comIpi !== null ? (
+        <>
+          <LinhaDoTotal rotulo={aliquota === null ? "IPI" : `IPI (${formatarAliquota(aliquota)})`} valor={totais.ipi} />
+          <LinhaDoTotal rotulo="Valor c/ IPI" valor={totais.comIpi} isDestaque />
+        </>
+      ) : null}
       {pedido.totalSgi === null ? (
         <p className={estilos.suave}>O SGI recalcula o total quando recebe o pedido.</p>
       ) : (
-        <div className={`${estilos.linhaDoTotal} ${estilos.totalDoSgi}`}>
-          <span>Total no SGI</span>
-          <Valor valor={pedido.totalSgi} comCentavos />
-        </div>
+        <LinhaDoTotal rotulo="Total no SGI, sem IPI" valor={pedido.totalSgi} />
       )}
+    </div>
+  );
+}
+
+function LinhaDoTotal({ rotulo, valor, isDestaque = false }: { rotulo: string; valor: number; isDestaque?: boolean }) {
+  return (
+    <div className={isDestaque ? `${estilos.linhaDoTotal} ${estilos.totalEmDestaque}` : estilos.linhaDoTotal}>
+      <span>{rotulo}</span>
+      <Valor valor={valor} comCentavos />
     </div>
   );
 }

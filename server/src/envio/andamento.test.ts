@@ -54,7 +54,8 @@ beforeEach(() => {
   loginDeA = entrarComo(banco, ["1401"]);
   app = criarApp({ foto, banco, origem: ORIGEM });
   const usuario = String(banco.prepare("SELECT usuario FROM usuario_codigos WHERE codigo = '1401'").get()?.usuario);
-  const conteudo = JSON.stringify({ cliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null }], entrega: null, observacao: "", escolhas: null });
+  // Gravados como antes da ordem de compra e do part number no item.
+  const conteudo = JSON.stringify({ cliente: CLIENTE_DE_A, itens: [{ codigo: "F-100", quantidade: 300, precoCento: 98.4 }], entrega: null, observacao: "", escolhas: ESCOLHAS });
   const inserir = banco.prepare("INSERT INTO pedidos_enviados (usuario, cliente, cotacao, conteudo, hash, chave, assinatura, enviado_em) VALUES (?, ?, ?, ?, '', ?, '{}', ?)");
   for (const [i, cotacao] of ["0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d41", "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d42", "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d43", "0b1c2d3e-4f5a-4b6c-8d7e-9f0a1b2c3d44"].entries()) {
     inserir.run(usuario, CLIENTE_DE_A, cotacao, conteudo, `chave-de-${usuario}`, `2026-11-23T16:0${i}`);
@@ -65,6 +66,8 @@ afterAll(() => {
   foto.fechar();
   fs.rmSync(pastas.raiz, { recursive: true, force: true });
 });
+
+const ESCOLHAS = { condicaoDePagamento: "1030", classificacao: "industrializacao", pedidoDoCliente: "OC 4512", aceitaParcial: true, clienteXped: false, transportadora: { codigo: "101" } };
 
 async function pedido(numero: string): Promise<PedidoEnviado> {
   return (await app.inject({ method: "GET", url: `/api/pedidos/enviados/${numero}`, headers: { cookie: loginDeA } })).json<PedidoEnviado>();
@@ -82,6 +85,12 @@ describe("andamento do pedido enviado", () => {
         { etapa: "em_aprovacao", em: "2026-11-23T16:10" },
       ],
     });
+  });
+
+  it("mostra as condições como foram enviadas, e o item antigo sem ordem de compra nem part number", async () => {
+    const enviado = await pedido("CRM-00001");
+    expect(enviado.escolhas).toEqual(ESCOLHAS);
+    expect(enviado.itens[0]).toMatchObject({ ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null });
   });
 
   it("mostra o motivo da recusa", async () => {

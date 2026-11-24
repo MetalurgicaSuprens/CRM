@@ -2,12 +2,14 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { DetalheDoFato, Fato } from "../componentes/Fato";
-import { AndamentoDoPedido, ItensDoPedidoEnviado } from "../componentes/PedidoEnviado";
+import { AndamentoDoPedido, CondicoesDoPedidoEnviado, ItensDoPedidoEnviado } from "../componentes/PedidoEnviado";
 import { DataRelativa } from "../componentes/Quando";
 import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { valorDaLinha } from "dominio/pedido";
+import { carregarCatalogo } from "../dados/api";
 import { precoDoCento, resumirPorFamilia, type TotalDaFamilia } from "../dados/pedido";
+import { useCarga } from "../dados/useCarga";
 import type { Cfop, ClienteResumo, ItemDoErp, NotaDoPedido, NotaFaturada, PedidoDaFicha, PedidoEnviado, PedidoNoErp } from "../dados/tipos";
 import { formatarData, formatarNumero, formatarPedidosDaNota } from "../formato";
 import estilos from "./DetalhesDosPedidos.module.css";
@@ -18,8 +20,10 @@ import estilos from "./DetalhesDosPedidos.module.css";
  * resumo por família e os itens. Nas abas, o caminho para a ficha do cliente fica no fim.
  */
 
-/** O andamento e os itens, como na página do pedido. */
+/** O andamento, o cliente, as condições e os itens, como na página do pedido. */
 export function DetalheDoEnviado({ pedido, relogio }: { pedido: PedidoEnviado; relogio: string }) {
+  const codigo = pedido.cliente.codigo;
+  const { dados: catalogo } = useCarga(`catalogo:${codigo}`, () => carregarCatalogo(codigo));
   return (
     <>
       <ResumoPorFamilia itens={pedido.itens.map((item) => ({ familia: item.familia, pecas: item.quantidade, valor: valorDaLinha(item) }))} />
@@ -29,13 +33,15 @@ export function DetalheDoEnviado({ pedido, relogio }: { pedido: PedidoEnviado; r
             <h3 className={estilos.tituloDaParte}>Andamento</h3>
             <AndamentoDoPedido pedido={pedido} relogio={relogio} />
           </section>
-          <section className={estilos.parte}>
-            <h3 className={estilos.tituloDaParte}>Itens</h3>
-            <ItensDoPedidoEnviado pedido={pedido} />
-          </section>
+          <CondicoesDoPedidoEnviado pedido={pedido} dados={catalogo?.dadosDoPedido ?? null} />
         </div>
       </div>
+      <section className={estilos.parte}>
+        <h3 className={estilos.tituloDaParte}>Itens</h3>
+        <ItensDoPedidoEnviado pedido={pedido} catalogo={catalogo} />
+      </section>
       <Rodape>
+        <LinkDoRodape para={`/pedidos/${pedido.numero}/pdf`}>PDF do pedido</LinkDoRodape>
         <LinkParaFicha cliente={pedido.cliente} />
       </Rodape>
     </>

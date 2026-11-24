@@ -107,6 +107,7 @@ describe("envio do pedido", () => {
     const pedido = resposta.json<PedidoEnviado>();
     expect(pedido).toMatchObject({ numero: "CRM-00001", etapa: "enviado", totalEstimado: 295.2, cliente: { codigo: CLIENTE_DE_A } });
     expect(pedido.itens).toEqual([{ codigo: "F-100", quantidade: 300, precoCento: 98.4, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null, familia: "FLEXIL", medida: "14–22 mm" }]);
+    expect(pedido.escolhas).toEqual(ESCOLHAS);
 
     const painel = (await ler("/api/pedidos", a.cookie)).json<PainelDePedidos>();
     expect(painel.cotacoes).toEqual([]);

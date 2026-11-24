@@ -2,13 +2,23 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from "rea
 import { useParams } from "react-router";
 import { ListOrdered, Package, Printer, Weight, type LucideIcon } from "lucide-react";
 import { dataDoMomento, horaDoMomento, somarDias } from "dominio/datas";
-import { primeiraEntregaPossivel, valorDaLinha } from "dominio/pedido";
+import { valorDaLinha } from "dominio/pedido";
 import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Voltar } from "../componentes/Voltar";
-import { carregarCatalogo, carregarCotacao, carregarSituacaoDosDados } from "../dados/api";
-import { ROTULOS_DA_CLASSIFICACAO, aliquotaDoIpi, formatarCnpj, pesoDosItens, totaisDoPedido, transportadoraDe, valorDoIpi, type TotaisDoPedido } from "../dados/dadosDoPedido";
-import type { CatalogoDoCliente, Cotacao, LocalDoCadastro } from "../dados/tipos";
+import { carregarCatalogo, carregarCotacao, carregarPedidoEnviado, carregarSituacaoDosDados } from "../dados/api";
+import {
+  ROTULOS_DA_CLASSIFICACAO,
+  aliquotaDoIpi,
+  descricaoDaCondicao,
+  pesoDosItens,
+  textoDaEntrega,
+  totaisDoPedido,
+  transportadoraParaMostrar,
+  valorDoIpi,
+  type TotaisDoPedido,
+} from "../dados/dadosDoPedido";
+import type { CatalogoDoCliente, Cotacao, LocalDoCadastro, PedidoEnviado } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import {
   formatarAliquota,
@@ -30,7 +40,8 @@ import { paginarCotacao, type FolhaDaCotacao, type MedidasDaCotacao } from "./pa
  * imprime ou salva em PDF ("Salvar como PDF"), no computador e no celular, sem programa novo. O menu e a
  * barra somem na impressão (Layout.module.css). Os valores aparecem mesmo com "Ocultar valores": a
  * cotação é para o cliente ver. Sem contato do representante, como o Lucas decidiu. A quantidade vai em
- * peças, e não em centos como no app antigo (decisão do Lucas em 2026-11-23).
+ * peças, e não em centos como no app antigo (decisão do Lucas em 2026-11-23). O pedido enviado sai na
+ * mesma folha, com o número dele e sem validade (pedido do Lucas em 2026-11-24).
  */
 
 /** A validade da cotação: a mesma que o app antigo dos representantes grava no SGI (V_DVA = hoje + 10). */
@@ -51,21 +62,65 @@ export function CotacaoParaImprimir() {
   }, [id]);
   if (busca?.id !== id) return <Carregando />;
   if (!busca.cotacao) return <p className={estilos.aviso}>Cotação não encontrada: ela foi enviada ou descartada.</p>;
-  return <ComCatalogo cotacao={busca.cotacao} />;
+  const { cotacao } = busca;
+  const emitidaEm = dataDoMomento(cotacao.atualizadoEm);
+  const documento: DocumentoImpresso = {
+    titulo: "Cotação",
+    conteudo: cotacao,
+    emitidoEm: cotacao.atualizadoEm,
+    rotuloDaEmissao: "Emitida em",
+    validaAte: somarDias(emitidaEm, DIAS_DE_VALIDADE_DA_COTACAO),
+    diaDaEntrega: null,
+  };
+  return <ParaImprimir documento={documento} codigoDoCliente={cotacao.cliente.codigo} voltar={{ para: `/pedidos/cotacoes/${cotacao.id}`, rotulo: "Cotação" }} />;
 }
 
-function ComCatalogo({ cotacao }: { cotacao: Cotacao }) {
-  const codigo = cotacao.cliente.codigo;
-  const { dados: catalogo, carregando } = useCarga(`catalogo:${codigo}`, () => carregarCatalogo(codigo));
+/** O pedido enviado pelo CRM em PDF: o que o representante mandou, como o cliente recebe a cotação. */
+export function PedidoParaImprimir() {
+  const { numero = "" } = useParams();
+  const { dados: pedido, carregando } = useCarga(`pedido:${numero}`, () => carregarPedidoEnviado(numero));
+  if (carregando) return <Carregando />;
+  if (!pedido) return <p className={estilos.aviso}>Pedido não encontrado.</p>;
+  return <ParaImprimir documento={documentoDoPedido(pedido)} codigoDoCliente={pedido.cliente.codigo} voltar={{ para: `/pedidos/${pedido.numero}`, rotulo: `Pedido ${pedido.numero}` }} />;
+}
+
+function documentoDoPedido(pedido: PedidoEnviado): DocumentoImpresso {
+  return {
+    titulo: `Pedido ${pedido.numero}`,
+    conteudo: pedido,
+    emitidoEm: pedido.enviadoEm,
+    rotuloDaEmissao: "Enviado em",
+    validaAte: null,
+    diaDaEntrega: dataDoMomento(pedido.enviadoEm),
+  };
+}
+
+/** O que a folha mostra: a cotação ou o pedido enviado, que têm os mesmos itens e condições. */
+type DocumentoImpresso = {
+  /** "Cotação" ou "Pedido CRM-00107". */
+  titulo: string;
+  conteudo: Pick<Cotacao, "itens" | "entrega" | "observacao" | "escolhas">;
+  emitidoEm: string;
+  rotuloDaEmissao: string;
+  /** Só a cotação tem validade. */
+  validaAte: string | null;
+  /** O dia de onde conta a primeira entrega possível: o do envio, no pedido; null é hoje, na cotação. */
+  diaDaEntrega: string | null;
+};
+
+type PropsDoImpresso = { documento: DocumentoImpresso; codigoDoCliente: string; voltar: { para: string; rotulo: string } };
+
+function ParaImprimir({ documento, codigoDoCliente, voltar }: PropsDoImpresso) {
+  const { dados: catalogo, carregando } = useCarga(`catalogo:${codigoDoCliente}`, () => carregarCatalogo(codigoDoCliente));
   const { dados: situacao } = useCarga("situacao", carregarSituacaoDosDados);
   if (carregando || !situacao) return <Carregando />;
-  if (!catalogo) return <p className={estilos.aviso}>O cliente desta cotação não está mais na sua carteira.</p>;
+  if (!catalogo) return <p className={estilos.aviso}>O cliente não está mais na sua carteira.</p>;
   return (
     <>
       <div className={estilos.naTela}>
         <CabecalhoPagina
-          antes={<Voltar para={`/pedidos/cotacoes/${cotacao.id}`} rotulo="Cotação" />}
-          titulo="Cotação em PDF"
+          antes={<Voltar para={voltar.para} rotulo={voltar.rotulo} />}
+          titulo={`${documento.titulo} em PDF`}
           acoes={
             <button type="button" className={`${botoes.primario} ${estilos.imprimir}`} onClick={() => window.print()}>
               <Printer size={18} aria-hidden="true" />
@@ -78,12 +133,17 @@ function ComCatalogo({ cotacao }: { cotacao: Cotacao }) {
           Na janela de impressão, escolha o destino <strong>Salvar como PDF</strong>: o arquivo sai em A4 e com o texto selecionável. Não use o "Microsoft Print to PDF", que muda o papel.
         </p>
       </div>
-      <Folhas cotacao={cotacao} catalogo={catalogo} nomeDoLogin={situacao.representante.nome} hoje={dataDoMomento(situacao.relogio)} />
+      <Folhas
+        documento={documento}
+        catalogo={catalogo}
+        nomeDoLogin={situacao.representante.nome}
+        diaDaEntrega={documento.diaDaEntrega ?? dataDoMomento(situacao.relogio)}
+      />
     </>
   );
 }
 
-type PropsDasFolhas = { cotacao: Cotacao; catalogo: CatalogoDoCliente; nomeDoLogin: string; hoje: string };
+type PropsDasFolhas = { documento: DocumentoImpresso; catalogo: CatalogoDoCliente; nomeDoLogin: string; diaDaEntrega: string };
 
 /**
  * A cotação em folhas A4, com tudo o que o relatório do pedido do app antigo dos representantes mostra
@@ -93,11 +153,11 @@ type PropsDasFolhas = { cotacao: Cotacao; catalogo: CatalogoDoCliente; nomeDoLog
  * itens (pedido do Lucas em 2026-11-23): primeiro as partes são desenhadas escondidas e medidas; depois,
  * divididas pelas folhas.
  */
-function Folhas({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDasFolhas) {
-  const emitidaEm = dataDoMomento(cotacao.atualizadoEm);
-  const validaAte = somarDias(emitidaEm, DIAS_DE_VALIDADE_DA_COTACAO);
+function Folhas({ documento, catalogo, nomeDoLogin, diaDaEntrega }: PropsDasFolhas) {
+  const cotacao = documento.conteudo;
+  const emitidaEm = dataDoMomento(documento.emitidoEm);
   const cliente = catalogo.dadosDoPedido?.cadastro.razaoSocial ?? catalogo.cliente.nome;
-  useTituloDoArquivo(`Cotação Suprens - ${catalogo.cliente.nome} - ${formatarData(emitidaEm).replaceAll("/", "-")}`);
+  useTituloDoArquivo(`${documento.titulo} Suprens - ${catalogo.cliente.nome} - ${formatarData(emitidaEm).replaceAll("/", "-")}`);
   const medidor = useRef<HTMLDivElement>(null);
   const paginacao = usePaginacao(medidor);
 
@@ -105,11 +165,11 @@ function Folhas({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDasFolhas) {
   const peso = pesoDosItens(cotacao.itens, new Map(catalogo.produtos.map((produto) => [produto.codigo, produto.pesoKg])));
   const representante = catalogo.representante ? `${catalogo.representante.codigo} - ${catalogo.representante.nome}` : nomeDoLogin;
   const abertura = [
-    <Topo key="topo" cotacao={cotacao} validaAte={validaAte} />,
+    <Topo key="topo" documento={documento} />,
     <ClienteDaCotacao key="cliente" catalogo={catalogo} />,
-    <CondicoesDaCotacao key="condicoes" cotacao={cotacao} catalogo={catalogo} representante={representante} hoje={hoje} />,
+    <CondicoesDaCotacao key="condicoes" cotacao={cotacao} catalogo={catalogo} representante={representante} diaDaEntrega={diaDaEntrega} />,
   ];
-  const cabecalhoCurto = <CabecalhoCurto cliente={cliente} documento={catalogo.dadosDoPedido?.cadastro.documento ?? formatarDocumentoDoCliente(catalogo.cliente)} />;
+  const cabecalhoCurto = <CabecalhoCurto titulo={documento.titulo} cliente={cliente} documento={catalogo.dadosDoPedido?.cadastro.documento ?? formatarDocumentoDoCliente(catalogo.cliente)} />;
   const totais = (
     <div className={estilos.corpo} data-totais>
       <TotaisDaCotacao totais={totaisDoPedido(cotacao.itens, ipi)} peso={peso} />
@@ -123,8 +183,8 @@ function Folhas({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDasFolhas) {
       </Bloco>
     ) : null,
     <p key="condicoesGerais" className={estilos.condicoesGerais}>
-      Preços em reais, por cento de peças. Cotação válida até {formatarData(validaAte)}. O valor total é com IPI e sem ICMS-ST. A ST, quando devida, conforme o estado de
-      destino e a finalidade da compra, será cobrada na nota fiscal.
+      Preços em reais, por cento de peças.{documento.validaAte ? ` Cotação válida até ${formatarData(documento.validaAte)}.` : ""} O valor total é com IPI e sem ICMS-ST. A
+      ST, quando devida, conforme o estado de destino e a finalidade da compra, será cobrada na nota fiscal.
     </p>,
   ].filter((parte) => parte !== null);
   const itens = (trecho: TrechoDosItens, larguras: readonly number[] | null) => (
@@ -133,7 +193,7 @@ function Folhas({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDasFolhas) {
   const rodape = (pagina: number, total: number) => (
     <footer className={estilos.rodapePagina}>
       <span>
-        Metalúrgica Suprens Ltda · Cotação para {cliente} · emitida em {formatarData(emitidaEm)}
+        Metalúrgica Suprens Ltda · {documento.titulo} para {cliente} · {documento.rotuloDaEmissao.toLowerCase()} {formatarData(emitidaEm)}
       </span>
       <span className={estilos.numeroDaPagina}>
         Página {pagina} de {total}
@@ -173,7 +233,7 @@ function Folhas({ cotacao, catalogo, nomeDoLogin, hoje }: PropsDasFolhas) {
   }
   const { folhas, larguras } = paginacao;
   return (
-    <div className={estilos.folhas} aria-label="Cotação para imprimir">
+    <div className={estilos.folhas} aria-label={`${documento.titulo} para imprimir`}>
       {folhas.map((folha, indice) => (
         <section key={indice} className={estilos.pagina}>
           <div className={estilos.conteudo}>
@@ -252,30 +312,30 @@ function alturaComEspaco(parte: HTMLElement): number {
   return seguinte.getBoundingClientRect().top - parte.getBoundingClientRect().top;
 }
 
-function Topo({ cotacao, validaAte }: { cotacao: Cotacao; validaAte: string }) {
+function Topo({ documento }: { documento: DocumentoImpresso }) {
   return (
     <header className={estilos.topo}>
       <img src="/marca/suprens-96.png" alt="Suprens" width={64} height={61} />
       <div className={estilos.titulo}>
         <p className={estilos.empresa}>Metalúrgica Suprens Ltda</p>
-        <h2>Cotação</h2>
+        <h2>{documento.titulo}</h2>
       </div>
       <dl className={estilos.datas}>
-        <Dado rotulo="Emitida em">
-          {formatarData(dataDoMomento(cotacao.atualizadoEm))} às {horaDoMomento(cotacao.atualizadoEm)}
+        <Dado rotulo={documento.rotuloDaEmissao}>
+          {formatarData(dataDoMomento(documento.emitidoEm))} às {horaDoMomento(documento.emitidoEm)}
         </Dado>
-        <Dado rotulo="Válida até">{formatarData(validaAte)}</Dado>
+        {documento.validaAte ? <Dado rotulo="Válida até">{formatarData(documento.validaAte)}</Dado> : null}
       </dl>
     </header>
   );
 }
 
 /** O topo das folhas seguintes: o cliente, sem as datas, que ficam só na primeira (pedido do Lucas em 2026-11-23). */
-function CabecalhoCurto({ cliente, documento }: { cliente: string; documento: string }) {
+function CabecalhoCurto({ titulo, cliente, documento }: { titulo: string; cliente: string; documento: string }) {
   return (
     <header className={estilos.cabecalhoCurto}>
       <img src="/marca/suprens-96.png" alt="" width={28} height={27} />
-      <strong>Cotação</strong>
+      <strong>{titulo}</strong>
       <span>
         {cliente} · {documento}
       </span>
@@ -321,24 +381,24 @@ function ClienteDaCotacao({ catalogo }: { catalogo: CatalogoDoCliente }) {
   );
 }
 
-type PropsDasCondicoes = { cotacao: Cotacao; catalogo: CatalogoDoCliente; representante: string; hoje: string };
+type ConteudoImpresso = DocumentoImpresso["conteudo"];
+type PropsDasCondicoes = { cotacao: ConteudoImpresso; catalogo: CatalogoDoCliente; representante: string; diaDaEntrega: string };
 
-function CondicoesDaCotacao({ cotacao, catalogo, representante, hoje }: PropsDasCondicoes) {
+function CondicoesDaCotacao({ cotacao, catalogo, representante, diaDaEntrega }: PropsDasCondicoes) {
   const dados = catalogo.dadosDoPedido;
   const escolhas = cotacao.escolhas;
-  const entrega = cotacao.entrega ? `Programada para ${formatarData(cotacao.entrega)}` : `Assim que possível, a partir de ${formatarData(primeiraEntregaPossivel(hoje))}`;
   return (
     <Bloco titulo="Condições comerciais">
       {dados && escolhas ? (
         <>
-          <Dado rotulo="Condição de pagamento">{dados.condicoes.find((condicao) => condicao.codigo === escolhas.condicaoDePagamento)?.descricao ?? escolhas.condicaoDePagamento}</Dado>
+          <Dado rotulo="Condição de pagamento">{descricaoDaCondicao(dados, escolhas.condicaoDePagamento)}</Dado>
           <Dado rotulo="Classificação da venda">{ROTULOS_DA_CLASSIFICACAO[escolhas.classificacao]}</Dado>
           <Dado rotulo="Nº pedido do cliente">{escolhas.pedidoDoCliente.trim() || "—"}</Dado>
           <Dado rotulo="Frete parcial">{escolhas.aceitaParcial ? "Aceita" : "Não aceita"}</Dado>
         </>
       ) : null}
       <Dado rotulo="Entrega" colunas={2}>
-        {entrega}
+        {textoDaEntrega(cotacao.entrega, diaDaEntrega)}
       </Dado>
       <Dado rotulo="Representante" colunas={2}>
         {representante}
@@ -365,7 +425,7 @@ function CaixaDosItens({ continuaNa, children }: { continuaNa: number | null; ch
 type TrechoDosItens = { primeiro: number; fim: number };
 
 type PropsDosItens = {
-  cotacao: Cotacao;
+  cotacao: ConteudoImpresso;
   catalogo: CatalogoDoCliente;
   pesoPorItem: readonly (number | null)[];
   trecho: TrechoDosItens;
@@ -516,7 +576,7 @@ function Total({ rotulo, Icone, isDestaque = false, children }: PropsDoTotal) {
  * linha larga para cada um, com o nome em negrito ao lado (pedido do Lucas em 2026-11-23). Entrega e
  * cobrança no faturamento viram uma linha só.
  */
-function EnderecosDaCotacao({ cotacao, catalogo }: { cotacao: Cotacao; catalogo: CatalogoDoCliente }) {
+function EnderecosDaCotacao({ cotacao, catalogo }: { cotacao: ConteudoImpresso; catalogo: CatalogoDoCliente }) {
   const dados = catalogo.dadosDoPedido;
   if (!dados) return null;
   const { entrega, cobranca } = dados.cadastro;
@@ -566,27 +626,14 @@ function Local({ local }: { local: LocalDoCadastro | null }) {
 
 type DadosDoPedido = NonNullable<CatalogoDoCliente["dadosDoPedido"]>;
 
-function Transportadora({ cotacao, dados }: { cotacao: Cotacao; dados: DadosDoPedido }) {
-  const escolhida = cotacao.escolhas?.transportadora ?? null;
-  if (escolhida && "nova" in escolhida) {
-    const { nova } = escolhida;
-    return (
-      <>
-        <strong>{nova.nome}</strong> · CNPJ {formatarCnpj(nova.cnpj)}
-        <br />
-        {nova.cidade}/{nova.uf}
-      </>
-    );
-  }
-  const transportadora = escolhida ? transportadoraDe(dados, escolhida.codigo) : null;
+function Transportadora({ cotacao, dados }: { cotacao: ConteudoImpresso; dados: DadosDoPedido }) {
+  const transportadora = transportadoraParaMostrar(dados, cotacao.escolhas?.transportadora ?? null);
   if (!transportadora) return "A combinar";
   return (
     <>
-      <strong>{transportadora.razaoSocial}</strong> · CNPJ {transportadora.cnpj}
+      <strong>{transportadora.nome}</strong> · CNPJ {transportadora.cnpj}
       <br />
-      {[transportadora.endereco, transportadora.bairro, `${transportadora.cidade}/${transportadora.uf}`, transportadora.cep ? formatarCep(transportadora.cep) : null]
-        .filter(Boolean)
-        .join(" · ")}
+      {transportadora.local}
     </>
   );
 }

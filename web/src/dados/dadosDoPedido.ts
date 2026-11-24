@@ -1,4 +1,5 @@
-import { arredondarAoCentavo, valorDaLinha, type ItemComPreco } from "dominio/pedido";
+import { arredondarAoCentavo, primeiraEntregaPossivel, valorDaLinha, type ItemComPreco } from "dominio/pedido";
+import { formatarCep, formatarData } from "../formato";
 import { itemNovo, type ItemEscolhido, type ProdutoQueEntra } from "./pedido";
 import type { Classificacao, DadosDoPedido, EscolhaDaTransportadora, EscolhasDoPedido, PedidoEnviado, Transportadora, Uso } from "./tipos";
 
@@ -125,6 +126,35 @@ export function formatarCnpj(texto: string): string {
 export function transportadoraDoCnpj(dados: Pick<DadosDoPedido, "transportadoras">, cnpj: string): Transportadora | null {
   const digitos = digitosDoCnpj(cnpj);
   return dados.transportadoras.find((transportadora) => digitosDoCnpj(transportadora.cnpj) === digitos) ?? null;
+}
+
+/** A transportadora como o pedido e o PDF a mostram: o nome, o CNPJ inteiro e de onde ela é. */
+export type TransportadoraParaMostrar = { nome: string; cnpj: string; local: string };
+
+/**
+ * A transportadora escolhida, do cadastro do ERP ou como o representante a informou, quando é nova.
+ * Null sem escolha ou com a do ERP que saiu do cadastro.
+ */
+export function transportadoraParaMostrar(dados: Pick<DadosDoPedido, "transportadoras">, escolha: EscolhaDaTransportadora | null): TransportadoraParaMostrar | null {
+  if (!escolha) return null;
+  if ("nova" in escolha) {
+    const { nova } = escolha;
+    return { nome: nova.nome, cnpj: formatarCnpj(nova.cnpj), local: `${nova.cidade}/${nova.uf}` };
+  }
+  const transportadora = transportadoraDe(dados, escolha.codigo);
+  if (!transportadora) return null;
+  const { razaoSocial, cnpj, endereco, bairro, cidade, uf, cep } = transportadora;
+  return { nome: razaoSocial, cnpj: formatarCnpj(cnpj), local: [endereco, bairro, `${cidade}/${uf}`, cep ? formatarCep(cep) : null].filter(Boolean).join(" · ") };
+}
+
+/** A descrição da condição de pagamento ("28/56/84 DDL"); o código, se ela saiu do cadastro. */
+export function descricaoDaCondicao(dados: Pick<DadosDoPedido, "condicoes">, codigo: string): string {
+  return dados.condicoes.find((condicao) => condicao.codigo === codigo)?.descricao ?? codigo;
+}
+
+/** A entrega como o pedido a pede: a data programada ou a primeira possível a partir de `dia`. */
+export function textoDaEntrega(entrega: string | null, dia: string): string {
+  return entrega ? `Programada para ${formatarData(entrega)}` : `Assim que possível, a partir de ${formatarData(primeiraEntregaPossivel(dia))}`;
 }
 
 type ItemComCodigo = ItemComPreco & { codigo: string };

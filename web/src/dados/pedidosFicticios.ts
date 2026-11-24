@@ -2,6 +2,7 @@ import { dataDoMomento, momentoEmBrasilia, somarDias } from "dominio/datas";
 import { arredondarAoCentavo, numeroDoPedidoCrm, totalDoPedido, valorDaLinha } from "dominio/pedido";
 import { criarAleatorio } from "./aleatorio";
 import { catalogoFicticio } from "./catalogoFicticio";
+import { escolhasIniciais } from "./dadosDoPedido";
 import { dadosDoPedidoFicticio } from "./dadosDoPedidoFicticio";
 import { clientesFicticios, fichaFicticia, notasFaturadasFicticias, pedidosNoErpFicticios } from "./ficticio";
 import { SEM_REFERENCIAS_DO_CLIENTE, STATUS_NA_FICHA, novoIdDeCotacao, precoInicialDoItem } from "./pedido";
@@ -157,7 +158,7 @@ export function excluirCotacaoFicticio(id: string): void {
 export function enviarCotacaoFicticio(id: string): PedidoEnviado | null {
   const cotacao = cotacoes.get(id);
   const catalogo = cotacao ? catalogoDoClienteFicticio(cotacao.cliente.codigo) : null;
-  if (!cotacao || !catalogo) return null;
+  if (!cotacao || !catalogo?.dadosDoPedido) return null;
   const agora = momentoEmBrasilia();
   const pedido: PedidoEnviado = {
     numero: numeroDoPedidoCrm(proximoNumero++),
@@ -165,6 +166,7 @@ export function enviarCotacaoFicticio(id: string): PedidoEnviado | null {
     enviadoEm: agora,
     entrega: cotacao.entrega,
     observacao: cotacao.observacao,
+    escolhas: cotacao.escolhas ?? escolhasIniciais(catalogo.dadosDoPedido),
     itens: itensEnviados(cotacao.itens, catalogo),
     totalEstimado: cotacao.totalEstimado,
     totalSgi: null,
@@ -229,14 +231,19 @@ function gerarExemplos(): PedidoEnviado[] {
   return EXEMPLOS.flatMap(({ numero, etapa, minutosAtras }, indice) => {
     const cliente = ativos[indice * 2];
     const catalogo = cliente ? catalogoDoClienteFicticio(cliente.codigo) : null;
-    if (!catalogo) return [];
+    if (!catalogo?.dadosDoPedido) return [];
     const comprados = catalogo.produtos.filter((produto) => produto.jaComprou);
-    const itens = comprados.slice(0, aleatorio.inteiro(2, 4)).map((produto) => ({
+    // Um pedido em dois tem a ordem de compra do cliente, com o item de cada produto (xPed).
+    const ordemDeCompra = indice % 2 === 1 ? `45001${aleatorio.inteiro(10_000, 99_999)}` : "";
+    const itens = comprados.slice(0, aleatorio.inteiro(2, 4)).map((produto, posicao) => ({
       codigo: produto.codigo,
       quantidade: produto.embalagem * aleatorio.inteiro(2, 20),
       precoCento: precoInicialDoItem(produto),
       ...SEM_REFERENCIAS_DO_CLIENTE,
+      itemDaOrdemDeCompra: ordemDeCompra ? posicao + 1 : null,
+      partNumber: produto.partNumberDoCliente.sugerido,
     }));
+    const escolhas = { ...escolhasIniciais(catalogo.dadosDoPedido), pedidoDoCliente: ordemDeCompra, clienteXped: ordemDeCompra !== "" };
     const enviadoEm = agora - minutosAtras * 60_000;
     const caminho = CAMINHOS[etapa];
     const passou = (alvo: EtapaDoPedido) => caminho.includes(alvo);
@@ -247,7 +254,8 @@ function gerarExemplos(): PedidoEnviado[] {
         cliente: catalogo.cliente,
         enviadoEm: momentoEmBrasilia(new Date(enviadoEm)),
         entrega: null,
-        observacao: "",
+        observacao: indice === 1 ? "Entregar na doca 3, das 7h às 15h." : "",
+        escolhas,
         itens: itensEnviados(itens, catalogo),
         totalEstimado,
         totalSgi: passou("em_aprovacao") ? Math.round(totalEstimado * aleatorio.entre(0.985, 1.025)) : null,

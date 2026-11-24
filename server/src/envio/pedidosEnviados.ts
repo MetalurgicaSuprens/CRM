@@ -165,7 +165,8 @@ function montarPedidoEnviado(foto: DatabaseSync, sessao: Sessao, linha: Record<s
     enviadoEm,
     entrega: conteudo.entrega,
     observacao: conteudo.observacao,
-    itens: itensComProduto(foto, conteudo.itens),
+    escolhas: conteudo.escolhas,
+    itens: itensComProduto(foto, conteudo.itens.map(comReferenciasDoCliente)),
     totalEstimado: totalDoPedido(conteudo.itens),
     ...andamentoNaFoto(foto, numero, enviadoEm),
   };
@@ -186,6 +187,11 @@ function andamentoNaFoto(foto: DatabaseSync, numero: string, enviadoEm: string):
     totalSgi: linha.total_sgi === null ? null : Number(linha.total_sgi),
     motivoRecusa: textoOuNulo(linha, "motivo_recusa"),
   };
+}
+
+/** O item enviado antes da ordem de compra no item (2026-11-19) ou do part number (2026-11-23) fica sem eles. */
+function comReferenciasDoCliente(item: ItemDoPedido): ItemDoPedido {
+  return { ...item, ordemDeCompra: item.ordemDeCompra ?? null, itemDaOrdemDeCompra: item.itemDaOrdemDeCompra ?? null, partNumber: item.partNumber ?? null };
 }
 
 /** A família e a medida vêm da foto de agora; o produto que saiu dela fica sem. */

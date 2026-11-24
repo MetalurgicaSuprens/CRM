@@ -109,22 +109,51 @@
   font-variant-numeric: tabular-nums;
 }
 
-.totalDoSgi {
+.totalEmDestaque {
   font-size: var(--tam-destaque);
   font-weight: 600;
 }
 
-.extras {
+/* ------------------------------------------------ cliente e condições */
+
+.condicoes {
   display: grid;
+  /* Lado a lado quando cabem; um embaixo do outro na coluna estreita e no celular */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  align-items: start;
+  gap: var(--esp-4) var(--esp-6);
+}
+
+.parte {
+  display: flex;
+  flex-direction: column;
   gap: var(--esp-3);
-  margin: 0;
-  font-size: var(--tam-pequeno);
+  min-width: 0;
 }
 
-.extras dt {
-  color: var(--cor-texto-suave);
+/* Como os títulos das colunas da tabela */
+.tituloDaParte {
+  font-size: var(--tam-legenda);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cor-texto-2);
 }
 
-.extras dd {
+/* Os dados numa faixa clara, como o cadastro na tela de pedido: aqui nada se muda */
+.fatos {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--esp-3) var(--esp-6);
   margin: 0;
+  padding: var(--esp-3) var(--esp-4);
+  border: 1px solid var(--cor-linha);
+  border-radius: var(--raio);
+  background: var(--cor-superficie-2);
+}
+
+.observacao {
+  font-weight: 400;
+  white-space: pre-wrap;
 }

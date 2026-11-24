@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   condicaoInicial,
   aliquotaDoIpi,
+  descricaoDaCondicao,
+  textoDaEntrega,
+  transportadoraParaMostrar,
   isClienteXped,
   pesoDosItens,
   escolhasIniciais,
@@ -190,6 +193,37 @@ describe("CNPJ da transportadora nova", () => {
   it("acha a transportadora do ERP com o mesmo CNPJ, para não cadastrar de novo", () => {
     expect(transportadoraDoCnpj(dados(), "45997418000153")?.codigo).toBe("102");
     expect(transportadoraDoCnpj(dados(), "11444777000161")).toBeNull();
+  });
+});
+
+describe("o pedido para mostrar", () => {
+  it("mostra a transportadora do ERP com a razão social, o CNPJ inteiro e o endereço", () => {
+    const comEndereco = dados({ transportadoras: [{ ...dados().transportadoras[0]!, endereco: "Rua B, 20", bairro: "Centro", cep: "80010000" }] });
+    expect(transportadoraParaMostrar(comEndereco, { codigo: "101" })).toEqual({
+      nome: "Rápido Sul Transportes Ltda",
+      cnpj: "11.222.333/0001-81",
+      local: "Rua B, 20 · Centro · Curitiba/PR · 80010-000",
+    });
+  });
+
+  it("mostra a transportadora nova como o representante a informou", () => {
+    const nova = { nova: { cnpj: "45997418000153", nome: "Nova Log", cidade: "Maringá", uf: "PR" } };
+    expect(transportadoraParaMostrar(dados(), nova)).toEqual({ nome: "Nova Log", cnpj: "45.997.418/0001-53", local: "Maringá/PR" });
+  });
+
+  it("sem escolha, ou com a que saiu do cadastro, não mostra transportadora", () => {
+    expect(transportadoraParaMostrar(dados(), null)).toBeNull();
+    expect(transportadoraParaMostrar(dados(), { codigo: "999" })).toBeNull();
+  });
+
+  it("mostra a descrição da condição de pagamento, ou o código quando ela saiu do cadastro", () => {
+    expect(descricaoDaCondicao(dados(), "1060")).toBe("30/60 DIAS");
+    expect(descricaoDaCondicao(dados(), "9999")).toBe("9999");
+  });
+
+  it("mostra a entrega programada ou a primeira possível, 5 dias úteis depois do dia", () => {
+    expect(textoDaEntrega("2026-12-05", "2026-11-23")).toBe("Programada para 05/12/2026");
+    expect(textoDaEntrega(null, "2026-11-23")).toBe("Assim que possível, a partir de 30/11/2026");
   });
 });
 
