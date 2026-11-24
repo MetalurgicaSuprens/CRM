@@ -113,6 +113,7 @@ export function cotacoesNaFicha(
       valorComIpi: null,
       cfop: null,
       notas: [],
+      condicoes: null,
     }));
 }
 
@@ -216,6 +217,9 @@ function itensNaFicha(foto: DatabaseSync, itens: readonly ItemDoPedido[]): Pedid
     pecas: item.quantidade,
     valor: valorDaLinha(item),
     entrega: null,
+    ordemDeCompra: item.ordemDeCompra,
+    itemDaOrdemDeCompra: item.itemDaOrdemDeCompra,
+    partNumber: item.partNumber,
   }));
 }
 

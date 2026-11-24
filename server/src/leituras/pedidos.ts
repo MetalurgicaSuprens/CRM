@@ -2,6 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 import type { NotaDoPedidoNaFoto } from "dominio/esquemaDaFoto";
 import type { Cfop, ClienteResumo, ItemDaFicha, ItemDoErp, ItemEmAberto, NotaDoPedido, PainelDePedidos, PedidoDaFicha, StatusDoPedido } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
+import { SEM_REFERENCIAS, lerCondicoesDosPedidos, referenciasDoProduto, type CondicoesDosPedidos } from "./condicoesDosPedidos.ts";
 import { COLUNAS_DO_RESUMO, escopo, lerLinhas, numero, resumoDoCliente, texto, textoOuNulo, type Linha } from "./linhas.ts";
 
 /*
@@ -42,8 +43,7 @@ export function lerPedidos(db: DatabaseSync, sessao: Sessao): Omit<PainelDePedid
     idDaNota,
     itemDoErp,
   );
-  return {
-    emAberto: doLogin("pedido_aberto x", `${COLUNAS_DO_RESUMO}, x.pedido, x.emissao, x.entrega, x.itens, x.valor, x.valor_ipi, x.cfop, x.cfop_descricao`, "x.entrega").map(
+  const emAberto = doLogin("pedido_aberto x", `${COLUNAS_DO_RESUMO}, x.pedido, x.emissao, x.entrega, x.itens, x.valor, x.valor_ipi, x.cfop, x.cfop_descricao`, "x.entrega").map(
       (linha) => ({
         numero: texto(linha, "pedido"),
         emissao: texto(linha, "emissao"),
@@ -55,8 +55,8 @@ export function lerPedidos(db: DatabaseSync, sessao: Sessao): Omit<PainelDePedid
         cliente: resumoDoCliente(linha),
         itensEmAberto: itensEmAberto.get(texto(linha, "pedido")) ?? [],
       }),
-    ),
-    faturados: doLogin(
+    );
+  const faturados = doLogin(
       "nota x",
       `${COLUNAS_DO_RESUMO}, x.nota, x.serie, x.emissao, x.valor, x.valor_ipi, x.valor_total, x.transportadora, x.cfop, x.cfop_descricao, x.pedidos`,
       "x.emissao DESC, x.nota DESC",
@@ -74,8 +74,26 @@ export function lerPedidos(db: DatabaseSync, sessao: Sessao): Omit<PainelDePedid
         pedidos: JSON.parse(texto(linha, "pedidos")) as string[],
         itens: itensDasNotas.get(idDaNota(linha)) ?? [],
       }),
-    ),
+    );
+  // Só os pedidos que as duas leituras acima já conferiram ser do login.
+  const doSgi = lerCondicoesDosPedidos(db, [...emAberto.map(({ numero }) => numero), ...faturados.flatMap(({ pedidos }) => pedidos)]);
+  return {
+    emAberto: emAberto.map((pedido) => ({
+      ...pedido,
+      itensEmAberto: comReferencias(pedido.itensEmAberto, doSgi, [pedido.numero]),
+      condicoes: doSgi.condicoes.get(pedido.numero) ?? null,
+    })),
+    faturados: faturados.map((nota) => ({
+      ...nota,
+      itens: comReferencias(nota.itens, doSgi, nota.pedidos),
+      condicoes: nota.pedidos.flatMap((pedido) => doSgi.condicoes.get(pedido) ?? []),
+    })),
   };
+}
+
+/** Os itens com o part number e a ordem de compra do pedido do SGI. */
+function comReferencias<T extends ItemDoErp>(itens: readonly T[], doSgi: CondicoesDosPedidos, pedidos: readonly string[]): T[] {
+  return itens.map((item) => ({ ...item, ...referenciasDoProduto(doSgi.referencias, pedidos, item.codigo) }));
 }
 
 /**
@@ -104,7 +122,7 @@ export function lerPedidosDaFicha(db: DatabaseSync, sessao: Sessao, codigoDoClie
     (linha) => texto(linha, "pedido"),
     (linha): ItemDaFicha => ({ ...itemDoErp(linha), entrega: textoOuNulo(linha, "entrega") }),
   );
-  return lerLinhas(
+  const pedidos = lerLinhas(
     db,
     `SELECT 'em_aberto' AS status, x.pedido, x.emissao, x.entrega, x.valor, x.valor_ipi, x.cfop, x.cfop_descricao, '[]' AS notas
        FROM pedido_aberto x WHERE ${doCliente}
@@ -126,6 +144,8 @@ export function lerPedidosDaFicha(db: DatabaseSync, sessao: Sessao, codigoDoClie
     cfop: cfopDa(linha),
     notas: notasDoPedido(texto(linha, "notas")),
   }));
+  const doSgi = lerCondicoesDosPedidos(db, pedidos.map(({ id }) => id));
+  return pedidos.map((pedido) => ({ ...pedido, itens: comReferencias(pedido.itens, doSgi, [pedido.id]), condicoes: doSgi.condicoes.get(pedido.id) ?? null }));
 }
 
 /** O histórico da ficha do grupo: os pedidos de todos os CNPJs dele, cada um com o CNPJ, na mesma ordem. */
@@ -156,8 +176,10 @@ function idDaNota(linha: Linha): string {
   return `${texto(linha, "serie")}-${texto(linha, "nota")}`;
 }
 
+/** Sem as referências do cliente: comReferencias as põe, quando o pedido do SGI as tem. */
 function itemDoErp(linha: Linha): ItemDoErp {
   return {
+    ...SEM_REFERENCIAS,
     ordem: numero(linha, "ordem"),
     codigo: texto(linha, "produto"),
     familia: texto(linha, "familia"),

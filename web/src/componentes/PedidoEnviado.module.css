@@ -139,21 +139,3 @@
   text-transform: uppercase;
   color: var(--cor-texto-2);
 }
-
-/* Os dados numa faixa clara, como o cadastro na tela de pedido: aqui nada se muda */
-.fatos {
-  container-type: inline-size;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: var(--esp-3) var(--esp-6);
-  margin: 0;
-  padding: var(--esp-3) var(--esp-4);
-  border: 1px solid var(--cor-linha);
-  border-radius: var(--raio);
-  background: var(--cor-superficie-2);
-}
-
-.observacao {
-  font-weight: 400;
-  white-space: pre-wrap;
-}

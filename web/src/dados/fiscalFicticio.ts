@@ -1,6 +1,6 @@
 import { criarAleatorio } from "./aleatorio";
-import { transportadorasFicticias } from "./dadosDoPedidoFicticio";
-import type { Cfop } from "./tipos";
+import { CONDICOES_FICTICIAS, transportadorasFicticias } from "./dadosDoPedidoFicticio";
+import type { Cfop, CondicoesDoPedidoNoErp, ItemDoErp, PagamentoDoFrete } from "./tipos";
 
 /*
  * O que a carteira fictícia mostra de fiscal nos pedidos e nas notas: o CFOP, o IPI e a transportadora,
@@ -36,6 +36,36 @@ export function totalDaNotaFicticio(valor: number, cfop: Cfop): number {
 
 export function transportadoraFicticia(numero: string): string {
   return criarAleatorio(Number(numero) + 13).escolher(transportadorasFicticias()).nome;
+}
+
+/** O que o representante preencheu no pedido, como o SGI guarda: um pedido em três tem a ordem de compra do cliente. */
+export function condicoesFicticias(numero: string, entrega: string): CondicoesDoPedidoNoErp {
+  const aleatorio = criarAleatorio(Number(numero) + 17);
+  const temOrdem = aleatorio.chance(1 / 3);
+  const isProgramada = aleatorio.chance(0.15);
+  return {
+    numero,
+    transportadora: aleatorio.escolher(transportadorasFicticias()),
+    condicaoDePagamento: aleatorio.escolher(CONDICOES_FICTICIAS).descricao,
+    tipoDeEntrega: isProgramada ? "programada" : "imediata",
+    entrega: isProgramada ? entrega : null,
+    ordemDeCompra: temOrdem ? `45001${aleatorio.inteiro(10_000, 99_999)}` : null,
+    classificacao: aleatorio.escolher(["comercializacao", "comercializacao", "industrializacao", "uso_consumo"] as const),
+    aceitaParcial: aleatorio.chance(0.15),
+    pagamentoDoFrete: aleatorio.escolher<PagamentoDoFrete>(["T", "T", "T", "P"]),
+    observacao: aleatorio.chance(0.3) ? "Mencionar o número do pedido na nota fiscal." : null,
+    temItemDaOrdemDeCompra: temOrdem,
+  };
+}
+
+/** Os itens com o part number de alguns e, no pedido com ordem de compra, o item dela. */
+export function comReferenciasFicticias<T extends ItemDoErp>(itens: readonly T[], condicoes: CondicoesDoPedidoNoErp): T[] {
+  const aleatorio = criarAleatorio(Number(condicoes.numero) + 19);
+  return itens.map((item, i) => ({
+    ...item,
+    partNumber: aleatorio.chance(0.4) ? String(aleatorio.inteiro(1_000, 9_999)).padStart(5, "0") : null,
+    itemDaOrdemDeCompra: condicoes.temItemDaOrdemDeCompra ? i + 1 : null,
+  }));
 }
 
 function centavos(valor: number): number {

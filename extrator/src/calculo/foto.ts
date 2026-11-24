@@ -5,6 +5,7 @@ import type { ClienteDaCarteira, DadosDoErp } from "../erp/tipos.ts";
 import type { PedidoDoCrmNaLan } from "../pedidos/andamento.ts";
 import { idDoCliente, idDoGrupo } from "../idDoCliente.ts";
 import { montarClientes } from "./clientes.ts";
+import { montarCondicoesDosPedidos, type PedidoDaFoto } from "./condicoesDosPedidos.ts";
 import { montarTabelasDoPedido } from "./dadosDoPedido.ts";
 import { montarHistoricoDoPainel, montarPainel } from "./painel.ts";
 import { montarPedidos, montarPedidosFaturados } from "./pedidos.ts";
@@ -52,10 +53,17 @@ export function montarFoto(dados: DadosDoErp & { pedidosDoCrm: readonly PedidoDo
     painel_historico: montarHistoricoDoPainel(dados.vendasDoDia, autorizados, referencia),
     ...montarPedidos({ pedidos, notas: dados.notas }, referencia, idNaCarteira),
     ...montarPedidosFaturados(dados.pedidosFaturados, dados.pedidos, idNaCarteira),
+    ...montarCondicoesDosPedidos(dados.pedidosNoSgi, pedidosNaTela(pedidos, dados, idNaCarteira)),
     ...montarTabelasDoPedido(dados.dadosDoPedido, dados.precos, new Set(clientes.lista_de_precos.map(({ produto }) => produto)), idNaCarteira),
     pedido_crm: montarPedidosDoCrm(dados.pedidosDoCrm, {
       emAberto: new Set(dados.pedidos.map(({ pedido }) => pedido)),
       comNota: new Set(dados.pedidosFaturados.map(({ pedido }) => pedido)),
     }),
   };
+}
+
+/** Os pedidos que alguma tela mostra: os em aberto dos autorizados e os faturados, só de cliente da carteira (montarPedidos). */
+function pedidosNaTela(emAberto: readonly PedidoDaFoto[], dados: DadosDoErp, idNaCarteira: (chave: string) => string | null): PedidoDaFoto[] {
+  const comSaldo = new Set(dados.pedidos.map(({ pedido }) => pedido));
+  return [...emAberto, ...dados.pedidosFaturados.filter(({ pedido }) => !comSaldo.has(pedido))].filter(({ chave }) => idNaCarteira(chave) !== null);
 }

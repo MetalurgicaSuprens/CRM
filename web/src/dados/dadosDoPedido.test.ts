@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   condicaoInicial,
   aliquotaDoIpi,
+  condicoesDoEnvio,
+  condicoesDoErp,
   descricaoDaCondicao,
   textoDaEntrega,
   transportadoraParaMostrar,
@@ -21,7 +23,7 @@ import {
   transportadoraSugerida,
   vezesQueOClienteEscolheu,
 } from "./dadosDoPedido";
-import type { DadosDoPedido } from "./tipos";
+import type { CondicoesDoPedidoNoErp, DadosDoPedido } from "./tipos";
 
 function dados(mudancas: Partial<DadosDoPedido> = {}): DadosDoPedido {
   return {
@@ -224,6 +226,57 @@ describe("o pedido para mostrar", () => {
   it("mostra a entrega programada ou a primeira possível, 5 dias úteis depois do dia", () => {
     expect(textoDaEntrega("2026-12-05", "2026-11-23")).toBe("Programada para 05/12/2026");
     expect(textoDaEntrega(null, "2026-11-23")).toBe("Assim que possível, a partir de 30/11/2026");
+  });
+});
+
+describe("condições para mostrar", () => {
+  const doErp: CondicoesDoPedidoNoErp = {
+    numero: "1149882",
+    transportadora: dados().transportadoras[0]!,
+    condicaoDePagamento: "30/60 DIAS",
+    tipoDeEntrega: "programada",
+    entrega: "2026-12-04",
+    ordemDeCompra: "4500123987",
+    classificacao: "uso_consumo",
+    aceitaParcial: false,
+    pagamentoDoFrete: "T",
+    observacao: "Entregar na doca 3.",
+    temItemDaOrdemDeCompra: true,
+  };
+
+  it("mostra o pedido do ERP com os textos do app antigo e a transportadora inteira", () => {
+    expect(condicoesDoErp(doErp)).toEqual({
+      transportadora: { nome: "Rápido Sul Transportes Ltda", cnpj: "11.222.333/0001-81", local: "Curitiba/PR" },
+      condicaoDePagamento: "30/60 DIAS",
+      entrega: "Programada para 04/12/2026",
+      ordemDeCompra: "4500123987",
+      classificacao: "Uso e consumo",
+      xped: { rotulo: "Item da ordem de compra (xPed)", texto: "Sim, nos itens" },
+      freteParcial: "Não aceita",
+      pagamentoDoFrete: "A pagar pelo cliente à transportadora",
+      observacao: "Entregar na doca 3.",
+    });
+  });
+
+  it("no pedido do ERP, mostra o que o SGI não tem como sem", () => {
+    const vazio = { ...doErp, transportadora: null, tipoDeEntrega: null, entrega: null, classificacao: null, aceitaParcial: null, pagamentoDoFrete: null, temItemDaOrdemDeCompra: false };
+    expect(condicoesDoErp(vazio)).toMatchObject({ transportadora: null, entrega: "—", classificacao: null, freteParcial: null, pagamentoDoFrete: null, xped: { texto: "Não" } });
+    expect(condicoesDoErp({ ...doErp, tipoDeEntrega: "imediata" }).entrega).toBe("Assim que possível");
+  });
+
+  it("mostra o pedido enviado pelo CRM com as escolhas do envio, sem o pagamento do frete, que ele não pergunta", () => {
+    const escolhas = { condicaoDePagamento: "1060", classificacao: "industrializacao" as const, pedidoDoCliente: " ", aceitaParcial: true, clienteXped: true, transportadora: { codigo: "102" } };
+    expect(condicoesDoEnvio({ escolhas, entrega: null, enviadoEm: "2026-11-23T16:00", observacao: "" }, dados())).toEqual({
+      transportadora: { nome: "Expresso Norte Ltda", cnpj: "45.997.418/0001-53", local: "Joinville/SC" },
+      condicaoDePagamento: "30/60 DIAS",
+      entrega: "Assim que possível, a partir de 30/11/2026",
+      ordemDeCompra: null,
+      classificacao: "Industrialização",
+      xped: { rotulo: "Cliente exige xPed", texto: "Sim" },
+      freteParcial: "Aceita",
+      pagamentoDoFrete: null,
+      observacao: null,
+    });
   });
 });
 

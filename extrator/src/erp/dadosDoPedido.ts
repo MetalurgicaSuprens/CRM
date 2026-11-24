@@ -1,6 +1,6 @@
 import { TABELAS_GERAIS } from "../calculo/partNumbers.ts";
 import type { Referencia } from "../calculo/referencia.ts";
-import type { Oracle } from "../oracle.ts";
+import type { Linha, Oracle } from "../oracle.ts";
 import { condicaoDaCarteira } from "./carteira.ts";
 import { chaveDoCliente, numero, texto, textoOuNulo } from "./linha.ts";
 import { data, emLista, emListaDeTexto } from "./sql.ts";
@@ -90,15 +90,19 @@ export async function lerLocais(oracle: Oracle, referencia: Referencia, autoriza
   }));
 }
 
+/** O cadastro da transportadora no CFOR (alias A), para o WHERE de quem chama. */
+export const SELECT_DA_TRANSPORTADORA = `SELECT A.FORNEC, TRIM(A.NOME_FANTAS), TRIM(A.RAZ_SOCIAL), ${documento("A", "TRIM(A.FIS_JURID)")}, TRIM(A.CIDADE), TRIM(A.ESTADO),
+            TRIM(A.ENDERECO), TRIM(A.BAIRRO), A.CEP
+       FROM ABC71.CFOR A`;
+
 /** As transportadoras ativas do ERP: as do qryPosTransp do SGI6R, que tira as de nome fantasia INATIVO. */
 export async function lerTransportadoras(oracle: Oracle): Promise<TransportadoraDoErp[]> {
-  const linhas = await oracle.consultar(
-    `SELECT A.FORNEC, TRIM(A.NOME_FANTAS), TRIM(A.RAZ_SOCIAL), ${documento("A", "TRIM(A.FIS_JURID)")}, TRIM(A.CIDADE), TRIM(A.ESTADO),
-            TRIM(A.ENDERECO), TRIM(A.BAIRRO), A.CEP
-       FROM ABC71.CFOR A
-      WHERE TRIM(A.TIPO_FORN) = 'T' AND NVL(TRIM(A.NOME_FANTAS), ' ') NOT LIKE '%INATIVO%'`,
-  );
-  return linhas.map((linha) => ({
+  const linhas = await oracle.consultar(`${SELECT_DA_TRANSPORTADORA} WHERE TRIM(A.TIPO_FORN) = 'T' AND NVL(TRIM(A.NOME_FANTAS), ' ') NOT LIKE '%INATIVO%'`);
+  return linhas.map(linhaParaTransportadora);
+}
+
+export function linhaParaTransportadora(linha: Linha): TransportadoraDoErp {
+  return {
     codigo: String(numero(linha, 0)),
     fantasia: textoOuNulo(linha, 1),
     razaoSocial: texto(linha, 2),
@@ -108,7 +112,7 @@ export async function lerTransportadoras(oracle: Oracle): Promise<Transportadora
     endereco: textoOuNulo(linha, 6),
     bairro: textoOuNulo(linha, 7),
     cep: numero(linha, 8),
-  }));
+  };
 }
 
 /**

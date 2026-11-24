@@ -12,7 +12,7 @@ import { criarAleatorio, type Aleatorio } from "./aleatorio";
 import { enderecoFicticio } from "./enderecoFicticio";
 import { catalogoFicticio, FAMILIAS } from "./catalogoFicticio";
 import { cadastroFicticio, cnpjDeExemplo } from "./dadosDoPedidoFicticio";
-import { cfopFicticio, ipiFicticio, totalDaNotaFicticio, transportadoraFicticia } from "./fiscalFicticio";
+import { cfopFicticio, comReferenciasFicticias, condicoesFicticias, ipiFicticio, totalDaNotaFicticio, transportadoraFicticia } from "./fiscalFicticio";
 import { PECAS_POR_CENTO } from "dominio/pedido";
 import { analisarCliente, semestreDoRitmo, type HistoricoDoCliente, type MudancaDeRitmo } from "dominio/analises";
 import { cicloTipico, comprasDasNotas } from "dominio/ciclo";
@@ -187,13 +187,17 @@ export function analisesFicticias(): Analises {
 export function pedidosNoErpFicticios(): PedidoNoErp[] {
   return carteira()
     .clientes.flatMap((cliente) =>
-      cliente.pedidos.map((pedido) => ({
-        ...pedido,
-        valorComIpi: pedido.valor + ipiFicticio(pedido.valor),
-        cfop: cfopFicticio(pedido.numero),
-        cliente: resumirCliente(cliente),
-        itensEmAberto: itensDoPedido(pedido, cliente.pesosFamilias),
-      })),
+      cliente.pedidos.map((pedido) => {
+        const condicoes = condicoesFicticias(pedido.numero, pedido.entrega);
+        return {
+          ...pedido,
+          valorComIpi: pedido.valor + ipiFicticio(pedido.valor),
+          cfop: cfopFicticio(pedido.numero),
+          cliente: resumirCliente(cliente),
+          itensEmAberto: comReferenciasFicticias(itensDoPedido(pedido, cliente.pesosFamilias), condicoes),
+          condicoes,
+        };
+      }),
     )
     .sort((a, b) => a.entrega.localeCompare(b.entrega));
 }
@@ -220,7 +224,7 @@ export function notasFaturadasFicticias(): NotaFaturada[] {
     .sort((a, b) => a.emissao.localeCompare(b.emissao))
     .map(({ familias, ...nota }) => {
       numero += aleatorio.inteiro(1, 40);
-      return { id: `${SERIE_DAS_NOTAS}-${numero}`, numero: String(numero), ...nota, ...detalheDaNota(numero, nota.valor, familias) };
+      return { id: `${SERIE_DAS_NOTAS}-${numero}`, numero: String(numero), ...nota, ...detalheDaNota(numero, nota.valor, familias, nota.emissao) };
     })
     .reverse();
 }
@@ -243,16 +247,20 @@ function detalheDaNota(
   numero: number,
   valor: number,
   familias: ReadonlyMap<string, number>,
-): Pick<NotaFaturada, "valorIpi" | "valorTotal" | "transportadora" | "cfop" | "pedidos" | "itens"> {
+  emissao: string,
+): Pick<NotaFaturada, "valorIpi" | "valorTotal" | "transportadora" | "cfop" | "pedidos" | "itens" | "condicoes"> {
   const aleatorio = criarAleatorio(numero);
   const cfop = cfopFicticio(String(numero));
+  const pedido = String(aleatorio.inteiro(1_700_000, 1_850_000));
+  const condicoes = condicoesFicticias(pedido, emissao);
   return {
     valorIpi: ipiFicticio(valor),
     valorTotal: totalDaNotaFicticio(valor, cfop),
     transportadora: transportadoraFicticia(String(numero)),
     cfop,
-    pedidos: [String(aleatorio.inteiro(1_700_000, 1_850_000))],
-    itens: sortearItens(aleatorio, valor, aleatorio.inteiro(2, 12), familias),
+    pedidos: [pedido],
+    itens: comReferenciasFicticias(sortearItens(aleatorio, valor, aleatorio.inteiro(2, 12), familias), condicoes),
+    condicoes: [condicoes],
   };
 }
 
@@ -269,7 +277,16 @@ function sortearItens(aleatorio: Aleatorio, valor: number, quantidade: number, f
     const valorDoItem = i === sorteados.length - 1 ? restante : Math.round((valor * peso) / somaDosPesos);
     restante -= valorDoItem;
     const embalagens = Math.max(1, Math.round((valorDoItem / produto.precoBase) * (PECAS_POR_CENTO / produto.embalagem)));
-    return { ordem: i + 1, codigo: produto.codigo, familia: produto.familia, pecas: embalagens * produto.embalagem, valor: valorDoItem };
+    return {
+      ordem: i + 1,
+      codigo: produto.codigo,
+      familia: produto.familia,
+      pecas: embalagens * produto.embalagem,
+      valor: valorDoItem,
+      ordemDeCompra: null,
+      itemDaOrdemDeCompra: null,
+      partNumber: null,
+    };
   });
 }
 
@@ -526,21 +543,23 @@ function montarFicha(cliente: ClienteFicticio, dados: Carteira): FichaCliente {
 }
 
 function pedidosDaFicha(cliente: ClienteFicticio, contexto: Contexto): PedidoDaFicha[] {
-  const emAberto = cliente.pedidos.map(
-    (pedido): PedidoDaFicha => ({
+  const emAberto = cliente.pedidos.map((pedido): PedidoDaFicha => {
+    const condicoes = condicoesFicticias(pedido.numero, pedido.entrega);
+    return {
       id: pedido.numero,
       cnpj: null,
       numero: pedido.numero,
       status: "em_aberto",
       emissao: pedido.emissao,
       entrega: pedido.entrega,
-      itens: itensDoPedido(pedido, cliente.pesosFamilias),
+      itens: comReferenciasFicticias(itensDoPedido(pedido, cliente.pesosFamilias), condicoes),
       valor: pedido.valor,
       valorComIpi: pedido.valor + ipiFicticio(pedido.valor),
       cfop: cfopFicticio(pedido.numero),
       notas: [],
-    }),
-  );
+      condicoes,
+    };
+  });
   return [...emAberto, ...pedidosFaturados(cliente, contexto)];
 }
 
@@ -558,6 +577,7 @@ function pedidosFaturados(cliente: ClienteFicticio, { hoje, mesAtual }: Contexto
     const comprasDoMes = compras.filter((outra) => mesDe(outra) === mes).length;
     const valor = Math.round((cliente.mensal.find((mensal) => mensal.mes === mes)?.valor ?? 0) / comprasDoMes);
     numero += aleatorio.inteiro(50, 900);
+    const condicoes = condicoesFicticias(String(numero), data);
     return {
       id: String(numero),
       cnpj: null,
@@ -565,9 +585,10 @@ function pedidosFaturados(cliente: ClienteFicticio, { hoje, mesAtual }: Contexto
       status: "faturado",
       emissao: somarDias(data, -aleatorio.inteiro(2, 12)),
       entrega: data,
-      itens: sortearItens(aleatorio, valor, aleatorio.inteiro(2, 14), cliente.pesosFamilias).map((item) => ({ ...item, entrega: null })),
+      itens: comReferenciasFicticias(sortearItens(aleatorio, valor, aleatorio.inteiro(2, 14), cliente.pesosFamilias), condicoes).map((item) => ({ ...item, entrega: null })),
       valor,
       ...fiscalDoFaturado(String(numero), data, valor),
+      condicoes,
     };
   });
 }

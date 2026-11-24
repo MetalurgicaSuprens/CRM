@@ -7,7 +7,8 @@ import { lerNotasRecentes, lerPedidosFaturados, lerVendasPorDia } from "./fatura
 import { lerFamiliasDaSuprens, lerProdutosDoAno } from "./familias.ts";
 import { lerCadastros, lerCondicoes, lerEscolhas, lerLocais, lerPartNumbersUsados, lerTransportadoras, lerTransportadorasDosRepresentantes, lerUltimosPedidos } from "./dadosDoPedido.ts";
 import { lerPedidosEmAberto } from "./pedidos.ts";
-import type { DadosDoErp } from "./tipos.ts";
+import { lerCondicoesNoSgi, lerReferenciasDosItensNoSgi, lerTransportadorasPorCodigo } from "./pedidosNoSgi.ts";
+import type { CondicoesNoSgi, DadosDoErp, TransportadoraDoErp } from "./tipos.ts";
 
 export type Progresso = (mensagem: string) => void;
 
@@ -26,7 +27,7 @@ export async function lerDadosDoErp(
     return resultado;
   };
   const tabelas = await etapa("tabelas de preço", () => lerTabelasDosClientes(oracle, referencia, autorizados));
-  const dados: DadosDoErp = {
+  const dados = {
     geradaEm,
     representantes: await etapa("representantes", () => lerNomesDosRepresentantes(oracle, autorizados)),
     carteira: await etapa("carteira", () => lerCarteira(oracle, referencia, autorizados)),
@@ -59,5 +60,17 @@ export async function lerDadosDoErp(
       ultimosPedidos: await etapa("últimos pedidos", () => lerUltimosPedidos(oracle, referencia, autorizados)),
     },
   };
-  return { referencia, dados };
+  const pedidos = [...new Set([...dados.pedidos, ...dados.pedidosFaturados].map(({ pedido }) => pedido))];
+  const condicoes = await etapa("condições dos pedidos no SGI", () => lerCondicoesNoSgi(oracle, pedidos));
+  const itens = await etapa("part numbers e ordens de compra dos pedidos no SGI", () => lerReferenciasDosItensNoSgi(oracle, pedidos));
+  const transportadorasInativas = await etapa("transportadoras inativas dos pedidos", () =>
+    lerTransportadorasPorCodigo(oracle, codigosInativos(condicoes, dados.dadosDoPedido.transportadoras)),
+  );
+  return { referencia, dados: { ...dados, dadosDoPedido: { ...dados.dadosDoPedido, transportadorasInativas }, pedidosNoSgi: { condicoes, itens } } };
+}
+
+/** As transportadoras dos pedidos que não estão entre as ativas. */
+function codigosInativos(condicoes: readonly CondicoesNoSgi[], ativas: readonly TransportadoraDoErp[]): string[] {
+  const codigosAtivos = new Set(ativas.map(({ codigo }) => codigo));
+  return [...new Set(condicoes.flatMap(({ transportadora }) => (transportadora && !codigosAtivos.has(transportadora) ? [transportadora] : [])))];
 }

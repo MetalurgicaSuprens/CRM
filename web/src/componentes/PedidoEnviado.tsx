@@ -1,18 +1,9 @@
-import { dataDoMomento } from "dominio/datas";
 import { valorDaLinha } from "dominio/pedido";
-import {
-  ROTULOS_DA_CLASSIFICACAO,
-  aliquotaDoIpi,
-  descricaoDaCondicao,
-  pesoDosItens,
-  textoDaEntrega,
-  totaisDoPedido,
-  transportadoraParaMostrar,
-  valorDoIpi,
-} from "../dados/dadosDoPedido";
+import { aliquotaDoIpi, condicoesDoEnvio, pesoDosItens, totaisDoPedido, valorDoIpi } from "../dados/dadosDoPedido";
 import { passosDoAndamento, type PassoDoAndamento } from "../dados/pedido";
 import type { CatalogoDoCliente, DadosDoPedido, ItemEnviado, LocalDoCadastro, PedidoEnviado } from "../dados/tipos";
 import { formatarAliquota, formatarCep, formatarContagem, formatarDocumentoDoCliente, formatarMomento, formatarNumero, formatarPeso } from "../formato";
+import { CondicoesDoPedido, colunasDasReferencias, Fatos } from "./CondicoesDoPedido";
 import { ETAPAS } from "./EtapaDoPedido";
 import { DetalheDoFato, Fato } from "./Fato";
 import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva, type ColunaDaTabela } from "./TabelaResponsiva";
@@ -62,17 +53,14 @@ function DetalheDoPasso({ passo, pedido }: { passo: PassoDoAndamento; pedido: Pe
 
 /**
  * Tudo o que o representante preencheu além dos itens, na ordem da inclusão (pedido do Lucas em
- * 2026-11-24): para quem é e em que condições. O CNPJ da transportadora vai inteiro, quebrando a linha
- * quando não cabe, como um fornecedor pediu. O cadastro vem do ERP de agora; as escolhas, do envio.
+ * 2026-11-24): para quem é e em que condições. O cadastro vem do ERP de agora; as escolhas, do envio.
  */
 export function CondicoesDoPedidoEnviado({ pedido, dados }: { pedido: PedidoEnviado; dados: DadosDoPedido | null }) {
-  const { escolhas } = pedido;
-  const transportadora = dados ? transportadoraParaMostrar(dados, escolhas.transportadora) : null;
   return (
     <div className={estilos.condicoes}>
       <section className={estilos.parte}>
         <h3 className={estilos.tituloDaParte}>Cliente</h3>
-        <dl className={estilos.fatos}>
+        <Fatos>
           <Fato rotulo="Razão social" largo>
             {dados?.cadastro.razaoSocial ?? pedido.cliente.nome}
           </Fato>
@@ -80,34 +68,11 @@ export function CondicoesDoPedidoEnviado({ pedido, dados }: { pedido: PedidoEnvi
           <Fato rotulo="Entrega" largo>
             <LocalDaEntrega local={dados?.cadastro.entrega ?? null} />
           </Fato>
-        </dl>
+        </Fatos>
       </section>
       <section className={estilos.parte}>
         <h3 className={estilos.tituloDaParte}>Condições do pedido</h3>
-        <dl className={estilos.fatos}>
-          <Fato rotulo="Transportadora" largo>
-            {transportadora ? (
-              <>
-                {transportadora.nome}
-                <DetalheDoFato>CNPJ {transportadora.cnpj}</DetalheDoFato>
-                <DetalheDoFato>{transportadora.local}</DetalheDoFato>
-              </>
-            ) : (
-              "—"
-            )}
-          </Fato>
-          <Fato rotulo="Condição de pagamento">{dados ? descricaoDaCondicao(dados, escolhas.condicaoDePagamento) : escolhas.condicaoDePagamento}</Fato>
-          <Fato rotulo="Entrega">{textoDaEntrega(pedido.entrega, dataDoMomento(pedido.enviadoEm))}</Fato>
-          <Fato rotulo="Ordem de compra">{escolhas.pedidoDoCliente.trim() || "—"}</Fato>
-          <Fato rotulo="Classificação da venda">{ROTULOS_DA_CLASSIFICACAO[escolhas.classificacao]}</Fato>
-          <Fato rotulo="Cliente exige xPed">{escolhas.clienteXped ? "Sim" : "Não"}</Fato>
-          <Fato rotulo="Frete parcial">{escolhas.aceitaParcial ? "Aceita" : "Não aceita"}</Fato>
-          {pedido.observacao.trim() ? (
-            <Fato rotulo="Observações" largo>
-              <span className={estilos.observacao}>{pedido.observacao}</span>
-            </Fato>
-          ) : null}
-        </dl>
+        <CondicoesDoPedido condicoes={condicoesDoEnvio(pedido, dados)} />
       </section>
     </div>
   );
@@ -135,7 +100,7 @@ export function ItensDoPedidoEnviado({ pedido, catalogo }: PropsDosItens) {
   const ipi = catalogo?.dadosDoPedido?.ipi ?? null;
   const colunas: [ColunaDaTabela<ItemEnviado>, ...ColunaDaTabela<ItemEnviado>[]] = [
     { titulo: "Produto", ordenarPor: (item) => item.codigo, celula: (item) => <Identificacao titulo={item.codigo} detalhe={[item.familia, item.medida].filter(Boolean).join(" · ")} /> },
-    ...colunasDasReferencias(pedido),
+    ...colunasDasReferencias(pedido.itens, pedido.escolhas.pedidoDoCliente.trim() || null),
     { titulo: "Peças", numerica: true, largura: 5, fixa: true, ordenarPor: (item) => item.quantidade, celula: (item) => formatarNumero(item.quantidade) },
     { titulo: "Cento", numerica: true, largura: 5.5, fixa: true, ordenarPor: (item) => item.precoCento, celula: (item) => <Valor valor={item.precoCento} comCentavos /> },
     { titulo: "Valor s/ IPI", numerica: true, largura: 6.5, fixa: true, ordenarPor: valorDaLinha, celula: (item) => <Valor valor={valorDaLinha(item)} comCentavos /> },
@@ -154,25 +119,6 @@ export function ItensDoPedidoEnviado({ pedido, catalogo }: PropsDosItens) {
       <Totais pedido={pedido} catalogo={catalogo} />
     </div>
   );
-}
-
-/** O part number e a ordem de compra do cliente, cada um só quando algum item tem. */
-function colunasDasReferencias(pedido: PedidoEnviado): ColunaDaTabela<ItemEnviado>[] {
-  const ordemDoPedido = pedido.escolhas.pedidoDoCliente.trim();
-  const ordemDe = (item: ItemEnviado) => item.ordemDeCompra ?? ordemDoPedido;
-  const colunas: ColunaDaTabela<ItemEnviado>[] = [];
-  if (pedido.itens.some((item) => item.partNumber !== null)) {
-    colunas.push({ titulo: "Part number", largura: 7, ordenarPor: (item) => item.partNumber ?? "", celula: (item) => item.partNumber ?? "—" });
-  }
-  if (ordemDoPedido !== "" || pedido.itens.some((item) => item.ordemDeCompra !== null || item.itemDaOrdemDeCompra !== null)) {
-    colunas.push({
-      titulo: "Ordem de compra",
-      largura: 8,
-      ordenarPor: ordemDe,
-      celula: (item) => [ordemDe(item), item.itemDaOrdemDeCompra === null ? null : `item ${item.itemDaOrdemDeCompra}`].filter(Boolean).join(" · ") || "—",
-    });
-  }
-  return colunas;
 }
 
 function colunasDoIpi(ipi: Readonly<Record<string, number>>): ColunaDaTabela<ItemEnviado>[] {

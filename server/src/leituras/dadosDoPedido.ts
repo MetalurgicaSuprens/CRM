@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { CadastroDoCliente, Classificacao, ClienteResumo, DadosDoPedido, LocalDoCadastro, Uso } from "../../../web/src/dados/tipos.ts";
+import type { CadastroDoCliente, Classificacao, ClienteResumo, DadosDoPedido, LocalDoCadastro, Transportadora, Uso } from "../../../web/src/dados/tipos.ts";
 import type { Sessao } from "../sessao.ts";
 import { escopo, lerLinhas, numero, texto, textoOuNulo, type Linha } from "./linhas.ts";
 
@@ -37,17 +37,8 @@ export function lerDadosDoPedido(db: DatabaseSync, sessao: Sessao, cliente: Clie
     classificacoesUsadas: escolhas("classificacao") as Uso<Classificacao>[],
     parcialUsado: { aceita: parcial.find((uso) => uso.valor === "sim")?.pedidos ?? 0, naoAceita: parcial.find((uso) => uso.valor === "nao")?.pedidos ?? 0 },
     xpedUsado: { com: xped.find((uso) => uso.valor === "sim")?.pedidos ?? 0, sem: xped.find((uso) => uso.valor === "nao")?.pedidos ?? 0 },
-    transportadoras: lerLinhas(db, "SELECT codigo, nome, razao_social, cnpj, endereco, bairro, cep, cidade, uf FROM transportadora ORDER BY nome").map((linha) => ({
-      codigo: texto(linha, "codigo"),
-      nome: texto(linha, "nome"),
-      razaoSocial: texto(linha, "razao_social"),
-      cnpj: texto(linha, "cnpj"),
-      endereco: textoOuNulo(linha, "endereco"),
-      bairro: textoOuNulo(linha, "bairro"),
-      cep: textoOuNulo(linha, "cep"),
-      cidade: texto(linha, "cidade"),
-      uf: texto(linha, "uf"),
-    })),
+    // A inativa só aparece no pedido antigo que a usou (leituras/condicoesDosPedidos.ts): o pedido novo não a oferece.
+    transportadoras: lerLinhas(db, `SELECT ${COLUNAS_DA_TRANSPORTADORA} FROM transportadora WHERE is_ativa = 1 ORDER BY nome`).map(transportadoraDaLinha),
     transportadorasDoCliente: escolhas("transportadora"),
     transportadorasDoRepresentante: transportadorasDoLogin(db, sessao),
     ipi: numero(cadastro, "base_ipi") === 1 ? aliquotas(db, produtosDaLista) : {},
@@ -126,4 +117,20 @@ function ultimoPedido(db: DatabaseSync, cliente: string, data: string | null): D
     quantidade: Math.round(numero(linha, "pecas")),
   }));
   return itens.length > 0 ? { data, itens } : null;
+}
+
+export const COLUNAS_DA_TRANSPORTADORA = "codigo, nome, razao_social, cnpj, endereco, bairro, cep, cidade, uf";
+
+export function transportadoraDaLinha(linha: Linha): Transportadora {
+  return {
+    codigo: texto(linha, "codigo"),
+    nome: texto(linha, "nome"),
+    razaoSocial: texto(linha, "razao_social"),
+    cnpj: texto(linha, "cnpj"),
+    endereco: textoOuNulo(linha, "endereco"),
+    bairro: textoOuNulo(linha, "bairro"),
+    cep: textoOuNulo(linha, "cep"),
+    cidade: texto(linha, "cidade"),
+    uf: texto(linha, "uf"),
+  };
 }

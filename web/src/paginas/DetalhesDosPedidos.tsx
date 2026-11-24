@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { ChevronRight } from "lucide-react";
+import { CondicoesDoPedido, colunasDasReferencias } from "../componentes/CondicoesDoPedido";
 import { DetalheDoFato, Fato } from "../componentes/Fato";
 import { AndamentoDoPedido, CondicoesDoPedidoEnviado, ItensDoPedidoEnviado } from "../componentes/PedidoEnviado";
 import { DataRelativa } from "../componentes/Quando";
@@ -8,9 +9,10 @@ import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva, type ColunaDaTabela }
 import { Valor } from "../componentes/Valor";
 import { valorDaLinha } from "dominio/pedido";
 import { carregarCatalogo } from "../dados/api";
+import { condicoesDoErp } from "../dados/dadosDoPedido";
 import { precoDoCento, resumirPorFamilia, type TotalDaFamilia } from "../dados/pedido";
 import { useCarga } from "../dados/useCarga";
-import type { Cfop, ClienteResumo, ItemDoErp, NotaDoPedido, NotaFaturada, PedidoDaFicha, PedidoEnviado, PedidoNoErp } from "../dados/tipos";
+import type { Cfop, ClienteResumo, CondicoesDoPedidoNoErp, ItemDoErp, NotaDoPedido, NotaFaturada, PedidoDaFicha, PedidoEnviado, PedidoNoErp } from "../dados/tipos";
 import { formatarData, formatarNumero, formatarPedidosDaNota } from "../formato";
 import estilos from "./DetalhesDosPedidos.module.css";
 
@@ -53,8 +55,9 @@ export function DetalheDoPedidoNoErp({ pedido, hoje }: { pedido: PedidoNoErp; ho
   return (
     <>
       <FiscalDoPedido cfop={pedido.cfop} valor={pedido.valor} valorComIpi={pedido.valorComIpi} titulo="Saldo do pedido" />
+      <CondicoesDoErp condicoes={pedido.condicoes ? [pedido.condicoes] : []} />
       <ResumoPorFamilia itens={pedido.itensEmAberto} />
-      <ItensDoErp descricao={`Itens em aberto do pedido ${pedido.numero}`} itens={pedido.itensEmAberto} entregaAte={hoje} />
+      <ItensDoErp descricao={`Itens em aberto do pedido ${pedido.numero}`} itens={pedido.itensEmAberto} entregaAte={hoje} ordemDoPedido={pedido.condicoes?.ordemDeCompra ?? null} />
       <Rodape>
         <LinkParaFicha cliente={pedido.cliente} />
       </Rodape>
@@ -67,8 +70,9 @@ export function DetalheDaNota({ nota }: { nota: NotaFaturada }) {
   return (
     <>
       <FiscalDaNota nota={nota} />
+      <CondicoesDoErp condicoes={nota.condicoes} />
       <ResumoPorFamilia itens={nota.itens} />
-      <ItensDoErp descricao={`Itens da nota ${nota.numero}`} itens={nota.itens} />
+      <ItensDoErp descricao={`Itens da nota ${nota.numero}`} itens={nota.itens} ordemDoPedido={nota.condicoes[0]?.ordemDeCompra ?? null} />
       <Rodape>
         {nota.pedidos.length > 0 ? <span className={estilos.origem}>{formatarPedidosDaNota(nota.pedidos)}</span> : null}
         <LinkParaFicha cliente={nota.cliente} />
@@ -89,11 +93,13 @@ export function DetalheDoPedidoDaFicha({ pedido, hoje }: { pedido: PedidoDaFicha
       {pedido.status === "em_aberto" && pedido.valorComIpi !== null ? (
         <FiscalDoPedido cfop={pedido.cfop} valor={pedido.valor} valorComIpi={pedido.valorComIpi} titulo="Saldo do pedido" />
       ) : null}
+      <CondicoesDoErp condicoes={pedido.condicoes ? [pedido.condicoes] : []} />
       <ResumoPorFamilia itens={pedido.itens} />
       <ItensDoErp
         descricao={`Itens do pedido ${pedido.numero ?? "em cotação"}`}
         itens={pedido.itens}
         entregaAte={pedido.status === "em_aberto" ? hoje : undefined}
+        ordemDoPedido={pedido.condicoes?.ordemDeCompra ?? null}
       />
       {caminho ? (
         <Rodape>
@@ -130,6 +136,19 @@ function FiscalDaNota({ nota }: { nota: NotaFaturada }) {
       </dl>
     </section>
   );
+}
+
+/**
+ * O que o representante preencheu no pedido do ERP, lido do SGI (pedido do Lucas em 2026-11-24); a nota
+ * que saiu de mais de um pedido mostra as de cada um. Nada quando o SGI não tem o pedido.
+ */
+function CondicoesDoErp({ condicoes }: { condicoes: readonly CondicoesDoPedidoNoErp[] }) {
+  return condicoes.map((doPedido) => (
+    <section key={doPedido.numero} className={estilos.parte}>
+      <h3 className={estilos.tituloDaParte}>{condicoes.length > 1 ? `Condições do pedido ${doPedido.numero}` : "Condições do pedido"}</h3>
+      <CondicoesDoPedido condicoes={condicoesDoErp(doPedido)} />
+    </section>
+  ));
 }
 
 /** O pedido em aberto: o CFOP e o saldo, sem e com o IPI. */
@@ -211,11 +230,21 @@ function ResumoPorFamilia({ itens }: { itens: readonly TotalDaFamilia[] }) {
   );
 }
 
-/** Os itens do ERP, iguais no pedido em aberto, na nota e no pedido da ficha; a entrega, só com `entregaAte`. */
-function ItensDoErp<T extends ItemDoErp & { entrega?: string | null }>({ descricao, itens, entregaAte }: { descricao: string; itens: readonly T[]; entregaAte?: string }) {
-  const colunas: readonly [ColunaDaTabela<T>, ...ColunaDaTabela<T>[]] = entregaAte
-    ? [PRODUTO, colunaDaEntrega(entregaAte), PECAS, CENTO, VALOR]
-    : [PRODUTO, PECAS, CENTO, VALOR];
+/**
+ * Os itens do ERP, iguais no pedido em aberto, na nota e no pedido da ficha; a entrega, só com
+ * `entregaAte`; o part number e a ordem de compra do cliente, quando algum item tem.
+ */
+type PropsDosItensDoErp<T> = { descricao: string; itens: readonly T[]; entregaAte?: string; ordemDoPedido?: string | null };
+
+function ItensDoErp<T extends ItemDoErp & { entrega?: string | null }>({ descricao, itens, entregaAte, ordemDoPedido = null }: PropsDosItensDoErp<T>) {
+  const colunas: readonly [ColunaDaTabela<T>, ...ColunaDaTabela<T>[]] = [
+    PRODUTO,
+    ...colunasDasReferencias(itens, ordemDoPedido),
+    ...(entregaAte ? [colunaDaEntrega(entregaAte)] : []),
+    PECAS,
+    CENTO,
+    VALOR,
+  ];
   return (
     <TabelaResponsiva
       descricao={descricao}

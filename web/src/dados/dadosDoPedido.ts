@@ -1,7 +1,18 @@
+import { dataDoMomento } from "dominio/datas";
 import { arredondarAoCentavo, primeiraEntregaPossivel, valorDaLinha, type ItemComPreco } from "dominio/pedido";
 import { formatarCep, formatarData } from "../formato";
 import { itemNovo, type ItemEscolhido, type ProdutoQueEntra } from "./pedido";
-import type { Classificacao, DadosDoPedido, EscolhaDaTransportadora, EscolhasDoPedido, PedidoEnviado, Transportadora, Uso } from "./tipos";
+import type {
+  Classificacao,
+  CondicoesDoPedidoNoErp,
+  DadosDoPedido,
+  EscolhaDaTransportadora,
+  EscolhasDoPedido,
+  PagamentoDoFrete,
+  PedidoEnviado,
+  Transportadora,
+  Uso,
+} from "./tipos";
 
 /*
  * Os dados do pedido já preenchidos com o que o representante costuma escolher para o cliente, cada
@@ -142,9 +153,78 @@ export function transportadoraParaMostrar(dados: Pick<DadosDoPedido, "transporta
     return { nome: nova.nome, cnpj: formatarCnpj(nova.cnpj), local: `${nova.cidade}/${nova.uf}` };
   }
   const transportadora = transportadoraDe(dados, escolha.codigo);
-  if (!transportadora) return null;
-  const { razaoSocial, cnpj, endereco, bairro, cidade, uf, cep } = transportadora;
+  return transportadora ? transportadoraDoCadastro(transportadora) : null;
+}
+
+/** A transportadora do cadastro do ERP: a razão social, o CNPJ inteiro e o endereço. */
+function transportadoraDoCadastro({ razaoSocial, cnpj, endereco, bairro, cidade, uf, cep }: Transportadora): TransportadoraParaMostrar {
   return { nome: razaoSocial, cnpj: formatarCnpj(cnpj), local: [endereco, bairro, `${cidade}/${uf}`, cep ? formatarCep(cep) : null].filter(Boolean).join(" · ") };
+}
+
+/** O campo "Frete" do app antigo dos representantes, com as palavras dele (untPedidos_Mov.dfm, cbFrete). */
+export const ROTULOS_DO_PAGAMENTO_DO_FRETE: Record<PagamentoDoFrete, string> = {
+  T: "A pagar pelo cliente à transportadora",
+  C: "A pagar pelo cliente",
+  F: "A pagar pelo cliente (inside ICMS)",
+  P: "Pago pela empresa",
+  I: "Pago pela empresa (inside ICMS)",
+  N: "Pago pela empresa, mas não impresso",
+  S: "Sem frete",
+};
+
+/** As condições do pedido como as telas as mostram, venha ele do CRM ou do ERP: textos prontos, null é sem. */
+export type CondicoesParaMostrar = {
+  transportadora: TransportadoraParaMostrar | null;
+  condicaoDePagamento: string | null;
+  entrega: string;
+  ordemDeCompra: string | null;
+  classificacao: string | null;
+  /** No CRM, se o cliente exige; no ERP, que não guarda isso, se algum item levou o item da ordem. */
+  xped: { rotulo: string; texto: string };
+  freteParcial: string | null;
+  /** Só o pedido do ERP tem; o CRM ainda não pergunta. */
+  pagamentoDoFrete: string | null;
+  observacao: string | null;
+};
+
+/** O pedido enviado pelo CRM: as escolhas do envio, com o cadastro do ERP de agora. */
+export function condicoesDoEnvio(
+  pedido: Pick<PedidoEnviado, "escolhas" | "entrega" | "enviadoEm" | "observacao">,
+  dados: Pick<DadosDoPedido, "transportadoras" | "condicoes"> | null,
+): CondicoesParaMostrar {
+  const { escolhas } = pedido;
+  return {
+    transportadora: dados ? transportadoraParaMostrar(dados, escolhas.transportadora) : null,
+    condicaoDePagamento: dados ? descricaoDaCondicao(dados, escolhas.condicaoDePagamento) : escolhas.condicaoDePagamento,
+    entrega: textoDaEntrega(pedido.entrega, dataDoMomento(pedido.enviadoEm)),
+    ordemDeCompra: escolhas.pedidoDoCliente.trim() || null,
+    classificacao: ROTULOS_DA_CLASSIFICACAO[escolhas.classificacao],
+    xped: { rotulo: "Cliente exige xPed", texto: escolhas.clienteXped ? "Sim" : "Não" },
+    freteParcial: escolhas.aceitaParcial ? "Aceita" : "Não aceita",
+    pagamentoDoFrete: null,
+    observacao: pedido.observacao.trim() || null,
+  };
+}
+
+/** O pedido do ERP feito fora do CRM, como o SGI guardou (pedido do Lucas em 2026-11-24). */
+export function condicoesDoErp(condicoes: CondicoesDoPedidoNoErp): CondicoesParaMostrar {
+  return {
+    transportadora: condicoes.transportadora ? transportadoraDoCadastro(condicoes.transportadora) : null,
+    condicaoDePagamento: condicoes.condicaoDePagamento,
+    entrega: textoDaEntregaNoErp(condicoes),
+    ordemDeCompra: condicoes.ordemDeCompra,
+    classificacao: condicoes.classificacao ? ROTULOS_DA_CLASSIFICACAO[condicoes.classificacao] : null,
+    xped: { rotulo: "Item da ordem de compra (xPed)", texto: condicoes.temItemDaOrdemDeCompra ? "Sim, nos itens" : "Não" },
+    freteParcial: condicoes.aceitaParcial === null ? null : condicoes.aceitaParcial ? "Aceita" : "Não aceita",
+    pagamentoDoFrete: condicoes.pagamentoDoFrete ? ROTULOS_DO_PAGAMENTO_DO_FRETE[condicoes.pagamentoDoFrete] : null,
+    observacao: condicoes.observacao,
+  };
+}
+
+function textoDaEntregaNoErp({ tipoDeEntrega, entrega }: CondicoesDoPedidoNoErp): string {
+  if (tipoDeEntrega === "programada" && entrega) return `Programada para ${formatarData(entrega)}`;
+  if (tipoDeEntrega === "imediata") return "Assim que possível";
+  return entrega ? formatarData(entrega) : "—";
 }
 
 /** A descrição da condição de pagamento ("28/56/84 DDL"); o código, se ela saiu do cadastro. */

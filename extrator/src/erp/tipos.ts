@@ -283,11 +283,44 @@ export type DadosDoPedidoDoErp = {
   cadastros: CadastroDoErp[];
   locais: LocalDoErp[];
   transportadoras: TransportadoraDoErp[];
+  /** As transportadoras dos pedidos do Omega que hoje não estão entre as ativas: só para mostrar o pedido. */
+  transportadorasInativas: TransportadoraDoErp[];
   condicoes: CondicaoDoErp[];
   escolhas: EscolhasDoErp[];
   transportadorasDosRepresentantes: UsoDaTransportadora[];
   ultimosPedidos: UltimoPedidoDoErp[];
 };
+
+/** O cabeçalho do pedido do SGI com o número de um pedido do Omega, como o SGI guarda (texto cru). */
+export type CondicoesNoSgi = {
+  pedido: string;
+  /** PV1_CLI: o pedido só vale se for o mesmo cliente do Omega. */
+  cliente: number;
+  transportadora: string | null;
+  condicaoDePagamento: string | null;
+  /** IMEDIATA ou PROGRAMADA. */
+  tipoDeEntrega: string | null;
+  entrega: string | null;
+  ordemDeCompra: string | null;
+  /** COMERCIALIZACAO, INDUSTRIALIZACAO ou USO/CONSUMO. */
+  classificacao: string | null;
+  freteParcial: string | null;
+  /** A letra do SGI6R: T, C, F, P, I, N ou S. */
+  pagamentoDoFrete: string | null;
+  observacao: string | null;
+};
+
+/** Uma linha do pedido do SGI: o part number e a ordem de compra do cliente. */
+export type ReferenciasDoItemNoSgi = {
+  pedido: string;
+  produto: string;
+  partNumber: string | null;
+  ordemDeCompra: string | null;
+  itemDaOrdemDeCompra: number | null;
+};
+
+/** O que os pedidos do Omega têm no SGI. */
+export type PedidosNoSgi = { condicoes: CondicoesNoSgi[]; itens: ReferenciasDoItemNoSgi[] };
 
 export type DadosDoErp = {
   geradaEm: string;
@@ -310,4 +343,5 @@ export type DadosDoErp = {
   produtosDasTabelas: ProdutoDaTabela[];
   jaComprados: ProdutoJaComprado[];
   dadosDoPedido: DadosDoPedidoDoErp;
+  pedidosNoSgi: PedidosNoSgi;
 };

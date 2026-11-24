@@ -29,6 +29,9 @@ export const FILIAL_DE_B = "bbbbbbbbbbbbbbb3";
 /** O que nunca pode aparecer para o login de A. O pedido 999004 é de B, mas para um cliente de A. */
 export const MARCAS_DE_B = [
   CLIENTE_DE_B,
+  "OC-SO-DE-B",
+  "OBSERVACAO-SO-DE-B",
+  "PN-SO-DE-B",
   "CLIENTE SO DE B",
   "999001",
   "888001",
@@ -260,6 +263,36 @@ export function montarFotoDeTeste(): Foto {
       { pedido: "999004", representante: "9999", cliente: CLIENTE_DE_A, emissao: "2026-09-04", faturado_em: "2026-09-12", itens: 1, valor: 800, valor_ipi: 0, cfop: "6101", cfop_descricao: null, notas: "[]" },
       { pedido: "100005", representante: "1401", cliente: FILIAL_CURITIBA_DE_A, emissao: "2026-08-20", faturado_em: "2026-08-28", itens: 1, valor: 1_200, valor_ipi: 0, cfop: "6101", cfop_descricao: null, notas: "[]" },
     ],
+    pedido_condicoes: [
+      {
+        pedido: "100001",
+        transportadora: "103",
+        condicao_pagamento: "1010",
+        tipo_entrega: "programada",
+        entrega: "2026-10-20",
+        ordem_de_compra: "OC-DE-A",
+        classificacao: "industrializacao",
+        aceita_parcial: 0,
+        pagamento_frete: "T",
+        observacao: "Entregar pela manhã.",
+      },
+      {
+        pedido: "999001",
+        transportadora: "102",
+        condicao_pagamento: "1030",
+        tipo_entrega: "imediata",
+        entrega: null,
+        ordem_de_compra: "OC-SO-DE-B",
+        classificacao: "comercializacao",
+        aceita_parcial: 1,
+        pagamento_frete: "P",
+        observacao: "OBSERVACAO-SO-DE-B",
+      },
+    ],
+    pedido_item_referencia: [
+      { pedido: "100001", produto: "F-100", part_number: "01853", ordem_de_compra: null, item_da_ordem_de_compra: 1 },
+      { pedido: "999001", produto: "PRODUTO-SO-DE-B", part_number: "PN-SO-DE-B", ordem_de_compra: null, item_da_ordem_de_compra: null },
+    ],
     nota: [
       {
         nota: "100002",
@@ -340,8 +373,10 @@ function dadosDoPedidoDeTeste(): Pick<
       { cliente: CLIENTE_DE_A, ordem: 2, produto: "F-100", pecas: 500 },
     ],
     transportadora: [
-      { codigo: "101", nome: "TRANSPORTES IPE", razao_social: "TRANSPORTES IPE LTDA", cnpj: "11.222.333/0001-81", endereco: "R. SOLEDADE, 228", bairro: "CUMBICA", cep: "07224210", cidade: "CURITIBA", uf: "PR" },
-      { codigo: "102", nome: "ROTA AZUL", razao_social: "ROTA AZUL TRANSPORTES LTDA", cnpj: "45.997.418/0001-53", endereco: null, bairro: null, cep: null, cidade: "JOINVILLE", uf: "SC" },
+      { codigo: "101", nome: "TRANSPORTES IPE", razao_social: "TRANSPORTES IPE LTDA", cnpj: "11.222.333/0001-81", endereco: "R. SOLEDADE, 228", bairro: "CUMBICA", cep: "07224210", cidade: "CURITIBA", uf: "PR", is_ativa: 1 },
+      { codigo: "102", nome: "ROTA AZUL", razao_social: "ROTA AZUL TRANSPORTES LTDA", cnpj: "45.997.418/0001-53", endereco: null, bairro: null, cep: null, cidade: "JOINVILLE", uf: "SC", is_ativa: 1 },
+      // Inativa: só a do pedido antigo, que o pedido novo não oferece.
+      { codigo: "103", nome: "VELHA INATIVO", razao_social: "VELHA TRANSPORTES LTDA", cnpj: "33.000.167/0001-01", endereco: null, bairro: null, cep: null, cidade: "MARINGA", uf: "PR", is_ativa: 0 },
     ],
     representante_transportadora: [
       { representante: "1401", transportadora: "101", pedidos: 40 },

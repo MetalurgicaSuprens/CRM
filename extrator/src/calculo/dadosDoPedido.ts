@@ -26,7 +26,7 @@ export type TabelasDoPedido = Pick<
  */
 const NOMES_FIXOS: Readonly<Record<string, string>> = { "78499999": "Cliente retira" };
 
-const CLASSIFICACOES: Readonly<Record<string, string>> = {
+export const CLASSIFICACOES: Readonly<Record<string, string>> = {
   COMERCIALIZACAO: "comercializacao",
   INDUSTRIALIZACAO: "industrializacao",
   "USO/CONSUMO": "uso_consumo",
@@ -59,7 +59,7 @@ export function montarTabelasDoPedido(
       const ordem = todos.slice(0, i).filter((anterior) => anterior.chave === item.chave).length + 1;
       return id && item.pecas > 0 ? [{ cliente: id, ordem, produto: item.produto, pecas: item.pecas }] : [];
     }),
-    transportadora: dados.transportadoras.map(linhaDaTransportadora),
+    transportadora: [...dados.transportadoras.map((transportadora) => linhaDaTransportadora(transportadora, 1)), ...dados.transportadorasInativas.map((transportadora) => linhaDaTransportadora(transportadora, 0))],
     representante_transportadora: dados.transportadorasDosRepresentantes.map(({ representante, transportadora, pedidos }) => ({ representante, transportadora, pedidos })),
     condicao_pagamento: [...new Map(dados.condicoes.map((condicao) => [condicao.codigo, condicao])).values()]
       .filter((condicao) => condicao.descricao)
@@ -85,7 +85,7 @@ function linhaDoCadastro(id: string, cadastro: CadastroDoErp, ultimoPedidoEm: st
   };
 }
 
-function linhaDaTransportadora(transportadora: TransportadoraDoErp): Foto["transportadora"][number] {
+function linhaDaTransportadora(transportadora: TransportadoraDoErp, isAtiva: number): Foto["transportadora"][number] {
   return {
     codigo: transportadora.codigo,
     nome: nomeDaTransportadora(transportadora),
@@ -96,6 +96,7 @@ function linhaDaTransportadora(transportadora: TransportadoraDoErp): Foto["trans
     cep: cepDoErp(transportadora.cep),
     cidade: transportadora.cidade,
     uf: transportadora.uf,
+    is_ativa: isAtiva,
   };
 }
 

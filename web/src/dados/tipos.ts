@@ -154,6 +154,33 @@ export type PedidoDaFicha = {
   cfop: Cfop | null;
   /** As notas do pedido faturado no período, da mais antiga à mais nova; vazio nos outros. */
   notas: NotaDoPedido[];
+  /** O que o representante preencheu, nos pedidos do ERP que o SGI tem; null nos outros. */
+  condicoes: CondicoesDoPedidoNoErp | null;
+};
+
+/** A letra do campo "Frete" do app antigo: quem paga o frete (PV1_PFR). */
+export type PagamentoDoFrete = "T" | "C" | "F" | "P" | "I" | "N" | "S";
+
+/**
+ * O que o representante preencheu num pedido do ERP feito fora do CRM, lido do pedido do SGI (pedido do
+ * Lucas em 2026-11-24), como o pedido enviado pelo CRM mostra. Null é sem.
+ */
+export type CondicoesDoPedidoNoErp = {
+  /** O número do pedido: a nota pode sair de mais de um. */
+  numero: string;
+  /** O cadastro do ERP, também da que hoje está inativa. */
+  transportadora: Transportadora | null;
+  /** A descrição; o código, quando ela saiu do cadastro. */
+  condicaoDePagamento: string | null;
+  tipoDeEntrega: "imediata" | "programada" | null;
+  entrega: string | null;
+  ordemDeCompra: string | null;
+  classificacao: Classificacao | null;
+  aceitaParcial: boolean | null;
+  pagamentoDoFrete: PagamentoDoFrete | null;
+  observacao: string | null;
+  /** Algum item leva o item da ordem de compra (xPed): o SGI não guarda se o cliente exige. */
+  temItemDaOrdemDeCompra: boolean;
 };
 
 /** O CFOP de um pedido ou de uma nota, com a descrição do ERP, como o app antigo dos representantes mostra. */
@@ -505,8 +532,11 @@ export type PedidoEnviado = {
   historico: { etapa: EtapaDoPedido; em: string | null }[];
 };
 
-/** Uma linha de pedido ou de nota do ERP: produto, quantidade e valor. */
-export type ItemDoErp = {
+/**
+ * Uma linha de pedido ou de nota do ERP: produto, quantidade e valor, com o part number e a ordem de
+ * compra do cliente que o pedido do SGI guarda (null é sem; a ordem de compra vazia é a do pedido).
+ */
+export type ItemDoErp = OrdemDeCompraDoItem & PartNumberDoItem & {
   /** Posição no pedido ou na nota: o mesmo produto pode vir em duas linhas. Não aparece na tela. */
   ordem: number;
   codigo: string;
@@ -526,6 +556,7 @@ export type PedidoNoErp = PedidoEmAberto & {
   cfop: Cfop | null;
   /** O que a linha mostra ao abrir: os itens com saldo, na ordem do pedido. */
   itensEmAberto: ItemEmAberto[];
+  condicoes: CondicoesDoPedidoNoErp | null;
 };
 
 export type NotaFaturada = {
@@ -545,6 +576,8 @@ export type NotaFaturada = {
   pedidos: string[];
   /** O que a linha mostra ao abrir, na ordem da nota. */
   itens: ItemDoErp[];
+  /** As condições de cada pedido da nota que o SGI tem. */
+  condicoes: CondicoesDoPedidoNoErp[];
 };
 
 export type PainelDePedidos = {

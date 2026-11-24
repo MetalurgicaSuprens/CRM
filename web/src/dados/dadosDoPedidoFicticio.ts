@@ -20,7 +20,7 @@ const NOMES_DAS_TRANSPORTADORAS: readonly [string, string, string][] = [
   ["Pantanal Express", "Campo Grande", "MS"],
 ];
 
-const CONDICOES: CondicaoDePagamento[] = [
+export const CONDICOES_FICTICIAS: CondicaoDePagamento[] = [
   { codigo: "1001", descricao: "À VISTA" },
   { codigo: "1028", descricao: "28 DDL" },
   { codigo: "1030", descricao: "30 DDL" },
@@ -39,12 +39,12 @@ export function dadosDoPedidoFicticio(cliente: ClienteDoCadastro, produtos: read
   const aleatorio = criarAleatorio(Number.parseInt(cliente.codigo.slice(0, 8), 16) + 17);
   const transportadoras = transportadorasFicticias();
   const comHistorico = !aleatorio.chance(0.12);
-  const condicaoDoCadastro = aleatorio.escolher(CONDICOES).codigo;
+  const condicaoDoCadastro = aleatorio.escolher(CONDICOES_FICTICIAS).codigo;
   return {
     cadastro: cadastroFicticio(cliente),
     condicaoDoCadastro,
-    condicoes: CONDICOES,
-    condicoesUsadas: comHistorico ? usosDe(aleatorio, [condicaoDoCadastro, aleatorio.escolher(CONDICOES).codigo]) : [],
+    condicoes: CONDICOES_FICTICIAS,
+    condicoesUsadas: comHistorico ? usosDe(aleatorio, [condicaoDoCadastro, aleatorio.escolher(CONDICOES_FICTICIAS).codigo]) : [],
     classificacoesUsadas: comHistorico ? classificacoesFicticias(aleatorio) : [],
     parcialUsado: comHistorico ? parcialFicticio(aleatorio) : { aceita: 0, naoAceita: 0 },
     xpedUsado: comHistorico && aleatorio.chance(0.15) ? { com: aleatorio.inteiro(8, 30), sem: aleatorio.inteiro(0, 3) } : { com: 0, sem: 0 },

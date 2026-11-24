@@ -9,6 +9,7 @@ function dados(mudancas: Partial<DadosDoPedidoDoErp> = {}): DadosDoPedidoDoErp {
     cadastros: [],
     locais: [],
     transportadoras: [],
+    transportadorasInativas: [],
     condicoes: [],
     escolhas: [],
     transportadorasDosRepresentantes: [],
@@ -74,6 +75,16 @@ describe("montarTabelasDoPedido", () => {
     expect(tabelas.transportadora.map(({ nome, cnpj }) => [nome, cnpj])).toEqual([
       ["Cliente retira", ""],
       ["TRANSPORTES IPE LTDA", "11.222.333/0001-81"],
+    ]);
+  });
+
+  it("leva as transportadoras inativas dos pedidos marcadas, para o pedido novo não as oferecer", () => {
+    const ativa = { codigo: "101", fantasia: "IPE", razaoSocial: "TRANSPORTES IPE LTDA", documento: "11222333000181", endereco: null, bairro: null, cep: 0, cidade: "CURITIBA", uf: "PR" };
+    const inativa = { ...ativa, codigo: "202", fantasia: "VELHA INATIVO" };
+    const tabelas = montarTabelasDoPedido(dados({ transportadoras: [ativa], transportadorasInativas: [inativa] }), [], new Set(), ID);
+    expect(tabelas.transportadora.map(({ codigo, is_ativa }) => [codigo, is_ativa])).toEqual([
+      ["101", 1],
+      ["202", 0],
     ]);
   });
 

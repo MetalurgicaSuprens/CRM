@@ -98,6 +98,7 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
       valorComIpi: null,
       cfop: null,
       notas: [],
+      condicoes: null,
     }),
   );
   const enviados = [...enviadosNaSessao, ...pedidosDeExemplo()].filter(doCliente).flatMap((pedido): PedidoDaFicha[] => {
@@ -117,6 +118,7 @@ export function pedidosDoCrmNaFicha(codigoCliente: string): PedidoDaFicha[] {
         valorComIpi: null,
         cfop: null,
         notas: [],
+        condicoes: null,
       },
     ];
   });
@@ -305,7 +307,17 @@ function ultimaCompraFicticia(codigo: string, precoDaTabela: number): { precoCen
 
 /** Os itens do pedido do CRM com o valor pelo preço do cento, como os do ERP; sem entrega por item. */
 function itensDaFicha(itens: ItemEnviado[]): ItemDaFicha[] {
-  return itens.map((item, i) => ({ ordem: i + 1, codigo: item.codigo, familia: item.familia, pecas: item.quantidade, valor: valorDaLinha(item), entrega: null }));
+  return itens.map((item, i) => ({
+    ordem: i + 1,
+    codigo: item.codigo,
+    familia: item.familia,
+    pecas: item.quantidade,
+    valor: valorDaLinha(item),
+    entrega: null,
+    ordemDeCompra: item.ordemDeCompra,
+    itemDaOrdemDeCompra: item.itemDaOrdemDeCompra,
+    partNumber: item.partNumber,
+  }));
 }
 
 function itensEnviados(itens: ItemDoPedido[], catalogo: CatalogoDoCliente): ItemEnviado[] {

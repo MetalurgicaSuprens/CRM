@@ -6,7 +6,7 @@
  * `cliente`, com as compras deles somadas; cada CNPJ aponta para ela em `cliente.grupo`.
  */
 
-export const VERSAO_DO_ESQUEMA = 24;
+export const VERSAO_DO_ESQUEMA = 25;
 
 export const ESQUEMA = `
 CREATE TABLE foto (
@@ -226,6 +226,28 @@ CREATE TABLE pedido_faturado_item (
   PRIMARY KEY (pedido, ordem)
 ) STRICT;
 
+CREATE TABLE pedido_condicoes (
+  pedido TEXT PRIMARY KEY,
+  transportadora TEXT,
+  condicao_pagamento TEXT,
+  tipo_entrega TEXT,
+  entrega TEXT,
+  ordem_de_compra TEXT,
+  classificacao TEXT,
+  aceita_parcial INTEGER,
+  pagamento_frete TEXT,
+  observacao TEXT
+) STRICT;
+
+CREATE TABLE pedido_item_referencia (
+  pedido TEXT NOT NULL,
+  produto TEXT NOT NULL,
+  part_number TEXT,
+  ordem_de_compra TEXT,
+  item_da_ordem_de_compra INTEGER,
+  PRIMARY KEY (pedido, produto)
+) STRICT;
+
 CREATE TABLE nota (
   nota TEXT NOT NULL,
   serie TEXT NOT NULL,
@@ -307,7 +329,8 @@ CREATE TABLE transportadora (
   bairro TEXT,
   cep TEXT,
   cidade TEXT NOT NULL,
-  uf TEXT NOT NULL
+  uf TEXT NOT NULL,
+  is_ativa INTEGER NOT NULL
 ) STRICT;
 
 CREATE TABLE representante_transportadora (
@@ -504,6 +527,29 @@ export type Foto = {
   }[];
   /** Os produtos de cada pedido faturado, um por produto, na ordem em que foram faturados. */
   pedido_faturado_item: { pedido: string; ordem: number; produto: string; pecas: number; valor: number }[];
+  /**
+   * O que o representante preencheu nos pedidos de `pedido_aberto` e `pedido_faturado` (versão 25), lido do
+   * pedido do SGI com o mesmo número e cliente. Os códigos são os do SGI; null é sem.
+   */
+  pedido_condicoes: {
+    pedido: string;
+    /** O código: o nome e o CNPJ ficam em `transportadora`, também a que hoje está inativa. */
+    transportadora: string | null;
+    condicao_pagamento: string | null;
+    /** imediata ou programada. */
+    tipo_entrega: string | null;
+    entrega: string | null;
+    ordem_de_compra: string | null;
+    /** comercializacao, industrializacao ou uso_consumo. */
+    classificacao: string | null;
+    /** 1 aceita frete parcial, 0 não aceita. */
+    aceita_parcial: number | null;
+    /** A letra do app antigo (PV1_PFR): T, C, F, P, I, N ou S. */
+    pagamento_frete: string | null;
+    observacao: string | null;
+  }[];
+  /** O part number e a ordem de compra do cliente nos itens desses pedidos, por produto; só os que têm algum. */
+  pedido_item_referencia: { pedido: string; produto: string; part_number: string | null; ordem_de_compra: string | null; item_da_ordem_de_compra: number | null }[];
   nota: {
     nota: string;
     serie: string;
@@ -571,7 +617,10 @@ export type Foto = {
   cliente_escolha: { cliente: string; tipo: string; valor: string; pedidos: number }[];
   /** Os itens do último pedido do cliente, na ordem dele, em peças: o "repetir o último pedido". */
   ultimo_pedido_item: { cliente: string; ordem: number; produto: string; pecas: number }[];
-  /** As transportadoras do ERP (CFOR, TIPO_FORN = 'T', fora as marcadas INATIVO): dado de empresa. */
+  /**
+   * As transportadoras do ERP (CFOR, TIPO_FORN = 'T', fora as marcadas INATIVO), e as inativas que algum
+   * pedido de `pedido_condicoes` usou (`is_ativa` 0, versão 25), que o pedido novo não oferece: dado de empresa.
+   */
   transportadora: {
     codigo: string;
     nome: string;
@@ -584,6 +633,7 @@ export type Foto = {
     cep: string | null;
     cidade: string;
     uf: string;
+    is_ativa: number;
   }[];
   /** Quantos pedidos de cada representante autorizado foram com cada transportadora, nos 24 meses. */
   representante_transportadora: { representante: string; transportadora: string; pedidos: number }[];

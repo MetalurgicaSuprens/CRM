@@ -28,6 +28,31 @@ import { entrarComo, entrarComoAdmin } from "./login/loginDeTeste.ts";
 const ORIGEM = "http://localhost:5175";
 const ORIGEM_DO_ADMIN = "http://localhost:5179";
 
+/** O que o SGI tem do pedido 100001 na foto de teste. */
+const CONDICOES_DO_100001 = {
+  numero: "100001",
+  transportadora: {
+    codigo: "103",
+    nome: "VELHA INATIVO",
+    razaoSocial: "VELHA TRANSPORTES LTDA",
+    cnpj: "33.000.167/0001-01",
+    endereco: null,
+    bairro: null,
+    cep: null,
+    cidade: "MARINGA",
+    uf: "PR",
+  },
+  condicaoDePagamento: "30/60 DDL",
+  tipoDeEntrega: "programada",
+  entrega: "2026-10-20",
+  ordemDeCompra: "OC-DE-A",
+  classificacao: "industrializacao",
+  aceitaParcial: false,
+  pagamentoDoFrete: "T",
+  observacao: "Entregar pela manhã.",
+  temItemDaOrdemDeCompra: true,
+};
+
 let pastas: PastasDeTeste;
 let foto: FotoAtual;
 let banco: DatabaseSync;
@@ -179,13 +204,14 @@ describe("escopo: o login A nunca vê os dados de B", () => {
         emissao: "2026-10-01",
         entrega: "2026-10-20",
         itens: [
-          { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 1_000, valor: 3_000, entrega: "2026-10-20" },
-          { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 500, valor: 2_000, entrega: "2026-10-27" },
+          { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 1_000, valor: 3_000, entrega: "2026-10-20", ordemDeCompra: null, itemDaOrdemDeCompra: 1, partNumber: "01853" },
+          { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 500, valor: 2_000, entrega: "2026-10-27", ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null },
         ],
         valor: 5_000,
         valorComIpi: 5_250,
         cfop: { codigo: "6101", descricao: "VENDA DE PRODUCAO DO ESTABELECIMENTO" },
         notas: [],
+        condicoes: CONDICOES_DO_100001,
       },
       {
         id: "100003",
@@ -195,13 +221,14 @@ describe("escopo: o login A nunca vê os dados de B", () => {
         emissao: "2026-09-02",
         entrega: "2026-09-10",
         itens: [
-          { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 2_000, valor: 3_000, entrega: null },
-          { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 1_000, valor: 1_500, entrega: null },
+          { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 2_000, valor: 3_000, entrega: null, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null },
+          { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 1_000, valor: 1_500, entrega: null, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null },
         ],
         valor: 4_500,
         valorComIpi: 4_725,
         cfop: { codigo: "6101", descricao: "VENDA DE PRODUCAO DO ESTABELECIMENTO" },
         notas: [{ numero: "100013", emissao: "2026-09-10", valorTotal: 4_725, transportadora: "RODONAVES" }],
+        condicoes: null,
       },
     ]);
   });
@@ -248,12 +275,24 @@ describe("escopo: o login A nunca vê os dados de B", () => {
     const app = criarAppDeTeste();
     const { emAberto, faturados } = (await comoA(app, "/api/pedidos")).json();
     expect(emAberto[0].itensEmAberto).toEqual([
-      { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 1_000, entrega: "2026-10-20", valor: 3_000 },
-      { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 500, entrega: "2026-10-27", valor: 2_000 },
+      { ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 1_000, entrega: "2026-10-20", valor: 3_000, ordemDeCompra: null, itemDaOrdemDeCompra: 1, partNumber: "01853" },
+      { ordem: 2, codigo: "P-200", familia: "PRESIL", pecas: 500, entrega: "2026-10-27", valor: 2_000, ordemDeCompra: null, itemDaOrdemDeCompra: null, partNumber: null },
     ]);
     expect(faturados).toMatchObject([
-      { numero: "100002", pedidos: ["100001"], itens: [{ ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 100, valor: 1_000 }] },
+      { numero: "100002", pedidos: ["100001"], itens: [{ ordem: 1, codigo: "F-100", familia: "FLEXIL", pecas: 100, valor: 1_000, partNumber: "01853" }] },
     ]);
+  });
+
+  it("dá no pedido do ERP e na nota o que foi preenchido no SGI, com a transportadora inativa inteira", async () => {
+    const { emAberto, faturados } = (await comoA(criarAppDeTeste(), "/api/pedidos")).json();
+    expect(emAberto[0].condicoes).toEqual(CONDICOES_DO_100001);
+    expect(faturados[0].condicoes).toEqual([CONDICOES_DO_100001]);
+    expect(emAberto[1].condicoes).toBeNull();
+  });
+
+  it("não oferece no pedido novo a transportadora inativa", async () => {
+    const catalogo = (await comoA(criarAppDeTeste(), `/api/clientes/${CLIENTE_DE_A}/catalogo`)).json();
+    expect(catalogo.dadosDoPedido.transportadoras.map(({ codigo }: { codigo: string }) => codigo)).toEqual(["102", "101"]);
   });
 
   it("explica o selo em risco com a queda do semestre da foto", async () => {

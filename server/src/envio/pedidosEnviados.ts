@@ -134,11 +134,22 @@ export function enviadosNaFicha(banco: DatabaseSync, foto: DatabaseSync, sessao:
       status: "enviado",
       emissao: dataDoMomento(pedido.enviadoEm),
       entrega: pedido.entrega,
-      itens: pedido.itens.map((item, i) => ({ ordem: i + 1, codigo: item.codigo, familia: item.familia, pecas: item.quantidade, valor: valorDaLinha(item), entrega: null })),
+      itens: pedido.itens.map((item, i) => ({
+        ordem: i + 1,
+        codigo: item.codigo,
+        familia: item.familia,
+        pecas: item.quantidade,
+        valor: valorDaLinha(item),
+        entrega: null,
+        ordemDeCompra: item.ordemDeCompra,
+        itemDaOrdemDeCompra: item.itemDaOrdemDeCompra,
+        partNumber: item.partNumber,
+      })),
       valor: pedido.totalEstimado,
       valorComIpi: null,
       cfop: null,
       notas: [],
+      condicoes: null,
     }));
 }
 
