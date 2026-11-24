@@ -35,7 +35,7 @@ import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
 import { Voltar, VoltarAoAnterior } from "../componentes/Voltar";
-import type { ColunaOrdenavel } from "../componentes/ordenacao";
+import { SENTIDOS_DE_DATA, SENTIDOS_DE_NUMERO, type ColunaOrdenavel } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
 import { AVISO_DE_PEDIDO_BLOQUEADO, podeReceberPedido } from "dominio/statusDoCadastro";
 import { carregarFicha, carregarSituacaoDosDados, desfazerVisita, registrarVisita } from "../dados/api";
@@ -478,13 +478,25 @@ function TabelaPedidos({ ficha, hoje }: { ficha: Ficha; hoje: string }) {
       vazio="Nenhum pedido nos últimos 12 meses."
       ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
       parametroDaOrdem="ordem-pedidos"
+      contagem={formatarContagem(ficha.pedidos.length, "pedido", "pedidos")}
+      noCelular={(pedido) => ({
+        titulo: `Pedido ${pedido.numero ?? "—"}`,
+        detalhe: (
+          <>
+            <SeloDoPedido status={pedido.status} />
+            <span>{[descreverNotas(pedido), pedido.cnpj?.nome].filter((parte) => parte && parte !== "—").join(" · ")}</span>
+          </>
+        ),
+        valor: <Valor valor={pedido.valorComIpi ?? pedido.valor} comCentavos />,
+        abaixoDoValor: formatarData(pedido.emissao),
+      })}
       colunas={[
         // Na ficha do grupo, cada pedido diz de que CNPJ é.
-        { titulo: "Pedido", ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero ?? "—"} detalhe={pedido.cnpj?.nome ?? null} /> },
-        { titulo: "Nota", largura: 6, ordenarPor: (pedido) => pedido.notas.at(-1)?.numero ?? null, celula: (pedido) => descreverNotas(pedido) },
+        { titulo: "Pedido", sentidos: SENTIDOS_DE_NUMERO, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => <Identificacao titulo={pedido.numero ?? "—"} detalhe={pedido.cnpj?.nome ?? null} /> },
+        { titulo: "Nota", largura: 6, sentidos: SENTIDOS_DE_NUMERO, ordenarPor: (pedido) => pedido.notas.at(-1)?.numero ?? null, celula: (pedido) => descreverNotas(pedido) },
         { titulo: "Status", largura: 9, ordenarPor: (pedido) => STATUS_DO_PEDIDO[pedido.status].rotulo, celula: (pedido) => <SeloDoPedido status={pedido.status} /> },
-        { titulo: "Emissão", ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
-        { titulo: "Entrega", ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => (pedido.entrega ? formatarData(pedido.entrega) : "—") },
+        { titulo: "Emissão", sentidos: SENTIDOS_DE_DATA, ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
+        { titulo: "Entrega", sentidos: SENTIDOS_DE_DATA, ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => (pedido.entrega ? formatarData(pedido.entrega) : "—") },
         { titulo: "Itens", numerica: true, largura: 4.5, ordenarPor: (pedido) => pedido.itens.length, celula: (pedido) => pedido.itens.length },
         { titulo: "Sem IPI", numerica: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
         {
@@ -517,11 +529,23 @@ function TabelaDosCnpjs({ cnpjs, faturamentoDoGrupo, hoje }: { cnpjs: ClienteRes
       vazio="Nenhum CNPJ do grupo na sua carteira."
       ordemInicial={{ coluna: "Faturado 12 meses", sentido: "decrescente" }}
       parametroDaOrdem="ordem-cnpjs"
+      noCelular={(cnpj) => ({
+        titulo: cnpj.nome,
+        detalhe: (
+          <>
+            <SituacaoCliente situacao={cnpj.situacao} />
+            <span>{formatarLocalECodigo(cnpj)}</span>
+          </>
+        ),
+        valor: <Valor valor={cnpj.faturamento12m} />,
+        abaixoDoValor: <Variacao razao={cnpj.variacao12m} />,
+      })}
       colunas={[
         { titulo: "CNPJ", ordenarPor: (cnpj) => cnpj.nome, celula: (cnpj) => <Identificacao titulo={cnpj.nome} detalhe={formatarLocalECodigo(cnpj)} /> },
         { titulo: "Situação", ordenarPor: (cnpj) => SITUACOES[cnpj.situacao].rotulo, celula: (cnpj) => <SituacaoCliente situacao={cnpj.situacao} /> },
         {
           titulo: "Última compra",
+          sentidos: SENTIDOS_DE_DATA,
           ordenarPor: (cnpj) => cnpj.ultimaCompra,
           celula: (cnpj) => (cnpj.ultimaCompra ? formatarTempoDesde(cnpj.ultimaCompra, hoje) : "sem compras"),
         },

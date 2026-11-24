@@ -143,6 +143,8 @@ li:last-child > .linha {
 }
 
 .detalheDaLinha {
+  /* O fundo da linha aberta, para o que gruda ou fica parado por cima dela (OrdemNoCelular, deslize) */
+  --fundo-da-tabela: var(--cor-superficie-2);
   display: flex;
   flex-direction: column;
   gap: var(--esp-4);
@@ -166,18 +168,6 @@ li:last-child > .detalheDaLinha {
 
 /* ------------------------------------------------ cartões: o componente liga quando as colunas não cabem */
 
-/* Sem colunas, os títulos que ordenam ficam lado a lado acima dos cartões */
-.cartoes > .cabecalho {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-1) var(--esp-4);
-  padding: var(--esp-2) var(--esp-3);
-}
-
-.cartoes > .cabecalho > .semOrdem {
-  display: none;
-}
-
 .cartoes > ul > li > .linha {
   position: relative;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -200,7 +190,6 @@ li:last-child > .detalheDaLinha {
   right: var(--esp-3);
 }
 
-.cartoes > .cabecalho > .numerica,
 .cartoes > ul > li > .linha > .numerica {
   align-items: flex-start;
   text-align: left;
@@ -208,6 +197,153 @@ li:last-child > .detalheDaLinha {
 
 .cartoes > ul > li > .linha > .celula > .rotuloDoCartao {
   display: block;
+  font-size: var(--tam-legenda);
+  color: var(--cor-texto-suave);
+}
+
+/* ------------------------------------------------ lista em duas linhas: o componente liga quando as colunas não cabem */
+
+.lista > ul > li > .linha {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "titulo valor"
+    "detalhe abaixo"
+    "acoes acoes";
+  align-items: baseline;
+  gap: 2px var(--esp-3);
+  min-height: 0;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.lista > ul > li > .linhaQueAbre {
+  grid-template-columns: minmax(0, 1fr) auto 1.25rem;
+  grid-template-areas:
+    "titulo valor seta"
+    "detalhe abaixo seta"
+    "acoes acoes acoes";
+}
+
+.lista > ul > li > .linhaQueAbre > .seta {
+  grid-area: seta;
+  align-self: center;
+}
+
+.tituloNoCelular,
+.detalheNoCelular {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tituloNoCelular {
+  grid-area: titulo;
+  font-size: var(--tam-texto);
+  font-weight: 600;
+}
+
+.valorNoCelular {
+  grid-area: valor;
+  font-size: var(--tam-texto);
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Os selos ficam do próprio tamanho, antes do texto, e só o texto termina em "…" */
+.detalheNoCelular {
+  grid-area: detalhe;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cor-texto-suave);
+}
+
+.detalheNoCelular > * {
+  flex: none;
+}
+
+.detalheNoCelular > :last-child {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.abaixoDoValor {
+  grid-area: abaixo;
+  color: var(--cor-texto-suave);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.acoesNoCelular {
+  grid-area: acoes;
+  padding-top: var(--esp-2);
+}
+
+/* As colunas todas, no alto da linha aberta: duas por linha, como os outros fatos */
+.colunasDaLinha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--esp-3) var(--esp-4);
+  margin: 0;
+}
+
+/* ------------------------------------------------ deslize: as colunas ficam, e a tabela rola para o lado */
+
+.deslize {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.deslize > .cabecalho,
+.deslize > ul > li > .linha {
+  min-width: var(--largura-minima);
+}
+
+/* Rolando junto com as colunas, o cabeçalho não tem como grudar no alto */
+.deslize > .cabecalho {
+  position: static;
+}
+
+/*
+ * A primeira coluna fica parada à esquerda. A margem negativa e o recuo cobrem o recuo da linha,
+ * para as colunas que passam por baixo não aparecerem antes dela.
+ */
+.deslize > .cabecalho > :first-child,
+.deslize > ul > li > .linha > .identificacao {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  align-self: stretch;
+  justify-content: center;
+  margin-left: calc(var(--esp-3) * -1);
+  padding-left: var(--esp-3);
+  box-shadow: 1px 0 0 var(--cor-linha-forte);
+}
+
+.deslize > .cabecalho > :first-child {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background: var(--fundo-do-cabecalho);
+}
+
+.detalheDaLinha .deslize > .cabecalho > :first-child {
+  background: var(--cor-superficie-2);
+}
+
+.deslize > ul > li > .linha > .identificacao {
+  background: var(--fundo-da-tabela, var(--cor-superficie));
+}
+
+.dicaDoDeslize {
+  position: sticky;
+  left: 0;
+  margin: var(--esp-2) 0 0;
+  padding: 0 var(--esp-3);
   font-size: var(--tam-legenda);
   color: var(--cor-texto-suave);
 }

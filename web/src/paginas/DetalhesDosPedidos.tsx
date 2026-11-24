@@ -5,6 +5,7 @@ import { CondicoesDoPedido, colunasDasReferencias } from "../componentes/Condico
 import { DetalheDoFato, Fato } from "../componentes/Fato";
 import { AndamentoDoPedido, CondicoesDoPedidoEnviado, ItensDoPedidoEnviado } from "../componentes/PedidoEnviado";
 import { DataRelativa } from "../componentes/Quando";
+import { SENTIDOS_DE_DATA, SENTIDOS_DE_NUMERO } from "../componentes/ordenacao";
 import { Identificacao, ORDEM_DOS_ITENS, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { valorDaLinha } from "dominio/pedido";
@@ -188,14 +189,20 @@ function NotasDoPedido({ pedido }: { pedido: PedidoDaFicha }) {
         chaveDe={(nota) => nota.numero}
         vazio="Sem nota no período."
         colunas={COLUNAS_DAS_NOTAS}
+        noCelular={(nota) => ({
+          titulo: `NF ${nota.numero}`,
+          detalhe: nota.transportadora ?? "Sem transportadora",
+          valor: <Valor valor={nota.valorTotal} comCentavos />,
+          abaixoDoValor: formatarData(nota.emissao),
+        })}
       />
     </section>
   );
 }
 
 const COLUNAS_DAS_NOTAS: readonly [ColunaDaTabela<NotaDoPedido>, ...ColunaDaTabela<NotaDoPedido>[]] = [
-  { titulo: "Nota", ordenarPor: (nota) => nota.numero, celula: (nota) => `NF ${nota.numero}` },
-  { titulo: "Emissão", ordenarPor: (nota) => nota.emissao, celula: (nota) => formatarData(nota.emissao) },
+  { titulo: "Nota", sentidos: SENTIDOS_DE_NUMERO, ordenarPor: (nota) => nota.numero, celula: (nota) => `NF ${nota.numero}` },
+  { titulo: "Emissão", sentidos: SENTIDOS_DE_DATA, ordenarPor: (nota) => nota.emissao, celula: (nota) => formatarData(nota.emissao) },
   { titulo: "Transportadora", largura: 10, ordenarPor: (nota) => nota.transportadora, celula: (nota) => nota.transportadora ?? "—" },
   { titulo: "Total da nota", numerica: true, ordenarPor: (nota) => nota.valorTotal, celula: (nota) => <Valor valor={nota.valorTotal} comCentavos /> },
 ];
@@ -253,6 +260,7 @@ function ItensDoErp<T extends ItemDoErp & { entrega?: string | null }>({ descric
       vazio="Sem itens."
       colunas={colunas}
       parametroDaOrdem={ORDEM_DOS_ITENS}
+      noCelular="deslizar"
     />
   );
 }

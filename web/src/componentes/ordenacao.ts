@@ -11,7 +11,24 @@ export type ColunaOrdenavel<T> = {
   numerica?: boolean;
   /** Sem ele, o título não ordena (ações, campos de quantidade, gráficos). */
   ordenarPor?: (item: T) => Comparavel;
+  /** Como a escolha de ordem do celular descreve cada sentido; sem ele, pelo tipo da coluna (rotuloDoSentido). */
+  sentidos?: RotulosDosSentidos;
 };
+
+export type RotulosDosSentidos = Readonly<Record<Sentido, string>>;
+
+/** A data guardada como texto ("2026-11-24") ordena como texto, mas se lê como tempo. */
+export const SENTIDOS_DE_DATA: RotulosDosSentidos = { crescente: "mais antigo primeiro", decrescente: "mais recente primeiro" };
+
+/** O número da nota, do pedido ou do CNPJ, guardado como texto, se lê como número. */
+export const SENTIDOS_DE_NUMERO: RotulosDosSentidos = { crescente: "menor primeiro", decrescente: "maior primeiro" };
+const SENTIDOS_DE_TEXTO: RotulosDosSentidos = { crescente: "de A a Z", decrescente: "de Z a A" };
+
+/** O sentido em palavras, na escolha de ordem do celular: "maior primeiro", "de A a Z". */
+export function rotuloDoSentido<T>(coluna: ColunaOrdenavel<T>, sentido: Sentido): string {
+  const rotulos = coluna.sentidos ?? (coluna.numerica ? SENTIDOS_DE_NUMERO : SENTIDOS_DE_TEXTO);
+  return rotulos[sentido];
+}
 
 /** A coluna é identificada pelo título. */
 export type Ordem = { coluna: string; sentido: Sentido };

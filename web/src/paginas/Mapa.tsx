@@ -6,7 +6,8 @@ import botoes from "../componentes/Botao.module.css";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Cartao } from "../componentes/Cartao";
 import { IconeNoCirculo } from "../componentes/IconeNoCirculo";
-import { DataRelativa } from "../componentes/Quando";
+import { DataRelativa, descreverData } from "../componentes/Quando";
+import { SituacaoCliente } from "../componentes/SituacaoCliente";
 import { Segmentos } from "../componentes/Segmentos";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
@@ -392,6 +393,20 @@ function DetalheDaEscolha({ escolha, lente, contexto, roteiro, aoFechar }: Props
         vazio={vazioDaEscolha(escolha, regiao?.populacao)}
         ordemInicial={lente.ordemInicial}
         parametroDaOrdem="ordem-mapa"
+        contagem={formatarContagem(clientes.length, "cliente", "clientes")}
+        noCelular={(cliente) => ({
+          titulo: cliente.nome,
+          detalhe: (
+            <>
+              <SituacaoCliente situacao={cliente.situacao} />
+              <span>
+                {cliente.cidade}/{cliente.uf}
+              </span>
+            </>
+          ),
+          valor: <Valor valor={cliente.faturamento12m} />,
+          abaixoDoValor: cliente.ultimaCompra ? descreverData(cliente.ultimaCompra, contexto.hoje) : "sem compras",
+        })}
         colunas={[
           { titulo: "Cliente", ordenarPor: (cliente) => cliente.nome, celula: (cliente) => <Identificacao titulo={cliente.nome} detalhe={`${cliente.cidade}/${cliente.uf}`} /> },
           ...lente.colunas(contexto),

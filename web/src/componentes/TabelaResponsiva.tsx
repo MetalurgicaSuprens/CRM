@@ -2,7 +2,9 @@ import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type Reac
 import { Link } from "react-router";
 import { ChevronDown } from "lucide-react";
 import { useLargura } from "../graficos/useLargura";
+import { Fato } from "./Fato";
 import type { ColunaOrdenavel, Ordem } from "./ordenacao";
+import { OrdemNoCelular } from "./OrdemNoCelular";
 import { TituloDaColuna } from "./TituloDaColuna";
 import { useOrdenacao } from "./useOrdenacao";
 import estilos from "./TabelaResponsiva.module.css";
@@ -30,6 +32,23 @@ type ToqueNaLinha<T> =
   | { linkDe?: (item: T) => string; detalheDe?: undefined }
   | { detalheDe: (item: T) => ReactNode; linkDe?: undefined };
 
+/**
+ * A linha quando as colunas não cabem (proposta aprovada pelo Lucas em 2026-11-24): o principal e o
+ * valor em cima, o detalhe e a data embaixo, os valores sempre na mesma posição à direita. Na linha
+ * que abre, as colunas todas aparecem ao abri-la. Sem detalhe para abrir, a linha precisa levar tudo
+ * o que importa, e as ações vão numa terceira linha.
+ */
+export type LinhaNoCelular = { titulo: ReactNode; detalhe?: ReactNode; valor?: ReactNode; abaixoDoValor?: ReactNode; acoes?: ReactNode };
+
+/**
+ * Quando as colunas não cabem: a linha em duas linhas, ou "deslizar", que mantém as colunas e rola a
+ * tabela para o lado com a primeira parada, para comparar números, como nos itens de um pedido. Sem
+ * ele, cada linha vira um cartão com o nome da coluna acima de cada valor.
+ */
+type NoCelular<T> = ((item: T) => LinhaNoCelular) | "deslizar";
+
+type Modo = "colunas" | "lista" | "deslize" | "cartoes";
+
 type Props<T> = ToqueNaLinha<T> & {
   /** Nome da tabela para leitores de tela. */
   descricao: string;
@@ -44,12 +63,17 @@ type Props<T> = ToqueNaLinha<T> & {
   ordemInicial?: Ordem;
   /** Nome da ordem na URL. Muda na tabela de dentro da linha aberta, para não reordenar a lista de fora. */
   parametroDaOrdem?: string;
+  noCelular?: NoCelular<T>;
+  /** Ao lado do botão de ordem, quando as colunas não cabem: "115 notas". */
+  contagem?: string;
 };
 
 /** O nome da ordem na URL da tabela de itens que fica dentro da linha aberta de outra. */
 export const ORDEM_DOS_ITENS = "ordem-itens";
 
 const LARGURA_DA_IDENTIFICACAO_REM = 12;
+/** Na tabela que desliza, a primeira coluna fica parada e come a tela do celular: a largura de um código de produto. */
+const LARGURA_DA_IDENTIFICACAO_DESLIZANTE_REM = 8;
 const CRESCIMENTO_DA_IDENTIFICACAO = 2.2;
 const LARGURA_PADRAO_REM = 6.5;
 /** A coluna da seta, no fim da linha que abre: não cresce com a sobra. */
@@ -60,51 +84,61 @@ const RECUO_DAS_PONTAS_PX = 24;
 
 /**
  * Tabela quando as colunas cabem na largura que ela tem, seja a tela toda ou uma coluna estreita;
- * senão, cada linha vira um cartão, com o nome da coluna acima de cada valor.
+ * senão, o que noCelular pede.
  */
 export function TabelaResponsiva<T>({ itens, vazio, ...props }: Props<T>) {
   if (itens.length === 0) return <p className={estilos.vazio}>{vazio}</p>;
   return <Tabela itens={itens} {...props} />;
 }
 
-function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, ordemInicial, parametroDaOrdem, className }: Omit<Props<T>, "vazio">) {
+function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, ordemInicial, parametroDaOrdem, className, noCelular, contagem }: Omit<Props<T>, "vazio">) {
   const { referencia, largura } = useLargura<HTMLElement>();
   const ordenacao = useOrdenacao(itens, colunas, { inicial: ordemInicial, parametro: parametroDaOrdem });
   // Só uma linha aberta por vez: abrir outra fecha a anterior.
   const [chaveAberta, setChaveAberta] = useState<string | null>(null);
   const [identificacao, ...demais] = colunas;
   const grade: ColunaDaGrade[] = [
-    colunaDaIdentificacao(identificacao),
+    colunaDaIdentificacao(identificacao, noCelular === "deslizar" ? LARGURA_DA_IDENTIFICACAO_DESLIZANTE_REM : LARGURA_DA_IDENTIFICACAO_REM),
     ...demais.map((coluna) => ({ minima: coluna.largura ?? LARGURA_PADRAO_REM, cresce: coluna.fixa ? 0 : 1 })),
     ...(detalheDe ? [COLUNA_DA_SETA] : []),
   ];
-  const emCartoes = largura > 0 && largura < larguraMinima(grade);
-  const conteudoDe = (item: T) => (
-    <>
-      <span className={estilos.identificacao}>{identificacao.celula(item)}</span>
-      {demais.map((coluna) => (
-        <span key={coluna.titulo} className={coluna.numerica ? `${estilos.celula} ${estilos.numerica}` : estilos.celula}>
-          <span className={estilos.rotuloDoCartao}>{coluna.titulo}</span>
-          {coluna.celula(item)}
-        </span>
-      ))}
-    </>
-  );
+  const minima = larguraMinima(grade);
+  const modo = modoDaTabela(largura > 0 && largura < minima, noCelular);
+  const linhaNoCelular = modo === "lista" && typeof noCelular === "function" ? noCelular : null;
+  const conteudoDe = (item: T) =>
+    linhaNoCelular ? (
+      <ConteudoNoCelular linha={linhaNoCelular(item)} />
+    ) : (
+      <>
+        <span className={estilos.identificacao}>{identificacao.celula(item)}</span>
+        {demais.map((coluna) => (
+          <span key={coluna.titulo} className={coluna.numerica ? `${estilos.celula} ${estilos.numerica}` : estilos.celula}>
+            <span className={estilos.rotuloDoCartao}>{coluna.titulo}</span>
+            {coluna.celula(item)}
+          </span>
+        ))}
+      </>
+    );
+  const isSemColunas = modo === "lista" || modo === "cartoes";
   return (
     <section
       ref={referencia}
-      className={[estilos.tabela, emCartoes ? estilos.cartoes : null, className].filter(Boolean).join(" ")}
-      style={{ "--grade": gradeDasColunas(grade) } as CSSProperties}
+      className={[estilos.tabela, CLASSE_DO_MODO[modo], className].filter(Boolean).join(" ")}
+      style={{ "--grade": gradeDasColunas(grade), "--largura-minima": `${minima}px` } as CSSProperties}
       aria-label={descricao}
     >
-      <div className={estilos.cabecalho}>
-        {colunas.map((coluna) => (
-          <span key={coluna.titulo} className={classeDoTitulo(coluna)}>
-            <TituloDaColuna coluna={coluna} ordenacao={ordenacao} />
-          </span>
-        ))}
-        {detalheDe ? <span className={estilos.semOrdem} aria-hidden="true" /> : null}
-      </div>
+      {isSemColunas ? (
+        <OrdemNoCelular colunas={colunas} ordenacao={ordenacao} contagem={contagem} />
+      ) : (
+        <div className={estilos.cabecalho}>
+          {colunas.map((coluna) => (
+            <span key={coluna.titulo} className={classeDoTitulo(coluna)}>
+              <TituloDaColuna coluna={coluna} ordenacao={ordenacao} />
+            </span>
+          ))}
+          {detalheDe ? <span className={estilos.semOrdem} aria-hidden="true" /> : null}
+        </div>
+      )}
       <ul>
         {ordenacao.ordenados.map((item) => {
           const chave = chaveDe(item);
@@ -113,7 +147,12 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, orde
               key={chave}
               isAberta={chave === chaveAberta}
               aoAlternar={() => setChaveAberta((aberta) => (aberta === chave ? null : chave))}
-              detalhe={() => detalheDe(item)}
+              detalhe={() => (
+                <>
+                  {linhaNoCelular ? <ColunasDaLinha colunas={colunas} item={item} /> : null}
+                  {detalheDe(item)}
+                </>
+              )}
             >
               {conteudoDe(item)}
             </LinhaQueAbre>
@@ -124,7 +163,41 @@ function Tabela<T>({ descricao, itens, chaveDe, linkDe, detalheDe, colunas, orde
           );
         })}
       </ul>
+      {modo === "deslize" ? <p className={estilos.dicaDoDeslize}>Deslize a tabela para o lado para ver as outras colunas.</p> : null}
     </section>
+  );
+}
+
+const CLASSE_DO_MODO: Record<Modo, string | undefined> = { colunas: undefined, lista: estilos.lista, deslize: estilos.deslize, cartoes: estilos.cartoes };
+
+function modoDaTabela<T>(isApertada: boolean, noCelular: NoCelular<T> | undefined): Modo {
+  if (!isApertada) return "colunas";
+  if (noCelular === "deslizar") return "deslize";
+  return noCelular ? "lista" : "cartoes";
+}
+
+function ConteudoNoCelular({ linha }: { linha: LinhaNoCelular }) {
+  return (
+    <>
+      <span className={estilos.tituloNoCelular}>{linha.titulo}</span>
+      <span className={estilos.valorNoCelular}>{linha.valor}</span>
+      <span className={estilos.detalheNoCelular}>{linha.detalhe}</span>
+      <span className={estilos.abaixoDoValor}>{linha.abaixoDoValor}</span>
+      {linha.acoes ? <span className={estilos.acoesNoCelular}>{linha.acoes}</span> : null}
+    </>
+  );
+}
+
+/** Na linha aberta da lista em duas linhas, o que ficou de fora dela: todas as colunas, como na tabela. */
+function ColunasDaLinha<T>({ colunas, item }: { colunas: Props<T>["colunas"]; item: T }) {
+  return (
+    <dl className={estilos.colunasDaLinha}>
+      {colunas.map((coluna) => (
+        <Fato key={coluna.titulo} rotulo={coluna.titulo}>
+          {coluna.celula(item)}
+        </Fato>
+      ))}
+    </dl>
   );
 }
 
@@ -171,7 +244,6 @@ function LinhaQueAbre({ isAberta, aoAlternar, detalhe, children }: PropsDaLinhaQ
   );
 }
 
-/** Nos cartões, o cabeçalho vira uma linha só com os títulos que ordenam. */
 function classeDoTitulo<T>(coluna: ColunaDaTabela<T>): string | undefined {
   return [coluna.numerica ? estilos.numerica : "", coluna.ordenarPor ? "" : estilos.semOrdem].filter(Boolean).join(" ") || undefined;
 }
@@ -180,8 +252,8 @@ function classeDoTitulo<T>(coluna: ColunaDaTabela<T>): string | undefined {
 type ColunaDaGrade = { minima: number; cresce: number };
 
 /** A identificação de nome, mais larga, cresce mais que as outras; a curta, como as outras, ou nada, se for fixa. */
-function colunaDaIdentificacao({ largura, fixa }: Pick<ColunaDaTabela<unknown>, "largura" | "fixa">): ColunaDaGrade {
-  if (largura === undefined) return { minima: LARGURA_DA_IDENTIFICACAO_REM, cresce: CRESCIMENTO_DA_IDENTIFICACAO };
+function colunaDaIdentificacao({ largura, fixa }: Pick<ColunaDaTabela<unknown>, "largura" | "fixa">, larguraDeNome: number): ColunaDaGrade {
+  if (largura === undefined) return { minima: larguraDeNome, cresce: CRESCIMENTO_DA_IDENTIFICACAO };
   return { minima: largura, cresce: fixa ? 0 : 1 };
 }
 

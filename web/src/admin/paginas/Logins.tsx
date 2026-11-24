@@ -65,6 +65,12 @@ export function Logins() {
           linkDe={(login) => `/logins/${login.id}`}
           vazio="Nenhum login nesta situação."
           ordemInicial={{ coluna: "Login", sentido: "crescente" }}
+          noCelular={(login) => ({
+            titulo: login.nome,
+            detalhe: login.papel === "admin" ? "Administrador" : descreverCodigos(login.codigos),
+            valor: <Selo {...SITUACAO_DO_LOGIN[login.situacao]} />,
+            abaixoDoValor: login.ultimaEntrada ? formatarQuando(login.ultimaEntrada) : "nunca entrou",
+          })}
           colunas={[
             {
               titulo: "Login",

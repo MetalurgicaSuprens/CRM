@@ -115,6 +115,7 @@ export function ItensDoPedidoEnviado({ pedido, catalogo }: PropsDosItens) {
         vazio="Pedido sem itens."
         parametroDaOrdem={ORDEM_DOS_ITENS}
         colunas={colunas}
+        noCelular="deslizar"
       />
       <Totais pedido={pedido} catalogo={catalogo} />
     </div>

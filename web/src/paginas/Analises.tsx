@@ -5,13 +5,13 @@ import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { Filtros } from "../componentes/Filtros";
 import { ANALISES, CartaoDaAnalise, type TipoDeAnalise } from "../componentes/IdentidadeDaAnalise";
 import { NomeDoCliente } from "../componentes/NomeDoCliente";
-import { DataRelativa } from "../componentes/Quando";
+import { DataRelativa, descreverData } from "../componentes/Quando";
 import { Selo } from "../componentes/Selo";
 import travada from "../componentes/PaginaTravada.module.css";
-import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
+import { Identificacao, TabelaResponsiva, type ColunaDaTabela, type LinhaNoCelular } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
-import type { Ordem } from "../componentes/ordenacao";
+import { SENTIDOS_DE_DATA, type Ordem } from "../componentes/ordenacao";
 import { carregarAnalises, carregarSituacaoDosDados } from "../dados/api";
 import { ROTULOS_DE_MERCADO, ROTULOS_DE_PORTE } from "../dados/rotulos";
 import type {
@@ -66,8 +66,8 @@ function ListaEscolhida({ lista, analises, hoje }: { lista: TipoDeAnalise; anali
 
 function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
   const colunas: ColunaDaTabela<ClienteParado>[] = [
-    { titulo: "Última compra", ordenarPor: (item) => item.cliente.ultimaCompra, celula: (item) => <DataRelativa data={item.cliente.ultimaCompra} hoje={hoje} /> },
-    { titulo: "Ciclo típico", ordenarPor: (item) => item.cicloDias, celula: (item) => (item.cicloDias ? `${item.cicloDias} dias` : "irregular") },
+    { titulo: "Última compra", sentidos: SENTIDOS_DE_DATA, ordenarPor: (item) => item.cliente.ultimaCompra, celula: (item) => <DataRelativa data={item.cliente.ultimaCompra} hoje={hoje} /> },
+    { titulo: "Ciclo típico", ordenarPor: (item) => item.cicloDias, celula: (item) => descreverCiclo(item) },
     {
       titulo: "Deixou de entrar",
       numerica: true,
@@ -95,6 +95,16 @@ function Pararam({ itens, hoje }: { itens: ClienteParado[]; hoje: string }) {
         colunas={colunas}
         vazio="Nenhum cliente parou de comprar."
         ordemInicial={{ coluna: "Deixou de entrar", sentido: "decrescente" }}
+        noCelular={(item) => ({
+          detalhe: `${formatarLocalDoCliente(item.cliente)} · ciclo ${descreverCiclo(item)}`,
+          valor: (
+            <>
+              <Valor valor={item.perdaMensal} comoPerda />
+              /mês
+            </>
+          ),
+          abaixoDoValor: item.cliente.ultimaCompra ? descreverData(item.cliente.ultimaCompra, hoje) : null,
+        })}
       />
     </CartaoDaAnalise>
   );
@@ -138,6 +148,7 @@ function Ritmo({ direcao, itens, semestre }: PropsRitmo) {
         colunas={colunas}
         vazio={ritmo.vazio}
         ordemInicial={{ coluna: "Diferença", sentido: ritmo.sentidoInicial }}
+        noCelular={(item) => ({ valor: <Valor valor={diferenca(item)} comSinal />, abaixoDoValor: <Variacao razao={item.variacao} /> })}
       />
       <p className={estilos.nota}>Em peças: a mesma comparação em quantidade, sem o efeito do reajuste de preço.</p>
     </CartaoDaAnalise>
@@ -148,7 +159,7 @@ function NovosEReativados({ itens, hoje }: { itens: ClienteNovoOuReativado[]; ho
   const reativados = itens.filter((item) => item.tipo === "reativado").length;
   const colunas: ColunaDaTabela<ClienteNovoOuReativado>[] = [
     { titulo: "Tipo", ordenarPor: (item) => item.tipo, celula: (item) => <TipoDeEntrada tipo={item.tipo} /> },
-    { titulo: "Desde", ordenarPor: (item) => item.desde, celula: (item) => <DataRelativa data={item.desde} hoje={hoje} /> },
+    { titulo: "Desde", sentidos: SENTIDOS_DE_DATA, ordenarPor: (item) => item.desde, celula: (item) => <DataRelativa data={item.desde} hoje={hoje} /> },
     { titulo: "Faturado desde então", numerica: true, ordenarPor: (item) => item.faturadoDesde, celula: (item) => <Valor valor={item.faturadoDesde} /> },
   ];
   return (
@@ -167,6 +178,16 @@ function NovosEReativados({ itens, hoje }: { itens: ClienteNovoOuReativado[]; ho
         colunas={colunas}
         vazio="Nenhum cliente novo ou reativado nos últimos 12 meses."
         ordemInicial={{ coluna: "Faturado desde então", sentido: "decrescente" }}
+        noCelular={(item) => ({
+          detalhe: (
+            <>
+              <TipoDeEntrada tipo={item.tipo} />
+              <span>{formatarLocalDoCliente(item.cliente)}</span>
+            </>
+          ),
+          valor: <Valor valor={item.faturadoDesde} />,
+          abaixoDoValor: descreverData(item.desde, hoje),
+        })}
       />
     </CartaoDaAnalise>
   );
@@ -207,19 +228,34 @@ function Mix({ itens }: { itens: ClienteComMix[] }) {
         colunas={colunas}
         vazio="Todos os clientes já compram as famílias mais comuns entre os parecidos."
         ordemInicial={{ coluna: "Faturado 12 meses", sentido: "decrescente" }}
+        noCelular={(item) => ({
+          detalhe: item.oportunidades.map((oportunidade) => oportunidade.familia).join(", "),
+          valor: <Valor valor={item.cliente.faturamento12m} />,
+          abaixoDoValor: formatarContagem(item.oportunidades.length, "família", "famílias"),
+        })}
       />
     </CartaoDaAnalise>
   );
 }
 
-type PropsDaTabela<T> = { descricao: string; itens: T[]; colunas: ColunaDaTabela<T>[]; vazio: string; ordemInicial: Ordem };
+type PropsDaTabela<T> = {
+  descricao: string;
+  itens: T[];
+  colunas: ColunaDaTabela<T>[];
+  vazio: string;
+  ordemInicial: Ordem;
+  /** No celular, o que a análise põe na linha; o nome do cliente vem sempre em cima, e a cidade, se ela não trocar o detalhe. */
+  noCelular: (item: T) => Omit<LinhaNoCelular, "titulo">;
+};
 
 /** Toda lista de análise começa pelo cliente, e a linha leva à ficha dele. */
-function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...props }: PropsDaTabela<T>) {
+function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, noCelular, ...props }: PropsDaTabela<T>) {
   return (
     <TabelaResponsiva
       {...props}
       className={travada.rola}
+      contagem={formatarContagem(props.itens.length, "cliente", "clientes")}
+      noCelular={(item) => ({ titulo: <NomeDoCliente cliente={item.cliente} />, detalhe: formatarLocalDoCliente(item.cliente), ...noCelular(item) })}
       chaveDe={(item) => item.cliente.codigo}
       linkDe={(item) => `/clientes/${item.cliente.codigo}`}
       colunas={[
@@ -232,6 +268,10 @@ function TabelaDeClientes<T extends { cliente: ClienteResumo }>({ colunas, ...pr
 
 function TipoDeEntrada({ tipo }: { tipo: ClienteNovoOuReativado["tipo"] }) {
   return tipo === "reativado" ? <Selo rotulo="Reativado" icone={RotateCcw} tom="ok" /> : <Selo rotulo="Novo" icone={CirclePlus} tom="novo" />;
+}
+
+function descreverCiclo(item: ClienteParado): string {
+  return item.cicloDias ? `${item.cicloDias} dias` : "irregular";
 }
 
 function descreverComparacao(item: ClienteComMix): string {

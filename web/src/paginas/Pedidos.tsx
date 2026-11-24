@@ -10,6 +10,7 @@ import { Filtros } from "../componentes/Filtros";
 import type { TomDoSelo } from "../componentes/Selo";
 import { STATUS_DO_PEDIDO } from "../componentes/StatusDoPedido";
 import travada from "../componentes/PaginaTravada.module.css";
+import { SENTIDOS_DE_DATA, SENTIDOS_DE_NUMERO } from "../componentes/ordenacao";
 import { Identificacao, TabelaResponsiva, type ColunaDaTabela } from "../componentes/TabelaResponsiva";
 import { Valor } from "../componentes/Valor";
 import { carregarPedidos, carregarSituacaoDosDados, excluirCotacao, isDadosReais } from "../dados/api";
@@ -17,7 +18,7 @@ import { correspondeAoCliente } from "../dados/busca";
 import type { ClienteResumo, NotaFaturada, PainelDePedidos, PedidoEnviado, PedidoNoErp, Cotacao, SituacaoDosDados } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
 import { formatarContagem, formatarData, formatarDocumentoDoCliente, formatarTempoDesde } from "../formato";
-import { DataRelativa, MomentoRelativo } from "../componentes/Quando";
+import { DataRelativa, MomentoRelativo, descreverData } from "../componentes/Quando";
 import { Carregando } from "./Carregando";
 import { DetalheDaNota, DetalheDoEnviado, DetalheDoPedidoNoErp } from "./DetalhesDosPedidos";
 import estilos from "./Pedidos.module.css";
@@ -44,15 +45,19 @@ type ComCliente = { cliente: ClienteResumo };
  * O cliente e o documento em colunas próprias, iguais em todas as abas, como no app antigo dos
  * representantes. As outras colunas são fixas: a sobra da largura vai toda para o nome do cliente.
  */
+function localDoCliente(cliente: ClienteResumo): string {
+  return `${cliente.cidade}/${cliente.uf}`;
+}
+
 function colunasDoCliente<T extends ComCliente>(): [ColunaDaTabela<T>, ColunaDaTabela<T>] {
   return [
     {
       titulo: "Cliente",
       largura: 11,
       ordenarPor: (item) => item.cliente.nome,
-      celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={`${item.cliente.cidade}/${item.cliente.uf}`} />,
+      celula: (item) => <Identificacao titulo={item.cliente.nome} detalhe={localDoCliente(item.cliente)} />,
     },
-    { titulo: "CNPJ/CPF", largura: 9.5, fixa: true, ordenarPor: (item) => formatarDocumentoDoCliente(item.cliente), celula: (item) => formatarDocumentoDoCliente(item.cliente) },
+    { titulo: "CNPJ/CPF", largura: 9.5, fixa: true, sentidos: SENTIDOS_DE_NUMERO, ordenarPor: (item) => formatarDocumentoDoCliente(item.cliente), celula: (item) => formatarDocumentoDoCliente(item.cliente) },
   ];
 }
 
@@ -148,10 +153,24 @@ function Enviados({ pedidos, relogio, vazio }: { pedidos: PedidoEnviado[]; relog
         detalheDe={(pedido) => <DetalheDoEnviado pedido={pedido} relogio={relogio} />}
         vazio={vazio ?? "Nenhum pedido enviado pelo CRM ainda."}
         ordemInicial={{ coluna: "Enviado", sentido: "decrescente" }}
+        contagem={formatarContagem(pedidos.length, "pedido", "pedidos")}
+        noCelular={(pedido) => ({
+          titulo: pedido.cliente.nome,
+          detalhe: (
+            <>
+              <EtapaDoPedido etapa={pedido.etapa} />
+              <span>
+                {pedido.numero} · {localDoCliente(pedido.cliente)}
+              </span>
+            </>
+          ),
+          valor: <Valor valor={pedido.totalSgi ?? pedido.totalEstimado} comCentavos />,
+          abaixoDoValor: <MomentoRelativo momento={pedido.enviadoEm} relogio={relogio} />,
+        })}
         colunas={[
-          { titulo: "Pedido", largura: 5.5, fixa: true, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
+          { titulo: "Pedido", largura: 5.5, fixa: true, sentidos: SENTIDOS_DE_NUMERO, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
           ...colunasDoCliente<PedidoEnviado>(),
-          { titulo: "Enviado", largura: 7, fixa: true, ordenarPor: (pedido) => pedido.enviadoEm, celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} relogio={relogio} /> },
+          { titulo: "Enviado", largura: 7, fixa: true, sentidos: SENTIDOS_DE_DATA, ordenarPor: (pedido) => pedido.enviadoEm, celula: (pedido) => <MomentoRelativo momento={pedido.enviadoEm} relogio={relogio} /> },
           { titulo: "Situação", largura: 10, fixa: true, ordenarPor: (pedido) => ETAPAS[pedido.etapa].rotulo, celula: (pedido) => <EtapaDoPedido etapa={pedido.etapa} /> },
           {
             titulo: "Total",
@@ -186,10 +205,18 @@ function Cotacoes({ cotacoes, relogio, recarregar, vazio }: { cotacoes: Cotacao[
         chaveDe={(cotacao) => cotacao.id}
         vazio={vazio ?? "Nenhuma cotação. Os pedidos começados e não enviados aparecem aqui."}
         ordemInicial={{ coluna: "Atualizado", sentido: "decrescente" }}
+        contagem={formatarContagem(cotacoes.length, "cotação", "cotações")}
+        noCelular={(cotacao) => ({
+          titulo: cotacao.cliente.nome,
+          detalhe: `${formatarContagem(cotacao.itens.length, "produto", "produtos")} · ${localDoCliente(cotacao.cliente)}`,
+          valor: <Valor valor={cotacao.totalEstimado} comCentavos />,
+          abaixoDoValor: <MomentoRelativo momento={cotacao.atualizadoEm} relogio={relogio} />,
+          acoes: <AcoesDoCotacao cotacao={cotacao} aoExcluir={recarregar} />,
+        })}
         colunas={[
           ...colunasDoCliente<Cotacao>(),
           { titulo: "Produtos", largura: 6.5, fixa: true, ordenarPor: (cotacao) => cotacao.itens.length, celula: (cotacao) => formatarContagem(cotacao.itens.length, "produto", "produtos") },
-          { titulo: "Atualizado", largura: 7, fixa: true, ordenarPor: (cotacao) => cotacao.atualizadoEm, celula: (cotacao) => <MomentoRelativo momento={cotacao.atualizadoEm} relogio={relogio} /> },
+          { titulo: "Atualizado", largura: 7, fixa: true, sentidos: SENTIDOS_DE_DATA, ordenarPor: (cotacao) => cotacao.atualizadoEm, celula: (cotacao) => <MomentoRelativo momento={cotacao.atualizadoEm} relogio={relogio} /> },
           { titulo: "Total estimado", numerica: true, largura: 8, fixa: true, ordenarPor: (cotacao) => cotacao.totalEstimado, celula: (cotacao) => <Valor valor={cotacao.totalEstimado} comCentavos /> },
           { titulo: "Ações", largura: 12, fixa: true, celula: (cotacao) => <AcoesDoCotacao cotacao={cotacao} aoExcluir={recarregar} /> },
         ]}
@@ -232,11 +259,18 @@ function EmAberto({ pedidos, hoje, vazio }: { pedidos: PedidoNoErp[]; hoje: stri
         detalheDe={(pedido) => <DetalheDoPedidoNoErp pedido={pedido} hoje={hoje} />}
         vazio={vazio ?? "Nenhum pedido em aberto."}
         ordemInicial={{ coluna: "Entrega", sentido: "crescente" }}
+        contagem={formatarContagem(pedidos.length, "pedido", "pedidos")}
+        noCelular={(pedido) => ({
+          titulo: pedido.cliente.nome,
+          detalhe: `Ped. ${pedido.numero} · ${localDoCliente(pedido.cliente)}`,
+          valor: <Valor valor={pedido.valorComIpi} comCentavos />,
+          abaixoDoValor: `entrega ${descreverData(pedido.entrega, hoje)}`,
+        })}
         colunas={[
-          { titulo: "Pedido", largura: 5.5, fixa: true, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
+          { titulo: "Pedido", largura: 5.5, fixa: true, sentidos: SENTIDOS_DE_NUMERO, ordenarPor: (pedido) => pedido.numero, celula: (pedido) => pedido.numero },
           ...colunasDoCliente<PedidoNoErp>(),
-          { titulo: "Emissão", largura: 5.5, fixa: true, ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
-          { titulo: "Entrega", largura: 6, fixa: true, ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => <DataRelativa data={pedido.entrega} hoje={hoje} /> },
+          { titulo: "Emissão", largura: 5.5, fixa: true, sentidos: SENTIDOS_DE_DATA, ordenarPor: (pedido) => pedido.emissao, celula: (pedido) => formatarData(pedido.emissao) },
+          { titulo: "Entrega", largura: 6, fixa: true, sentidos: SENTIDOS_DE_DATA, ordenarPor: (pedido) => pedido.entrega, celula: (pedido) => <DataRelativa data={pedido.entrega} hoje={hoje} /> },
           { titulo: "Itens", numerica: true, largura: 3.5, fixa: true, ordenarPor: (pedido) => pedido.itens, celula: (pedido) => pedido.itens },
           { titulo: "Sem IPI", numerica: true, largura: 7, fixa: true, ordenarPor: (pedido) => pedido.valor, celula: (pedido) => <Valor valor={pedido.valor} comCentavos /> },
           { titulo: "Com IPI", numerica: true, largura: 7, fixa: true, ordenarPor: (pedido) => pedido.valorComIpi, celula: (pedido) => <Valor valor={pedido.valorComIpi} comCentavos /> },
@@ -257,11 +291,18 @@ function Faturados({ notas, hoje, vazio }: { notas: NotaFaturada[]; hoje: string
         detalheDe={(nota) => <DetalheDaNota nota={nota} />}
         vazio={vazio ?? "Nenhuma nota nos últimos 45 dias."}
         ordemInicial={{ coluna: "Emissão", sentido: "decrescente" }}
+        contagem={formatarContagem(notas.length, "nota", "notas")}
+        noCelular={(nota) => ({
+          titulo: nota.cliente.nome,
+          detalhe: `NF ${nota.numero} · ${localDoCliente(nota.cliente)}`,
+          valor: <Valor valor={nota.valorTotal} comCentavos />,
+          abaixoDoValor: formatarTempoDesde(nota.emissao, hoje),
+        })}
         colunas={[
-          { titulo: "Nota", largura: 6, fixa: true, ordenarPor: (nota) => nota.numero, celula: (nota) => `NF ${nota.numero}` },
-          { titulo: "Pedido", largura: 5.5, fixa: true, ordenarPor: (nota) => nota.pedidos[0] ?? null, celula: (nota) => (nota.pedidos.length > 0 ? nota.pedidos.join(", ") : "—") },
+          { titulo: "Nota", largura: 6, fixa: true, sentidos: SENTIDOS_DE_NUMERO, ordenarPor: (nota) => nota.numero, celula: (nota) => `NF ${nota.numero}` },
+          { titulo: "Pedido", largura: 5.5, fixa: true, sentidos: SENTIDOS_DE_NUMERO, ordenarPor: (nota) => nota.pedidos[0] ?? null, celula: (nota) => (nota.pedidos.length > 0 ? nota.pedidos.join(", ") : "—") },
           ...colunasDoCliente<NotaFaturada>(),
-          { titulo: "Emissão", largura: 5.5, fixa: true, ordenarPor: (nota) => nota.emissao, celula: (nota) => <span title={formatarData(nota.emissao)}>{formatarTempoDesde(nota.emissao, hoje)}</span> },
+          { titulo: "Emissão", largura: 5.5, fixa: true, sentidos: SENTIDOS_DE_DATA, ordenarPor: (nota) => nota.emissao, celula: (nota) => <span title={formatarData(nota.emissao)}>{formatarTempoDesde(nota.emissao, hoje)}</span> },
           { titulo: "Sem IPI", numerica: true, largura: 7, fixa: true, ordenarPor: (nota) => nota.valor, celula: (nota) => <Valor valor={nota.valor} comCentavos /> },
           { titulo: "Total da nota", numerica: true, largura: 8, fixa: true, ordenarPor: (nota) => nota.valorTotal, celula: (nota) => <Valor valor={nota.valorTotal} comCentavos /> },
         ]}

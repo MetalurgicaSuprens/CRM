@@ -135,6 +135,12 @@ li:last-child .linha {
   display: none;
 }
 
+/* Só no celular: a escolha de ordem no lugar dos títulos e a segunda linha de cada cliente */
+.tabela > .ordemNoCelular,
+.resumoNoCelular {
+  display: none;
+}
+
 .vazio {
   padding: var(--esp-8) var(--esp-5);
   color: var(--cor-texto-suave);
@@ -163,17 +169,13 @@ li:last-child .linha {
 
 /* Abaixo disso as seis colunas não cabem: cada cliente vira um cartão */
 @container (max-width: 959px) {
-  /* Sem colunas, os títulos que ordenam ficam lado a lado acima dos cartões */
+  /* Sem colunas, os títulos dão lugar à escolha de ordem (OrdemNoCelular) */
   .cabecalhoTabela {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--esp-1) var(--esp-4);
-    padding: var(--esp-2) var(--esp-4);
-    white-space: normal;
+    display: none;
   }
 
-  .tituloTendencia {
-    display: none;
+  .tabela > .ordemNoCelular {
+    display: flex;
   }
 
   /*
@@ -267,8 +269,9 @@ li:last-child .linha {
     overflow: visible;
   }
 
-  /* Os títulos que ordenam viram uma barra própria, como os cartões */
-  .cabecalhoTabela {
+  /* A escolha de ordem vira uma barra própria, como os cartões */
+  .tabela > .ordemNoCelular {
+    position: static;
     margin-bottom: var(--esp-3);
     border: 1px solid var(--cor-borda);
     border-radius: var(--raio);
@@ -300,5 +303,65 @@ li:last-child .linha {
   .busca {
     max-width: none;
     flex-basis: 100%;
+  }
+}
+
+/*
+ * No celular, cada cliente em duas linhas (proposta aprovada pelo Lucas em 2026-11-24): o nome e o
+ * faturado em cima; os selos, a cidade e a última compra embaixo, com a variação à direita. O
+ * status, o motivo do risco e a tendência ficam para a ficha.
+ */
+@container (max-width: 639px) {
+  .linha,
+  .foraDeAtivo {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "identificacao faturamento"
+      "resumo variacao";
+    align-items: center;
+    gap: 2px var(--esp-3);
+    min-height: 0;
+    padding: 10px var(--esp-4);
+  }
+
+  .local,
+  .situacao,
+  .ultimaCompra,
+  .tendencia,
+  .status,
+  .foraDeAtivo .status,
+  .rotuloCelular {
+    display: none;
+  }
+
+  .faturamento {
+    justify-content: flex-end;
+  }
+
+  .variacao {
+    grid-area: variacao;
+    justify-self: end;
+  }
+
+  .resumoNoCelular {
+    grid-area: resumo;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: var(--tam-pequeno);
+    color: var(--cor-texto-suave);
+  }
+
+  .resumoNoCelular > * {
+    flex: none;
+  }
+
+  .resumoNoCelular > .textoDoResumo {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

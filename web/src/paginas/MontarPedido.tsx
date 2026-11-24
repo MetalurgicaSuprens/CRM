@@ -4,7 +4,7 @@ import { Users } from "lucide-react";
 import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Cartao } from "../componentes/Cartao";
-import { DataRelativa } from "../componentes/Quando";
+import { DataRelativa, descreverData } from "../componentes/Quando";
 import { SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { AvisoDePedidoBloqueado, StatusDoCliente } from "../componentes/StatusDoCliente";
 import { Identificacao, TabelaResponsiva } from "../componentes/TabelaResponsiva";
@@ -120,6 +120,17 @@ function EscolherCliente({ codigoDoGrupo }: { codigoDoGrupo: string | null }) {
           chaveDe={(cliente) => cliente.codigo}
           linkDe={(cliente) => `/pedidos/novo?cliente=${cliente.codigo}`}
           vazio="Nenhum cliente com essa busca."
+          noCelular={(cliente) => ({
+            titulo: cliente.nome,
+            detalhe: (
+              <>
+                <SituacaoCliente situacao={cliente.situacao} />
+                <span>{formatarLocalECodigo(cliente)}</span>
+              </>
+            ),
+            valor: cliente.status === "ativo" ? null : <StatusDoCliente status={cliente.status} />,
+            abaixoDoValor: cliente.ultimaCompra ? descreverData(cliente.ultimaCompra, situacao.hoje) : "sem compras",
+          })}
           colunas={[
             {
               titulo: "Cliente",

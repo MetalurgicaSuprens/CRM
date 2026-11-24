@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escreverOrdem, lerOrdem, ordenar, proximaOrdem, type ColunaOrdenavel } from "./ordenacao";
+import { escreverOrdem, lerOrdem, ordenar, proximaOrdem, rotuloDoSentido, SENTIDOS_DE_DATA, type ColunaOrdenavel } from "./ordenacao";
 
 type Cliente = { nome: string; faturado: number; variacao: number | null };
 
@@ -79,5 +79,21 @@ describe("ordem na URL", () => {
     expect(lerOrdem(null, COLUNAS)).toBeNull();
     expect(lerOrdem("queda", COLUNAS)).toBeNull();
     expect(lerOrdem("tendencia", COLUNAS)).toBeNull();
+  });
+});
+
+describe("rotuloDoSentido", () => {
+  it("descreve a coluna de números pelo tamanho", () => {
+    expect(rotuloDoSentido(FATURADO, "decrescente")).toBe("maior primeiro");
+    expect(rotuloDoSentido(FATURADO, "crescente")).toBe("menor primeiro");
+  });
+
+  it("descreve a coluna de texto pelo alfabeto", () => {
+    expect(rotuloDoSentido(NOME, "crescente")).toBe("de A a Z");
+  });
+
+  it("usa os rótulos da coluna quando ela os traz, como a de datas", () => {
+    const emissao: ColunaOrdenavel<Cliente> = { titulo: "Emissão", ordenarPor: (cliente) => cliente.nome, sentidos: SENTIDOS_DE_DATA };
+    expect(rotuloDoSentido(emissao, "decrescente")).toBe("mais recente primeiro");
   });
 });

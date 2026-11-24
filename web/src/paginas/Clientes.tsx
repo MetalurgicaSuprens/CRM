@@ -5,12 +5,13 @@ import { CabecalhoPagina } from "../componentes/CabecalhoPagina";
 import { CampoDeBusca } from "../componentes/CampoDeBusca";
 import { Filtros, type Filtro } from "../componentes/Filtros";
 import { NomeDoCliente } from "../componentes/NomeDoCliente";
+import { OrdemNoCelular } from "../componentes/OrdemNoCelular";
 import { MotivoDoRisco, SITUACOES, SituacaoCliente } from "../componentes/SituacaoCliente";
 import { StatusDoCliente } from "../componentes/StatusDoCliente";
 import { TituloDaColuna } from "../componentes/TituloDaColuna";
 import { Valor } from "../componentes/Valor";
 import { Variacao } from "../componentes/Variacao";
-import type { ColunaOrdenavel, Ordem } from "../componentes/ordenacao";
+import { SENTIDOS_DE_DATA, type ColunaOrdenavel, type Ordem } from "../componentes/ordenacao";
 import { useOrdenacao } from "../componentes/useOrdenacao";
 import travada from "../componentes/PaginaTravada.module.css";
 import { carregarClientes, carregarSituacaoDosDados } from "../dados/api";
@@ -18,7 +19,7 @@ import { correspondeAoClienteOuCidade } from "../dados/busca";
 import { ROTULOS_DE_STATUS } from "../dados/rotulos";
 import type { ClienteResumo, Semestre, Situacao } from "../dados/tipos";
 import { useCarga } from "../dados/useCarga";
-import { formatarData, formatarLocalECodigo, formatarTempoDesde } from "../formato";
+import { formatarContagem, formatarData, formatarLocalDoCliente, formatarLocalECodigo, formatarTempoDesde } from "../formato";
 import { AmostraReferencia, Sparkline } from "../graficos/Sparkline";
 import { Carregando } from "./Carregando";
 import estilos from "./Clientes.module.css";
@@ -39,7 +40,7 @@ const COLUNAS = {
   cliente: { titulo: "Cliente", ordenarPor: (cliente) => cliente.nome },
   status: { titulo: "Status", ordenarPor: (cliente) => ROTULOS_DE_STATUS[cliente.status] },
   situacao: { titulo: "Situação", ordenarPor: (cliente) => SITUACOES[cliente.situacao].rotulo },
-  ultimaCompra: { titulo: "Última compra", ordenarPor: (cliente) => cliente.ultimaCompra },
+  ultimaCompra: { titulo: "Última compra", sentidos: SENTIDOS_DE_DATA, ordenarPor: (cliente) => cliente.ultimaCompra },
   faturamento: { titulo: "Faturado 12 meses", numerica: true, ordenarPor: (cliente) => cliente.faturamento12m },
   variacao: { titulo: "Variação", numerica: true, ordenarPor: (cliente) => cliente.variacao12m },
 } satisfies Record<string, ColunaOrdenavel<ClienteResumo>>;
@@ -92,6 +93,12 @@ export function Clientes() {
       />
 
       <section className={`${estilos.tabela} ${travada.rola}`} aria-label="Carteira de clientes">
+        <OrdemNoCelular
+          className={estilos.ordemNoCelular}
+          colunas={Object.values(COLUNAS)}
+          ordenacao={ordenacao}
+          contagem={formatarContagem(ordenacao.ordenados.length, "cliente", "clientes")}
+        />
         <div className={estilos.cabecalhoTabela}>
           <span>
             <TituloDaColuna coluna={COLUNAS.cliente} ordenacao={ordenacao} />
@@ -165,7 +172,21 @@ function LinhaCliente({ cliente, hoje, semestre }: { cliente: ClienteResumo; hoj
       <span className={`${estilos.tendencia} ${estilos.direita}`}>
         <Sparkline valores={cliente.evolucao12m} />
       </span>
+      <ResumoNoCelular cliente={cliente} hoje={hoje} />
     </Link>
+  );
+}
+
+/** A segunda linha do celular: os selos, a cidade e a última compra. O status só aparece fora de ativo. */
+function ResumoNoCelular({ cliente, hoje }: { cliente: ClienteResumo; hoje: string }) {
+  return (
+    <span className={estilos.resumoNoCelular}>
+      {cliente.status === "ativo" ? null : <StatusDoCliente status={cliente.status} />}
+      <SituacaoCliente situacao={cliente.situacao} />
+      <span className={estilos.textoDoResumo}>
+        {formatarLocalDoCliente(cliente)} · {cliente.ultimaCompra ? formatarTempoDesde(cliente.ultimaCompra, hoje) : "sem compras"}
+      </span>
+    </span>
   );
 }
 
