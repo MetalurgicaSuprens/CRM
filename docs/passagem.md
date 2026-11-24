@@ -4,6 +4,8 @@ Este documento reúne, para quem continua o projeto, o que não está no código
 
 Leia nesta ordem: `CLAUDE.md`, `CLEAN_CODE.md`, `docs/plano.md`, este documento e `docs/dados-por-tela.md` (a lista campo a campo, com as perguntas decididas).
 
+**Vai atualizar o servidor ou o extrator?** Siga "Próxima atualização do servidor e do extrator", mais abaixo.
+
 ## Quem decide
 
 O Lucas é o gestor do projeto e continua decidindo:
@@ -183,6 +185,62 @@ Esperando resposta do Lucas, sem pressa:
   - o "alerta rápido de queda" do plano, que ainda não foi feito.
 - **Calendário:** ele quer um calendário em que diz quais dias são úteis. Hoje é segunda a sexta menos os feriados nacionais.
 - **Classificação por ramo:** quando a área de Vendas terminar a classificação dos clientes por ramo, o mix passa a comparar com clientes do mesmo ramo. A sugestão foi gravar o ramo no campo `SEGMENTO` do SGI, que hoje está vazio.
+
+## Próxima atualização do servidor e do extrator
+
+Escrita em 2026-11-24 para o Henry, que faz as atualizações e é o único que entra na máquina do extrator (192.168.0.12). Quem fizer a atualização segue estes passos e, no fim, apaga esta seção e registra em "Onde paramos" a versão que ficou no ar.
+
+O que entra, além do que já estava no `main`:
+- **Part number no item do pedido** (foto versão 24, migração 9 do `app.db`): commit `dc93a0d`.
+- **Detalhe do pedido enviado pelo CRM** (transportadora com o CNPJ inteiro, condições, PDF do pedido): commit `a83807c`.
+- **Detalhe dos pedidos feitos fora do CRM** (foto versão 25, com as condições lidas do SGI): commit `11ad0ef`.
+
+O servidor e o extrator precisam ir juntos:
+- o servidor novo só lê a foto da versão 25, e o antigo recusa a 25;
+- por isso, **atualize primeiro o extrator e depois o servidor**:
+  - enquanto só o extrator estiver novo, o servidor antigo recusa as fotos novas e continua mostrando a última foto que ele aceitou, sem tirar o site do ar;
+  - quando o servidor novo sobe, ele pega a foto 25 que já está na entrada;
+  - na ordem inversa, o servidor novo fica sem foto nenhuma (a tela dá erro) até chegar uma 25;
+- a conta Oracle `CRM_EXTRATOR` já lê todas as tabelas que as versões 24 e 25 usam ([`conta-oracle-do-crm.md`](conta-oracle-do-crm.md)). Não é preciso pedir nada ao DBA.
+
+### 1. Antes de começar
+
+1. No computador de desenvolvimento, use o `main` mais novo, sem mudança local: `git pull` e `npm install`. Depois rode `npm test` na raiz, que deve passar inteiro.
+2. Veja a versão que está no ar: `cat /opt/crm/atual/VERSAO` no servidor. O nome termina no commit dela (`crm-AAAAMMDD-HHMM-<commit>`).
+3. Confira o que mudou nos scripts do servidor desde essa versão: `git log --oneline <commit>..main -- deploy/servidor`.
+   - Se aparecer algum commit, leia-o antes de publicar: o `publicar.sh` só troca o código, e o que muda no Apache, no serviço ou nas pastas do servidor depende do `preparar-servidor.sh`.
+   - O de 2026-11-19 (`833636e`), por exemplo, criou a caixa de saída dos pedidos (`/srv/crm-troca/saida` e `CRM_PASTA_DE_SAIDA` no `server.env`).
+   - Na dúvida, pergunte ao Lucas antes de seguir.
+4. Faça um snapshot da VPS no painel da Locaweb. Esta versão muda o `app.db`, e a versão anterior pode não abrir o banco novo. O snapshot é a volta segura.
+
+### 2. Atualizar o extrator (máquina 192.168.0.12, conta `sgi`)
+
+1. Ache a pasta do projeto nessa máquina: é a do `passada.ps1` que as tarefas "CRM - extrator" e "CRM - pedidos" rodam. A descrição de cada tarefa, no Agendador de Tarefas, mostra o caminho.
+2. Desative as duas tarefas enquanto atualiza, para nenhuma passada rodar no meio da troca.
+3. Ponha nessa pasta o código do mesmo commit que vai para o servidor, pelo mesmo caminho por que ele foi instalado (`git pull` ou cópia), e rode `npm ci` na raiz. O `.npmrc` não deixa rodar scripts de instalação. Não mexa em `C:\Users\sgi\crm-dados`: lá ficam a configuração, as chaves e a lista de autorizados.
+4. **Aproveite para trocar a lista dos representantes autorizados pela de 29 códigos.** Ela está pendente desde 2026-11-19 (item 4 de "Onde paramos", com a lista e os cuidados: os 115 municípios do CNEFE e a foto maior).
+5. Reative as tarefas e rode uma passada da foto: `Start-ScheduledTask -TaskName 'CRM - extrator'`.
+6. Confira no registro da passada (`crm-dados\registro\foto-<ano>-<mes>.log`):
+   - que a foto saiu e foi enviada;
+   - a primeira foto 25 não é comparada com a anterior, porque a versão mudou. Ela não precisa de `--aceitar-mudanca`.
+7. Até o servidor ser atualizado, o site segue com os dados antigos. Isso é esperado.
+
+### 3. Atualizar o servidor
+
+1. No computador de desenvolvimento: `npm run pacote`. O pacote sai em `deploy/pacotes/`.
+2. Leve e publique, como no [`deploy/README.md`](../deploy/README.md), "Publicar uma versão":
+   - `scp deploy/pacotes/crm-<versão>.tar.gz cpd@crm.suprens.com.br:`
+   - `ssh -t cpd@crm.suprens.com.br sudo /opt/crm/publicar.sh crm-<versão>.tar.gz`
+3. Não use o `publicar.sh --voltar` sem antes falar com o Lucas: a versão anterior pode não abrir o `app.db` depois das migrações desta. Se der problema, volte pelo snapshot.
+
+### 4. Conferir
+
+1. `journalctl -u crm -n 50`: deve aparecer "Foto ... em uso" com a foto nova, sem "recusada".
+2. No site, entre com um representante e confira:
+   - a hora do dado é a da foto nova;
+   - um pedido das abas "Em aberto no ERP" ou "Faturados" mostra a transportadora com o CNPJ inteiro e as condições;
+   - em "Incluir pedido", um item de cliente com tabela própria vem com o part number. O cliente de teste do Lucas é a MITSUBISHI CATALAO HPE, dos representantes 1401 e 1402, tabela MMC.
+3. Avise o Lucas que terminou.
 
 ## Decisões do Lucas que não estão no plano
 
