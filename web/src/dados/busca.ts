@@ -34,12 +34,18 @@ export function correspondeAoClienteOuCidade(cliente: ClienteDaBusca, busca: str
   );
 }
 
-/** O produto do catálogo pelo código, pela família, pela medida ou por qualquer part number dele. */
-export function correspondeAoProduto(produto: Pick<ProdutoDoCatalogo, "codigo" | "familia" | "medida" | "partNumbers">, busca: string): boolean {
+/**
+ * O produto do catálogo pelo código, pela família, pela medida ou por qualquer part number dele: os do
+ * cliente e os da Bíblia Montadora, que a tela não mostra mas o representante pode ter em mãos.
+ */
+export function correspondeAoProduto(
+  produto: Pick<ProdutoDoCatalogo, "codigo" | "familia" | "medida" | "partNumbers" | "partNumberDoCliente">,
+  busca: string,
+): boolean {
   const termo = normalizarParaBusca(busca.trim());
   if (!termo) return true;
   const nosCampos = [produto.codigo, produto.familia, produto.medida ?? ""].some((campo) => normalizarParaBusca(campo).includes(termo));
-  return nosCampos || partNumberDaBusca(produto.partNumbers, busca) !== null;
+  return nosCampos || partNumberDaBusca([...produto.partNumberDoCliente.opcoes, ...produto.partNumbers], busca) !== null;
 }
 
 /**

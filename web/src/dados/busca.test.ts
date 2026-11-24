@@ -66,7 +66,13 @@ describe("correspondeAoClienteOuCidade", () => {
   });
 });
 
-const PRODUTO = { codigo: "FAB1422P", familia: "FLEXIL", medida: "14–22 mm", partNumbers: ["N.906.227.01", "51234567"] };
+const PRODUTO = {
+  codigo: "FAB1422P",
+  familia: "FLEXIL",
+  medida: "14–22 mm",
+  partNumbers: ["N.906.227.01", "51234567"],
+  partNumberDoCliente: { opcoes: ["232.407-9RF"], sugerido: "232.407-9RF" },
+};
 
 describe("correspondeAoProduto", () => {
   it("acha pelo código, pela família e pela medida", () => {
@@ -79,6 +85,11 @@ describe("correspondeAoProduto", () => {
     expect(correspondeAoProduto(PRODUTO, "N90622701")).toBe(true);
     expect(correspondeAoProduto(PRODUTO, "906.227")).toBe(true);
     expect(correspondeAoProduto(PRODUTO, "5123")).toBe(true);
+  });
+
+  it("acha pelo part number do cliente", () => {
+    expect(correspondeAoProduto(PRODUTO, "2324079")).toBe(true);
+    expect(correspondeAoProduto({ ...PRODUTO, partNumberDoCliente: { opcoes: [], sugerido: null } }, "2324079")).toBe(false);
   });
 
   it("não acha o que o produto não tem", () => {
