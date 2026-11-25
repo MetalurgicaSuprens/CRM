@@ -4,8 +4,6 @@ Este documento reúne, para quem continua o projeto, o que não está no código
 
 Leia nesta ordem: `CLAUDE.md`, `CLEAN_CODE.md`, `docs/plano.md`, este documento e `docs/dados-por-tela.md` (a lista campo a campo, com as perguntas decididas).
 
-**Vai atualizar o servidor ou o extrator?** Siga "Próxima atualização do servidor e do extrator", mais abaixo.
-
 ## Quem decide
 
 O Lucas é o gestor do projeto e continua decidindo:
@@ -80,10 +78,9 @@ Falta, em ordem:
 4. **Extrator na máquina 192.168.0.12, desde 2026-11-18:** conta Windows `sgi`, dados em `C:\Users\sgi\crm-dados`, conta Oracle `CRM_EXTRATOR` (`ORACLE_ESQUEMA_DAS_VIEWS=CRM_DADOS`). A primeira foto chegou ao servidor no mesmo dia.
    - A agenda são as tarefas "CRM - extrator" (foto) e "CRM - pedidos" (a cada 5 min), criadas pelo `extrator/agenda/agendar.ps1`; cada passada fica registrada em `crm-dados\registro\`, num arquivo por rotina e por mês.
    - A lista de autorizados que vale é a de `crm-dados\representantes-autorizados.txt` nessa máquina, não a de `data/` deste computador. Em 2026-11-19, o Lucas decidiu passar de 22 para 29 códigos: todos os ativos no cadastro de vendedores do SGI, também os de tipo VENDEDOR (1106, 1107, 1108, 1116, 1118, 1119 e 1125).
-   - **Falta, com o Henry (só ele entra na 192.168.0.12):** trocar a lista dessa máquina pela de 29 códigos. Sem isso, o site continua com os 22 de antes. São estes códigos, um por linha: 1106, 1107, 1108, 1109, 1116, 1118, 1119, 1120, 1125, 1202, 1211, 1213, 1220, 1302, 1310, 1321, 1401, 1402, 1410, 1411, 1501, 1502, 1503, 1506, 1600, 1602, 1603, 1610 e 1701.
-     - A foto seguinte sai sem comparar com a anterior, porque a lista mudou ("a lista de representantes autorizados mudou" no registro): não precisa de `--aceitar-mudanca`.
-     - Ela fica maior: no teste deste computador, em 2026-11-19, foram 79 MB (antes, 62 MB), 4.232 clientes e R$ 114,0 mi nos 12 meses, o mesmo total do ERP. Confira no registro se o envio comprimido passou pela rede da Locaweb.
-     - O Mapa precisa dos arquivos do CNEFE de mais 115 municípios, quase todos de SP (os clientes novos), na pasta `crm-dados\cnefe`. Sem eles, a foto sai, e cerca de 620 clientes ficam sem ponto no mapa; o registro da passada lista os códigos dos municípios.
+   - **Feito em 2026-11-25:** a lista dessa máquina passou a ter os 29 códigos.
+     - O Mapa precisa dos arquivos do CNEFE de mais 115 municípios, quase todos de SP (os clientes novos), na pasta `crm-dados\cnefe`. Sem eles, cerca de 620 clientes ficam sem ponto no mapa; o registro da passada lista os códigos dos municípios.
+   - **No ar desde 2026-11-25:** o servidor na versão `crm-20261125-0940-00c9088` e o extrator no mesmo commit, com a foto versão 25 (a primeira, de 13:05, entrou em uso sem recusa). Quando a versão da foto muda, atualize primeiro o extrator e depois o servidor: o servidor antigo recusa a foto nova e segue com a anterior.
    - A rede da Locaweb corta envios grandes pela porta 22 (chamado aberto em 2026-11-18). O envio vai comprimido, e a foto de 62 MB passou.
    - **Falta no servidor:** a rota `/api/saude` e os alertas.
 5. **Chave do envio:** fica numa pasta só da conta do extrator.
@@ -106,7 +103,7 @@ Falta, em ordem:
      - os destinos ficam em `crm-dados\pedidos\`: `conferidos` (com o `.erp.json` do cliente do ERP e do dono dele), `aguardando` (transportadora nova, conferido de novo a cada passada) e `quarentena` (com o `.motivo.txt`). O arquivo `PAUSAR` nessa pasta suspende a conferência;
      - sem valor-teto: o Lucas tirou a revisão manual em 2026-11-19, porque o pedido nasce PEDIDO BLOQUEADO e a liberação no SGI já é a conferência da Suprens. O teto de 30 pedidos por login por dia ficou confirmado;
      - as consultas novas ainda não rodaram no Oracle de verdade: rodam pela primeira vez com o primeiro pedido. Se uma falhar, a passada para com erro, e o pedido fica para a passada seguinte, sem ir para a quarentena;
-   - **Feito em 2026-11-23 (etapa 4):** a gravação dos conferidos no SGI pelas procedures, campo a campo como o SGI6R ([`pedido-no-sgi.md`](pedido-no-sgi.md), "Gravação no SGI"). Testada em 2026-11-23: o `CRM-00001` entrou no SGI como pedido 1149872, PEDIDO BLOQUEADO, foi conferido pelo Lucas e cancelado. Fora de teste, fica desligada (`CRM_GRAVAR_NO_SGI=ligado` no `extrator.env` liga), e o envio no servidor também (`CRM_ENVIO_DE_PEDIDOS`);
+   - **Feito em 2026-11-23 (etapa 4):** a gravação dos conferidos no SGI pelas procedures, campo a campo como o SGI6R ([`pedido-no-sgi.md`](pedido-no-sgi.md), "Gravação no SGI"). Testada em 2026-11-23: o `CRM-00001` entrou no SGI como pedido 1149872, PEDIDO BLOQUEADO, foi conferido pelo Lucas e ficou no SGI, sem cancelar. Fora de teste, fica desligada (`CRM_GRAVAR_NO_SGI=ligado` no `extrator.env` liga), e o envio no servidor também (`CRM_ENVIO_DE_PEDIDOS`);
    - **Feito em 2026-11-23 (etapa 5):** a situação do pedido de volta ao CRM, pela foto (versão 23, tabela `pedido_crm`, ligada pelo número CRM):
      - **Na máquina do extrator** (`extrator/src/pedidos/andamento.ts` e `calculo/pedidosDoCrm.ts`): recebido, ou recusado com o motivo; o erro técnico da gravação vira um aviso ao representante.
      - **Do SGI, pelo número e pelo cliente:**
@@ -185,62 +182,6 @@ Esperando resposta do Lucas, sem pressa:
   - o "alerta rápido de queda" do plano, que ainda não foi feito.
 - **Calendário:** ele quer um calendário em que diz quais dias são úteis. Hoje é segunda a sexta menos os feriados nacionais.
 - **Classificação por ramo:** quando a área de Vendas terminar a classificação dos clientes por ramo, o mix passa a comparar com clientes do mesmo ramo. A sugestão foi gravar o ramo no campo `SEGMENTO` do SGI, que hoje está vazio.
-
-## Próxima atualização do servidor e do extrator
-
-Escrita em 2026-11-24 para o Henry, que faz as atualizações e é o único que entra na máquina do extrator (192.168.0.12). Quem fizer a atualização segue estes passos e, no fim, apaga esta seção e registra em "Onde paramos" a versão que ficou no ar.
-
-O que entra, além do que já estava no `main`:
-- **Part number no item do pedido** (foto versão 24, migração 9 do `app.db`): commit `dc93a0d`.
-- **Detalhe do pedido enviado pelo CRM** (transportadora com o CNPJ inteiro, condições, PDF do pedido): commit `a83807c`.
-- **Detalhe dos pedidos feitos fora do CRM** (foto versão 25, com as condições lidas do SGI): commit `11ad0ef`.
-
-O servidor e o extrator precisam ir juntos:
-- o servidor novo só lê a foto da versão 25, e o antigo recusa a 25;
-- por isso, **atualize primeiro o extrator e depois o servidor**:
-  - enquanto só o extrator estiver novo, o servidor antigo recusa as fotos novas e continua mostrando a última foto que ele aceitou, sem tirar o site do ar;
-  - quando o servidor novo sobe, ele pega a foto 25 que já está na entrada;
-  - na ordem inversa, o servidor novo fica sem foto nenhuma (a tela dá erro) até chegar uma 25;
-- a conta Oracle `CRM_EXTRATOR` já lê todas as tabelas que as versões 24 e 25 usam ([`conta-oracle-do-crm.md`](conta-oracle-do-crm.md)). Não é preciso pedir nada ao DBA.
-
-### 1. Antes de começar
-
-1. No computador de desenvolvimento, use o `main` mais novo, sem mudança local: `git pull` e `npm install`. Depois rode `npm test` na raiz, que deve passar inteiro.
-2. Veja a versão que está no ar: `cat /opt/crm/atual/VERSAO` no servidor. O nome termina no commit dela (`crm-AAAAMMDD-HHMM-<commit>`).
-3. Confira o que mudou nos scripts do servidor desde essa versão: `git log --oneline <commit>..main -- deploy/servidor`.
-   - Se aparecer algum commit, leia-o antes de publicar: o `publicar.sh` só troca o código, e o que muda no Apache, no serviço ou nas pastas do servidor depende do `preparar-servidor.sh`.
-   - O de 2026-11-19 (`833636e`), por exemplo, criou a caixa de saída dos pedidos (`/srv/crm-troca/saida` e `CRM_PASTA_DE_SAIDA` no `server.env`).
-   - Na dúvida, pergunte ao Lucas antes de seguir.
-4. Faça um snapshot da VPS no painel da Locaweb. Esta versão muda o `app.db`, e a versão anterior pode não abrir o banco novo. O snapshot é a volta segura.
-
-### 2. Atualizar o extrator (máquina 192.168.0.12, conta `sgi`)
-
-1. Ache a pasta do projeto nessa máquina: é a do `passada.ps1` que as tarefas "CRM - extrator" e "CRM - pedidos" rodam. A descrição de cada tarefa, no Agendador de Tarefas, mostra o caminho.
-2. Desative as duas tarefas enquanto atualiza, para nenhuma passada rodar no meio da troca.
-3. Ponha nessa pasta o código do mesmo commit que vai para o servidor, pelo mesmo caminho por que ele foi instalado (`git pull` ou cópia), e rode `npm ci` na raiz. O `.npmrc` não deixa rodar scripts de instalação. Não mexa em `C:\Users\sgi\crm-dados`: lá ficam a configuração, as chaves e a lista de autorizados.
-4. **Aproveite para trocar a lista dos representantes autorizados pela de 29 códigos.** Ela está pendente desde 2026-11-19 (item 4 de "Onde paramos", com a lista e os cuidados: os 115 municípios do CNEFE e a foto maior).
-5. Reative as tarefas e rode uma passada da foto: `Start-ScheduledTask -TaskName 'CRM - extrator'`.
-6. Confira no registro da passada (`crm-dados\registro\foto-<ano>-<mes>.log`):
-   - que a foto saiu e foi enviada;
-   - a primeira foto 25 não é comparada com a anterior, porque a versão mudou. Ela não precisa de `--aceitar-mudanca`.
-7. Até o servidor ser atualizado, o site segue com os dados antigos. Isso é esperado.
-
-### 3. Atualizar o servidor
-
-1. No computador de desenvolvimento: `npm run pacote`. O pacote sai em `deploy/pacotes/`.
-2. Leve e publique, como no [`deploy/README.md`](../deploy/README.md), "Publicar uma versão":
-   - `scp deploy/pacotes/crm-<versão>.tar.gz cpd@crm.suprens.com.br:`
-   - `ssh -t cpd@crm.suprens.com.br sudo /opt/crm/publicar.sh crm-<versão>.tar.gz`
-3. Não use o `publicar.sh --voltar` sem antes falar com o Lucas: a versão anterior pode não abrir o `app.db` depois das migrações desta. Se der problema, volte pelo snapshot.
-
-### 4. Conferir
-
-1. `journalctl -u crm -n 50`: deve aparecer "Foto ... em uso" com a foto nova, sem "recusada".
-2. No site, entre com um representante e confira:
-   - a hora do dado é a da foto nova;
-   - um pedido das abas "Em aberto no ERP" ou "Faturados" mostra a transportadora com o CNPJ inteiro e as condições;
-   - em "Incluir pedido", um item de cliente com tabela própria vem com o part number. O cliente de teste do Lucas é a MITSUBISHI CATALAO HPE, dos representantes 1401 e 1402, tabela MMC.
-3. Avise o Lucas que terminou.
 
 ## Decisões do Lucas que não estão no plano
 
