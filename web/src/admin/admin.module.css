@@ -167,16 +167,6 @@
   accent-color: var(--cor-acento);
 }
 
-/* O código que já está em outro login ativo: aparece, mas não pode ser escolhido */
-.codigo[data-indisponivel] {
-  cursor: not-allowed;
-  color: var(--cor-texto-suave);
-}
-
-.codigo[data-indisponivel]:hover {
-  background: none;
-}
-
 .numeroDoCodigo {
   font-weight: 600;
   font-variant-numeric: tabular-nums;

@@ -35,7 +35,7 @@ const FORMATO_DO_CODIGO = /^\d{1,9}$/;
 
 /** O login de uma representação, com os códigos dela. */
 export function criarUsuario(banco: DatabaseSync, novo: NovoRepresentante, agora: Date): Usuario {
-  const codigos = conferirCodigos(banco, { codigos: novo.codigos, autorizados: novo.autorizados });
+  const codigos = conferirCodigos({ codigos: novo.codigos, autorizados: novo.autorizados });
   const usuario = novoUsuario(novo.nome, "representante", codigos, agora);
   emTransacao(banco, () => {
     inserir(banco, usuario);
@@ -53,7 +53,7 @@ export function criarAdmin(banco: DatabaseSync, { nome }: { nome: string }, agor
 
 /** Troca os códigos do login pelos novos, com as mesmas regras da criação. */
 export function trocarCodigos(banco: DatabaseSync, troca: { usuario: string; codigos: readonly string[]; autorizados: ReadonlySet<string>; ligadoPor: string }, agora: Date): string[] {
-  const codigos = conferirCodigos(banco, { codigos: troca.codigos, autorizados: troca.autorizados, excetoUsuario: troca.usuario });
+  const codigos = conferirCodigos({ codigos: troca.codigos, autorizados: troca.autorizados });
   emTransacao(banco, () => {
     banco.prepare("DELETE FROM usuario_codigos WHERE usuario = ?").run(troca.usuario);
     ligarCodigos(banco, { usuario: troca.usuario, codigos, ligadoPor: troca.ligadoPor }, agora);
@@ -89,14 +89,17 @@ export function listarUsuarios(banco: DatabaseSync): Usuario[] {
     .flatMap((linha) => buscarUsuario(banco, String(linha.id)) ?? []);
 }
 
-/** Código → login ativo que o usa: cada código fica em um login ativo só. */
-export function loginsAtivosPorCodigo(banco: DatabaseSync): Map<string, { id: string; nome: string }> {
-  return new Map(
-    banco
-      .prepare("SELECT uc.codigo, u.id, u.nome FROM usuario_codigos uc JOIN usuarios u ON u.id = uc.usuario WHERE u.ativo = 1")
-      .all()
-      .map((linha) => [String(linha.codigo), { id: String(linha.id), nome: String(linha.nome) }]),
-  );
+/** Código → os logins ativos que o usam, pelo nome. */
+export function loginsAtivosPorCodigo(banco: DatabaseSync): Map<string, { id: string; nome: string }[]> {
+  const porCodigo = new Map<string, { id: string; nome: string }[]>();
+  const linhas = banco
+    .prepare("SELECT uc.codigo, u.id, u.nome FROM usuario_codigos uc JOIN usuarios u ON u.id = uc.usuario WHERE u.ativo = 1 ORDER BY u.nome, u.criado_em")
+    .all();
+  for (const linha of linhas) {
+    const codigo = String(linha.codigo);
+    porCodigo.set(codigo, [...(porCodigo.get(codigo) ?? []), { id: String(linha.id), nome: String(linha.nome) }]);
+  }
+  return porCodigo;
 }
 
 export function desativarUsuario(banco: DatabaseSync, id: string): boolean {
@@ -128,28 +131,17 @@ function ligarCodigos(banco: DatabaseSync, { usuario, codigos, ligadoPor }: { us
   for (const codigo of codigos) ligar.run(usuario, codigo, agora.toISOString(), ligadoPor);
 }
 
-/** Os códigos sem repetição e em ordem, se todos passam: formato, lista de autorizados e nenhum em outro login ativo. */
-function conferirCodigos(
-  banco: DatabaseSync,
-  { codigos, autorizados, excetoUsuario = null }: { codigos: readonly string[]; autorizados: ReadonlySet<string>; excetoUsuario?: string | null },
-): string[] {
+/**
+ * Os códigos sem repetição e em ordem, se todos passam: formato e lista de autorizados. O mesmo
+ * código pode estar em vários logins: um por pessoa, como os vendedores de um escritório de
+ * representação (decisão do Lucas em 2026-11-18, docs/plano.md, "Convite").
+ */
+function conferirCodigos({ codigos, autorizados }: { codigos: readonly string[]; autorizados: ReadonlySet<string> }): string[] {
   const unicos = [...new Set(codigos)].sort();
   if (unicos.length === 0) throw new UsuarioRecusado("Falta pelo menos um código de representante.");
   const foraDoFormato = unicos.filter((codigo) => !FORMATO_DO_CODIGO.test(codigo));
   if (foraDoFormato.length > 0) throw new UsuarioRecusado(`Código fora do formato: ${foraDoFormato.join(", ")}.`);
   const naoAutorizados = unicos.filter((codigo) => !autorizados.has(codigo));
   if (naoAutorizados.length > 0) throw new UsuarioRecusado(`Código fora da lista de autorizados da foto: ${naoAutorizados.join(", ")}.`);
-  const emUso = codigosEmOutroLoginAtivo(banco, unicos, excetoUsuario);
-  if (emUso.length > 0) throw new UsuarioRecusado(`Código já ligado a outro login ativo: ${emUso.join(", ")}.`);
   return unicos;
-}
-
-function codigosEmOutroLoginAtivo(banco: DatabaseSync, codigos: readonly string[], excetoUsuario: string | null): string[] {
-  return banco
-    .prepare(
-      `SELECT DISTINCT uc.codigo FROM usuario_codigos uc JOIN usuarios u ON u.id = uc.usuario
-        WHERE u.ativo = 1 AND u.id IS NOT ? AND uc.codigo IN (${codigos.map(() => "?").join(", ")}) ORDER BY uc.codigo`,
-    )
-    .all(excetoUsuario, ...codigos)
-    .map((linha) => String(linha.codigo));
 }

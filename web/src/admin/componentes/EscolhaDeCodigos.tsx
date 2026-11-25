@@ -9,7 +9,7 @@ type Props = {
   lista: ListaDeAutorizados;
   escolhidos: ReadonlySet<string>;
   aoMudar: (escolhidos: Set<string>) => void;
-  /** O login que está sendo editado: os códigos dele não contam como "em outro login". */
+  /** O login que está sendo editado: ele não entra no aviso de "também no login". */
   doLogin: string | null;
 };
 
@@ -18,7 +18,7 @@ const LIMITE_SEM_BUSCA = 8;
 
 /**
  * Os códigos de representante para marcar, com o faturado de cada um em 12 meses. O que já está em
- * outro login ativo aparece, mas não pode ser marcado.
+ * outro login ativo pode ser marcado de novo, como para cada vendedor de um escritório, e diz em qual.
  */
 export function EscolhaDeCodigos({ lista, escolhidos, aoMudar, doLogin }: Props) {
   const [busca, setBusca] = useState("");
@@ -46,16 +46,16 @@ export function EscolhaDeCodigos({ lista, escolhidos, aoMudar, doLogin }: Props)
           <span className={estilos.tituloDoFaturado}>Faturado 12&nbsp;meses</span>
         </p>
         <ul>
-          {visiveis.map(({ codigo, nome, login, faturado12m }) => {
-            const emOutroLogin = login !== null && login.id !== doLogin;
+          {visiveis.map(({ codigo, nome, logins, faturado12m }) => {
+            const outrosLogins = logins.filter((login) => login.id !== doLogin).map((login) => login.nome);
             return (
               <li key={codigo}>
-                <label className={estilos.codigo} data-indisponivel={emOutroLogin || undefined}>
-                  <input type="checkbox" checked={escolhidos.has(codigo)} disabled={emOutroLogin} onChange={() => alternar(codigo)} />
+                <label className={estilos.codigo}>
+                  <input type="checkbox" checked={escolhidos.has(codigo)} onChange={() => alternar(codigo)} />
                   <span className={estilos.numeroDoCodigo}>{codigo}</span>
                   <span className={estilos.nomeDoCodigo}>
                     <span className={estilos.textoDoNome}>{nome}</span>
-                    {emOutroLogin ? <span className={estilos.notaDoCodigo}>no login {login.nome}</span> : null}
+                    {outrosLogins.length > 0 ? <span className={estilos.notaDoCodigo}>também no login {outrosLogins.join(", ")}</span> : null}
                   </span>
                   <span className={estilos.faturadoDoCodigo}>{faturado12m === null ? "—" : formatarReais(faturado12m)}</span>
                 </label>

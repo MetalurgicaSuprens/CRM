@@ -49,9 +49,10 @@ describe("convidar", () => {
     expect(listarUsuarios(contexto.banco)).toEqual([]);
   });
 
-  it("recusa código que já está em outro login ativo", () => {
+  it("liga o mesmo código a um segundo login, como o de cada vendedor de um escritório", () => {
     convidar(contexto, { nome: "Star Vendas", codigos: ["1401"] });
-    expect(() => convidar(contexto, { nome: "Outra", codigos: ["1401"] })).toThrow(/já ligado a outro login ativo: 1401/);
+    convidar(contexto, { nome: "Vendedor da Star", codigos: ["1401"] });
+    expect(listarUsuarios(contexto.banco).map((usuario) => usuario.codigos)).toEqual([["1401"], ["1401"]]);
   });
 
   it("registra a criação do login e do convite na auditoria, como feitas pela linha de comando", () => {
@@ -90,7 +91,7 @@ describe("novo convite, revogar e desativar", () => {
     expect(tokenDo(novoConvite(contexto, usuario?.id ?? ""))).not.toBe("");
   });
 
-  it("desativar derruba a sessão e o convite, e libera os códigos para outro login", () => {
+  it("desativar derruba a sessão e o convite", () => {
     const cookie = entrarComo(contexto.banco, ["1401"], AGORA);
     const [usuario] = listarUsuarios(contexto.banco);
     const convite = tokenDo(novoConvite(contexto, usuario?.id ?? ""));
@@ -98,7 +99,6 @@ describe("novo convite, revogar e desativar", () => {
     expect(sessaoDoCookie(cookie)).toEqual({ sessao: null, motivo: "revogada" });
     expect(consultarConvite(contexto.banco, convite, AGORA).estado).toBe("invalido");
     expect(() => novoConvite(contexto, usuario?.id ?? "")).toThrow(AcaoRecusada);
-    expect(convidar(contexto, { nome: "Nova representação", codigos: ["1401"] })).toMatch(/^Login criado/);
   });
 
   it("lista os logins com os códigos e as chaves", () => {

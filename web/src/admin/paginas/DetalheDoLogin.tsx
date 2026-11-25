@@ -144,7 +144,7 @@ function Acoes({ login, isOProprio, agir, aoGerarConvite }: PropsDasAcoes) {
                 Bloquear chaves
               </button>
             </Acao>
-            <Acao nome="Desativar o login" explicacao="Para quem saiu da representação. Os códigos ficam livres para outro login. Não tem volta.">
+            <Acao nome="Desativar o login" explicacao="Para quem saiu da representação. Não tem volta.">
               <button
                 type="button"
                 className={`${botoes.secundario} ${estilos.perigosa}`}

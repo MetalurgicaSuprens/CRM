@@ -632,7 +632,7 @@ Pedido do Lucas em 2026-10-16: gerenciar os acessos por uma tela, não por coman
 | Dado | O que a tela mostra | Regra | Origem | Onde é calculado |
 |---|---|---|---|---|
 | Logins | Lista com a situação, os códigos, as chaves, o último acesso e o convite; números do alto: ativos, convites pendentes, chaves ativas, sessões abertas | Situação: ativo (chave que vale), convite pendente (sem chave, com convite valendo), sem acesso, desativado | app.db | servidor |
-| Novo login e troca de códigos | Nome e os códigos marcados na lista de autorizados, com o faturado de cada código em 12 meses; o link do convite, para copiar | Os códigos vêm da tabela `representante` da foto; o que já está em outro login ativo aparece bloqueado. Faturado: a soma de `painel_mes` nos 12 meses fechados antes do mês da foto, pelas vendas atribuídas ao código (a conta do Início); em outubro de 2026, de out/25 a set/26 | (foto: representante, painel_mes) | servidor |
+| Novo login e troca de códigos | Nome e os códigos marcados na lista de autorizados, com o faturado de cada código em 12 meses; o link do convite, para copiar | Os códigos vêm da tabela `representante` da foto; o que já está em outro login ativo pode ser marcado de novo e diz em qual ("também no login …"): um login por pessoa, como cada vendedor de um escritório (decisão do Lucas em 2026-11-18). Faturado: a soma de `painel_mes` nos 12 meses fechados antes do mês da foto, pelas vendas atribuídas ao código (a conta do Início); em outubro de 2026, de out/25 a set/26 | (foto: representante, painel_mes) | servidor |
 | Chaves | Provedor, sincronizada ou não, criada, último uso, bloqueada; "Bloquear" uma a uma | Uma chave sincronizada vale em todos os aparelhos da conta Google ou Apple | app.db | servidor |
 | Convites | Gerado, situação (valendo, usado, venceu, trocado) e quando | 48 horas, uma vez só; o novo troca o anterior | app.db | servidor |
 | Sessões | As últimas 20: aberta, último uso, chave e por que terminou | As regras da entrada: 60 minutos sem uso, 12 horas | app.db | servidor |
@@ -644,7 +644,6 @@ Pedido do Lucas em 2026-10-16: gerenciar os acessos por uma tela, não por coman
   - Trocar os códigos: a sessão aberta do representante já vê os novos.
   - Encerrar as sessões: as chaves continuam valendo, e a entrada explica "o administrador encerrou a sua sessão".
   - Bloquear todas as chaves ou só uma, como a do aparelho perdido.
-  - Desativar o login: os códigos ficam livres para outro login.
   - As ações que tiram o acesso pedem confirmação. O admin não age no próprio login pela tela, para não se trancar para fora.
 - **Exceção à regra 4 do CLAUDE.md (decidida em 2026-10-13).** As rotas que ligam códigos a um login (criar o login e trocar os códigos) são as únicas que recebem do navegador o código do representante. Elas só existem na API da administração, conferem o código contra a tabela `representante` da foto e gravam auditoria.
 - **Lista dos representantes autorizados.** É a tabela `representante` da foto, que o extrator monta a partir de `data/representantes-autorizados.txt`.
@@ -763,7 +762,7 @@ As seis primeiras tabelas existem desde a F3 (`server/src/bancoDoApp.ts`, migra�
 | Tabela | O que guarda | Telas |
 |---|---|---|
 | `usuarios` | id, nome do login, ativo, identificador WebAuthn aleatório, criado em. O papel de admin entra com a API de admin | todas, Admin |
-| `usuario_codigos` | usuário, código do representante, ligado em, ligado por; um login tem um ou mais códigos, e um código fica em um login ativo só | todas, Admin |
+| `usuario_codigos` | usuário, código do representante, ligado em, ligado por; um login tem um ou mais códigos, e um código pode estar em vários logins, um por pessoa | todas, Admin |
 | `chaves` | id da credencial, usuário, chave pública, contador, transportes, AAGUID e provedor, sincronizada, criada em, último uso, revogada em | Entrar, Convite, Montar pedido, Admin |
 | `convites` | hash do token, usuário, criado por, criado em, expira em, usado em, trocado em | Convite, Admin |
 | `sessoes` | hash do token, usuário, chave usada, criada em, último uso, encerrada em e motivo | todas, Entrar |

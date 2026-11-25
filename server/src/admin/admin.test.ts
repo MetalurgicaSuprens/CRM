@@ -135,13 +135,16 @@ describe("logins", () => {
     });
   });
 
-  it("recusa código fora da lista de autorizados e código de outro login ativo, com o motivo", async () => {
+  it("recusa código fora da lista de autorizados, com o motivo", async () => {
     const fora = await postarNoAdmin("/api/admin/logins", { nome: "Outra", codigos: ["5555"] });
     expect(fora.statusCode).toBe(409);
     expect(fora.json().erro).toMatch(/fora da lista de autorizados da foto: 5555/);
-    await criarStar();
-    expect((await postarNoAdmin("/api/admin/logins", { nome: "Outra", codigos: ["1401"] })).json().erro).toMatch(/já ligado a outro login ativo/);
     expect((await postarNoAdmin("/api/admin/logins", { nome: "", codigos: ["1401"] })).statusCode).toBe(400);
+  });
+
+  it("liga o mesmo código a outro login, um por pessoa", async () => {
+    await criarStar();
+    expect((await postarNoAdmin("/api/admin/logins", { nome: "Vendedor da Star", codigos: ["1401"] })).statusCode).toBe(201);
   });
 
   it("depois da chave criada, o login fica ativo, com o provedor da chave e a sessão aberta", async () => {
@@ -220,14 +223,14 @@ describe("logins", () => {
 });
 
 describe("representantes, situação e registro", () => {
-  it("lista os códigos da foto com o login ativo que já usa cada um e o faturado nos 12 meses fechados", async () => {
+  it("lista os códigos da foto com os logins ativos que já usam cada um e o faturado nos 12 meses fechados", async () => {
     const { id } = await criarStar();
     // Foto de outubro de 2026: de janeiro a setembro, 1.000 por mês; de outubro a dezembro de 2025, 900.
     expect((await lerNoAdmin("/api/admin/representantes")).json()).toEqual({
       periodo: { inicio: "2025-10", fim: "2026-09" },
       representantes: [
-        { codigo: "1401", nome: "STAR VENDAS", login: { id, nome: "Star Vendas" }, faturado12m: 9 * 1_000 + 3 * 900 },
-        { codigo: "9999", nome: "OUTRA REPRESENTACAO", login: null, faturado12m: 9 * 1_000 + 3 * 900 },
+        { codigo: "1401", nome: "STAR VENDAS", logins: [{ id, nome: "Star Vendas" }], faturado12m: 9 * 1_000 + 3 * 900 },
+        { codigo: "9999", nome: "OUTRA REPRESENTACAO", logins: [], faturado12m: 9 * 1_000 + 3 * 900 },
       ],
     });
   });

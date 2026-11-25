@@ -146,7 +146,7 @@ export function verLogin(contexto: Contexto, id: string): DetalheDoLogin | null 
   };
 }
 
-/** A lista de autorizados da foto, com o login ativo que já usa cada código e o faturado de cada um em 12 meses. */
+/** A lista de autorizados da foto, com os logins ativos que já usam cada código e o faturado de cada um em 12 meses. */
 export function verRepresentantes(contexto: Contexto): ListaDeAutorizados {
   const ligados = loginsAtivosPorCodigo(contexto.banco);
   const { periodo, porCodigo } = faturadoEm12Meses(contexto);
@@ -155,7 +155,7 @@ export function verRepresentantes(contexto: Contexto): ListaDeAutorizados {
     representantes: [...nomesDosRepresentantes(contexto)].map(([codigo, nome]) => ({
       codigo,
       nome,
-      login: ligados.get(codigo) ?? null,
+      logins: ligados.get(codigo) ?? [],
       faturado12m: porCodigo.get(codigo) ?? null,
     })),
   };
