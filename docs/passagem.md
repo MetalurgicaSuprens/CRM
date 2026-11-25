@@ -65,6 +65,7 @@ Feito até agora: F1, F2, F3 e parte da F4 (veja as fases no plano).
 - **Administração:** é um site à parte e mostra o aviso de carga recusada.
 - **Limpeza:** os registros com mais de 12 meses são apagados.
 - **Rascunho de pedido:** fica no servidor. O envio ao ERP é da F5.
+- **Mapa: desligado desde 2026-11-25** (decisão do Lucas). Ele tratava o estado inteiro como área de quem tem cliente nele, e mostrava muita informação e pouca coisa que desse para usar. Para voltar, ele precisa antes da área de cada representante. Saiu do menu e da rota (`/mapa` cai no Início); o código fica em `web/src/paginas/Mapa.tsx` e `paginas/mapa/`. A marcação de visita na ficha continua. A localização dos clientes continua na foto, por decisão do Lucas, até o Mapa voltar ou ser descartado.
 
 Falta, em ordem:
 1. **Conferir na tela o aviso de carga recusada da administração,** no computador e no celular. Para provocar o aviso, entregue na entrada de uma API de teste uma foto com o manifesto estragado.

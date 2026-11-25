@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { NavigationType, useLocation, useNavigationType, type Location } from "react-router";
-import { ChartColumn, ClipboardList, House, MapIcon, Users } from "lucide-react";
+import { ChartColumn, ClipboardList, House, Users } from "lucide-react";
 
 /*
  * A navegação do CRM: as telas do menu, de onde se chegou a cada tela e onde a página estava. Com
@@ -8,12 +8,15 @@ import { ChartColumn, ClipboardList, House, MapIcon, Users } from "lucide-react"
  * A memória é da aba do navegador, por entrada do histórico: recarregar a página a esquece.
  */
 
+/**
+ * O Mapa saiu do menu em 2026-11-25 (decisão do Lucas): ele tratava o estado inteiro como área de quem
+ * tem cliente nele, e precisa antes da área de cada representante. O código fica em paginas/Mapa.tsx.
+ */
 export const NAVEGACAO = [
   { para: "/", rotulo: "Início", Icone: House },
   { para: "/clientes", rotulo: "Clientes", Icone: Users },
   { para: "/analises", rotulo: "Análises", Icone: ChartColumn },
   { para: "/pedidos", rotulo: "Pedidos", Icone: ClipboardList },
-  { para: "/mapa", rotulo: "Mapa", Icone: MapIcon },
 ] as const;
 
 /** A tela de onde se chegou a cada entrada do histórico, pela chave da entrada. */

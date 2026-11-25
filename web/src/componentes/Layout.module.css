@@ -267,7 +267,7 @@
     z-index: 10;
     display: grid;
     /* A última coluna, a do Incluir pedido, um pouco mais larga: o nome cabe numa linha a partir de 360 px */
-    grid-template-columns: repeat(5, 1fr) 1.4fr;
+    grid-template-columns: repeat(4, 1fr) 1.4fr;
     height: calc(var(--altura-barra-inferior) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     background: color-mix(in srgb, var(--cor-superficie) 88%, transparent);

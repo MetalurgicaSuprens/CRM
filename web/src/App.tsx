@@ -10,7 +10,6 @@ import { CotacaoParaImprimir, PedidoParaImprimir } from "./paginas/CotacaoParaIm
 import { Pedidos } from "./paginas/Pedidos";
 import { FichaCliente } from "./paginas/FichaCliente";
 import { Inicio } from "./paginas/Inicio";
-import { Mapa } from "./paginas/Mapa";
 
 export function App() {
   return (
@@ -29,7 +28,6 @@ export function App() {
           <Route path="pedidos/cotacoes/:id/pdf" element={<CotacaoParaImprimir />} />
           <Route path="pedidos/:numero" element={<DetalheDoPedido />} />
           <Route path="pedidos/:numero/pdf" element={<PedidoParaImprimir />} />
-          <Route path="mapa" element={<Mapa />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
