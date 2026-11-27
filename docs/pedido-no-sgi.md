@@ -170,7 +170,7 @@ Na máquina do extrator, no mesmo `npm run pedidos`, depois da conferência (`ex
 - **A queda da conexão** para a passada, e o pedido fica para a próxima.
 - **Gravado,** o pedido vai para `gravados/`, com o número do SGI em `<número CRM>.sgi.json`. É a ligação do pedido do CRM com o do SGI, de que a etapa 5 precisa.
 - **O part number do item** é o que o representante deixou no campo PN do item (desde 2026-11-23). A sugestão vem da foto (`cliente_part_number`): o único da tabela própria do cliente; com vários, o último que o cliente usou entre eles; sem tabela própria, o último que ele usou que não seja de tabela geral (PDR01, PDR02 e EXPOR), decisão do Lucas em 2026-11-23.
-- **Testada em 2026-11-23 com um pedido real** ([`roteiro-primeiro-pedido.md`](roteiro-primeiro-pedido.md)):
+- **Testada em 2026-11-23 com um pedido real** ([`roteiro-pedido-de-teste.md`](roteiro-pedido-de-teste.md), que serve também para os testes seguintes):
   - o `CRM-00001`, enviado pelo Lucas no login Suprens às 16:06, entrou no SGI às 16:10 como **pedido 1149872, PEDIDO BLOQUEADO**, pela tarefa agendada, na primeira tentativa;
   - o Lucas conferiu o pedido no SGI, sem diferença apontada, e o cancelou;
   - depois o envio no servidor e a gravação na máquina do extrator voltaram a ficar desligados.
